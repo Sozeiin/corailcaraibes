@@ -609,6 +609,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_stock_reference: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_base_id: {
         Args: Record<PropertyKey, never>
         Returns: string

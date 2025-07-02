@@ -130,7 +130,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     } else {
       form.reset({
         name: '',
-        reference: '',
+        reference: '', // Sera auto-généré par la base de données
         category: '',
         quantity: 0,
         minThreshold: 0,
@@ -147,7 +147,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     try {
       const stockData = {
         name: data.name,
-        reference: data.reference || null,
+        reference: data.reference || null, // Si vide, sera auto-généré
         category: data.category || null,
         quantity: data.quantity,
         min_threshold: data.minThreshold,
@@ -240,7 +240,10 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                   <FormItem>
                     <FormLabel>Référence</FormLabel>
                     <FormControl>
-                      <Input placeholder="REF-001" {...field} />
+                      <Input 
+                        placeholder={item ? "REF-001" : "Auto-généré si vide"} 
+                        {...field} 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
