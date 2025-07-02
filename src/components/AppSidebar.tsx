@@ -10,7 +10,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from '@/components/ui/sidebar';
 import { 
   BarChart3, 
@@ -76,7 +75,6 @@ const menuItems = [
 ];
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
   const location = useLocation();
   const { user } = useAuth();
 
@@ -94,11 +92,11 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className={`${collapsed ? 'w-14' : 'w-64'} gradient-ocean wave-pattern`}>
+    <Sidebar className="w-64 gradient-ocean wave-pattern">
       <SidebarContent className="p-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-4">
-            {!collapsed && 'Menu Principal'}
+            Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-2">
@@ -107,7 +105,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClass(item.url)}>
                       <item.icon className="h-5 w-5" />
-                      {!collapsed && <span>{item.title}</span>}
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -116,14 +114,12 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {!collapsed && (
-          <div className="mt-8 p-4 bg-white/10 rounded-lg">
-            <h3 className="text-white text-sm font-medium mb-2">Base actuelle</h3>
-            <p className="text-white/80 text-xs">
-              {user?.role === 'direction' ? 'Toutes les bases' : 'Martinique'}
-            </p>
-          </div>
-        )}
+        <div className="mt-8 p-4 bg-white/10 rounded-lg">
+          <h3 className="text-white text-sm font-medium mb-2">Base actuelle</h3>
+          <p className="text-white/80 text-xs">
+            {user?.role === 'direction' ? 'Toutes les bases' : 'Martinique'}
+          </p>
+        </div>
       </SidebarContent>
     </Sidebar>
   );

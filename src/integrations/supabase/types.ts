@@ -9,16 +9,630 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      alerts: {
+        Row: {
+          base_id: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          severity: Database["public"]["Enums"]["alert_severity"] | null
+          title: string
+          type: Database["public"]["Enums"]["alert_type"]
+        }
+        Insert: {
+          base_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          severity?: Database["public"]["Enums"]["alert_severity"] | null
+          title: string
+          type: Database["public"]["Enums"]["alert_type"]
+        }
+        Update: {
+          base_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          severity?: Database["public"]["Enums"]["alert_severity"] | null
+          title?: string
+          type?: Database["public"]["Enums"]["alert_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alerts_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bases: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          location: string
+          manager: string | null
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          location: string
+          manager?: string | null
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          location?: string
+          manager?: string | null
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      boat_checklist_items: {
+        Row: {
+          checklist_id: string
+          item_id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Insert: {
+          checklist_id: string
+          item_id: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Update: {
+          checklist_id?: string
+          item_id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_checklist_items_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "boat_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_checklist_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boat_checklists: {
+        Row: {
+          boat_id: string | null
+          checklist_date: string | null
+          created_at: string | null
+          id: string
+          overall_status:
+            | Database["public"]["Enums"]["checklist_overall_status"]
+            | null
+          technician_id: string | null
+        }
+        Insert: {
+          boat_id?: string | null
+          checklist_date?: string | null
+          created_at?: string | null
+          id?: string
+          overall_status?:
+            | Database["public"]["Enums"]["checklist_overall_status"]
+            | null
+          technician_id?: string | null
+        }
+        Update: {
+          boat_id?: string | null
+          checklist_date?: string | null
+          created_at?: string | null
+          id?: string
+          overall_status?:
+            | Database["public"]["Enums"]["checklist_overall_status"]
+            | null
+          technician_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_checklists_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_checklists_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boats: {
+        Row: {
+          base_id: string | null
+          created_at: string | null
+          documents: string[] | null
+          id: string
+          model: string
+          name: string
+          next_maintenance: string | null
+          serial_number: string
+          status: Database["public"]["Enums"]["boat_status"] | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          base_id?: string | null
+          created_at?: string | null
+          documents?: string[] | null
+          id?: string
+          model: string
+          name: string
+          next_maintenance?: string | null
+          serial_number: string
+          status?: Database["public"]["Enums"]["boat_status"] | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          base_id?: string | null
+          created_at?: string | null
+          documents?: string[] | null
+          id?: string
+          model?: string
+          name?: string
+          next_maintenance?: string | null
+          serial_number?: string
+          status?: Database["public"]["Enums"]["boat_status"] | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boats_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklist_items: {
+        Row: {
+          category: string | null
+          id: string
+          is_required: boolean | null
+          name: string
+          notes: string | null
+          status: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Insert: {
+          category?: string | null
+          id?: string
+          is_required?: boolean | null
+          name: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Update: {
+          category?: string | null
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["checklist_status"] | null
+        }
+        Relationships: []
+      }
+      intervention_tasks: {
+        Row: {
+          intervention_id: string
+          task_id: string
+        }
+        Insert: {
+          intervention_id: string
+          task_id: string
+        }
+        Update: {
+          intervention_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_tasks_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_tasks_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interventions: {
+        Row: {
+          base_id: string | null
+          boat_id: string | null
+          completed_date: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          scheduled_date: string | null
+          status: Database["public"]["Enums"]["intervention_status"] | null
+          technician_id: string | null
+          title: string
+        }
+        Insert: {
+          base_id?: string | null
+          boat_id?: string | null
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["intervention_status"] | null
+          technician_id?: string | null
+          title: string
+        }
+        Update: {
+          base_id?: string | null
+          boat_id?: string | null
+          completed_date?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          scheduled_date?: string | null
+          status?: Database["public"]["Enums"]["intervention_status"] | null
+          technician_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interventions_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interventions_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interventions_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_tasks: {
+        Row: {
+          actual_duration: number | null
+          assigned_to: string | null
+          boat_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          description: string | null
+          estimated_duration: number | null
+          id: string
+          notes: string | null
+          priority: Database["public"]["Enums"]["maintenance_priority"] | null
+          status: Database["public"]["Enums"]["maintenance_status"] | null
+          title: string
+        }
+        Insert: {
+          actual_duration?: number | null
+          assigned_to?: string | null
+          boat_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_duration?: number | null
+          id?: string
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"] | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          title: string
+        }
+        Update: {
+          actual_duration?: number | null
+          assigned_to?: string | null
+          boat_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          description?: string | null
+          estimated_duration?: number | null
+          id?: string
+          notes?: string | null
+          priority?: Database["public"]["Enums"]["maintenance_priority"] | null
+          status?: Database["public"]["Enums"]["maintenance_status"] | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_tasks_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          id: string
+          order_id: string | null
+          product_name: string
+          quantity: number
+          total_price: number | null
+          unit_price: number
+        }
+        Insert: {
+          id?: string
+          order_id?: string | null
+          product_name: string
+          quantity?: number
+          total_price?: number | null
+          unit_price?: number
+        }
+        Update: {
+          id?: string
+          order_id?: string | null
+          product_name?: string
+          quantity?: number
+          total_price?: number | null
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          base_id: string | null
+          created_at: string | null
+          delivery_date: string | null
+          documents: string[] | null
+          id: string
+          order_date: string | null
+          order_number: string
+          status: Database["public"]["Enums"]["order_status"] | null
+          supplier_id: string | null
+          total_amount: number | null
+        }
+        Insert: {
+          base_id?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          documents?: string[] | null
+          id?: string
+          order_date?: string | null
+          order_number: string
+          status?: Database["public"]["Enums"]["order_status"] | null
+          supplier_id?: string | null
+          total_amount?: number | null
+        }
+        Update: {
+          base_id?: string | null
+          created_at?: string | null
+          delivery_date?: string | null
+          documents?: string[] | null
+          id?: string
+          order_date?: string | null
+          order_number?: string
+          status?: Database["public"]["Enums"]["order_status"] | null
+          supplier_id?: string | null
+          total_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          base_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+        }
+        Insert: {
+          base_id?: string | null
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Update: {
+          base_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_items: {
+        Row: {
+          base_id: string | null
+          category: string | null
+          id: string
+          last_updated: string | null
+          location: string | null
+          min_threshold: number | null
+          name: string
+          quantity: number | null
+          reference: string | null
+          unit: string | null
+        }
+        Insert: {
+          base_id?: string | null
+          category?: string | null
+          id?: string
+          last_updated?: string | null
+          location?: string | null
+          min_threshold?: number | null
+          name: string
+          quantity?: number | null
+          reference?: string | null
+          unit?: string | null
+        }
+        Update: {
+          base_id?: string | null
+          category?: string | null
+          id?: string
+          last_updated?: string | null
+          location?: string | null
+          min_threshold?: number | null
+          name?: string
+          quantity?: number | null
+          reference?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_items_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          base_id: string | null
+          category: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          address?: string | null
+          base_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          address?: string | null
+          base_id?: string | null
+          category?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_base_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
-      [_ in never]: never
+      alert_severity: "info" | "warning" | "error"
+      alert_type: "stock" | "maintenance" | "document" | "system"
+      boat_status: "available" | "rented" | "maintenance" | "out_of_service"
+      checklist_overall_status: "ok" | "needs_attention" | "major_issues"
+      checklist_status: "ok" | "needs_repair" | "not_checked"
+      intervention_status:
+        | "scheduled"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+      maintenance_priority: "low" | "medium" | "high" | "urgent"
+      maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
+      order_status: "pending" | "confirmed" | "delivered" | "cancelled"
+      user_role: "direction" | "chef_base" | "technicien"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +747,22 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      alert_severity: ["info", "warning", "error"],
+      alert_type: ["stock", "maintenance", "document", "system"],
+      boat_status: ["available", "rented", "maintenance", "out_of_service"],
+      checklist_overall_status: ["ok", "needs_attention", "major_issues"],
+      checklist_status: ["ok", "needs_repair", "not_checked"],
+      intervention_status: [
+        "scheduled",
+        "in_progress",
+        "completed",
+        "cancelled",
+      ],
+      maintenance_priority: ["low", "medium", "high", "urgent"],
+      maintenance_status: ["pending", "in_progress", "completed", "cancelled"],
+      order_status: ["pending", "confirmed", "delivered", "cancelled"],
+      user_role: ["direction", "chef_base", "technicien"],
+    },
   },
 } as const

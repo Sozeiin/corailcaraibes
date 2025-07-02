@@ -7,14 +7,26 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
-import Login from "./pages/Login";
+import Auth from "./pages/Auth";
 import Boats from "./pages/Boats";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
 }
 
@@ -25,7 +37,7 @@ function AppRoutes() {
     <Routes>
       <Route 
         path="/auth" 
-        element={isAuthenticated ? <Navigate to="/" /> : <Login />} 
+        element={isAuthenticated ? <Navigate to="/" /> : <Auth />} 
       />
       <Route
         path="/"
