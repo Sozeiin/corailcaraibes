@@ -23,10 +23,10 @@ export function SupplierFilters({
   onCategoryChange 
 }: SupplierFiltersProps) {
   const clearFilters = () => {
-    onCategoryChange('');
+    onCategoryChange('all');
   };
 
-  const hasActiveFilters = selectedCategory !== '';
+  const hasActiveFilters = selectedCategory !== '' && selectedCategory !== 'all';
 
   return (
     <div className="border-t pt-4 space-y-4">
@@ -41,8 +41,8 @@ export function SupplierFilters({
             <SelectValue placeholder="Toutes les catégories" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toutes les catégories</SelectItem>
-            {categories.map((category) => (
+            <SelectItem value="all">Toutes les catégories</SelectItem>
+            {categories.filter(category => category && category.trim() !== '').map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
               </SelectItem>
@@ -70,7 +70,7 @@ export function SupplierFilters({
             <Badge variant="secondary" className="flex items-center gap-1">
               {selectedCategory}
               <button
-                onClick={() => onCategoryChange('')}
+                onClick={() => onCategoryChange('all')}
                 className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />

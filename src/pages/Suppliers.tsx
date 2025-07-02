@@ -21,7 +21,7 @@ export default function Suppliers() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   const { data: suppliers = [], isLoading, error } = useQuery({
     queryKey: ['suppliers'],
@@ -100,7 +100,7 @@ export default function Suppliers() {
                          supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          supplier.phone.includes(searchTerm);
     
-    const matchesCategory = selectedCategory === '' || supplier.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || selectedCategory === '' || supplier.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
   });
