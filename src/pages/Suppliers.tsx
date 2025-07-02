@@ -1,15 +1,15 @@
 
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Plus, Search } from 'lucide-react';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SupplierTable } from '@/components/suppliers/SupplierTable';
 import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
+import { SupplierTable } from '@/components/suppliers/SupplierTable';
 import { SupplierFilters } from '@/components/suppliers/SupplierFilters';
 import { Supplier } from '@/types';
 
@@ -18,26 +18,26 @@ export default function Suppliers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
 
-  const { data: suppliers = [], isLoading } = useQuery({
+  const { data: suppliers = [], isLoading, error } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
+      console.log('Fetching suppliers...');
       const { data, error } = await supabase
         .from('suppliers')
-        .select(`
-          *,
-          bases (
-            name,
-            location
-          )
-        `)
-        .order('name');
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching suppliers:', error);
+        throw error;
+      }
+
+      console.log('Suppliers fetched:', data);
       
       // Transform database fields to match Supplier interface
       return data.map(supplier => ({
@@ -53,33 +53,6 @@ export default function Suppliers() {
     }
   });
 
-  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
-
-  // Extract unique categories from suppliers
-  const categories = Array.from(
-    new Set(
-      suppliers
-        .map(supplier => supplier.category)
-        .filter(Boolean)
-    )
-  );
-
-  // Filter suppliers based on search and category
-  const filteredSuppliers = suppliers.filter(supplier => {
-    const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = selectedCategory === '' || supplier.category === selectedCategory;
-    
-    return matchesSearch && matchesCategory;
-  });
-
-  const handleEdit = (supplier: Supplier) => {
-    setEditingSupplier(supplier);
-    setIsDialogOpen(true);
-  };
-
   const handleDelete = async (supplierId: string) => {
     try {
       const { error } = await supabase
@@ -89,12 +62,12 @@ export default function Suppliers() {
 
       if (error) throw error;
 
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      
       toast({
         title: "Fournisseur supprimé",
         description: "Le fournisseur a été supprimé avec succès."
       });
+
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
     } catch (error) {
       console.error('Error deleting supplier:', error);
       toast({
@@ -105,34 +78,76 @@ export default function Suppliers() {
     }
   };
 
-  const handleCloseDialog = () => {
+  const handleEdit = (supplier: Supplier) => {
+    setSelectedSupplier(supplier);
+    setIsDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    setSelectedSupplier(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
     setIsDialogOpen(false);
-    setEditingSupplier(null);
+    setSelectedSupplier(null);
     queryClient.invalidateQueries({ queryKey: ['suppliers'] });
   };
 
+  // Filter suppliers based on search term and category
+  const filteredSuppliers = suppliers.filter(supplier => {
+    const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         supplier.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         supplier.phone.includes(searchTerm);
+    
+    const matchesCategory = selectedCategory === '' || supplier.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories for filter
+  const categories = Array.from(new Set(suppliers.map(s => s.category).filter(Boolean)));
+
+  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
+      <div className="p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-600"></div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
         <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-gray-500">Chargement des fournisseurs...</p>
-          </CardContent>
+          <CardHeader>
+            <CardTitle className="text-red-600">Erreur</CardTitle>
+            <p className="text-gray-600">
+              Impossible de charger les fournisseurs. Veuillez réessayer.
+            </p>
+          </CardHeader>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
+          <p className="text-gray-600 mt-1">
+            Gérez vos fournisseurs et leurs informations de contact
+          </p>
+        </div>
+        
         {canManage && (
           <Button 
-            onClick={() => setIsDialogOpen(true)}
+            onClick={handleAdd}
             className="bg-marine-600 hover:bg-marine-700"
           >
             <Plus className="h-4 w-4 mr-2" />
@@ -143,25 +158,30 @@ export default function Suppliers() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Rechercher un fournisseur
-          </CardTitle>
-          <div className="flex gap-4">
-            <Input
-              placeholder="Rechercher par nom, email ou téléphone..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Search className="h-5 w-5" />
+              Rechercher et filtrer
+            </CardTitle>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Rechercher par nom, email ou téléphone..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full sm:w-80"
+                />
+              </div>
+            </div>
           </div>
+          
+          <SupplierFilters
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+          />
         </CardHeader>
-
-        <SupplierFilters
-          categories={categories}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-        />
 
         <SupplierTable
           suppliers={filteredSuppliers}
@@ -173,8 +193,8 @@ export default function Suppliers() {
 
       <SupplierDialog
         isOpen={isDialogOpen}
-        onClose={handleCloseDialog}
-        supplier={editingSupplier}
+        onClose={handleDialogClose}
+        supplier={selectedSupplier}
       />
     </div>
   );
