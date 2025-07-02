@@ -63,7 +63,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     },
   });
 
-  const { data: boats = [] } = useQuery({
+  const { data: boats = [], isLoading: boatsLoading } = useQuery({
     queryKey: ['boats'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -73,11 +73,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
       if (error) throw error;
       return data;
-    },
-    enabled: isOpen
+    }
   });
 
-  const { data: technicians = [] } = useQuery({
+  const { data: technicians = [], isLoading: techniciansLoading } = useQuery({
     queryKey: ['technicians'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -88,8 +87,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
       if (error) throw error;
       return data;
-    },
-    enabled: isOpen
+    }
   });
 
   useEffect(() => {
