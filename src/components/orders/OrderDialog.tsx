@@ -135,8 +135,8 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         }))
       });
     } else {
-      // Generate order number for new orders
-      const orderNumber = `CMD-${Date.now()}`;
+      // Generate unique order number for new orders
+      const orderNumber = `CMD-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       form.reset({
         orderNumber,
         supplierId: '',
@@ -202,8 +202,8 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         order_id: orderId,
         product_name: item.productName,
         quantity: item.quantity,
-        unit_price: item.unitPrice,
-        total_price: item.quantity * item.unitPrice
+        unit_price: item.unitPrice
+        // total_price is calculated automatically (generated column)
       }));
 
       const { error: itemsError } = await supabase
