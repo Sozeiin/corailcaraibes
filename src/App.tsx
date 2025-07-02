@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import Boats from "./pages/Boats";
 import Suppliers from "./pages/Suppliers";
+import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,10 +69,7 @@ function AppRoutes() {
         path="/orders"
         element={
           <ProtectedRoute>
-            <div className="p-6">
-              <h1 className="text-3xl font-bold">Commandes</h1>
-              <p className="text-gray-600 mt-2">Module en cours de développement...</p>
-            </div>
+            <Orders />
           </ProtectedRoute>
         }
       />
