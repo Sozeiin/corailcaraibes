@@ -223,7 +223,7 @@ export function SupplierDialog({ isOpen, onClose, supplier }: SupplierDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {categories.map((category) => (
+                        {categories.filter(category => category && category.trim() !== '').map((category) => (
                           <SelectItem key={category} value={category}>
                             {category}
                           </SelectItem>
@@ -302,7 +302,7 @@ export function SupplierDialog({ isOpen, onClose, supplier }: SupplierDialogProp
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availableBases.map((base) => (
+                        {availableBases.filter(base => base.id && base.id.trim() !== '').map((base) => (
                           <SelectItem key={base.id} value={base.id}>
                             {base.name} - {base.location}
                           </SelectItem>
