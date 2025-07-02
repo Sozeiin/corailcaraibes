@@ -71,7 +71,17 @@ export function SupplierDialog({ isOpen, onClose, supplier }: SupplierDialogProp
         .order('name');
 
       if (error) throw error;
-      return data as Base[];
+      
+      // Transform database fields to match Base interface
+      return data.map(base => ({
+        id: base.id,
+        name: base.name,
+        location: base.location,
+        phone: base.phone || '',
+        email: base.email || '',
+        manager: base.manager || '',
+        createdAt: base.created_at || new Date().toISOString()
+      })) as Base[];
     },
     enabled: isOpen
   });

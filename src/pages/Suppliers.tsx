@@ -1,29 +1,29 @@
 
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Plus, Search, Filter, Edit, Trash2, Mail, Phone, MapPin } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Plus, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
 import { SupplierTable } from '@/components/suppliers/SupplierTable';
+import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
 import { SupplierFilters } from '@/components/suppliers/SupplierFilters';
 import { Supplier } from '@/types';
 
 export default function Suppliers() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
 
-  const { data: suppliers = [], isLoading, refetch } = useQuery({
+  const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ['suppliers'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -35,55 +35,52 @@ export default function Suppliers() {
             location
           )
         `)
-        .order('created_at', { ascending: false });
+        .order('name');
 
-      if (error) {
-        console.error('Error fetching suppliers:', error);
-        throw error;
-      }
-
-      return data as Supplier[];
+      if (error) throw error;
+      
+      // Transform database fields to match Supplier interface
+      return data.map(supplier => ({
+        id: supplier.id,
+        name: supplier.name,
+        email: supplier.email || '',
+        phone: supplier.phone || '',
+        address: supplier.address || '',
+        category: supplier.category || '',
+        baseId: supplier.base_id || '',
+        createdAt: supplier.created_at || new Date().toISOString()
+      })) as Supplier[];
     }
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['supplier-categories'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('suppliers')
-        .select('category')
-        .not('category', 'is', null);
+  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
 
-      const uniqueCategories = [...new Set(data?.map(s => s.category).filter(Boolean))];
-      return uniqueCategories as string[];
-    }
-  });
+  // Extract unique categories from suppliers
+  const categories = Array.from(
+    new Set(
+      suppliers
+        .map(supplier => supplier.category)
+        .filter(Boolean)
+    )
+  );
 
-  const canManageSuppliers = user?.role === 'direction' || user?.role === 'chef_base';
-
+  // Filter suppliers based on search and category
   const filteredSuppliers = suppliers.filter(supplier => {
     const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          supplier.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         supplier.phone?.includes(searchTerm);
-    const matchesCategory = !selectedCategory || supplier.category === selectedCategory;
+                         supplier.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === '' || supplier.category === selectedCategory;
+    
     return matchesSearch && matchesCategory;
   });
 
-  const handleEditSupplier = (supplier: Supplier) => {
+  const handleEdit = (supplier: Supplier) => {
     setEditingSupplier(supplier);
     setIsDialogOpen(true);
   };
 
-  const handleDeleteSupplier = async (supplierId: string) => {
-    if (!canManageSuppliers) {
-      toast({
-        title: "Accès refusé",
-        description: "Vous n'avez pas les permissions pour supprimer un fournisseur.",
-        variant: "destructive"
-      });
-      return;
-    }
-
+  const handleDelete = async (supplierId: string) => {
     try {
       const { error } = await supabase
         .from('suppliers')
@@ -92,12 +89,12 @@ export default function Suppliers() {
 
       if (error) throw error;
 
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+      
       toast({
         title: "Fournisseur supprimé",
         description: "Le fournisseur a été supprimé avec succès."
       });
-
-      refetch();
     } catch (error) {
       console.error('Error deleting supplier:', error);
       toast({
@@ -108,34 +105,32 @@ export default function Suppliers() {
     }
   };
 
-  const handleDialogClose = () => {
+  const handleCloseDialog = () => {
     setIsDialogOpen(false);
     setEditingSupplier(null);
-    refetch();
+    queryClient.invalidateQueries({ queryKey: ['suppliers'] });
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement des fournisseurs...</p>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
         </div>
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-gray-500">Chargement des fournisseurs...</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
-          <p className="text-gray-600 mt-1">
-            Gestion des fournisseurs et partenaires commerciaux
-          </p>
-        </div>
-        {canManageSuppliers && (
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold text-gray-900">Fournisseurs</h1>
+        {canManage && (
           <Button 
             onClick={() => setIsDialogOpen(true)}
             className="bg-marine-600 hover:bg-marine-700"
@@ -146,101 +141,39 @@ export default function Suppliers() {
         )}
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Fournisseurs</CardTitle>
-            <div className="h-8 w-8 bg-marine-100 rounded-lg flex items-center justify-center">
-              <span className="text-marine-600 font-bold text-sm">{suppliers.length}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{suppliers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Fournisseurs enregistrés
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Catégories</CardTitle>
-            <div className="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <span className="text-blue-600 font-bold text-sm">{categories.length}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{categories.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Catégories différentes
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Actifs</CardTitle>
-            <div className="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <span className="text-green-600 font-bold text-sm">{filteredSuppliers.length}</span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{filteredSuppliers.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Après filtres appliqués
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
       <Card>
         <CardHeader>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher par nom, email ou téléphone..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="min-w-fit"
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filtres
-            </Button>
-          </div>
-          
-          {showFilters && (
-            <SupplierFilters
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
+          <CardTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5" />
+            Rechercher un fournisseur
+          </CardTitle>
+          <div className="flex gap-4">
+            <Input
+              placeholder="Rechercher par nom, email ou téléphone..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
             />
-          )}
+          </div>
         </CardHeader>
-      </Card>
 
-      {/* Suppliers Table */}
-      <Card>
+        <SupplierFilters
+          categories={categories}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+        />
+
         <SupplierTable
           suppliers={filteredSuppliers}
-          onEdit={handleEditSupplier}
-          onDelete={handleDeleteSupplier}
-          canManage={canManageSuppliers}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          canManage={canManage}
         />
       </Card>
 
-      {/* Supplier Dialog */}
       <SupplierDialog
         isOpen={isDialogOpen}
-        onClose={handleDialogClose}
+        onClose={handleCloseDialog}
         supplier={editingSupplier}
       />
     </div>
