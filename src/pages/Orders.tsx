@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Package, Truck } from 'lucide-react';
+import { Plus, Search, Package, Truck, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ import { OrderDialog } from '@/components/orders/OrderDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { BulkPurchaseDialog } from '@/components/orders/BulkPurchaseDialog';
 import { BulkPurchaseTable } from '@/components/orders/BulkPurchaseTable';
+import { BulkDistributionDialog } from '@/components/orders/BulkDistributionDialog';
+import { BulkPurchaseDashboard } from '@/components/orders/BulkPurchaseDashboard';
 import { Order } from '@/types';
 
 export default function Orders() {
@@ -20,7 +22,9 @@ export default function Orders() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [isDistributionDialogOpen, setIsDistributionDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [distributingOrder, setDistributingOrder] = useState<Order | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders'],
@@ -96,8 +100,14 @@ export default function Orders() {
   };
 
   const handleDistribute = (order: Order) => {
-    // TODO: Implement distribution management
-    console.log('Distribute order:', order);
+    setDistributingOrder(order);
+    setIsDistributionDialogOpen(true);
+  };
+
+  const handleDistributionDialogClose = () => {
+    setIsDistributionDialogOpen(false);
+    setDistributingOrder(null);
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
   };
 
   const canManageOrders = user?.role === 'direction' || user?.role === 'chef_base';
@@ -117,8 +127,12 @@ export default function Orders() {
         </div>
       </div>
 
-      <Tabs defaultValue="regular" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span>Tableau de Bord</span>
+          </TabsTrigger>
           <TabsTrigger value="regular" className="flex items-center space-x-2">
             <Package className="h-4 w-4" />
             <span>Commandes Standard</span>
@@ -128,6 +142,10 @@ export default function Orders() {
             <span>Achats Groupés</span>
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="dashboard" className="space-y-6">
+          <BulkPurchaseDashboard />
+        </TabsContent>
 
         <TabsContent value="regular" className="space-y-6">
           <div className="flex items-center justify-end">
@@ -207,7 +225,7 @@ export default function Orders() {
             </div>
 
             <BulkPurchaseTable
-              orders={orders}
+              orders={bulkOrders}
               isLoading={isLoading}
               onEdit={handleEdit}
               onDistribute={handleDistribute}
@@ -227,6 +245,12 @@ export default function Orders() {
         isOpen={isBulkDialogOpen}
         onClose={handleBulkDialogClose}
         order={editingOrder}
+      />
+
+      <BulkDistributionDialog
+        isOpen={isDistributionDialogOpen}
+        onClose={handleDistributionDialogClose}
+        order={distributingOrder}
       />
     </div>
   );
