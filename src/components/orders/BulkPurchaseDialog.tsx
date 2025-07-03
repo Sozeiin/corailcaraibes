@@ -38,6 +38,26 @@ export function BulkPurchaseDialog({ isOpen, onClose, order }: BulkPurchaseDialo
     expectedDeliveryDate: '',
     notes: ''
   });
+
+  // Generate unique order number on dialog open and reset form on close
+  useEffect(() => {
+    if (isOpen && !order) {
+      const generateOrderNumber = () => {
+        const timestamp = Date.now().toString().slice(-6);
+        return `CMD-BULK-${timestamp}`;
+      };
+      setFormData({
+        supplierId: '',
+        orderNumber: generateOrderNumber(),
+        bulkPurchaseType: 'annual',
+        expectedDeliveryDate: '',
+        notes: ''
+      });
+      setItems([{ productName: '', quantity: 0, unitPrice: 0, category: '' }]);
+      setUseTemplate(false);
+      setSelectedTemplateId('');
+    }
+  }, [isOpen, order]);
   
   const [items, setItems] = useState<OrderItemForm[]>([
     { productName: '', quantity: 0, unitPrice: 0, category: '' }
