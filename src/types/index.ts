@@ -55,6 +55,12 @@ export interface Order {
   items: OrderItem[];
   documents: string[];
   createdAt: string;
+  // Bulk purchase fields
+  isBulkPurchase?: boolean;
+  bulkPurchaseType?: string;
+  expectedDeliveryDate?: string;
+  distributionStatus?: 'pending' | 'in_progress' | 'completed';
+  notes?: string;
 }
 
 export interface OrderItem {
@@ -134,6 +140,45 @@ export interface Alert {
   message: string;
   baseId?: string;
   isRead: boolean;
+  createdAt: string;
+}
+
+export interface BulkPurchaseDistribution {
+  id: string;
+  orderId: string;
+  orderItemId: string;
+  baseId: string;
+  allocatedQuantity: number;
+  receivedQuantity: number;
+  distributionDate?: string;
+  status: 'allocated' | 'received' | 'distributed';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BulkPurchaseTemplate {
+  id: string;
+  name: string;
+  description?: string;
+  supplierId?: string;
+  isActive: boolean;
+  frequency: 'annual' | 'quarterly' | 'monthly';
+  createdBy?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: BulkPurchaseTemplateItem[];
+}
+
+export interface BulkPurchaseTemplateItem {
+  id: string;
+  templateId: string;
+  productName: string;
+  estimatedQuantity: number;
+  estimatedUnitPrice: number;
+  category?: string;
+  priority: 'low' | 'medium' | 'high';
+  notes?: string;
   createdAt: string;
 }
 
