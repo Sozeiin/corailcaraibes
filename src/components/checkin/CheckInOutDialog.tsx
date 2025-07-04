@@ -24,6 +24,13 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
   const [selectedBoat, setSelectedBoat] = useState<any>(null);
   const [rentalData, setRentalData] = useState<any>(null);
 
+  // Reset selections when tab changes
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSelectedBoat(null);
+    setRentalData(null);
+  };
+
   const handleCheckInComplete = (data: any) => {
     console.log('Check-in completed:', data);
     // Handle check-in completion
@@ -52,7 +59,7 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="h-full flex flex-col">
             <TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
               <TabsTrigger value="checkin" className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4" />

@@ -92,7 +92,8 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boats-available'] });
+      queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
+      queryClient.invalidateQueries({ queryKey: ['active-rentals'] });
     }
   });
 
@@ -107,7 +108,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boats-available'] });
+      queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
       queryClient.invalidateQueries({ queryKey: ['active-rentals'] });
     }
   });
