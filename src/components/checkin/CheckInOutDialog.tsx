@@ -77,9 +77,16 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
                   <div className="space-y-4">
                     <BoatRentalSelector
                       type="checkin"
-                      onBoatSelect={setSelectedBoat}
-                      onRentalDataChange={setRentalData}
+                      onBoatSelect={(boat) => {
+                        console.log('Boat selected:', boat);
+                        setSelectedBoat(boat);
+                      }}
+                      onRentalDataChange={(data) => {
+                        console.log('Rental data changed:', data);
+                        setRentalData(data);
+                      }}
                     />
+                    {/* Debug: selectedBoat and rentalData */}
                     {selectedBoat && rentalData && (
                       <ChecklistForm
                         boat={selectedBoat}

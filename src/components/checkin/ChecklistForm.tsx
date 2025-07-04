@@ -33,6 +33,8 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [customerEmail, setCustomerEmail] = useState<string>(rentalData?.customer_email || '');
   const [sendEmailReport, setSendEmailReport] = useState<boolean>(!!customerEmail);
 
+  console.log('ChecklistForm rendered - currentStep:', currentStep, 'boat:', boat, 'rentalData:', rentalData);
+
   // Get checklist items
   const { data: availableItems = [] } = useQuery({
     queryKey: ['checklist-items'],
