@@ -46,6 +46,7 @@ export default function Stock() {
         unit: item.unit || '',
         location: item.location || '',
         baseId: item.base_id || '',
+        baseName: item.bases?.name || '',
         lastUpdated: item.last_updated || new Date().toISOString()
       })) as StockItem[];
     }

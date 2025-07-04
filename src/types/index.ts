@@ -76,6 +76,7 @@ export interface StockItem {
   unit: string;
   location: string;
   baseId: string;
+  baseName?: string;
   lastUpdated: string;
 }
 

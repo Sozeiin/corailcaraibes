@@ -58,6 +58,7 @@ export function StockTable({ items, isLoading, onEdit, canManage }: StockTablePr
             <TableHead>Article</TableHead>
             <TableHead>Référence</TableHead>
             <TableHead>Catégorie</TableHead>
+            <TableHead>Base</TableHead>
             <TableHead>Quantité</TableHead>
             <TableHead>Seuil minimum</TableHead>
             <TableHead>Unité</TableHead>
@@ -85,6 +86,11 @@ export function StockTable({ items, isLoading, onEdit, canManage }: StockTablePr
                 <TableCell>
                   {item.category && (
                     <Badge variant="outline">{item.category}</Badge>
+                  )}
+                </TableCell>
+                <TableCell>
+                  {item.baseName && (
+                    <Badge variant="secondary">{item.baseName}</Badge>
                   )}
                 </TableCell>
                 <TableCell className="font-medium">
