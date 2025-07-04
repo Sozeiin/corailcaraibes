@@ -29,6 +29,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Order, Supplier, Base } from '@/types';
+import { ProductAutocomplete } from './ProductAutocomplete';
+import { CreateStockItemDialog } from './CreateStockItemDialog';
 
 interface OrderDialogProps {
   isOpen: boolean;
@@ -55,6 +57,8 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createStockDialogOpen, setCreateStockDialogOpen] = useState(false);
+  const [newProductName, setNewProductName] = useState('');
 
   const form = useForm<OrderFormData>({
     defaultValues: {
@@ -203,6 +207,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
       const itemsData = data.items.map(item => ({
         order_id: orderId,
         product_name: item.productName,
+        reference: item.reference || null,
         quantity: item.quantity,
         unit_price: item.unitPrice
         // total_price is calculated automatically (generated column)
@@ -245,6 +250,24 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
 
   const watchedItems = form.watch('items');
   const totalAmount = calculateTotal(watchedItems);
+
+  const handleCreateStockItem = (productName: string) => {
+    setNewProductName(productName);
+    setCreateStockDialogOpen(true);
+  };
+
+  const handleStockItemCreated = (name: string, reference: string) => {
+    // Find the current item being edited and update it
+    const currentItems = form.getValues('items');
+    const updatedItems = currentItems.map(item => 
+      item.productName === newProductName 
+        ? { ...item, productName: name, reference } 
+        : item
+    );
+    form.setValue('items', updatedItems);
+    setCreateStockDialogOpen(false);
+    setNewProductName('');
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -398,16 +421,44 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
               </div>
 
               {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
                   <FormField
                     control={form.control}
                     name={`items.${index}.productName`}
                     rules={{ required: "Le nom du produit est requis" }}
-                    render={({ field }) => (
+                    render={({ field: fieldProps }) => (
                       <FormItem>
                         <FormLabel>Produit *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Nom du produit" {...field} />
+                          <ProductAutocomplete
+                            value={fieldProps.value}
+                            reference={form.watch(`items.${index}.reference`)}
+                            onValueChange={(productName, reference) => {
+                              fieldProps.onChange(productName);
+                              form.setValue(`items.${index}.reference`, reference);
+                            }}
+                            onCreateNew={handleCreateStockItem}
+                            placeholder="Rechercher ou créer un produit..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`items.${index}.reference`}
+                    render={({ field: fieldProps }) => (
+                      <FormItem>
+                        <FormLabel>Référence</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Réf. auto" 
+                            {...fieldProps}
+                            readOnly
+                            className="bg-muted"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -418,15 +469,15 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                     control={form.control}
                     name={`items.${index}.quantity`}
                     rules={{ required: "La quantité est requise", min: 1 }}
-                    render={({ field }) => (
+                    render={({ field: fieldProps }) => (
                       <FormItem>
                         <FormLabel>Quantité *</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
                             min="1" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            {...fieldProps}
+                            onChange={(e) => fieldProps.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -438,7 +489,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                     control={form.control}
                     name={`items.${index}.unitPrice`}
                     rules={{ required: "Le prix unitaire est requis", min: 0 }}
-                    render={({ field }) => (
+                    render={({ field: fieldProps }) => (
                       <FormItem>
                         <FormLabel>Prix unitaire (€) *</FormLabel>
                         <FormControl>
@@ -446,8 +497,8 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                             type="number" 
                             step="0.01" 
                             min="0"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
+                            {...fieldProps}
+                            onChange={(e) => fieldProps.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -497,6 +548,13 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
             </div>
           </form>
         </Form>
+
+        <CreateStockItemDialog
+          isOpen={createStockDialogOpen}
+          onClose={() => setCreateStockDialogOpen(false)}
+          productName={newProductName}
+          onItemCreated={handleStockItemCreated}
+        />
       </DialogContent>
     </Dialog>
   );

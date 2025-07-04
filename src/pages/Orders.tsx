@@ -46,6 +46,7 @@ export default function Orders() {
         items: (order.order_items || []).map((item: any) => ({
           id: item.id,
           productName: item.product_name,
+          reference: item.reference || '',
           quantity: item.quantity,
           unitPrice: item.unit_price,
           totalPrice: item.total_price
