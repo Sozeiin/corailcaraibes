@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Edit, Save, X, Mail, User, Building } from 'lucide-react';
+import { Users, Edit, Save, X, Mail, User, Building, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -70,8 +71,35 @@ export function UserSettings() {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // First delete from auth.users (this will cascade to profiles via trigger)
+      const { error } = await supabase.auth.admin.deleteUser(id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé avec succès."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'utilisateur.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSave = (userData: any) => {
     updateMutation.mutate({ id: editingUser.id, data: userData });
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const getRoleBadgeVariant = (role: string) => {
@@ -233,14 +261,46 @@ export function UserSettings() {
                         </div>
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingUser(user)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Modifier
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingUser(user)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifier
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer l'utilisateur</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Êtes-vous sûr de vouloir supprimer l'utilisateur "{user.name}" ? 
+                              Cette action est irréversible et toutes les données associées à cet utilisateur seront supprimées.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(user.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               )}

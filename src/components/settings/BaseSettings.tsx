@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Save, X, Building, MapPin, Phone, Mail, User } from 'lucide-react';
+import { Plus, Edit, Save, X, Building, MapPin, Phone, Mail, User, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -83,12 +84,41 @@ export function BaseSettings() {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('bases')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bases'] });
+      toast({
+        title: "Base supprimée",
+        description: "La base a été supprimée avec succès."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la base. Vérifiez qu'elle n'est pas utilisée.",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleSave = (baseData: any) => {
     if (isCreating) {
       createMutation.mutate(baseData);
     } else {
       updateMutation.mutate({ id: editingBase.id, data: baseData });
     }
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const BaseForm = ({ base, onSave, onCancel }: any) => {
@@ -245,14 +275,46 @@ export function BaseSettings() {
                         )}
                       </div>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingBase(base)}
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Modifier
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingBase(base)}
+                      >
+                        <Edit className="h-4 w-4 mr-2" />
+                        Modifier
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Supprimer
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer la base</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Êtes-vous sûr de vouloir supprimer la base "{base.name}" ? 
+                              Cette action est irréversible et tous les utilisateurs, bateaux et données associés seront supprimés.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(base.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               )}
