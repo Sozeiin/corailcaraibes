@@ -162,7 +162,7 @@ export function TechnicianInterventions() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
       {/* Mes Interventions */}
       <Card>
         <CardHeader>
@@ -178,80 +178,140 @@ export function TechnicianInterventions() {
               <p>Aucune intervention assignée</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Intervention</TableHead>
-                  <TableHead>Bateau</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="space-y-3">
+              {/* Version mobile : cartes au lieu de tableau */}
+              <div className="block sm:hidden">
                 {myInterventions.map((intervention) => (
-                  <TableRow 
+                  <div 
                     key={intervention.id}
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="p-4 bg-white border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                     onClick={() => handleRowClick(intervention)}
                   >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {truncateText(intervention.title, 25)}
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{intervention.title}</h4>
+                        <p className="text-xs text-gray-600 truncate">
+                          {intervention.boats?.name} - {intervention.boats?.model}
                         </p>
-                        {intervention.description && (
-                          <p className="text-xs text-gray-600">
-                            {truncateText(intervention.description, 35)}
-                          </p>
+                      </div>
+                      <div className="ml-2 flex-shrink-0">
+                        {getStatusBadge(intervention.status)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        {intervention.scheduled_date ? 
+                          new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                          'Non planifiée'
+                        }
+                      </span>
+                      
+                      <div onClick={(e) => e.stopPropagation()}>
+                        {intervention.status === 'in_progress' || intervention.status === 'scheduled' ? (
+                          <div className="flex items-center gap-1">
+                            <Checkbox
+                              id={`mobile-complete-${intervention.id}`}
+                              checked={false}
+                              onCheckedChange={() => handleCompleteIntervention(intervention.id)}
+                              disabled={completingInterventions.has(intervention.id)}
+                            />
+                            <label 
+                              htmlFor={`mobile-complete-${intervention.id}`}
+                              className="text-xs font-medium cursor-pointer"
+                            >
+                              OK
+                            </label>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500">
+                            {intervention.status === 'completed' ? 'OK' : '-'}
+                          </span>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {truncateText(intervention.boats?.name || 'N/A', 15)}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {truncateText(intervention.boats?.model || 'N/A', 15)}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {intervention.scheduled_date ? 
-                        new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
-                        'N/A'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(intervention.status)}
-                    </TableCell>
-                    <TableCell onClick={(e) => e.stopPropagation()}>
-                      {intervention.status === 'in_progress' || intervention.status === 'scheduled' ? (
-                        <div className="flex items-center gap-1">
-                          <Checkbox
-                            id={`complete-${intervention.id}`}
-                            checked={false}
-                            onCheckedChange={() => handleCompleteIntervention(intervention.id)}
-                            disabled={completingInterventions.has(intervention.id)}
-                          />
-                          <label 
-                            htmlFor={`complete-${intervention.id}`}
-                            className="text-xs font-medium cursor-pointer"
-                          >
-                            OK
-                          </label>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-500">
-                          {intervention.status === 'completed' ? 'OK' : '-'}
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Version desktop : tableau */}
+              <div className="hidden sm:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Intervention</TableHead>
+                      <TableHead className="text-xs">Bateau</TableHead>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-xs">Statut</TableHead>
+                      <TableHead className="text-xs">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {myInterventions.map((intervention) => (
+                      <TableRow 
+                        key={intervention.id}
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleRowClick(intervention)}
+                      >
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {truncateText(intervention.title, 25)}
+                            </p>
+                            {intervention.description && (
+                              <p className="text-xs text-gray-600">
+                                {truncateText(intervention.description, 35)}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {truncateText(intervention.boats?.name || 'N/A', 15)}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {truncateText(intervention.boats?.model || 'N/A', 15)}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {intervention.scheduled_date ? 
+                            new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                            'N/A'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(intervention.status)}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
+                          {intervention.status === 'in_progress' || intervention.status === 'scheduled' ? (
+                            <div className="flex items-center gap-1">
+                              <Checkbox
+                                id={`complete-${intervention.id}`}
+                                checked={false}
+                                onCheckedChange={() => handleCompleteIntervention(intervention.id)}
+                                disabled={completingInterventions.has(intervention.id)}
+                              />
+                              <label 
+                                htmlFor={`complete-${intervention.id}`}
+                                className="text-xs font-medium cursor-pointer"
+                              >
+                                OK
+                              </label>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-500">
+                              {intervention.status === 'completed' ? 'OK' : '-'}
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -271,64 +331,102 @@ export function TechnicianInterventions() {
               <p>Aucune intervention disponible</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Intervention</TableHead>
-                  <TableHead>Bateau</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <div className="space-y-3">
+              {/* Version mobile : cartes au lieu de tableau */}
+              <div className="block sm:hidden">
                 {availableInterventions.map((intervention) => (
-                  <TableRow 
+                  <div 
                     key={intervention.id}
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="p-4 bg-white border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
                     onClick={() => handleRowClick(intervention)}
                   >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {truncateText(intervention.title, 25)}
-                        </p>
-                        {intervention.description && (
-                          <p className="text-xs text-gray-600">
-                            {truncateText(intervention.description, 35)}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium text-sm">
-                          {truncateText(intervention.boats?.name || 'N/A', 15)}
-                        </p>
-                        <p className="text-xs text-gray-600">
-                          {truncateText(intervention.boats?.model || 'N/A', 15)}
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{intervention.title}</h4>
+                        <p className="text-xs text-gray-600 truncate">
+                          {intervention.boats?.name} - {intervention.boats?.model}
                         </p>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {intervention.scheduled_date ? 
-                        new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
-                        'N/A'
-                      }
-                    </TableCell>
-                    <TableCell>
-                      {getStatusBadge(intervention.status)}
-                    </TableCell>
-                  </TableRow>
+                      <div className="ml-2 flex-shrink-0">
+                        {getStatusBadge(intervention.status)}
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-gray-500">
+                        {intervention.scheduled_date ? 
+                          new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                          'Non planifiée'
+                        }
+                      </span>
+                      <span className="text-xs text-blue-600 font-medium">Disponible</span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Version desktop : tableau */}
+              <div className="hidden sm:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-xs">Intervention</TableHead>
+                      <TableHead className="text-xs">Bateau</TableHead>
+                      <TableHead className="text-xs">Date</TableHead>
+                      <TableHead className="text-xs">Statut</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {availableInterventions.map((intervention) => (
+                      <TableRow 
+                        key={intervention.id}
+                        className="cursor-pointer hover:bg-gray-50"
+                        onClick={() => handleRowClick(intervention)}
+                      >
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {truncateText(intervention.title, 25)}
+                            </p>
+                            {intervention.description && (
+                              <p className="text-xs text-gray-600">
+                                {truncateText(intervention.description, 35)}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium text-sm">
+                              {truncateText(intervention.boats?.name || 'N/A', 15)}
+                            </p>
+                            <p className="text-xs text-gray-600">
+                              {truncateText(intervention.boats?.model || 'N/A', 15)}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {intervention.scheduled_date ? 
+                            new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                            'N/A'
+                          }
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(intervention.status)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
 
       {/* Dialog de détails */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto">{/* Dialog mobile-friendly */}
           <DialogHeader>
             <DialogTitle>Détails de l'intervention</DialogTitle>
           </DialogHeader>

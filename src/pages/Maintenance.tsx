@@ -13,33 +13,37 @@ export default function Maintenance() {
   const [activeTab, setActiveTab] = useState('interventions');
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Maintenance</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Maintenance</h1>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
             Gestion complète des interventions et maintenance préventive
           </p>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="interventions" className="flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Interventions
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+          <TabsTrigger value="interventions" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
+            <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Interventions</span>
+            <span className="xs:hidden">Interv.</span>
           </TabsTrigger>
-          <TabsTrigger value="preventive" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Maintenance préventive
+          <TabsTrigger value="preventive" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
+            <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Maintenance préventive</span>
+            <span className="xs:hidden">Prév.</span>
           </TabsTrigger>
-          <TabsTrigger value="schedule" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Planning techniciens
+          <TabsTrigger value="schedule" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Planning techniciens</span>
+            <span className="sm:hidden">Planning</span>
           </TabsTrigger>
-          <TabsTrigger value="history" className="flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Historique
+          <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
+            <History className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden xs:inline">Historique</span>
+            <span className="xs:hidden">Hist.</span>
           </TabsTrigger>
         </TabsList>
 

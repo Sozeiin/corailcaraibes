@@ -33,7 +33,7 @@ export const Layout = ({ children }: LayoutProps) => {
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto p-6">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-6">
             {children}
           </main>
         </div>

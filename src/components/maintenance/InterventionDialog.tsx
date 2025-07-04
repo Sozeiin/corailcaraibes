@@ -269,7 +269,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto">
         <DialogHeader>
           <DialogTitle>
             {intervention ? 'Modifier l\'intervention' : 'Nouvelle intervention'}

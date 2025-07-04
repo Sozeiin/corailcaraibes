@@ -21,11 +21,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
-    <CardContent className="p-6">
+    <CardContent className="p-4 sm:p-6">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm font-medium text-gray-600 truncate">{title}</p>
+          <p className="text-lg sm:text-2xl font-bold text-gray-900">{value}</p>
           {trend && (
             <p className={`text-xs ${trend > 0 ? 'text-green-600' : 'text-red-600'} flex items-center mt-1`}>
               <TrendingUp className="h-3 w-3 mr-1" />
@@ -33,8 +33,8 @@ const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
             </p>
           )}
         </div>
-        <div className={`p-3 rounded-full ${color}`}>
-          <Icon className="h-6 w-6 text-white" />
+        <div className={`p-2 sm:p-3 rounded-full ${color} flex-shrink-0`}>
+          <Icon className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
         </div>
       </div>
     </CardContent>
@@ -42,15 +42,15 @@ const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
 );
 
 const AlertItem = ({ type, message, severity }: any) => (
-  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-    <div className="flex items-center gap-3">
-      <AlertTriangle className={`h-5 w-5 ${
+  <div className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg">
+    <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+      <AlertTriangle className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${
         severity === 'error' ? 'text-red-500' : 
         severity === 'warning' ? 'text-orange-500' : 'text-blue-500'
       }`} />
-      <span className="text-sm">{message}</span>
+      <span className="text-xs sm:text-sm truncate">{message}</span>
     </div>
-    <Badge variant={severity === 'error' ? 'destructive' : 'secondary'}>
+    <Badge variant={severity === 'error' ? 'destructive' : 'secondary'} className="text-xs flex-shrink-0">
       {severity === 'error' ? 'Urgent' : 'Info'}
     </Badge>
   </div>
@@ -212,27 +212,27 @@ export default function Dashboard() {
     }));
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord</h1>
-           <p className="text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Tableau de Bord</h1>
+           <p className="text-gray-600 text-sm sm:text-base">
              Bienvenue, {user?.name} • {user?.role === 'direction' ? 'Vue globale' : baseName || 'Chargement...'}
            </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline">
-            <Calendar className="h-4 w-4 mr-2" />
+        <div className="flex flex-col xs:flex-row gap-2 xs:gap-3">
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Planification
           </Button>
-          <Button className="btn-ocean">
+          <Button className="btn-ocean text-xs sm:text-sm" size="sm">
             Nouveau rapport
           </Button>
         </div>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">{/* Cards modifiées pour 2 colonnes sur mobile */}
         {stats.map((stat, index) => (
           <StatCard key={index} {...stat} />
         ))}
