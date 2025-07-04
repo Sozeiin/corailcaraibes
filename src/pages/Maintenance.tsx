@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Wrench, Calendar, FileText, History } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MaintenanceInterventions } from '@/components/maintenance/MaintenanceInterventions';
+import { TechnicianInterventions } from '@/components/maintenance/TechnicianInterventions';
 import { PreventiveMaintenance } from '@/components/maintenance/PreventiveMaintenance';
 import { MaintenanceSchedule } from '@/components/maintenance/MaintenanceSchedule';
 import { MaintenanceHistory } from '@/components/maintenance/MaintenanceHistory';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Maintenance() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('interventions');
 
   return (
@@ -41,7 +44,11 @@ export default function Maintenance() {
         </TabsList>
 
         <TabsContent value="interventions">
-          <MaintenanceInterventions />
+          {user?.role === 'technicien' ? (
+            <TechnicianInterventions />
+          ) : (
+            <MaintenanceInterventions />
+          )}
         </TabsContent>
 
         <TabsContent value="preventive">
