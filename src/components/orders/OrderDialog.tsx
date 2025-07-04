@@ -188,11 +188,14 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         }
         console.log('Order updated successfully');
 
-        // Delete existing items
-        await supabase
-          .from('order_items')
-          .delete()
-          .eq('order_id', order.id);
+        // Pour les achats groupés, ne pas toucher aux articles
+        if (!order.isBulkPurchase) {
+          // Delete existing items only for regular orders
+          await supabase
+            .from('order_items')
+            .delete()
+            .eq('order_id', order.id);
+        }
       } else {
         // Create new order
         const { data: newOrder, error } = await supabase
@@ -205,20 +208,22 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         orderId = newOrder.id;
       }
 
-      // Insert items
-      const itemsData = data.items.map(item => ({
-        order_id: orderId,
-        product_name: item.productName,
-        quantity: item.quantity,
-        unit_price: item.unitPrice
-        // total_price is calculated automatically (generated column)
-      }));
+      // Insert items only for new orders or existing regular orders
+      if (!order || !order.isBulkPurchase) {
+        const itemsData = data.items.map(item => ({
+          order_id: orderId,
+          product_name: item.productName,
+          quantity: item.quantity,
+          unit_price: item.unitPrice
+          // total_price is calculated automatically (generated column)
+        }));
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(itemsData);
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(itemsData);
 
-      if (itemsError) throw itemsError;
+        if (itemsError) throw itemsError;
+      }
 
       toast({
         title: order ? "Commande modifiée" : "Commande créée",
@@ -257,7 +262,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {order ? 'Modifier la commande' : 'Nouvelle commande'}
+            {order ? (order.isBulkPurchase ? 'Modifier l\'achat groupé' : 'Modifier la commande') : 'Nouvelle commande'}
           </DialogTitle>
         </DialogHeader>
 
@@ -389,100 +394,123 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
               />
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium">Articles de la commande</h3>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => append({ productName: '', quantity: 1, unitPrice: 0 })}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Ajouter un article
-                </Button>
+            {/* Articles section - masqué pour les achats groupés */}
+            {!order?.isBulkPurchase && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Articles de la commande</h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => append({ productName: '', quantity: 1, unitPrice: 0 })}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Ajouter un article
+                  </Button>
+                </div>
+
+                {fields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.productName`}
+                      rules={{ required: "Le nom du produit est requis" }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Produit *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Nom du produit" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.quantity`}
+                      rules={{ required: "La quantité est requise", min: 1 }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantité *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`items.${index}.unitPrice`}
+                      rules={{ required: "Le prix unitaire est requis", min: 0 }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Prix unitaire (€) *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.01" 
+                              min="0"
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="flex items-end">
+                      {fields.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => remove(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <div className="text-right">
+                  <p className="text-lg font-semibold">
+                    Total: {totalAmount.toFixed(2)} €
+                  </p>
+                </div>
               </div>
+            )}
 
-              {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.productName`}
-                    rules={{ required: "Le nom du produit est requis" }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Produit *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Nom du produit" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.quantity`}
-                    rules={{ required: "La quantité est requise", min: 1 }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Quantité *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`items.${index}.unitPrice`}
-                    rules={{ required: "Le prix unitaire est requis", min: 0 }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Prix unitaire (€) *</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            step="0.01" 
-                            min="0"
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex items-end">
-                    {fields.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => remove(index)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
+            {/* Informations en lecture seule pour les achats groupés */}
+            {order?.isBulkPurchase && (
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                <h3 className="text-lg font-medium">Informations de l'achat groupé</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Nombre d'articles</p>
+                    <p className="text-lg">{order.items.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Montant total</p>
+                    <p className="text-lg font-semibold">{order.totalAmount.toFixed(2)} €</p>
                   </div>
                 </div>
-              ))}
-
-              <div className="text-right">
-                <p className="text-lg font-semibold">
-                  Total: {totalAmount.toFixed(2)} €
+                <p className="text-sm text-gray-600">
+                  Pour modifier les articles de cet achat groupé, utilisez la fonction de distribution.
                 </p>
               </div>
-            </div>
+            )}
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button

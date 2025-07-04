@@ -85,11 +85,7 @@ export default function Orders() {
 
   const handleEdit = (order: Order) => {
     setEditingOrder(order);
-    if (order.isBulkPurchase) {
-      setIsBulkDialogOpen(true);
-    } else {
-      setIsDialogOpen(true);
-    }
+    setIsDialogOpen(true);
   };
 
   const handleDialogClose = () => {
@@ -100,7 +96,6 @@ export default function Orders() {
 
   const handleBulkDialogClose = () => {
     setIsBulkDialogOpen(false);
-    setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['orders'] });
   };
 
