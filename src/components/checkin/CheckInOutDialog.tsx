@@ -40,8 +40,8 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0">
+        <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Ship className="h-5 w-5 text-marine-500" />
             Check-in / Check-out Bateau
@@ -51,56 +51,62 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-            <TabsTrigger value="checkin" className="flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Check-in
-            </TabsTrigger>
-            <TabsTrigger value="checkout" className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
-              Check-out
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 mx-6 mt-4 flex-shrink-0">
+              <TabsTrigger value="checkin" className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Check-in
+              </TabsTrigger>
+              <TabsTrigger value="checkout" className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Check-out
+              </TabsTrigger>
+            </TabsList>
 
-          <div className="flex-1 min-h-0 mt-4">
-            <TabsContent value="checkin" className="h-full m-0">
-              <div className="space-y-4 h-full overflow-y-auto pr-2">
-                <BoatRentalSelector
-                  type="checkin"
-                  onBoatSelect={setSelectedBoat}
-                  onRentalDataChange={setRentalData}
-                />
-                {selectedBoat && rentalData && (
-                  <ChecklistForm
-                    boat={selectedBoat}
-                    rentalData={rentalData}
-                    type="checkin"
-                    onComplete={handleCheckInComplete}
-                  />
-                )}
-              </div>
-            </TabsContent>
+            <div className="flex-1 overflow-hidden">
+              <TabsContent value="checkin" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-4">
+                    <BoatRentalSelector
+                      type="checkin"
+                      onBoatSelect={setSelectedBoat}
+                      onRentalDataChange={setRentalData}
+                    />
+                    {selectedBoat && rentalData && (
+                      <ChecklistForm
+                        boat={selectedBoat}
+                        rentalData={rentalData}
+                        type="checkin"
+                        onComplete={handleCheckInComplete}
+                      />
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
 
-            <TabsContent value="checkout" className="h-full m-0">
-              <div className="space-y-4 h-full overflow-y-auto pr-2">
-                <BoatRentalSelector
-                  type="checkout"
-                  onBoatSelect={setSelectedBoat}
-                  onRentalDataChange={setRentalData}
-                />
-                {selectedBoat && rentalData && (
-                  <ChecklistForm
-                    boat={selectedBoat}
-                    rentalData={rentalData}
-                    type="checkout"
-                    onComplete={handleCheckOutComplete}
-                  />
-                )}
-              </div>
-            </TabsContent>
-          </div>
-        </Tabs>
+              <TabsContent value="checkout" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                  <div className="space-y-4">
+                    <BoatRentalSelector
+                      type="checkout"
+                      onBoatSelect={setSelectedBoat}
+                      onRentalDataChange={setRentalData}
+                    />
+                    {selectedBoat && rentalData && (
+                      <ChecklistForm
+                        boat={selectedBoat}
+                        rentalData={rentalData}
+                        type="checkout"
+                        onComplete={handleCheckOutComplete}
+                      />
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+            </div>
+          </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
