@@ -134,6 +134,10 @@ export function PreventiveMaintenance() {
               manuals={maintenanceManuals}
               isLoading={manualsLoading}
               canManage={canManage}
+              onManualUpdated={() => {
+                queryClient.invalidateQueries({ queryKey: ['maintenance-manuals'] });
+                queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
+              }}
             />
           </div>
         </TabsContent>

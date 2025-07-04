@@ -1,5 +1,7 @@
-import React from 'react';
-import { BookOpen, Settings, Eye } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, Settings, Eye, Trash2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -31,9 +33,78 @@ interface ManualMaintenanceTableProps {
   manuals: MaintenanceManual[];
   isLoading: boolean;
   canManage: boolean;
+  onManualUpdated?: () => void;
 }
 
-export function ManualMaintenanceTable({ manuals, isLoading, canManage }: ManualMaintenanceTableProps) {
+export function ManualMaintenanceTable({ manuals, isLoading, canManage, onManualUpdated }: ManualMaintenanceTableProps) {
+  const { toast } = useToast();
+  const [selectedManual, setSelectedManual] = useState<MaintenanceManual | null>(null);
+
+  const handleCreateScheduledMaintenance = async (manual: MaintenanceManual) => {
+    if (!manual.boatId) {
+      toast({
+        title: "Information",
+        description: "Impossible de programmer automatiquement un manuel générique. Associez-le à un bateau spécifique.",
+        variant: "default"
+      });
+      return;
+    }
+
+    try {
+      // Créer les maintenances programmées pour chaque tâche
+      const scheduledMaintenances = manual.tasks.map(task => ({
+        boat_id: manual.boatId,
+        manual_task_id: task.id,
+        task_name: task.name,
+        scheduled_date: new Date(Date.now() + (task.interval * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0] // Approximation en jours
+      }));
+
+      const { error } = await supabase
+        .from('scheduled_maintenance')
+        .insert(scheduledMaintenances);
+
+      if (error) throw error;
+
+      toast({
+        title: "Maintenances programmées",
+        description: `${manual.tasks.length} tâches de maintenance ont été programmées.`
+      });
+
+      onManualUpdated?.();
+    } catch (error) {
+      console.error('Error creating scheduled maintenance:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de programmer les maintenances.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleDeleteManual = async (manual: MaintenanceManual) => {
+    try {
+      const { error } = await supabase
+        .from('maintenance_manuals')
+        .delete()
+        .eq('id', manual.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Manuel supprimé",
+        description: "Le manuel de maintenance a été supprimé."
+      });
+
+      onManualUpdated?.();
+    } catch (error) {
+      console.error('Error deleting manual:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le manuel.",
+        variant: "destructive"
+      });
+    }
+  };
   if (isLoading) {
     return (
       <div className="p-8">
@@ -104,11 +175,22 @@ export function ManualMaintenanceTable({ manuals, isLoading, canManage }: Manual
               {canManage && (
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
-                    <Button variant="ghost" size="sm">
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleCreateScheduledMaintenance(manual)}
+                      title="Programmer les maintenances"
+                    >
                       <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => handleDeleteManual(manual)}
+                      className="text-red-600 hover:text-red-700"
+                      title="Supprimer le manuel"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
