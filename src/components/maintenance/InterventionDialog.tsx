@@ -146,7 +146,14 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       });
       setInterventionParts([]);
     }
-  }, [intervention, form, user, existingParts]);
+  }, [intervention, form, user]);
+
+  // Separate effect for handling existing parts to avoid infinite loop
+  useEffect(() => {
+    if (intervention && existingParts.length > 0) {
+      setInterventionParts(existingParts);
+    }
+  }, [intervention, existingParts]);
 
   const onSubmit = async (data: InterventionFormData) => {
     setIsSubmitting(true);

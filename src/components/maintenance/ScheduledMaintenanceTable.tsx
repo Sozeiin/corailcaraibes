@@ -1,5 +1,7 @@
 import React from 'react';
 import { Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Table,
   TableBody,
@@ -26,6 +28,7 @@ interface ScheduledMaintenanceTableProps {
   maintenances: ScheduledMaintenance[];
   isLoading: boolean;
   canManage: boolean;
+  onInterventionCreated?: () => void;
 }
 
 const statusColors = {
@@ -42,7 +45,52 @@ const statusLabels = {
   cancelled: 'Annulée'
 };
 
-export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }: ScheduledMaintenanceTableProps) {
+export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, onInterventionCreated }: ScheduledMaintenanceTableProps) {
+  const { toast } = useToast();
+
+  const createInterventionFromSchedule = async (maintenance: ScheduledMaintenance) => {
+    try {
+      // Créer l'intervention
+      const { data: intervention, error: interventionError } = await supabase
+        .from('interventions')
+        .insert({
+          title: `Maintenance préventive - ${maintenance.taskName}`,
+          description: `Intervention créée automatiquement depuis la maintenance programmée pour ${maintenance.boatName}`,
+          boat_id: maintenance.boatId,
+          scheduled_date: maintenance.scheduledDate,
+          status: 'scheduled'
+        })
+        .select()
+        .single();
+
+      if (interventionError) throw interventionError;
+
+      // Mettre à jour la maintenance planifiée avec l'ID de l'intervention
+      const { error: updateError } = await supabase
+        .from('scheduled_maintenance')
+        .update({ 
+          intervention_id: intervention.id,
+          status: 'scheduled'
+        })
+        .eq('id', maintenance.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Intervention créée",
+        description: `L'intervention pour "${maintenance.taskName}" a été créée avec succès.`
+      });
+
+      onInterventionCreated?.();
+    } catch (error) {
+      console.error('Error creating intervention:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer l'intervention.",
+        variant: "destructive"
+      });
+    }
+  };
   if (isLoading) {
     return (
       <div className="p-8">
@@ -109,6 +157,7 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }
                     variant="outline"
                     size="sm"
                     className="bg-marine-600 text-white hover:bg-marine-700"
+                    onClick={() => createInterventionFromSchedule(maintenance)}
                   >
                     Créer intervention
                   </Button>

@@ -153,6 +153,10 @@ export function PreventiveMaintenance() {
               maintenances={scheduledMaintenance}
               isLoading={scheduleLoading}
               canManage={canManage}
+              onInterventionCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
+                queryClient.invalidateQueries({ queryKey: ['interventions'] });
+              }}
             />
           </div>
         </TabsContent>
