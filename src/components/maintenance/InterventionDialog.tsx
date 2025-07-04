@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Intervention, Boat, Base } from '@/types';
+import { InterventionPartsManager, InterventionPart } from './InterventionPartsManager';
 
 interface InterventionDialogProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [interventionParts, setInterventionParts] = useState<InterventionPart[]>([]);
 
   const form = useForm<InterventionFormData>({
     defaultValues: {
@@ -90,6 +92,36 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     }
   });
 
+  // Fetch existing intervention parts if editing
+  const { data: existingParts = [] } = useQuery({
+    queryKey: ['intervention-parts', intervention?.id],
+    queryFn: async () => {
+      if (!intervention?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('intervention_parts')
+        .select(`
+          *,
+          stock_items(name, quantity, unit)
+        `)
+        .eq('intervention_id', intervention.id);
+
+      if (error) throw error;
+
+      return data.map(part => ({
+        id: part.id,
+        stockItemId: part.stock_item_id,
+        partName: part.part_name,
+        quantity: part.quantity,
+        unitCost: part.unit_cost,
+        totalCost: part.total_cost,
+        notes: part.notes,
+        availableQuantity: part.stock_items?.quantity
+      }));
+    },
+    enabled: !!intervention?.id
+  });
+
   useEffect(() => {
     if (intervention) {
       form.reset({
@@ -101,6 +133,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         scheduledDate: intervention.scheduledDate.split('T')[0],
         baseId: intervention.baseId,
       });
+      setInterventionParts(existingParts);
     } else {
       form.reset({
         title: '',
@@ -111,8 +144,9 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         scheduledDate: new Date().toISOString().split('T')[0],
         baseId: user?.baseId || '',
       });
+      setInterventionParts([]);
     }
-  }, [intervention, form, user]);
+  }, [intervention, form, user, existingParts]);
 
   const onSubmit = async (data: InterventionFormData) => {
     setIsSubmitting(true);
@@ -128,30 +162,60 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         base_id: data.baseId || null,
       };
 
+      let interventionId: string;
+
       if (intervention) {
+        // Update existing intervention
         const { error } = await supabase
           .from('interventions')
           .update(interventionData)
           .eq('id', intervention.id);
 
         if (error) throw error;
+        interventionId = intervention.id;
 
-        toast({
-          title: "Intervention modifiée",
-          description: "L'intervention a été mise à jour avec succès."
-        });
+        // Delete existing parts
+        await supabase
+          .from('intervention_parts')
+          .delete()
+          .eq('intervention_id', intervention.id);
       } else {
-        const { error } = await supabase
+        // Create new intervention
+        const { data: newIntervention, error } = await supabase
           .from('interventions')
-          .insert(interventionData);
+          .insert(interventionData)
+          .select()
+          .single();
 
         if (error) throw error;
-
-        toast({
-          title: "Intervention créée",
-          description: "La nouvelle intervention a été programmée."
-        });
+        interventionId = newIntervention.id;
       }
+
+      // Insert intervention parts
+      if (interventionParts.length > 0) {
+        const partsData = interventionParts.map(part => ({
+          intervention_id: interventionId,
+          stock_item_id: part.stockItemId || null,
+          part_name: part.partName,
+          quantity: part.quantity,
+          unit_cost: part.unitCost,
+          total_cost: part.totalCost,
+          notes: part.notes || null
+        }));
+
+        const { error: partsError } = await supabase
+          .from('intervention_parts')
+          .insert(partsData);
+
+        if (partsError) throw partsError;
+      }
+
+      toast({
+        title: intervention ? "Intervention modifiée" : "Intervention créée",
+        description: intervention 
+          ? "L'intervention a été mise à jour avec succès."
+          : "La nouvelle intervention a été programmée."
+      });
 
       onClose();
     } catch (error) {
@@ -168,6 +232,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
   const handleClose = () => {
     form.reset();
+    setInterventionParts([]);
     onClose();
   };
 
@@ -307,6 +372,12 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
                 )}
               />
             </div>
+
+            <InterventionPartsManager
+              parts={interventionParts}
+              onPartsChange={setInterventionParts}
+              disabled={isSubmitting}
+            />
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button
