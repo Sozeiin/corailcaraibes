@@ -157,6 +157,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting order data:', data);
       const totalAmount = calculateTotal(data.items);
       
       const orderData = {
@@ -168,17 +169,24 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         delivery_date: data.deliveryDate || null,
         total_amount: totalAmount
       };
+      
+      console.log('Order data to save:', orderData);
 
       let orderId = order?.id;
 
       if (order) {
         // Update existing order
+        console.log('Updating existing order:', order.id);
         const { error } = await supabase
           .from('orders')
           .update(orderData)
           .eq('id', order.id);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating order:', error);
+          throw error;
+        }
+        console.log('Order updated successfully');
 
         // Delete existing items
         await supabase
