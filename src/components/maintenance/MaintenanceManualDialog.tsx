@@ -90,7 +90,7 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
       const { data: manual, error: manualError } = await supabase
         .from('maintenance_manuals')
         .insert({
-          boat_id: data.boatId || null,
+          boat_id: data.boatId === 'generic' ? null : data.boatId || null,
           boat_model: data.boatModel,
           manufacturer: data.manufacturer,
           created_by: user?.id,
@@ -118,7 +118,7 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
       
       toast({
         title: "Manuel créé",
-        description: data.boatId 
+        description: data.boatId && data.boatId !== 'generic'
           ? "Le manuel de maintenance a été créé et les maintenances ont été automatiquement planifiées pour le bateau."
           : "Le manuel de maintenance générique a été créé avec succès."
       });
@@ -163,7 +163,7 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Manuel générique (tous les bateaux)</SelectItem>
+                      <SelectItem value="generic">Manuel générique (tous les bateaux)</SelectItem>
                       {boats.map((boat) => (
                         <SelectItem key={boat.id} value={boat.id}>
                           {boat.name} - {boat.model}
