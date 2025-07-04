@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -22,6 +22,7 @@ import {
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const menuItems = [
   {
@@ -77,6 +78,25 @@ const menuItems = [
 export function AppSidebar() {
   const location = useLocation();
   const { user } = useAuth();
+  const [baseName, setBaseName] = useState<string>('');
+
+  useEffect(() => {
+    const fetchBaseName = async () => {
+      if (user?.baseId && user.role !== 'direction') {
+        const { data } = await supabase
+          .from('bases')
+          .select('name')
+          .eq('id', user.baseId)
+          .single();
+        
+        if (data) {
+          setBaseName(data.name);
+        }
+      }
+    };
+
+    fetchBaseName();
+  }, [user?.baseId, user?.role]);
 
   const filteredMenuItems = menuItems.filter(item => 
     user && item.roles.includes(user.role)
@@ -117,7 +137,7 @@ export function AppSidebar() {
         <div className="mt-8 p-4 bg-white/10 rounded-lg">
           <h3 className="text-white text-sm font-medium mb-2">Base actuelle</h3>
           <p className="text-white/80 text-xs">
-            {user?.role === 'direction' ? 'Toutes les bases' : 'Martinique'}
+            {user?.role === 'direction' ? 'Toutes les bases' : baseName || 'Chargement...'}
           </p>
         </div>
       </SidebarContent>

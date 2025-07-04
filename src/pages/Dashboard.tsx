@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   Users
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
@@ -55,6 +56,25 @@ const AlertItem = ({ type, message, severity }: any) => (
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [baseName, setBaseName] = useState<string>('');
+
+  useEffect(() => {
+    const fetchBaseName = async () => {
+      if (user?.baseId && user.role !== 'direction') {
+        const { data } = await supabase
+          .from('bases')
+          .select('name')
+          .eq('id', user.baseId)
+          .single();
+        
+        if (data) {
+          setBaseName(data.name);
+        }
+      }
+    };
+
+    fetchBaseName();
+  }, [user?.baseId, user?.role]);
 
   const stats = [
     {
@@ -104,9 +124,9 @@ export default function Dashboard() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord</h1>
-          <p className="text-gray-600">
-            Bienvenue, {user?.name} • {user?.role === 'direction' ? 'Vue globale' : 'Base Martinique'}
-          </p>
+           <p className="text-gray-600">
+             Bienvenue, {user?.name} • {user?.role === 'direction' ? 'Vue globale' : baseName || 'Chargement...'}
+           </p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline">
