@@ -121,30 +121,42 @@ export type Database = {
           boat_id: string | null
           checklist_date: string | null
           created_at: string | null
+          customer_signature_date: string | null
+          customer_signature_url: string | null
           id: string
           overall_status:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          signature_date: string | null
+          signature_url: string | null
           technician_id: string | null
         }
         Insert: {
           boat_id?: string | null
           checklist_date?: string | null
           created_at?: string | null
+          customer_signature_date?: string | null
+          customer_signature_url?: string | null
           id?: string
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          signature_date?: string | null
+          signature_url?: string | null
           technician_id?: string | null
         }
         Update: {
           boat_id?: string | null
           checklist_date?: string | null
           created_at?: string | null
+          customer_signature_date?: string | null
+          customer_signature_url?: string | null
           id?: string
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          signature_date?: string | null
+          signature_url?: string | null
           technician_id?: string | null
         }
         Relationships: [
@@ -175,6 +187,8 @@ export type Database = {
           end_date: string
           id: string
           notes: string | null
+          signature_date: string | null
+          signature_url: string | null
           start_date: string
           status: string | null
           total_amount: number | null
@@ -190,6 +204,8 @@ export type Database = {
           end_date: string
           id?: string
           notes?: string | null
+          signature_date?: string | null
+          signature_url?: string | null
           start_date: string
           status?: string | null
           total_amount?: number | null
@@ -205,6 +221,8 @@ export type Database = {
           end_date?: string
           id?: string
           notes?: string | null
+          signature_date?: string | null
+          signature_url?: string | null
           start_date?: string
           status?: string | null
           total_amount?: number | null

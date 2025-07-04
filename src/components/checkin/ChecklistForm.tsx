@@ -4,8 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, AlertTriangle, FileText, Save } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { CheckCircle, AlertTriangle, FileText, Save, Mail } from 'lucide-react';
 import { ChecklistCategory } from './ChecklistCategory';
+import { SignaturePad } from './SignaturePad';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -24,6 +27,11 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [checklistItems, setChecklistItems] = useState<any[]>([]);
   const [generalNotes, setGeneralNotes] = useState('');
   const [overallStatus, setOverallStatus] = useState<'ok' | 'needs_attention' | 'major_issues'>('ok');
+  const [currentStep, setCurrentStep] = useState<'checklist' | 'signatures' | 'email'>('checklist');
+  const [technicianSignature, setTechnicianSignature] = useState<string>('');
+  const [customerSignature, setCustomerSignature] = useState<string>('');
+  const [customerEmail, setCustomerEmail] = useState<string>(rentalData?.customer_email || '');
+  const [sendEmailReport, setSendEmailReport] = useState<boolean>(!!customerEmail);
 
   // Get checklist items
   const { data: availableItems = [] } = useQuery({
@@ -128,6 +136,25 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     }
   });
 
+  // Upload signature mutation
+  const uploadSignatureMutation = useMutation({
+    mutationFn: async ({ signature, fileName }: { signature: string, fileName: string }) => {
+      // Convert base64 to blob
+      const response = await fetch(signature);
+      const blob = await response.blob();
+      
+      const { data, error } = await supabase.storage
+        .from('signatures')
+        .upload(`${user?.id}/${fileName}`, blob, {
+          contentType: 'image/png',
+          upsert: true
+        });
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Create checklist mutation
   const createChecklistMutation = useMutation({
     mutationFn: async (checklistData: any) => {
@@ -158,8 +185,26 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     }
   });
 
-  const handleComplete = async () => {
-    try {
+  // Send email report mutation
+  const sendEmailMutation = useMutation({
+    mutationFn: async ({ checklistId, email }: { checklistId: string, email: string }) => {
+      const { data, error } = await supabase.functions.invoke('send-checklist-report', {
+        body: {
+          checklistId,
+          recipientEmail: email,
+          customerName: rentalData?.customer_name || 'N/A',
+          boatName: boat.name,
+          type
+        }
+      });
+
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const handleNextStep = () => {
+    if (currentStep === 'checklist') {
       // Validate required items for check-in
       if (type === 'checkin') {
         const requiredItems = checklistItems.filter(item => item.is_required);
@@ -168,7 +213,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         if (uncheckedRequired.length > 0) {
           toast({
             title: "Vérification incomplète",
-            description: "Tous les éléments obligatoires doivent être vérifiés avant le check-in.",
+            description: "Tous les éléments obligatoires doivent être vérifiés avant de continuer.",
             variant: "destructive"
           });
           return;
@@ -184,20 +229,64 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           return;
         }
       }
+      setCurrentStep('signatures');
+    } else if (currentStep === 'signatures') {
+      if (!technicianSignature) {
+        toast({
+          title: "Signature manquante",
+          description: "La signature du technicien est obligatoire.",
+          variant: "destructive"
+        });
+        return;
+      }
+      setCurrentStep('email');
+    }
+  };
+
+  const handleComplete = async () => {
+    try {
+      let technicianSignatureUrl = '';
+      let customerSignatureUrl = '';
+
+      // Upload signatures
+      if (technicianSignature) {
+        const techSignatureData = await uploadSignatureMutation.mutateAsync({
+          signature: technicianSignature,
+          fileName: `technician-${Date.now()}.png`
+        });
+        technicianSignatureUrl = techSignatureData.path;
+      }
+
+      if (customerSignature) {
+        const custSignatureData = await uploadSignatureMutation.mutateAsync({
+          signature: customerSignature,
+          fileName: `customer-${Date.now()}.png`
+        });
+        customerSignatureUrl = custSignatureData.path;
+      }
 
       // Create checklist
       const checklistData = {
         boat_id: boat.id,
         technician_id: user?.id,
         checklist_date: new Date().toISOString().split('T')[0],
-        overall_status: overallStatus
+        overall_status: overallStatus,
+        signature_url: technicianSignatureUrl,
+        signature_date: technicianSignature ? new Date().toISOString() : null,
+        customer_signature_url: customerSignatureUrl || null,
+        customer_signature_date: customerSignature ? new Date().toISOString() : null
       };
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
 
       if (type === 'checkin') {
         // Create rental first, then update boat status
-        await createRentalMutation.mutateAsync(rentalData);
+        const rentalDataWithSignature = {
+          ...rentalData,
+          signature_url: customerSignatureUrl || null,
+          signature_date: customerSignature ? new Date().toISOString() : null
+        };
+        await createRentalMutation.mutateAsync(rentalDataWithSignature);
         await updateBoatStatusMutation.mutateAsync({ 
           boatId: boat.id, 
           status: 'rented' 
@@ -222,6 +311,27 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           title: "Check-out terminé",
           description: `Check-out réalisé pour ${boat.name}. ${overallStatus === 'ok' ? 'Le bateau est de nouveau disponible.' : 'Le bateau nécessite une maintenance.'}`,
         });
+      }
+
+      // Send email report if requested
+      if (sendEmailReport && customerEmail) {
+        try {
+          await sendEmailMutation.mutateAsync({
+            checklistId: checklist.id,
+            email: customerEmail
+          });
+          toast({
+            title: "Email envoyé",
+            description: "Le rapport a été envoyé par email au client.",
+          });
+        } catch (emailError) {
+          console.error('Email sending failed:', emailError);
+          toast({
+            title: "Erreur d'envoi",
+            description: "Le rapport n'a pas pu être envoyé par email, mais l'inspection est enregistrée.",
+            variant: "destructive"
+          });
+        }
       }
 
       onComplete({
@@ -264,6 +374,129 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
   const isComplete = checklistItems.length > 0 && checklistItems.every(item => item.status !== 'not_checked');
 
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'checklist':
+        return (
+          <div className="space-y-4">
+            <div className="space-y-4">
+              {Object.entries(categorizedItems).map(([category, items]) => (
+                <ChecklistCategory
+                  key={category}
+                  category={category}
+                  items={items.map(item => ({
+                    ...item,
+                    status: checklistItems.find(ci => ci.id === item.id)?.status || 'not_checked',
+                    notes: checklistItems.find(ci => ci.id === item.id)?.notes || ''
+                  }))}
+                  onItemStatusChange={handleItemStatusChange}
+                  onItemNotesChange={handleItemNotesChange}
+                />
+              ))}
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes générales</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={generalNotes}
+                  onChange={(e) => setGeneralNotes(e.target.value)}
+                  placeholder="Notes générales sur l'état du bateau..."
+                  rows={4}
+                />
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      case 'signatures':
+        return (
+          <div className="space-y-4">
+            <SignaturePad
+              title="Signature du technicien"
+              description="Signature obligatoire pour valider l'inspection"
+              onSignature={setTechnicianSignature}
+              required={true}
+            />
+            
+            <SignaturePad
+              title="Signature du client"
+              description="Signature du client pour accepter l'état du bateau"
+              onSignature={setCustomerSignature}
+              required={false}
+            />
+          </div>
+        );
+
+      case 'email':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Envoi du rapport par email
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="sendEmail"
+                  checked={sendEmailReport}
+                  onChange={(e) => setSendEmailReport(e.target.checked)}
+                  className="rounded"
+                />
+                <Label htmlFor="sendEmail">
+                  Envoyer le rapport par email au client
+                </Label>
+              </div>
+              
+              {sendEmailReport && (
+                <div>
+                  <Label htmlFor="customerEmail">Email du client</Label>
+                  <Input
+                    id="customerEmail"
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="email@exemple.com"
+                  />
+                </div>
+              )}
+
+              <div className="text-sm text-muted-foreground">
+                <p>Le rapport comprendra :</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>Détail de l'inspection avec tous les éléments vérifiés</li>
+                  <li>État général du bateau</li>
+                  <li>Notes et observations</li>
+                  <li>Signatures électroniques</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 'checklist':
+        return type === 'checkin' ? 'Inspection pré-location' : 'Inspection post-location';
+      case 'signatures':
+        return 'Signatures électroniques';
+      case 'email':
+        return 'Rapport final';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -271,7 +504,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              {type === 'checkin' ? 'Inspection pré-location' : 'Inspection post-location'}
+              {getStepTitle()}
             </div>
             {getStatusBadge()}
           </CardTitle>
@@ -285,48 +518,69 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
               <strong>Client:</strong> {rentalData?.customer_name || 'N/A'}
             </div>
           </div>
+          
+          {/* Progress indicator */}
+          <div className="flex items-center space-x-2 mt-4">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+              currentStep === 'checklist' ? 'bg-marine-500 text-white' : 
+              currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500 text-white' : 
+              'bg-gray-200'
+            }`}>
+              1
+            </div>
+            <div className={`h-1 w-12 ${currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500' : 'bg-gray-200'}`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+              currentStep === 'signatures' ? 'bg-marine-500 text-white' : 
+              currentStep === 'email' ? 'bg-green-500 text-white' : 
+              'bg-gray-200'
+            }`}>
+              2
+            </div>
+            <div className={`h-1 w-12 ${currentStep === 'email' ? 'bg-green-500' : 'bg-gray-200'}`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+              currentStep === 'email' ? 'bg-marine-500 text-white' : 'bg-gray-200'
+            }`}>
+              3
+            </div>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="space-y-4">
-        {Object.entries(categorizedItems).map(([category, items]) => (
-          <ChecklistCategory
-            key={category}
-            category={category}
-            items={items.map(item => ({
-              ...item,
-              status: checklistItems.find(ci => ci.id === item.id)?.status || 'not_checked',
-              notes: checklistItems.find(ci => ci.id === item.id)?.notes || ''
-            }))}
-            onItemStatusChange={handleItemStatusChange}
-            onItemNotesChange={handleItemNotesChange}
-          />
-        ))}
-      </div>
+      {renderStepContent()}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notes générales</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Textarea
-            value={generalNotes}
-            onChange={(e) => setGeneralNotes(e.target.value)}
-            placeholder="Notes générales sur l'état du bateau..."
-            rows={4}
-          />
-        </CardContent>
-      </Card>
-
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button
-          onClick={handleComplete}
-          disabled={!isComplete}
-          className="bg-marine-500 hover:bg-marine-600"
-        >
-          <Save className="h-4 w-4 mr-2" />
-          {type === 'checkin' ? 'Finaliser le check-in' : 'Finaliser le check-out'}
-        </Button>
+      <div className="flex justify-between pt-4 border-t">
+        {currentStep !== 'checklist' && (
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (currentStep === 'signatures') setCurrentStep('checklist');
+              if (currentStep === 'email') setCurrentStep('signatures');
+            }}
+          >
+            Précédent
+          </Button>
+        )}
+        
+        <div className="ml-auto">
+          {currentStep === 'email' ? (
+            <Button
+              onClick={handleComplete}
+              disabled={sendEmailReport && !customerEmail}
+              className="bg-marine-500 hover:bg-marine-600"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {type === 'checkin' ? 'Finaliser le check-in' : 'Finaliser le check-out'}
+            </Button>
+          ) : (
+            <Button
+              onClick={handleNextStep}
+              disabled={currentStep === 'checklist' && !isComplete}
+              className="bg-marine-500 hover:bg-marine-600"
+            >
+              Suivant
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
