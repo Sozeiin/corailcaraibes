@@ -108,6 +108,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boats-available'] });
+      queryClient.invalidateQueries({ queryKey: ['active-rentals'] });
     }
   });
 
