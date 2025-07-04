@@ -18,7 +18,6 @@ import {
   Package, 
   Wrench, 
   ShoppingCart, 
-  AlertTriangle,
   Settings
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -59,12 +58,6 @@ const menuItems = [
     title: 'Maintenance',
     url: '/maintenance',
     icon: Wrench,
-    roles: ['direction', 'chef_base', 'technicien']
-  },
-  {
-    title: 'Alertes',
-    url: '/alerts',
-    icon: AlertTriangle,
     roles: ['direction', 'chef_base', 'technicien']
   },
   {
