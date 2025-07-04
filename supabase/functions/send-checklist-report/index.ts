@@ -24,6 +24,8 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { checklistId, recipientEmail, customerName, boatName, type }: ChecklistReportRequest = await req.json();
 
+    console.log('Received email request:', { checklistId, recipientEmail, customerName, boatName, type });
+
     if (!checklistId || !recipientEmail) {
       throw new Error('Checklist ID and recipient email are required');
     }
@@ -50,15 +52,26 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     if (checklistError) {
+      console.error('Checklist fetch error:', checklistError);
       throw new Error(`Failed to fetch checklist: ${checklistError.message}`);
     }
 
+    console.log('Checklist data fetched successfully:', checklist?.id);
+
     // Initialize Resend
-    const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) {
+      throw new Error('RESEND_API_KEY is not configured');
+    }
+    
+    console.log('Resend API key found, initializing...');
+    const resend = new Resend(resendApiKey);
 
     // Generate HTML report
+    console.log('Generating HTML report...');
     const htmlReport = generateHTMLReport(checklist, boatName, customerName, type);
 
+    console.log('Sending email to:', recipientEmail);
     // Send email
     const emailResponse = await resend.emails.send({
       from: "Marina Reports <noreply@marina.com>",
