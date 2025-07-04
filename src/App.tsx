@@ -14,6 +14,7 @@ import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
 import Maintenance from "./pages/Maintenance";
 import Notifications from "./pages/Notifications";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -115,10 +116,7 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <div className="p-6">
-              <h1 className="text-3xl font-bold">Paramètres</h1>
-              <p className="text-gray-600 mt-2">Module en cours de développement...</p>
-            </div>
+            <Settings />
           </ProtectedRoute>
         }
       />
