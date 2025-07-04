@@ -166,6 +166,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         technician_id: data.technicianId || null,
         status: data.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
         scheduled_date: data.scheduledDate,
+        completed_date: data.status === 'completed' ? new Date().toISOString().split('T')[0] : null,
         base_id: data.baseId || null,
       };
 
