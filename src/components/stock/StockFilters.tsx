@@ -20,6 +20,7 @@ interface StockFiltersProps {
   onBaseChange: (baseId: string) => void;
   showLowStock: boolean;
   onLowStockChange: (show: boolean) => void;
+  userRole?: string;
 }
 
 export function StockFilters({ 
@@ -30,7 +31,8 @@ export function StockFilters({
   selectedBase,
   onBaseChange,
   showLowStock,
-  onLowStockChange
+  onLowStockChange,
+  userRole
 }: StockFiltersProps) {
   const clearFilters = () => {
     onCategoryChange('all');
@@ -39,6 +41,7 @@ export function StockFilters({
   };
 
   const hasActiveFilters = selectedCategory !== 'all' || selectedBase !== 'all' || showLowStock;
+  const showBaseFilter = userRole === 'direction' || userRole === 'chef_base';
 
   return (
     <div className="border-t pt-4 space-y-4">
@@ -62,19 +65,21 @@ export function StockFilters({
           </SelectContent>
         </Select>
 
-        <Select value={selectedBase} onValueChange={onBaseChange}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Toutes les bases" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les bases</SelectItem>
-            {bases.map((base) => (
-              <SelectItem key={base.id} value={base.id}>
-                {base.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showBaseFilter && (
+          <Select value={selectedBase} onValueChange={onBaseChange}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Toutes les bases" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Toutes les bases</SelectItem>
+              {bases.map((base) => (
+                <SelectItem key={base.id} value={base.id}>
+                  {base.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="flex items-center space-x-2">
           <Checkbox 
@@ -118,7 +123,7 @@ export function StockFilters({
               </button>
             </Badge>
           )}
-          {selectedBase && selectedBase !== 'all' && (
+          {showBaseFilter && selectedBase && selectedBase !== 'all' && (
             <Badge variant="secondary" className="flex items-center gap-1">
               {bases.find(b => b.id === selectedBase)?.name}
               <button

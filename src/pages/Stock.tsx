@@ -11,11 +11,14 @@ import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MobileTable } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { StockItem } from '@/types';
 
 export default function Stock() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBase, setSelectedBase] = useState('all');
@@ -130,31 +133,75 @@ export default function Stock() {
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
 
+  // Colonnes pour la vue mobile
+  const mobileColumns = [
+    {
+      key: 'name',
+      label: 'Article',
+      render: (value: string, item: StockItem) => (
+        <div className="flex items-center gap-2">
+          {item.quantity <= item.minThreshold && (
+            <AlertTriangle className="h-4 w-4 text-orange-500" />
+          )}
+          <span className="font-medium">{value}</span>
+        </div>
+      )
+    },
+    {
+      key: 'reference',
+      label: 'Référence',
+      render: (value: string) => value || '-'
+    },
+    {
+      key: 'quantity',
+      label: 'Quantité',
+      render: (value: number, item: StockItem) => (
+        <span className={`font-medium ${item.quantity <= item.minThreshold ? 'text-orange-600' : ''}`}>
+          {value} {item.unit || ''}
+        </span>
+      )
+    },
+    {
+      key: 'category',
+      label: 'Catégorie',
+      render: (value: string) => value || '-'
+    },
+    {
+      key: 'location',
+      label: 'Emplacement',
+      render: (value: string) => value || '-'
+    }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion du Stock</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion du Stock</h1>
+          <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">
             Suivi des articles et approvisionnements
           </p>
         </div>
         {canManageStock && (
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)}
-              className="border-marine-200 text-marine-700 hover:bg-marine-50"
+              className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
+              size={isMobile ? "sm" : "default"}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Importer Excel
+              <span className="hidden xs:inline">Importer Excel</span>
+              <span className="xs:hidden">Import</span>
             </Button>
             <Button
               onClick={() => setIsDialogOpen(true)}
-              className="bg-marine-600 hover:bg-marine-700"
+              className="bg-marine-600 hover:bg-marine-700 text-sm"
+              size={isMobile ? "sm" : "default"}
             >
               <Plus className="h-4 w-4 mr-2" />
-              Ajouter un article
+              <span className="hidden xs:inline">Ajouter un article</span>
+              <span className="xs:hidden">Ajouter</span>
             </Button>
           </div>
         )}
@@ -177,7 +224,7 @@ export default function Stock() {
       )}
 
       <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
+        <div className="p-3 sm:p-6 border-b">
           <div className="flex items-center space-x-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
@@ -199,17 +246,29 @@ export default function Stock() {
             onBaseChange={setSelectedBase}
             showLowStock={showLowStock}
             onLowStockChange={setShowLowStock}
+            userRole={user?.role}
           />
         </div>
 
-        <StockTable
-          items={filteredItems}
-          isLoading={isLoading}
-          onEdit={handleEdit}
-          onDuplicate={handleDuplicate}
-          onUpdateQuantity={handleUpdateQuantity}
-          canManage={canManageStock}
-        />
+        <div className="p-3 sm:p-0">
+          {isMobile ? (
+            <MobileTable
+              data={filteredItems}
+              columns={mobileColumns}
+              onRowClick={canManageStock ? handleEdit : undefined}
+              keyField="id"
+            />
+          ) : (
+            <StockTable
+              items={filteredItems}
+              isLoading={isLoading}
+              onEdit={handleEdit}
+              onDuplicate={handleDuplicate}
+              onUpdateQuantity={handleUpdateQuantity}
+              canManage={canManageStock}
+            />
+          )}
+        </div>
       </div>
 
       <StockDialog
