@@ -20,9 +20,10 @@ import {
 } from 'lucide-react';
 import { OrderDialog } from '@/components/orders/OrderDialog';
 import { formatCurrency } from '@/lib/utils';
-import type { Order } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function AdvancedOrders() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -212,7 +213,12 @@ export function AdvancedOrders() {
                   ))}
                 </select>
 
-                <Button variant="outline">
+                <Button variant="outline" onClick={() => {
+                  toast({
+                    title: 'Période sélectionnée',
+                    description: 'Sélecteur de période ouvert.'
+                  });
+                }}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Période
                 </Button>

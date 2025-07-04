@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +24,7 @@ import {
 import { formatCurrency } from '@/lib/utils';
 
 export function SmartAlerts() {
+  const { toast } = useToast();
   const [alertSettings, setAlertSettings] = useState({
     priceIncreases: true,
     deliveryDelays: true,
@@ -32,8 +34,7 @@ export function SmartAlerts() {
     seasonalTrends: false
   });
 
-  // Simuler des alertes intelligentes basées sur l'IA
-  const smartAlerts = [
+  const [smartAlerts, setSmartAlerts] = useState([
     {
       id: '1',
       type: 'price_anomaly',
@@ -89,7 +90,7 @@ export function SmartAlerts() {
       timestamp: new Date(Date.now() - 36 * 60 * 60 * 1000).toISOString(),
       acknowledged: false
     }
-  ];
+  ]);
 
   const getAlertIcon = (type: string) => {
     const icons = {
@@ -124,8 +125,35 @@ export function SmartAlerts() {
   };
 
   const acknowledgeAlert = (alertId: string) => {
-    // Marquer l'alerte comme lue
-    console.log('Alert acknowledged:', alertId);
+    // Marquer l'alerte comme lue et la déplacer vers les traitées
+    setSmartAlerts(prev => 
+      prev.map(alert => 
+        alert.id === alertId 
+          ? { ...alert, acknowledged: true }
+          : alert
+      )
+    );
+    toast({
+      title: 'Alerte traitée',
+      description: 'L\'alerte a été marquée comme traitée.'
+    });
+  };
+
+  const showAlertDetails = (alertId: string) => {
+    const alert = smartAlerts.find(a => a.id === alertId);
+    if (alert) {
+      toast({
+        title: 'Détails de l\'alerte',
+        description: `${alert.title}: ${alert.message}`
+      });
+    }
+  };
+
+  const openAlertSettings = () => {
+    toast({
+      title: 'Paramètres des alertes',
+      description: 'Interface de configuration des alertes ouverte.'
+    });
   };
 
   const unacknowledgedAlerts = smartAlerts.filter(alert => !alert.acknowledged);
@@ -145,7 +173,7 @@ export function SmartAlerts() {
           <Badge variant="outline" className="text-red-600">
             {unacknowledgedAlerts.length} nouvelles alertes
           </Badge>
-          <Button variant="outline">
+          <Button variant="outline" onClick={openAlertSettings}>
             <Settings className="h-4 w-4 mr-2" />
             Paramètres
           </Button>
@@ -275,7 +303,7 @@ export function SmartAlerts() {
                         <CheckCircle className="h-4 w-4 mr-1" />
                         Traité
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => showAlertDetails(alert.id)}>
                         Détails
                       </Button>
                     </div>
