@@ -134,14 +134,6 @@ export function BulkPurchaseTable({ orders, isLoading, onEdit, onDistribute, can
               {canManage && (
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(order)}
-                      title="Voir les détails"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
                     {order.status === 'delivered' && order.distributionStatus !== 'completed' && (
                       <Button
                         variant="ghost"
