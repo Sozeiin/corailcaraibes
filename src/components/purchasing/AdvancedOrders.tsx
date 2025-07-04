@@ -21,6 +21,7 @@ import {
 import { OrderDialog } from '@/components/orders/OrderDialog';
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { Order } from '@/types';
 
 export function AdvancedOrders() {
   const { toast } = useToast();

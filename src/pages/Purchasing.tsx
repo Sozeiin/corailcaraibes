@@ -14,21 +14,14 @@ import {
   Globe,
   Settings
 } from 'lucide-react';
-import { PurchasingDashboard } from '@/components/purchasing/PurchasingDashboard';
 import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
 import { SupplierManagement } from '@/components/purchasing/SupplierManagement';
-import { BulkPurchasing } from '@/components/purchasing/BulkPurchasing';
 import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
 import { MobileScanning } from '@/components/purchasing/MobileScanning';
-import { PurchasingAnalytics } from '@/components/purchasing/PurchasingAnalytics';
-import { ExternalIntegrations } from '@/components/purchasing/ExternalIntegrations';
-import { WorkflowManager } from '@/components/purchasing/WorkflowManager';
-import { TemplateManager } from '@/components/purchasing/TemplateManager';
-import { SmartAlerts } from '@/components/purchasing/SmartAlerts';
 
 export default function Purchasing() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState('orders');
 
   // Restrict access to direction only
   if (user?.role !== 'direction') {
@@ -36,30 +29,6 @@ export default function Purchasing() {
   }
 
   const tabs = [
-    {
-      id: 'dashboard',
-      label: 'Tableau de Bord',
-      icon: BarChart3,
-      component: PurchasingDashboard
-    },
-    {
-      id: 'alerts',
-      label: 'Alertes IA',
-      icon: TrendingUp,
-      component: SmartAlerts
-    },
-    {
-      id: 'workflows',
-      label: 'Workflows',
-      icon: Settings,
-      component: WorkflowManager
-    },
-    {
-      id: 'templates',
-      label: 'Templates',
-      icon: Package,
-      component: TemplateManager
-    },
     {
       id: 'orders',
       label: 'Commandes',
@@ -73,14 +42,8 @@ export default function Purchasing() {
       component: SupplierManagement
     },
     {
-      id: 'bulk',
-      label: 'Achats Groupés',
-      icon: Package,
-      component: BulkPurchasing
-    },
-    {
       id: 'logistics',
-      label: 'Logistique',
+      label: 'Réception & Redistribution',
       icon: Truck,
       component: InterBaseLogistics
     },
@@ -89,18 +52,6 @@ export default function Purchasing() {
       label: 'Scanner',
       icon: QrCode,
       component: MobileScanning
-    },
-    {
-      id: 'analytics',
-      label: 'Analytics',
-      icon: TrendingUp,
-      component: PurchasingAnalytics
-    },
-    {
-      id: 'integrations',
-      label: 'Intégrations',
-      icon: Globe,
-      component: ExternalIntegrations
     }
   ];
 
@@ -109,15 +60,15 @@ export default function Purchasing() {
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <ShoppingCart className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Module Achats Avancé</h1>
+          <h1 className="text-3xl font-bold">Module Achats</h1>
         </div>
         <p className="text-muted-foreground">
-          Gestion complète des achats, fournisseurs et logistique inter-bases
+          Suivi des commandes, réception et redistribution de marchandises
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-11 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto p-1">
           {tabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
@@ -139,7 +90,7 @@ export default function Purchasing() {
                   {tab.label}
                 </CardTitle>
                 <CardDescription>
-                  Module {tab.label.toLowerCase()} pour la gestion avancée des achats
+                  Module {tab.label.toLowerCase()} pour la gestion des achats
                 </CardDescription>
               </CardHeader>
               <CardContent>
