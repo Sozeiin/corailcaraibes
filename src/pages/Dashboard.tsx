@@ -229,7 +229,10 @@ export default function Dashboard() {
             Planification
           </Button>
           <Button 
-            onClick={() => setCheckInOutDialogOpen(true)}
+            onClick={() => {
+              console.log('Check-in/Check-out button clicked');
+              setCheckInOutDialogOpen(true);
+            }}
             className="btn-ocean text-xs sm:text-sm" 
             size="sm"
           >
