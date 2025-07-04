@@ -48,7 +48,7 @@ export function OrderFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les statuts</SelectItem>
-            {statuses.filter(status => status && typeof status === 'string').map((status) => (
+            {statuses.filter(status => status && status.trim() !== '').map((status) => (
               <SelectItem key={status} value={status}>
                 {statusLabels[status as keyof typeof statusLabels] || status}
               </SelectItem>
