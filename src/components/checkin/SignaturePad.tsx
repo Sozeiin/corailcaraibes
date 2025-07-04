@@ -15,11 +15,13 @@ interface SignaturePadProps {
 export function SignaturePad({ title, description, onSignature, required = true }: SignaturePadProps) {
   const sigPadRef = useRef<SignatureCanvas>(null);
   const [signed, setSigned] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(true);
 
   const clearSignature = () => {
     if (sigPadRef.current) {
       sigPadRef.current.clear();
       setSigned(false);
+      setIsEmpty(true);
     }
   };
 
@@ -32,8 +34,8 @@ export function SignaturePad({ title, description, onSignature, required = true 
   };
 
   const handleEnd = () => {
-    if (sigPadRef.current && !sigPadRef.current.isEmpty()) {
-      setSigned(false);
+    if (sigPadRef.current) {
+      setIsEmpty(sigPadRef.current.isEmpty());
     }
   };
 
@@ -82,7 +84,7 @@ export function SignaturePad({ title, description, onSignature, required = true 
               type="button"
               size="sm"
               onClick={saveSignature}
-              disabled={sigPadRef.current?.isEmpty() ?? true}
+              disabled={isEmpty}
               className={signed ? "bg-green-600 hover:bg-green-700" : ""}
             >
               {signed ? (
