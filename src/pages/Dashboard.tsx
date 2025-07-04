@@ -141,12 +141,8 @@ export default function Dashboard() {
   });
 
   // Calcul des statistiques
-  const myInterventions = interventions.filter(i => 
-    user?.role === 'technicien' ? i.technician_id === user.id : true
-  );
-  const availableInterventions = interventions.filter(i => 
-    user?.role === 'technicien' ? i.technician_id === null && i.base_id === user.baseId : true
-  );
+  const myInterventions = user?.role === 'technicien' ? interventions.filter(i => i.technician_id === user.id) : [];
+  const availableInterventions = user?.role === 'technicien' ? interventions.filter(i => i.technician_id === null && i.base_id === user.baseId) : [];
   const pendingInterventions = interventions.filter(i => 
     i.status === 'scheduled' || i.status === 'in_progress'
   );

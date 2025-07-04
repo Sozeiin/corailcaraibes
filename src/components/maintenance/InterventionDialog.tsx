@@ -81,7 +81,12 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   const { data: technicians = [], isLoading: techniciansLoading } = useQuery({
     queryKey: ['technicians', user?.role, user?.baseId],
     queryFn: async () => {
-      if (!user) return [];
+      if (!user) {
+        console.log('No user found for technicians query');
+        return [];
+      }
+
+      console.log('Fetching technicians for user:', { role: user.role, baseId: user.baseId });
 
       let query = supabase
         .from('profiles')
@@ -92,13 +97,19 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       // Filtrage selon le rôle de l'utilisateur
       if (user.role === 'chef_base') {
         // Chef de base : seulement les techniciens de sa base
+        console.log('Filtering technicians for chef_base, baseId:', user.baseId);
         query = query.eq('base_id', user.baseId);
       }
       // Direction : tous les techniciens (pas de filtre)
       // Technicien : tous les techniciens pour information
 
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching technicians:', error);
+        throw error;
+      }
+      
+      console.log('Fetched technicians:', data);
       return data || [];
     },
     enabled: !!user
