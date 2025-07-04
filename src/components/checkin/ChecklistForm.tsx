@@ -195,7 +195,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
 
       if (type === 'checkin') {
-        // Create rental and update boat status
+        // Create rental first, then update boat status
         await createRentalMutation.mutateAsync(rentalData);
         await updateBoatStatusMutation.mutateAsync({ 
           boatId: boat.id, 

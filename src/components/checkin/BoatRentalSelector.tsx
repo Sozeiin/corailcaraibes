@@ -36,32 +36,60 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
   const [notes, setNotes] = useState('');
   const [selectedRental, setSelectedRental] = useState<any>(null);
 
-  // Get available boats
-  const { data: boats = [] } = useQuery({
-    queryKey: ['boats-available', user?.baseId],
+  // Get boats for checkin/checkout
+  const { data: boats = [], refetch: refetchBoats } = useQuery({
+    queryKey: ['boats-checkin-checkout', user?.baseId, type],
     queryFn: async () => {
       if (!user) return [];
 
-      let query = supabase
-        .from('boats')
-        .select('*')
-        .order('name');
-
-      if (user.role !== 'direction') {
-        query = query.eq('base_id', user.baseId);
-      }
-
       if (type === 'checkin') {
-        query = query.eq('status', 'available');
-      } else {
-        query = query.eq('status', 'rented');
-      }
+        // For check-in: get boats with status 'available'
+        let query = supabase
+          .from('boats')
+          .select('*')
+          .eq('status', 'available')
+          .order('name');
 
-      const { data, error } = await query;
-      if (error) throw error;
-      return data || [];
+        if (user.role !== 'direction') {
+          query = query.eq('base_id', user.baseId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        return data || [];
+      } else {
+        // For check-out: get boats that have active rentals
+        let query = supabase
+          .from('boat_rentals')
+          .select(`
+            boat_id,
+            boats!inner(*)
+          `)
+          .eq('status', 'confirmed')
+          .order('boats.name');
+
+        if (user.role !== 'direction') {
+          query = query.eq('boats.base_id', user.baseId);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        // Extract unique boats from rentals
+        const uniqueBoats = data?.reduce((acc: any[], rental: any) => {
+          const boat = rental.boats;
+          if (!acc.find(b => b.id === boat.id)) {
+            acc.push(boat);
+          }
+          return acc;
+        }, []) || [];
+        
+        return uniqueBoats;
+      }
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnMount: true
   });
 
   // Get active rentals for checkout
