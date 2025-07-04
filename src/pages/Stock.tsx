@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, AlertTriangle } from 'lucide-react';
+import { Plus, Search, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { StockTable } from '@/components/stock/StockTable';
 import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
+import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StockItem } from '@/types';
 
@@ -18,6 +19,7 @@ export default function Stock() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showLowStock, setShowLowStock] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
 
   const { data: stockItems = [], isLoading } = useQuery({
@@ -91,13 +93,23 @@ export default function Stock() {
           </p>
         </div>
         {canManageStock && (
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="bg-marine-600 hover:bg-marine-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un article
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setIsImportDialogOpen(true)}
+              className="border-marine-200 text-marine-700 hover:bg-marine-50"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Importer Excel
+            </Button>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="bg-marine-600 hover:bg-marine-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un article
+            </Button>
+          </div>
         )}
       </div>
 
@@ -152,6 +164,11 @@ export default function Stock() {
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
         item={editingItem}
+      />
+
+      <StockImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
       />
     </div>
   );
