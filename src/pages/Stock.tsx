@@ -18,6 +18,7 @@ export default function Stock() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedBase, setSelectedBase] = useState('all');
   const [showLowStock, setShowLowStock] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -55,13 +56,26 @@ export default function Stock() {
     }
   });
 
+  // Get bases for filter
+  const { data: bases = [] } = useQuery({
+    queryKey: ['bases'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bases')
+        .select('id, name')
+        .order('name');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Get unique categories for filter
   const categories = Array.from(new Set(stockItems.filter(item => item.category).map(item => item.category)));
 
   // Calculate low stock items
   const lowStockItems = stockItems.filter(item => item.quantity <= item.minThreshold);
 
-  // Filter stock items based on search, category, and low stock
+  // Filter stock items based on search, category, base, and low stock
   const filteredItems = stockItems.filter(item => {
     const matchesSearch = searchTerm === '' || 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -69,9 +83,10 @@ export default function Stock() {
       item.category.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    const matchesBase = selectedBase === 'all' || item.baseId === selectedBase;
     const matchesLowStock = !showLowStock || item.quantity <= item.minThreshold;
     
-    return matchesSearch && matchesCategory && matchesLowStock;
+    return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
   });
 
   const handleEdit = (item: StockItem) => {
@@ -179,6 +194,9 @@ export default function Stock() {
             categories={categories}
             selectedCategory={selectedCategory}
             onCategoryChange={setSelectedCategory}
+            bases={bases}
+            selectedBase={selectedBase}
+            onBaseChange={setSelectedBase}
             showLowStock={showLowStock}
             onLowStockChange={setShowLowStock}
           />

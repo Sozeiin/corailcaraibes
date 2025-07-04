@@ -15,6 +15,9 @@ interface StockFiltersProps {
   categories: string[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
+  bases: Array<{ id: string; name: string }>;
+  selectedBase: string;
+  onBaseChange: (baseId: string) => void;
   showLowStock: boolean;
   onLowStockChange: (show: boolean) => void;
 }
@@ -23,15 +26,19 @@ export function StockFilters({
   categories, 
   selectedCategory, 
   onCategoryChange,
+  bases,
+  selectedBase,
+  onBaseChange,
   showLowStock,
   onLowStockChange
 }: StockFiltersProps) {
   const clearFilters = () => {
     onCategoryChange('all');
+    onBaseChange('all');
     onLowStockChange(false);
   };
 
-  const hasActiveFilters = selectedCategory !== 'all' || showLowStock;
+  const hasActiveFilters = selectedCategory !== 'all' || selectedBase !== 'all' || showLowStock;
 
   return (
     <div className="border-t pt-4 space-y-4">
@@ -50,6 +57,20 @@ export function StockFilters({
             {categories.filter(category => category && category.trim() !== '').map((category) => (
               <SelectItem key={category} value={category}>
                 {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedBase} onValueChange={onBaseChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Toutes les bases" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Toutes les bases</SelectItem>
+            {bases.map((base) => (
+              <SelectItem key={base.id} value={base.id}>
+                {base.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -91,6 +112,17 @@ export function StockFilters({
               {selectedCategory}
               <button
                 onClick={() => onCategoryChange('all')}
+                className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {selectedBase && selectedBase !== 'all' && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              {bases.find(b => b.id === selectedBase)?.name}
+              <button
+                onClick={() => onBaseChange('all')}
                 className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
               >
                 <X className="h-3 w-3" />
