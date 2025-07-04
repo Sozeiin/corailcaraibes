@@ -120,6 +120,15 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
   }, [selectedBoat, onBoatSelect]);
 
   useEffect(() => {
+    console.log('BoatRentalSelector - building rental data', {
+      type,
+      selectedBoatId,
+      customerName,
+      startDate,
+      endDate,
+      selectedRental
+    });
+
     const rentalData = type === 'checkin' ? {
       boat_id: selectedBoatId,
       customer_name: customerName,
@@ -131,8 +140,18 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
       base_id: user?.baseId
     } : selectedRental;
 
-    if (rentalData && (type === 'checkout' || (type === 'checkin' && customerName && startDate && endDate))) {
+    console.log('Built rental data:', rentalData);
+
+    // Pour le check-in, on vérifie juste qu'on a les données de base
+    // Pour le check-out, on vérifie qu'on a une location sélectionnée
+    const isValidForCheckin = type === 'checkin' && selectedBoatId && customerName.trim() && startDate && endDate;
+    const isValidForCheckout = type === 'checkout' && selectedRental;
+
+    if (isValidForCheckin || isValidForCheckout) {
+      console.log('Calling onRentalDataChange with:', rentalData);
       onRentalDataChange(rentalData);
+    } else {
+      console.log('Rental data not complete yet - checkin valid:', isValidForCheckin, 'checkout valid:', isValidForCheckout);
     }
   }, [type, selectedBoatId, customerName, customerEmail, customerPhone, startDate, endDate, notes, selectedRental, user?.baseId, onRentalDataChange]);
 
