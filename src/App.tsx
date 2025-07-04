@@ -13,6 +13,7 @@ import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
 import Maintenance from "./pages/Maintenance";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -88,6 +89,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Maintenance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <Notifications />
           </ProtectedRoute>
         }
       />

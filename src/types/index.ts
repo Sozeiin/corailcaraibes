@@ -176,3 +176,15 @@ export interface DashboardStats {
   monthlyRevenue: number;
   maintenanceCosts: number;
 }
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  message: string;
+  data: any;
+  is_read: boolean;
+  created_at: string;
+  updated_at: string;
+}

@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Intervention, Boat, Base } from '@/types';
 import { InterventionPartsManager, InterventionPart } from './InterventionPartsManager';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface InterventionDialogProps {
   isOpen: boolean;
@@ -50,6 +51,7 @@ interface InterventionFormData {
 export function InterventionDialog({ isOpen, onClose, intervention }: InterventionDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { createNotification } = useNotifications();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interventionParts, setInterventionParts] = useState<InterventionPart[]>([]);
 
@@ -239,6 +241,30 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
           .insert(partsData);
 
         if (partsError) throw partsError;
+      }
+
+      // Envoyer une notification au technicien si assigné
+      if (data.technicianId && (!intervention || intervention.technicianId !== data.technicianId)) {
+        try {
+          const selectedBoat = boats.find(b => b.id === data.boatId);
+          const boatName = selectedBoat ? `${selectedBoat.name} - ${selectedBoat.model}` : 'Bateau non spécifié';
+          
+          createNotification({
+            user_id: data.technicianId,
+            type: 'intervention_assigned',
+            title: 'Nouvelle intervention assignée',
+            message: `Une intervention "${data.title}" vous a été assignée pour le ${boatName}. Date prévue: ${new Date(data.scheduledDate).toLocaleDateString('fr-FR')}`,
+            data: {
+              intervention_id: interventionId,
+              boat_id: data.boatId,
+              scheduled_date: data.scheduledDate,
+              title: data.title
+            }
+          });
+        } catch (notificationError) {
+          console.error('Erreur lors de l\'envoi de la notification:', notificationError);
+          // Ne pas faire échouer l'intervention pour une erreur de notification
+        }
       }
 
       toast({

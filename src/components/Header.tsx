@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Badge } from '@/components/ui/badge';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -50,12 +51,7 @@ export const Header = () => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        <Button variant="ghost" size="sm" className="relative p-2">
-          <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-[10px] sm:text-xs">
-            3
-          </span>
-        </Button>
+        <NotificationDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
