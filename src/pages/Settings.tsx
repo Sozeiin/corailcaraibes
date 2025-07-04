@@ -1,4 +1,5 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User } from 'lucide-react';
@@ -12,6 +13,8 @@ import { ProfileSettings } from '@/components/settings/ProfileSettings';
 
 export default function Settings() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab');
 
   const getAvailableTabs = () => {
     const tabs = [
@@ -37,7 +40,9 @@ export default function Settings() {
   };
 
   const availableTabs = getAvailableTabs();
-  const defaultTab = availableTabs[0]?.id || 'profile';
+  const defaultTab = tabFromUrl && availableTabs.some(tab => tab.id === tabFromUrl) 
+    ? tabFromUrl 
+    : availableTabs[0]?.id || 'profile';
 
   return (
     <div className="container mx-auto py-6 px-4">

@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -11,6 +12,7 @@ import { NotificationDropdown } from '@/components/notifications/NotificationDro
 
 export const Header = () => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
@@ -70,11 +72,11 @@ export const Header = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 bg-white z-50">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')}>
               <User className="mr-2 h-4 w-4" />
               <span>Profil</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
               <span>Paramètres</span>
             </DropdownMenuItem>
