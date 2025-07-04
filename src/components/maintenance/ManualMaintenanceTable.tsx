@@ -13,13 +13,18 @@ import { Badge } from '@/components/ui/badge';
 
 interface MaintenanceManual {
   id: string;
+  boatId?: string;
+  boatName?: string;
   boatModel: string;
   manufacturer: string;
   tasks: {
+    id: string;
     name: string;
     interval: number;
     unit: string;
+    description?: string;
   }[];
+  createdAt: string;
 }
 
 interface ManualMaintenanceTableProps {
@@ -85,9 +90,16 @@ export function ManualMaintenanceTable({ manuals, isLoading, canManage }: Manual
                 </div>
               </TableCell>
               <TableCell>
-                <Badge variant="outline">
-                  0 bateau(x)
-                </Badge>
+                {manual.boatName ? (
+                  <div>
+                    <div className="font-medium">{manual.boatName}</div>
+                    <div className="text-sm text-gray-500">Spécifique</div>
+                  </div>
+                ) : (
+                  <Badge variant="secondary">
+                    Manuel générique
+                  </Badge>
+                )}
               </TableCell>
               {canManage && (
                 <TableCell className="text-right">

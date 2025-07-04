@@ -1047,6 +1047,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_next_maintenance_date: {
+        Args: {
+          last_date: string
+          interval_value: number
+          interval_unit: string
+        }
+        Returns: string
+      }
       generate_stock_reference: {
         Args: Record<PropertyKey, never>
         Returns: string

@@ -20,38 +20,61 @@ export function PreventiveMaintenance() {
   const { data: maintenanceManuals = [], isLoading: manualsLoading } = useQuery({
     queryKey: ['maintenance-manuals'],
     queryFn: async () => {
-      // Pour l'instant, retourner des données mockées
-      // En production, cela viendrait d'une table maintenance_manuals
-      return [
-        {
-          id: '1',
-          boatModel: 'Catamaran 42',
-          manufacturer: 'Lagoon',
-          tasks: [
-            { name: 'Vérification moteur', interval: 50, unit: 'heures' },
-            { name: 'Contrôle voiles', interval: 3, unit: 'mois' },
-            { name: 'Révision générale', interval: 12, unit: 'mois' }
-          ]
-        }
-      ];
+      const { data, error } = await supabase
+        .from('maintenance_manuals')
+        .select(`
+          *,
+          boats(name, model),
+          maintenance_manual_tasks(*)
+        `)
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return data.map(manual => ({
+        id: manual.id,
+        boatId: manual.boat_id,
+        boatName: manual.boats?.name || 'Non spécifié',
+        boatModel: manual.boat_model,
+        manufacturer: manual.manufacturer,
+        tasks: manual.maintenance_manual_tasks?.map(task => ({
+          id: task.id,
+          name: task.task_name,
+          interval: task.interval_value,
+          unit: task.interval_unit,
+          description: task.description
+        })) || [],
+        createdAt: manual.created_at
+      }));
     }
   });
 
   const { data: scheduledMaintenance = [], isLoading: scheduleLoading } = useQuery({
     queryKey: ['scheduled-maintenance'],
     queryFn: async () => {
-      // Récupérer les maintenances programmées automatiquement
       const { data, error } = await supabase
-        .from('maintenance_tasks')
+        .from('scheduled_maintenance')
         .select(`
           *,
-          boats(name, model)
+          boats(name, model),
+          maintenance_manual_tasks(task_name, interval_value, interval_unit)
         `)
         .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+        .order('scheduled_date', { ascending: true });
 
       if (error) throw error;
-      return data;
+
+      return data.map(schedule => ({
+        id: schedule.id,
+        boatId: schedule.boat_id,
+        boatName: schedule.boats?.name || 'Bateau inconnu',
+        taskName: schedule.task_name,
+        scheduledDate: schedule.scheduled_date,
+        status: schedule.status,
+        intervalValue: schedule.maintenance_manual_tasks?.interval_value,
+        intervalUnit: schedule.maintenance_manual_tasks?.interval_unit
+      }));
     }
   });
 
@@ -137,7 +160,11 @@ export function PreventiveMaintenance() {
 
       <MaintenanceManualDialog
         isOpen={isManualDialogOpen}
-        onClose={() => setIsManualDialogOpen(false)}
+        onClose={() => {
+          setIsManualDialogOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['maintenance-manuals'] });
+          queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
+        }}
       />
     </div>
   );

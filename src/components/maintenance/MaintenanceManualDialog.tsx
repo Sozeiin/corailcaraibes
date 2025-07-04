@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import { Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -32,30 +35,48 @@ interface MaintenanceManualDialogProps {
 }
 
 interface ManualFormData {
+  boatId: string;
   boatModel: string;
   manufacturer: string;
   tasks: {
     name: string;
     interval: number;
     unit: string;
+    description?: string;
   }[];
 }
 
 export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDialogProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ManualFormData>({
     defaultValues: {
+      boatId: '',
       boatModel: '',
       manufacturer: '',
-      tasks: [{ name: '', interval: 1, unit: 'mois' }]
+      tasks: [{ name: '', interval: 1, unit: 'mois', description: '' }]
     },
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'tasks'
+  });
+
+  // Fetch boats for selection
+  const { data: boats = [] } = useQuery({
+    queryKey: ['boats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boats')
+        .select('id, name, model')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    }
   });
 
   const units = ['heures', 'jours', 'semaines', 'mois', 'années'];
@@ -65,13 +86,41 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
     setIsSubmitting(true);
     
     try {
-      // Pour l'instant, simulation de sauvegarde
-      // En production, cela sauvegarderait dans une table maintenance_manuals
-      console.log('Saving manual:', data);
+      // Créer le manuel de maintenance
+      const { data: manual, error: manualError } = await supabase
+        .from('maintenance_manuals')
+        .insert({
+          boat_id: data.boatId || null,
+          boat_model: data.boatModel,
+          manufacturer: data.manufacturer,
+          created_by: user?.id,
+          is_active: true
+        })
+        .select()
+        .single();
+
+      if (manualError) throw manualError;
+
+      // Créer les tâches de maintenance
+      const tasksData = data.tasks.map(task => ({
+        manual_id: manual.id,
+        task_name: task.name,
+        interval_value: task.interval,
+        interval_unit: task.unit,
+        description: task.description || null
+      }));
+
+      const { error: tasksError } = await supabase
+        .from('maintenance_manual_tasks')
+        .insert(tasksData);
+
+      if (tasksError) throw tasksError;
       
       toast({
-        title: "Manuel ajouté",
-        description: "Le manuel de maintenance a été créé avec succès."
+        title: "Manuel créé",
+        description: data.boatId 
+          ? "Le manuel de maintenance a été créé et les maintenances ont été automatiquement planifiées pour le bateau."
+          : "Le manuel de maintenance générique a été créé avec succès."
       });
 
       onClose();
@@ -101,6 +150,32 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <FormField
+              control={form.control}
+              name="boatId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bateau concerné</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner un bateau (optionnel)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Manuel générique (tous les bateaux)</SelectItem>
+                      {boats.map((boat) => (
+                        <SelectItem key={boat.id} value={boat.id}>
+                          {boat.name} - {boat.model}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -151,7 +226,7 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ name: '', interval: 1, unit: 'mois' })}
+                  onClick={() => append({ name: '', interval: 1, unit: 'mois', description: '' })}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Ajouter une tâche
@@ -159,75 +234,91 @@ export function MaintenanceManualDialog({ isOpen, onClose }: MaintenanceManualDi
               </div>
 
               {fields.map((field, index) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 border rounded-lg">
-                  <FormField
-                    control={form.control}
-                    name={`tasks.${index}.name`}
-                    rules={{ required: "Le nom de la tâche est requis" }}
-                    render={({ field }) => (
-                      <FormItem className="md:col-span-2">
-                        <FormLabel>Nom de la tâche *</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Vérification moteur..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div key={field.id} className="grid grid-cols-1 gap-4 p-4 border rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <FormField
+                      control={form.control}
+                      name={`tasks.${index}.name`}
+                      rules={{ required: "Le nom de la tâche est requis" }}
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Nom de la tâche *</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Vérification moteur..." {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`tasks.${index}.interval`}
+                      rules={{ required: "L'intervalle est requis", min: 1 }}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Intervalle *</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="1" 
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name={`tasks.${index}.unit`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Unité</FormLabel>
+                          <div className="flex items-center gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {units.map((unit) => (
+                                  <SelectItem key={unit} value={unit}>
+                                    {unit}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => remove(index)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <FormField
                     control={form.control}
-                    name={`tasks.${index}.interval`}
-                    rules={{ required: "L'intervalle est requis", min: 1 }}
+                    name={`tasks.${index}.description`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Intervalle *</FormLabel>
+                        <FormLabel>Description (optionnelle)</FormLabel>
                         <FormControl>
-                          <Input 
-                            type="number" 
-                            min="1" 
-                            {...field}
-                            onChange={(e) => field.onChange(Number(e.target.value))}
-                          />
+                          <Input placeholder="Détails sur la procédure de maintenance..." {...field} />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`tasks.${index}.unit`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Unité</FormLabel>
-                        <div className="flex items-center gap-2">
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {units.map((unit) => (
-                                <SelectItem key={unit} value={unit}>
-                                  {unit}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {fields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => remove(index)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

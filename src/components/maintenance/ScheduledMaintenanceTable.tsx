@@ -13,15 +13,13 @@ import { Badge } from '@/components/ui/badge';
 
 interface ScheduledMaintenance {
   id: string;
-  title: string;
-  boat_id: string;
-  priority: string;
-  estimated_duration: number;
-  created_at: string;
-  boats?: {
-    name: string;
-    model: string;
-  };
+  boatId: string;
+  boatName: string;
+  taskName: string;
+  scheduledDate: string;
+  status: string;
+  intervalValue?: number;
+  intervalUnit?: string;
 }
 
 interface ScheduledMaintenanceTableProps {
@@ -30,18 +28,18 @@ interface ScheduledMaintenanceTableProps {
   canManage: boolean;
 }
 
-const priorityColors = {
-  low: 'bg-gray-100 text-gray-800',
-  medium: 'bg-blue-100 text-blue-800',
-  high: 'bg-orange-100 text-orange-800',
-  urgent: 'bg-red-100 text-red-800'
+const statusColors = {
+  pending: 'bg-yellow-100 text-yellow-800',
+  scheduled: 'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800'
 };
 
-const priorityLabels = {
-  low: 'Faible',
-  medium: 'Moyenne',
-  high: 'Haute',
-  urgent: 'Urgente'
+const statusLabels = {
+  pending: 'En attente',
+  scheduled: 'Programmée',
+  completed: 'Terminée',
+  cancelled: 'Annulée'
 };
 
 export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }: ScheduledMaintenanceTableProps) {
@@ -72,9 +70,9 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }
           <TableRow>
             <TableHead>Tâche</TableHead>
             <TableHead>Bateau</TableHead>
-            <TableHead>Priorité</TableHead>
-            <TableHead>Durée estimée</TableHead>
-            <TableHead>Programmée le</TableHead>
+            <TableHead>Statut</TableHead>
+            <TableHead>Intervalle</TableHead>
+            <TableHead>Date programmée</TableHead>
             {canManage && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
@@ -82,31 +80,28 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }
           {maintenances.map((maintenance) => (
             <TableRow key={maintenance.id}>
               <TableCell className="font-medium">
-                {maintenance.title}
+                {maintenance.taskName}
               </TableCell>
               <TableCell>
-                {maintenance.boats ? (
-                  <div>
-                    <div>{maintenance.boats.name}</div>
-                    <div className="text-sm text-gray-500">{maintenance.boats.model}</div>
-                  </div>
-                ) : (
-                  <span className="text-gray-400">Bateau non trouvé</span>
-                )}
-              </TableCell>
-              <TableCell>
-                <Badge className={priorityColors[maintenance.priority as keyof typeof priorityColors] || priorityColors.medium}>
-                  {priorityLabels[maintenance.priority as keyof typeof priorityLabels] || maintenance.priority}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {maintenance.estimated_duration}h
+                <div>
+                  <div>{maintenance.boatName}</div>
                 </div>
               </TableCell>
               <TableCell>
-                {new Date(maintenance.created_at).toLocaleDateString('fr-FR')}
+                <Badge className={statusColors[maintenance.status as keyof typeof statusColors] || statusColors.pending}>
+                  {statusLabels[maintenance.status as keyof typeof statusLabels] || maintenance.status}
+                </Badge>
+              </TableCell>
+              <TableCell>
+                {maintenance.intervalValue && maintenance.intervalUnit && (
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Tous les {maintenance.intervalValue} {maintenance.intervalUnit}
+                  </div>
+                )}
+              </TableCell>
+              <TableCell>
+                {new Date(maintenance.scheduledDate).toLocaleDateString('fr-FR')}
               </TableCell>
               {canManage && (
                 <TableCell className="text-right">
@@ -115,7 +110,7 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage }
                     size="sm"
                     className="bg-marine-600 text-white hover:bg-marine-700"
                   >
-                    Programmer
+                    Créer intervention
                   </Button>
                 </TableCell>
               )}
