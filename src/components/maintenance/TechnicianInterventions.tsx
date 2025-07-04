@@ -282,29 +282,37 @@ export function TechnicianInterventions() {
               </TableHeader>
               <TableBody>
                 {availableInterventions.map((intervention) => (
-                  <TableRow key={intervention.id}>
+                  <TableRow 
+                    key={intervention.id}
+                    className="cursor-pointer hover:bg-gray-50"
+                    onClick={() => handleRowClick(intervention)}
+                  >
                     <TableCell>
                       <div>
-                        <p className="font-medium">{intervention.title}</p>
+                        <p className="font-medium text-sm">
+                          {truncateText(intervention.title, 25)}
+                        </p>
                         {intervention.description && (
-                          <p className="text-sm text-gray-600 truncate">
-                            {intervention.description}
+                          <p className="text-xs text-gray-600">
+                            {truncateText(intervention.description, 35)}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div>
-                        <p className="font-medium">{intervention.boats?.name || 'N/A'}</p>
-                        <p className="text-sm text-gray-600">
-                          {intervention.boats?.model || 'N/A'}
+                        <p className="font-medium text-sm">
+                          {truncateText(intervention.boats?.name || 'N/A', 15)}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          {truncateText(intervention.boats?.model || 'N/A', 15)}
                         </p>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-sm">
                       {intervention.scheduled_date ? 
                         new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
-                        'Non planifiée'
+                        'N/A'
                       }
                     </TableCell>
                     <TableCell>
