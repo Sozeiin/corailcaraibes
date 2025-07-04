@@ -9,6 +9,7 @@ import { StockTable } from '@/components/stock/StockTable';
 import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
+import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { StockItem } from '@/types';
 
@@ -20,7 +21,9 @@ export default function Stock() {
   const [showLowStock, setShowLowStock] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
+  const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
 
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock'],
@@ -76,10 +79,20 @@ export default function Stock() {
     setIsDialogOpen(true);
   };
 
+  const handleDuplicate = (item: StockItem) => {
+    setDuplicatingItem(item);
+    setIsDuplicateDialogOpen(true);
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
     queryClient.invalidateQueries({ queryKey: ['stock'] });
+  };
+
+  const handleDuplicateDialogClose = () => {
+    setIsDuplicateDialogOpen(false);
+    setDuplicatingItem(null);
   };
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
@@ -157,6 +170,7 @@ export default function Stock() {
           items={filteredItems}
           isLoading={isLoading}
           onEdit={handleEdit}
+          onDuplicate={handleDuplicate}
           canManage={canManageStock}
         />
       </div>
@@ -170,6 +184,12 @@ export default function Stock() {
       <StockImportDialog
         isOpen={isImportDialogOpen}
         onClose={() => setIsImportDialogOpen(false)}
+      />
+
+      <StockDuplicateDialog
+        isOpen={isDuplicateDialogOpen}
+        onClose={handleDuplicateDialogClose}
+        item={duplicatingItem}
       />
     </div>
   );

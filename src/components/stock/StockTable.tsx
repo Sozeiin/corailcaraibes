@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Package, AlertTriangle, Copy } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -16,10 +16,11 @@ interface StockTableProps {
   items: StockItem[];
   isLoading: boolean;
   onEdit: (item: StockItem) => void;
+  onDuplicate?: (item: StockItem) => void;
   canManage: boolean;
 }
 
-export function StockTable({ items, isLoading, onEdit, canManage }: StockTableProps) {
+export function StockTable({ items, isLoading, onEdit, onDuplicate, canManage }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -115,10 +116,21 @@ export function StockTable({ items, isLoading, onEdit, canManage }: StockTablePr
                 {canManage && (
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
+                      {onDuplicate && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onDuplicate(item)}
+                          title="Dupliquer sur une autre base"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => onEdit(item)}
+                        title="Modifier"
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
