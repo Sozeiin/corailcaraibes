@@ -488,7 +488,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-marine-600 hover:bg-marine-700"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground"
               >
                 {isSubmitting ? 'Sauvegarde...' : (order ? 'Modifier' : 'Créer')}
               </Button>

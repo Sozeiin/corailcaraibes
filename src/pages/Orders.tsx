@@ -94,7 +94,7 @@ export default function Orders() {
         {canManageOrders && (
           <Button
             onClick={() => setIsDialogOpen(true)}
-            className="bg-marine-600 hover:bg-marine-700"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle commande

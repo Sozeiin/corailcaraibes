@@ -214,6 +214,165 @@ export type Database = {
           },
         ]
       }
+      bulk_purchase_distributions: {
+        Row: {
+          allocated_quantity: number
+          base_id: string
+          created_at: string
+          distribution_date: string | null
+          id: string
+          notes: string | null
+          order_id: string
+          order_item_id: string
+          received_quantity: number
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          allocated_quantity?: number
+          base_id: string
+          created_at?: string
+          distribution_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          order_item_id: string
+          received_quantity?: number
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allocated_quantity?: number
+          base_id?: string
+          created_at?: string
+          distribution_date?: string | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          order_item_id?: string
+          received_quantity?: number
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_purchase_distributions_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_purchase_distributions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_purchase_distributions_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_purchase_template_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          estimated_quantity: number
+          estimated_unit_price: number
+          id: string
+          notes: string | null
+          priority: string | null
+          product_name: string
+          template_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          estimated_quantity?: number
+          estimated_unit_price?: number
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          product_name: string
+          template_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          estimated_quantity?: number
+          estimated_unit_price?: number
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          product_name?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_purchase_template_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_purchase_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_purchase_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          frequency: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          frequency?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_purchase_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_purchase_templates_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           category: string | null
@@ -430,10 +589,15 @@ export type Database = {
       orders: {
         Row: {
           base_id: string | null
+          bulk_purchase_type: string | null
           created_at: string | null
           delivery_date: string | null
+          distribution_status: string | null
           documents: string[] | null
+          expected_delivery_date: string | null
           id: string
+          is_bulk_purchase: boolean | null
+          notes: string | null
           order_date: string | null
           order_number: string
           status: Database["public"]["Enums"]["order_status"] | null
@@ -442,10 +606,15 @@ export type Database = {
         }
         Insert: {
           base_id?: string | null
+          bulk_purchase_type?: string | null
           created_at?: string | null
           delivery_date?: string | null
+          distribution_status?: string | null
           documents?: string[] | null
+          expected_delivery_date?: string | null
           id?: string
+          is_bulk_purchase?: boolean | null
+          notes?: string | null
           order_date?: string | null
           order_number: string
           status?: Database["public"]["Enums"]["order_status"] | null
@@ -454,10 +623,15 @@ export type Database = {
         }
         Update: {
           base_id?: string | null
+          bulk_purchase_type?: string | null
           created_at?: string | null
           delivery_date?: string | null
+          distribution_status?: string | null
           documents?: string[] | null
+          expected_delivery_date?: string | null
           id?: string
+          is_bulk_purchase?: boolean | null
+          notes?: string | null
           order_date?: string | null
           order_number?: string
           status?: Database["public"]["Enums"]["order_status"] | null

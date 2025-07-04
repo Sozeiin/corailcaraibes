@@ -111,7 +111,7 @@
   }
   
   .btn-ocean {
-    @apply bg-gradient-to-r from-marine-500 to-ocean-500 hover:from-marine-600 hover:to-ocean-600 text-white font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl;
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6 py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl;
   }
   
   .status-badge {
@@ -119,14 +119,14 @@
   }
   
   .status-active {
-    @apply bg-green-100 text-green-800;
+    @apply bg-secondary text-secondary-foreground;
   }
   
   .status-maintenance {
-    @apply bg-orange-100 text-orange-800;
+    @apply bg-accent text-accent-foreground;
   }
   
   .status-inactive {
-    @apply bg-red-100 text-red-800;
+    @apply bg-destructive/10 text-destructive;
   }
 }
