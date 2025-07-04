@@ -29,6 +29,8 @@ interface ImportItem {
   minThreshold?: number;
   unit?: string;
   location?: string;
+  supplier?: string;
+  base?: string;
 }
 
 export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
@@ -41,6 +43,7 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
   const [results, setResults] = useState<{
     success: number;
     errors: { row: number; message: string }[];
+    suppliersCreated: number;
   } | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +95,10 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
                   item.unit = String(value).trim();
                 } else if (headerLower.includes('emplacement') || headerLower.includes('location')) {
                   item.location = String(value).trim();
+                } else if (headerLower.includes('fournisseur') || headerLower.includes('supplier')) {
+                  item.supplier = String(value).trim();
+                } else if (headerLower.includes('base') || headerLower.includes('guadeloupe') || headerLower.includes('martinique') || headerLower.includes('saint-martin')) {
+                  item.base = String(value).trim();
                 }
               });
 
@@ -114,18 +121,78 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
 
     setImporting(true);
     setProgress(0);
-    setResults({ success: 0, errors: [] });
+    setResults({ success: 0, errors: [], suppliersCreated: 0 });
 
     try {
+      // Récupérer les bases et fournisseurs existants
+      const [basesResponse, suppliersResponse] = await Promise.all([
+        supabase.from('bases').select('id, name'),
+        supabase.from('suppliers').select('id, name, base_id'),
+      ]);
+
+      const bases = basesResponse.data || [];
+      const existingSuppliers = suppliersResponse.data || [];
+
       const items = await parseExcelFile(file);
       const totalItems = items.length;
       let successCount = 0;
+      let suppliersCreated = 0;
       const errors: { row: number; message: string }[] = [];
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         
         try {
+          // Déterminer la base
+          let baseId = user.baseId;
+          if (item.base) {
+            const baseMatch = bases.find(b => 
+              b.name.toLowerCase().includes(item.base.toLowerCase()) ||
+              item.base.toLowerCase().includes(b.name.toLowerCase()) ||
+              (item.base.toLowerCase().includes('guadeloupe') && b.name.toLowerCase().includes('guadeloupe')) ||
+              (item.base.toLowerCase().includes('martinique') && b.name.toLowerCase().includes('martinique')) ||
+              (item.base.toLowerCase().includes('saint-martin') && b.name.toLowerCase().includes('saint-martin'))
+            );
+            if (baseMatch) {
+              baseId = baseMatch.id;
+            }
+          }
+
+          // Gérer le fournisseur si spécifié
+          let supplierId = null;
+          if (item.supplier && baseId) {
+            let supplier = existingSuppliers.find(s => 
+              s.name.toLowerCase() === item.supplier.toLowerCase() && s.base_id === baseId
+            );
+
+            if (!supplier) {
+              // Créer le fournisseur
+              const { data: newSupplier, error: supplierError } = await supabase
+                .from('suppliers')
+                .insert({
+                  name: item.supplier,
+                  base_id: baseId,
+                  category: item.category || 'Autre',
+                })
+                .select()
+                .single();
+
+              if (supplierError) {
+                errors.push({
+                  row: i + 2,
+                  message: `Erreur création fournisseur: ${supplierError.message}`,
+                });
+                continue;
+              } else {
+                supplier = newSupplier;
+                existingSuppliers.push(supplier);
+                suppliersCreated++;
+              }
+            }
+            supplierId = supplier.id;
+          }
+
+          // Insérer l'article
           const { error } = await supabase
             .from('stock_items')
             .insert({
@@ -136,13 +203,13 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               min_threshold: item.minThreshold || 0,
               unit: item.unit || 'pièce',
               location: item.location || null,
-              base_id: user.baseId || null,
+              base_id: baseId,
               last_updated: new Date().toISOString(),
             });
 
           if (error) {
             errors.push({
-              row: i + 2, // +2 because of header row and 0-based index
+              row: i + 2,
               message: error.message,
             });
           } else {
@@ -158,13 +225,13 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
         setProgress(((i + 1) / totalItems) * 100);
       }
 
-      setResults({ success: successCount, errors });
+      setResults({ success: successCount, errors, suppliersCreated });
       
       if (successCount > 0) {
         queryClient.invalidateQueries({ queryKey: ['stock'] });
         toast({
           title: 'Import terminé',
-          description: `${successCount} article(s) importé(s) avec succès`,
+          description: `${successCount} article(s) et ${suppliersCreated} fournisseur(s) importé(s)`,
         });
       }
 
@@ -220,6 +287,8 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               <div>• <strong>Seuil minimum</strong> (optionnel) : Seuil d'alerte</div>
               <div>• <strong>Unité</strong> (optionnel) : Unité de mesure</div>
               <div>• <strong>Emplacement</strong> (optionnel) : Localisation</div>
+              <div>• <strong>Fournisseur</strong> (optionnel) : Nom du fournisseur</div>
+              <div>• <strong>Base</strong> (optionnel) : Guadeloupe, Martinique ou Saint-Martin</div>
             </div>
           </div>
 
@@ -272,6 +341,9 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
                   <CheckCircle className="h-4 w-4" />
                   <AlertDescription>
                     <strong>{results.success}</strong> article(s) importé(s) avec succès
+                    {results.suppliersCreated > 0 && (
+                      <span>, <strong>{results.suppliersCreated}</strong> fournisseur(s) créé(s)</span>
+                    )}
                   </AlertDescription>
                 </Alert>
               )}
