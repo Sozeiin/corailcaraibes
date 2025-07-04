@@ -14,7 +14,8 @@ import {
   Settings,
   Edit,
   Trash2,
-  History
+  History,
+  Wrench
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
 import { BoatFilters } from '@/components/boats/BoatFilters';
 import { BoatHistoryDialog } from '@/components/boats/BoatHistoryDialog';
+import { BoatPreventiveMaintenanceDialog } from '@/components/boats/BoatPreventiveMaintenanceDialog';
 import { Boat } from '@/types';
 
 const getStatusBadge = (status: string) => {
@@ -41,10 +43,11 @@ interface BoatCardProps {
   onEdit: (boat: Boat) => void;
   onDelete: (boat: Boat) => void;
   onHistory: (boat: Boat) => void;
+  onPreventiveMaintenance: (boat: Boat) => void;
   canManage: boolean;
 }
 
-const BoatCard = ({ boat, onEdit, onDelete, onHistory, canManage }: BoatCardProps) => (
+const BoatCard = ({ boat, onEdit, onDelete, onHistory, onPreventiveMaintenance, canManage }: BoatCardProps) => (
   <Card className="hover:shadow-md transition-shadow">
     <CardHeader className="pb-3">
       <div className="flex items-center justify-between">
@@ -77,34 +80,48 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, canManage }: BoatCardProp
         </div>
       </div>
       
-      <div className="flex gap-2">
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="flex-1"
-          onClick={() => onHistory(boat)}
-        >
-          <History className="h-4 w-4 mr-2" />
-          Historique
-        </Button>
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => onHistory(boat)}
+          >
+            <History className="h-4 w-4 mr-2" />
+            Historique
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex-1"
+            onClick={() => onPreventiveMaintenance(boat)}
+          >
+            <Wrench className="h-4 w-4 mr-2" />
+            Maintenance
+          </Button>
+        </div>
         {canManage && (
-          <>
+          <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm"
+              className="flex-1"
               onClick={() => onEdit(boat)}
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="h-4 w-4 mr-2" />
+              Modifier
             </Button>
             <Button 
               variant="outline" 
               size="sm"
+              className="flex-1 text-red-600 hover:text-red-700"
               onClick={() => onDelete(boat)}
-              className="text-red-600 hover:text-red-700"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4 mr-2" />
+              Supprimer
             </Button>
-          </>
+          </div>
         )}
       </div>
     </CardContent>
@@ -122,6 +139,8 @@ export default function Boats() {
   const [editingBoat, setEditingBoat] = useState<Boat | null>(null);
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
   const [historyBoat, setHistoryBoat] = useState<Boat | null>(null);
+  const [isPreventiveMaintenanceDialogOpen, setIsPreventiveMaintenanceDialogOpen] = useState(false);
+  const [preventiveMaintenanceBoat, setPreventiveMaintenanceBoat] = useState<Boat | null>(null);
 
   // Fetch boats data
   const { data: boats = [], isLoading } = useQuery({
@@ -236,6 +255,16 @@ export default function Boats() {
     setHistoryBoat(null);
   };
 
+  const handlePreventiveMaintenance = (boat: Boat) => {
+    setPreventiveMaintenanceBoat(boat);
+    setIsPreventiveMaintenanceDialogOpen(true);
+  };
+
+  const handlePreventiveMaintenanceDialogClose = () => {
+    setIsPreventiveMaintenanceDialogOpen(false);
+    setPreventiveMaintenanceBoat(null);
+  };
+
   const canManageBoats = user?.role === 'direction' || user?.role === 'chef_base';
 
   if (isLoading) {
@@ -340,6 +369,7 @@ export default function Boats() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onHistory={handleHistory}
+            onPreventiveMaintenance={handlePreventiveMaintenance}
             canManage={canManageBoats}
           />
         ))}
@@ -381,6 +411,12 @@ export default function Boats() {
         isOpen={isHistoryDialogOpen}
         onClose={handleHistoryDialogClose}
         boat={historyBoat}
+      />
+
+      <BoatPreventiveMaintenanceDialog
+        isOpen={isPreventiveMaintenanceDialogOpen}
+        onClose={handlePreventiveMaintenanceDialogClose}
+        boat={preventiveMaintenanceBoat}
       />
     </div>
   );
