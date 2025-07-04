@@ -25,6 +25,7 @@ interface MaintenanceManual {
     interval: number;
     unit: string;
     description?: string;
+    lastExecution?: string | null;
   }[];
   createdAt: string;
 }
@@ -51,12 +52,32 @@ export function ManualMaintenanceTable({ manuals, isLoading, canManage, onManual
     }
 
     try {
-      // Créer les maintenances programmées pour chaque tâche
-      const scheduledMaintenances = manual.tasks.map(task => ({
+      // Vérifier les tâches qui n'ont pas d'intervention récente
+      const tasksNeedingMaintenance = manual.tasks.filter(task => {
+        if (!task.lastExecution) return true; // Jamais effectuée
+        
+        const lastDate = new Date(task.lastExecution);
+        const now = new Date();
+        const intervalMs = task.interval * 30 * 24 * 60 * 60 * 1000; // Approximation en jours
+        
+        return (now.getTime() - lastDate.getTime()) > intervalMs;
+      });
+
+      if (tasksNeedingMaintenance.length === 0) {
+        toast({
+          title: "Aucune maintenance nécessaire",
+          description: "Toutes les tâches ont été effectuées récemment selon leur intervalles.",
+          variant: "default"
+        });
+        return;
+      }
+
+      // Créer les maintenances programmées seulement pour les tâches nécessaires
+      const scheduledMaintenances = tasksNeedingMaintenance.map(task => ({
         boat_id: manual.boatId,
         manual_task_id: task.id,
         task_name: task.name,
-        scheduled_date: new Date(Date.now() + (task.interval * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0] // Approximation en jours
+        scheduled_date: new Date(Date.now() + (task.interval * 30 * 24 * 60 * 60 * 1000)).toISOString().split('T')[0]
       }));
 
       const { error } = await supabase
@@ -67,7 +88,7 @@ export function ManualMaintenanceTable({ manuals, isLoading, canManage, onManual
 
       toast({
         title: "Maintenances programmées",
-        description: `${manual.tasks.length} tâches de maintenance ont été programmées.`
+        description: `${tasksNeedingMaintenance.length} tâches de maintenance ont été programmées (${manual.tasks.length - tasksNeedingMaintenance.length} étaient à jour).`
       });
 
       onManualUpdated?.();
@@ -147,11 +168,23 @@ export function ManualMaintenanceTable({ manuals, isLoading, canManage, onManual
                 {manual.manufacturer}
               </TableCell>
               <TableCell>
-                <div className="space-y-1">
+                <div className="space-y-2">
                   {manual.tasks.slice(0, 3).map((task, index) => (
-                    <Badge key={index} variant="outline" className="mr-1">
-                      {task.name} ({task.interval} {task.unit})
-                    </Badge>
+                    <div key={index} className="space-y-1">
+                      <Badge variant="outline" className="mr-1">
+                        {task.name} ({task.interval} {task.unit})
+                      </Badge>
+                      {task.lastExecution && (
+                        <div className="text-xs text-gray-500">
+                          Dernière fois: {new Date(task.lastExecution).toLocaleDateString('fr-FR')}
+                        </div>
+                      )}
+                      {!task.lastExecution && (
+                        <div className="text-xs text-orange-600">
+                          Jamais effectuée
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {manual.tasks.length > 3 && (
                     <Badge variant="secondary">

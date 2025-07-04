@@ -32,21 +32,46 @@ export function PreventiveMaintenance() {
 
       if (error) throw error;
 
-      return data.map(manual => ({
-        id: manual.id,
-        boatId: manual.boat_id,
-        boatName: manual.boats?.name || 'Non spécifié',
-        boatModel: manual.boat_model,
-        manufacturer: manual.manufacturer,
-        tasks: manual.maintenance_manual_tasks?.map(task => ({
-          id: task.id,
-          name: task.task_name,
-          interval: task.interval_value,
-          unit: task.interval_unit,
-          description: task.description
-        })) || [],
-        createdAt: manual.created_at
-      }));
+      // Pour chaque manuel, récupérer les dernières interventions pour chaque tâche
+      const manualsWithLastInterventions = await Promise.all(
+        data.map(async (manual) => {
+          const tasksWithLastExecution = await Promise.all(
+            (manual.maintenance_manual_tasks || []).map(async (task) => {
+              // Rechercher la dernière intervention complétée pour cette tâche et ce bateau
+              const { data: lastIntervention } = await supabase
+                .from('interventions')
+                .select('completed_date, status')
+                .eq('boat_id', manual.boat_id)
+                .ilike('title', `%${task.task_name}%`)
+                .eq('status', 'completed')
+                .order('completed_date', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+              return {
+                id: task.id,
+                name: task.task_name,
+                interval: task.interval_value,
+                unit: task.interval_unit,
+                description: task.description,
+                lastExecution: lastIntervention?.completed_date || null
+              };
+            })
+          );
+
+          return {
+            id: manual.id,
+            boatId: manual.boat_id,
+            boatName: manual.boats?.name || 'Non spécifié',
+            boatModel: manual.boat_model,
+            manufacturer: manual.manufacturer,
+            tasks: tasksWithLastExecution,
+            createdAt: manual.created_at
+          };
+        })
+      );
+
+      return manualsWithLastInterventions;
     }
   });
 
