@@ -323,7 +323,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {suppliers.filter(supplier => supplier.id && supplier.id.trim() !== '').map((supplier) => (
+                        {suppliers.filter(supplier => supplier?.id && supplier.name).map((supplier) => (
                           <SelectItem key={supplier.id} value={supplier.id}>
                             {supplier.name}
                           </SelectItem>
@@ -349,7 +349,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {availableBases.filter(base => base.id && base.id.trim() !== '').map((base) => (
+                          {availableBases.filter(base => base?.id && base.name).map((base) => (
                             <SelectItem key={base.id} value={base.id}>
                               {base.name} - {base.location}
                             </SelectItem>

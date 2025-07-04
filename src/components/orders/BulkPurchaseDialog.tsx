@@ -262,7 +262,7 @@ export function BulkPurchaseDialog({ isOpen, onClose, order }: BulkPurchaseDialo
                   <SelectValue placeholder="Sélectionner un fournisseur" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.map(supplier => (
+                  {suppliers.filter(supplier => supplier?.id && supplier.name).map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
                     </SelectItem>
