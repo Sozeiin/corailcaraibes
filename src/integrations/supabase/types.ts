@@ -819,6 +819,7 @@ export type Database = {
           quantity: number | null
           reference: string | null
           unit: string | null
+          unit_price: number | null
         }
         Insert: {
           base_id?: string | null
@@ -831,6 +832,7 @@ export type Database = {
           quantity?: number | null
           reference?: string | null
           unit?: string | null
+          unit_price?: number | null
         }
         Update: {
           base_id?: string | null
@@ -843,6 +845,7 @@ export type Database = {
           quantity?: number | null
           reference?: string | null
           unit?: string | null
+          unit_price?: number | null
         }
         Relationships: [
           {

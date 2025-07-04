@@ -62,12 +62,13 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       stockItemId: stockItem.id,
       partName: stockItem.name,
       quantity: 1,
-      unitCost: 0,
-      totalCost: 0,
+      unitCost: stockItem.unit_price || 0,
+      totalCost: stockItem.unit_price || 0,
       availableQuantity: stockItem.quantity,
       notes: ''
     };
 
+    console.log('Adding stock item:', stockItem.name, 'with price:', stockItem.unit_price);
     onPartsChange([...parts, newPart]);
     setSelectedStockItem('');
   };
@@ -124,7 +125,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                     .filter(item => !parts.some(part => part.stockItemId === item.id))
                     .map((item) => (
                       <SelectItem key={item.id} value={item.id}>
-                        {item.name} (Stock: {item.quantity} {item.unit})
+                        {item.name} - {(item.unit_price || 0).toFixed(2)}€ (Stock: {item.quantity} {item.unit})
                       </SelectItem>
                     ))}
                 </SelectContent>
@@ -234,13 +235,12 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
               </Card>
             ))}
 
-            {totalCost > 0 && (
-              <div className="flex justify-end">
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <span className="font-medium">Coût total des pièces: {totalCost.toFixed(2)} €</span>
-                </div>
+            <div className="border-t pt-4 mt-4">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-medium">Total des pièces:</span>
+                <span className="text-xl font-bold text-blue-600">{totalCost.toFixed(2)} €</span>
               </div>
-            )}
+            </div>
           </div>
         )}
       </CardContent>
