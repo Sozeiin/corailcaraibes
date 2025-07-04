@@ -18,7 +18,8 @@ import {
   Package, 
   Wrench, 
   ShoppingCart, 
-  Settings
+  Settings,
+  Zap
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,12 @@ const menuItems = [
     url: '/maintenance',
     icon: Wrench,
     roles: ['direction', 'chef_base', 'technicien']
+  },
+  {
+    title: 'Achats Pro',
+    url: '/purchasing',
+    icon: Zap,
+    roles: ['direction']
   },
   {
     title: 'Paramètres',
