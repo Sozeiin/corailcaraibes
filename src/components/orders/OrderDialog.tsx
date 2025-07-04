@@ -45,6 +45,7 @@ interface OrderFormData {
   deliveryDate: string;
   items: {
     productName: string;
+    reference: string;
     quantity: number;
     unitPrice: number;
   }[];
@@ -63,7 +64,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
       status: 'pending',
       orderDate: new Date().toISOString().split('T')[0],
       deliveryDate: '',
-      items: [{ productName: '', quantity: 1, unitPrice: 0 }]
+      items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
     },
   });
 
@@ -130,6 +131,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         deliveryDate: order.deliveryDate ? order.deliveryDate.split('T')[0] : '',
         items: order.items.map(item => ({
           productName: item.productName,
+          reference: item.reference || '',
           quantity: item.quantity,
           unitPrice: item.unitPrice
         }))
@@ -144,7 +146,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         status: 'pending',
         orderDate: new Date().toISOString().split('T')[0],
         deliveryDate: '',
-        items: [{ productName: '', quantity: 1, unitPrice: 0 }]
+        items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
       });
     }
   }, [order, form, user]);
@@ -388,7 +390,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => append({ productName: '', quantity: 1, unitPrice: 0 })}
+                  onClick={() => append({ productName: '', reference: '', quantity: 1, unitPrice: 0 })}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   Ajouter un article

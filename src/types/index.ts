@@ -60,6 +60,7 @@ export interface Order {
 export interface OrderItem {
   id: string;
   productName: string;
+  reference?: string;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
