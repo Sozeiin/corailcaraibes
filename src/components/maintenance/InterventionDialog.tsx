@@ -79,17 +79,29 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   });
 
   const { data: technicians = [], isLoading: techniciansLoading } = useQuery({
-    queryKey: ['technicians'],
+    queryKey: ['technicians', user?.role, user?.baseId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      if (!user) return [];
+
+      let query = supabase
         .from('profiles')
         .select('*')
         .eq('role', 'technicien')
         .order('name');
 
+      // Filtrage selon le rôle de l'utilisateur
+      if (user.role === 'chef_base') {
+        // Chef de base : seulement les techniciens de sa base
+        query = query.eq('base_id', user.baseId);
+      }
+      // Direction : tous les techniciens (pas de filtre)
+      // Technicien : tous les techniciens pour information
+
+      const { data, error } = await query;
       if (error) throw error;
-      return data;
-    }
+      return data || [];
+    },
+    enabled: !!user
   });
 
   // Fetch existing intervention parts if editing
