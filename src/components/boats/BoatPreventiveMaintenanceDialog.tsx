@@ -39,11 +39,9 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
   const queryClient = useQueryClient();
   const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
 
-  if (!boat) return null;
-
   // Fetch scheduled maintenance tasks for this boat
   const { data: scheduledTasks = [] } = useQuery({
-    queryKey: ['boat-scheduled-maintenance', boat.id],
+    queryKey: ['boat-scheduled-maintenance', boat?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('maintenance_tasks')
@@ -51,18 +49,18 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
           *,
           profiles(name)
         `)
-        .eq('boat_id', boat.id)
+        .eq('boat_id', boat?.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: isOpen && !!boat.id
+    enabled: isOpen && !!boat?.id
   });
 
   // Fetch upcoming interventions for this boat
   const { data: upcomingInterventions = [] } = useQuery({
-    queryKey: ['boat-upcoming-interventions', boat.id],
+    queryKey: ['boat-upcoming-interventions', boat?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('interventions')
@@ -70,14 +68,14 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
           *,
           profiles(name)
         `)
-        .eq('boat_id', boat.id)
+        .eq('boat_id', boat?.id)
         .in('status', ['scheduled', 'in_progress'])
         .order('scheduled_date', { ascending: true });
 
       if (error) throw error;
       return data;
     },
-    enabled: isOpen && !!boat.id
+    enabled: isOpen && !!boat?.id
   });
 
   const getStatusBadge = (status: string) => {
@@ -117,10 +115,12 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
 
   const handleInterventionDialogClose = () => {
     setIsInterventionDialogOpen(false);
-    queryClient.invalidateQueries({ queryKey: ['boat-upcoming-interventions', boat.id] });
+    queryClient.invalidateQueries({ queryKey: ['boat-upcoming-interventions', boat?.id] });
   };
 
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+
+  if (!boat) return null;
 
   return (
     <>
@@ -276,7 +276,7 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
       <InterventionDialog
         isOpen={isInterventionDialogOpen}
         onClose={handleInterventionDialogClose}
-        intervention={{
+        intervention={boat ? {
           id: '',
           boatId: boat.id,
           technicianId: '',
@@ -288,7 +288,7 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
           tasks: [],
           baseId: user?.baseId || '',
           createdAt: new Date().toISOString()
-        }}
+        } : undefined}
       />
     </>
   );
