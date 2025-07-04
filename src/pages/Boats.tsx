@@ -13,13 +13,15 @@ import {
   FileText,
   Settings,
   Edit,
-  Trash2
+  Trash2,
+  History
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
 import { BoatFilters } from '@/components/boats/BoatFilters';
+import { BoatHistoryDialog } from '@/components/boats/BoatHistoryDialog';
 import { Boat } from '@/types';
 
 const getStatusBadge = (status: string) => {
@@ -38,10 +40,11 @@ interface BoatCardProps {
   boat: Boat & { baseName?: string };
   onEdit: (boat: Boat) => void;
   onDelete: (boat: Boat) => void;
+  onHistory: (boat: Boat) => void;
   canManage: boolean;
 }
 
-const BoatCard = ({ boat, onEdit, onDelete, canManage }: BoatCardProps) => (
+const BoatCard = ({ boat, onEdit, onDelete, onHistory, canManage }: BoatCardProps) => (
   <Card className="hover:shadow-md transition-shadow">
     <CardHeader className="pb-3">
       <div className="flex items-center justify-between">
@@ -74,27 +77,36 @@ const BoatCard = ({ boat, onEdit, onDelete, canManage }: BoatCardProps) => (
         </div>
       </div>
       
-      {canManage && (
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onEdit(boat)}
-          >
-            <Edit className="h-4 w-4 mr-2" />
-            Modifier
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onDelete(boat)}
-            className="text-red-600 hover:text-red-700"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex-1"
+          onClick={() => onHistory(boat)}
+        >
+          <History className="h-4 w-4 mr-2" />
+          Historique
+        </Button>
+        {canManage && (
+          <>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onEdit(boat)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onDelete(boat)}
+              className="text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </>
+        )}
+      </div>
     </CardContent>
   </Card>
 );
@@ -108,6 +120,8 @@ export default function Boats() {
   const [selectedBase, setSelectedBase] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBoat, setEditingBoat] = useState<Boat | null>(null);
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [historyBoat, setHistoryBoat] = useState<Boat | null>(null);
 
   // Fetch boats data
   const { data: boats = [], isLoading } = useQuery({
@@ -210,6 +224,16 @@ export default function Boats() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingBoat(null);
+  };
+
+  const handleHistory = (boat: Boat) => {
+    setHistoryBoat(boat);
+    setIsHistoryDialogOpen(true);
+  };
+
+  const handleHistoryDialogClose = () => {
+    setIsHistoryDialogOpen(false);
+    setHistoryBoat(null);
   };
 
   const canManageBoats = user?.role === 'direction' || user?.role === 'chef_base';
@@ -315,6 +339,7 @@ export default function Boats() {
             boat={boat} 
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onHistory={handleHistory}
             canManage={canManageBoats}
           />
         ))}
@@ -350,6 +375,12 @@ export default function Boats() {
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
         boat={editingBoat}
+      />
+
+      <BoatHistoryDialog
+        isOpen={isHistoryDialogOpen}
+        onClose={handleHistoryDialogClose}
+        boat={historyBoat}
       />
     </div>
   );

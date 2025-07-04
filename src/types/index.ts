@@ -139,6 +139,34 @@ export interface Alert {
   createdAt: string;
 }
 
+export interface BoatRental {
+  id: string;
+  boatId: string;
+  customerName: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  status: 'confirmed' | 'completed' | 'cancelled';
+  notes?: string;
+  baseId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterventionPart {
+  id: string;
+  interventionId: string;
+  stockItemId?: string;
+  partName: string;
+  quantity: number;
+  unitCost: number;
+  totalCost: number;
+  notes?: string;
+  usedAt: string;
+}
+
 export interface DashboardStats {
   totalBoats: number;
   availableBoats: number;

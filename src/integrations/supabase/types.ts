@@ -164,6 +164,69 @@ export type Database = {
           },
         ]
       }
+      boat_rentals: {
+        Row: {
+          base_id: string | null
+          boat_id: string
+          created_at: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          end_date: string
+          id: string
+          notes: string | null
+          start_date: string
+          status: string | null
+          total_amount: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_id?: string | null
+          boat_id: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          end_date: string
+          id?: string
+          notes?: string | null
+          start_date: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_id?: string | null
+          boat_id?: string
+          created_at?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          end_date?: string
+          id?: string
+          notes?: string | null
+          start_date?: string
+          status?: string | null
+          total_amount?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_rentals_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_rentals_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boats: {
         Row: {
           base_id: string | null
@@ -399,6 +462,57 @@ export type Database = {
           status?: Database["public"]["Enums"]["checklist_status"] | null
         }
         Relationships: []
+      }
+      intervention_parts: {
+        Row: {
+          id: string
+          intervention_id: string
+          notes: string | null
+          part_name: string
+          quantity: number
+          stock_item_id: string | null
+          total_cost: number | null
+          unit_cost: number | null
+          used_at: string | null
+        }
+        Insert: {
+          id?: string
+          intervention_id: string
+          notes?: string | null
+          part_name: string
+          quantity?: number
+          stock_item_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          used_at?: string | null
+        }
+        Update: {
+          id?: string
+          intervention_id?: string
+          notes?: string | null
+          part_name?: string
+          quantity?: number
+          stock_item_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number | null
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "intervention_parts_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "intervention_parts_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intervention_tasks: {
         Row: {
