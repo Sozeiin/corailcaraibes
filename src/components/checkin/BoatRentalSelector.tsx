@@ -62,11 +62,11 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
         let query = supabase
           .from('boat_rentals')
           .select(`
+            id,
             boat_id,
-            boats!inner(*)
+            boats!inner(id, name, model, serial_number, year, status, base_id)
           `)
-          .eq('status', 'confirmed')
-          .order('boats.name');
+          .eq('status', 'confirmed');
 
         if (user.role !== 'direction') {
           query = query.eq('boats.base_id', user.baseId);
@@ -75,7 +75,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
         const { data, error } = await query;
         if (error) throw error;
         
-        // Extract unique boats from rentals
+        // Extract unique boats from rentals  
         const uniqueBoats = data?.reduce((acc: any[], rental: any) => {
           const boat = rental.boats;
           if (!acc.find(b => b.id === boat.id)) {
