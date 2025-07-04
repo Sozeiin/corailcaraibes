@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,8 +19,19 @@ export default function Auth() {
     email: '', 
     password: '', 
     name: '', 
-    confirmPassword: '' 
+    confirmPassword: '',
+    role: '',
+    baseId: ''
   });
+  const [bases, setBases] = useState<Array<{ id: string; name: string }>>([]);
+
+  useEffect(() => {
+    const fetchBases = async () => {
+      const { data } = await supabase.from('bases').select('id, name').order('name');
+      setBases(data || []);
+    };
+    fetchBases();
+  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -65,6 +77,15 @@ export default function Auth() {
       return;
     }
 
+    if (!signupForm.role || !signupForm.baseId) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un rôle et une base",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -73,7 +94,9 @@ export default function Auth() {
         password: signupForm.password,
         options: {
           data: {
-            name: signupForm.name
+            name: signupForm.name,
+            role: signupForm.role,
+            base_id: signupForm.baseId
           },
           emailRedirectTo: `${window.location.origin}/`
         }
@@ -191,7 +214,42 @@ export default function Auth() {
                     required
                   />
                 </div>
-                <Button type="submit" className="w-full" disabled={loading}>
+                <div className="space-y-2">
+                  <Label htmlFor="role">Rôle</Label>
+                  <Select 
+                    value={signupForm.role} 
+                    onValueChange={(value) => setSignupForm({ ...signupForm, role: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un rôle" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="chef_base">Chef de base</SelectItem>
+                      <SelectItem value="technicien">Technicien</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="base">Base d'affectation</Label>
+                  <Select 
+                    value={signupForm.baseId} 
+                    onValueChange={(value) => setSignupForm({ ...signupForm, baseId: value })}
+                    required
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner une base" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bases.map((base) => (
+                        <SelectItem key={base.id} value={base.id}>
+                          {base.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button type="submit" className="w-full" disabled={loading || !signupForm.role || !signupForm.baseId}>
                   {loading ? 'Inscription...' : "S'inscrire"}
                 </Button>
               </form>
