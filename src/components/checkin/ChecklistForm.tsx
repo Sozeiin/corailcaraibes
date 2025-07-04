@@ -522,27 +522,61 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           </div>
           
           {/* Progress indicator */}
-          <div className="flex items-center space-x-2 mt-4">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-              currentStep === 'checklist' ? 'bg-marine-500 text-white' : 
-              currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500 text-white' : 
-              'bg-gray-200'
-            }`}>
-              1
+          <div className="flex items-center justify-center space-x-4 mt-6 mb-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
+                currentStep === 'checklist' ? 'bg-marine-500 text-white border-marine-500' : 
+                currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500 text-white border-green-500' : 
+                'bg-white text-gray-400 border-gray-300'
+              }`}>
+                1
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 'checklist' ? 'text-marine-600' : 
+                currentStep === 'signatures' || currentStep === 'email' ? 'text-green-600' : 
+                'text-gray-400'
+              }`}>
+                Inspection
+              </span>
             </div>
-            <div className={`h-1 w-12 ${currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500' : 'bg-gray-200'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-              currentStep === 'signatures' ? 'bg-marine-500 text-white' : 
-              currentStep === 'email' ? 'bg-green-500 text-white' : 
-              'bg-gray-200'
-            }`}>
-              2
+            
+            <div className={`h-1 w-8 rounded transition-all ${
+              currentStep === 'signatures' || currentStep === 'email' ? 'bg-green-500' : 'bg-gray-300'
+            }`} />
+            
+            <div className="flex items-center space-x-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
+                currentStep === 'signatures' ? 'bg-marine-500 text-white border-marine-500' : 
+                currentStep === 'email' ? 'bg-green-500 text-white border-green-500' : 
+                'bg-white text-gray-400 border-gray-300'
+              }`}>
+                2
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 'signatures' ? 'text-marine-600' : 
+                currentStep === 'email' ? 'text-green-600' : 
+                'text-gray-400'
+              }`}>
+                Signatures
+              </span>
             </div>
-            <div className={`h-1 w-12 ${currentStep === 'email' ? 'bg-green-500' : 'bg-gray-200'}`} />
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-              currentStep === 'email' ? 'bg-marine-500 text-white' : 'bg-gray-200'
-            }`}>
-              3
+            
+            <div className={`h-1 w-8 rounded transition-all ${
+              currentStep === 'email' ? 'bg-green-500' : 'bg-gray-300'
+            }`} />
+            
+            <div className="flex items-center space-x-2">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all ${
+                currentStep === 'email' ? 'bg-marine-500 text-white border-marine-500' : 
+                'bg-white text-gray-400 border-gray-300'
+              }`}>
+                3
+              </div>
+              <span className={`text-sm font-medium ${
+                currentStep === 'email' ? 'text-marine-600' : 'text-gray-400'
+              }`}>
+                Finalisation
+              </span>
             </div>
           </div>
         </CardContent>
