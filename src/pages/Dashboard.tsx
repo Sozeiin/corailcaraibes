@@ -14,10 +14,12 @@ import {
   TrendingUp,
   Calendar,
   Users,
-  Clock
+  Clock,
+  Anchor
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
@@ -59,6 +61,7 @@ const AlertItem = ({ type, message, severity }: any) => (
 export default function Dashboard() {
   const { user } = useAuth();
   const [baseName, setBaseName] = useState<string>('');
+  const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchBaseName = async () => {
@@ -225,8 +228,13 @@ export default function Dashboard() {
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Planification
           </Button>
-          <Button className="btn-ocean text-xs sm:text-sm" size="sm">
-            Nouveau rapport
+          <Button 
+            onClick={() => setCheckInOutDialogOpen(true)}
+            className="btn-ocean text-xs sm:text-sm" 
+            size="sm"
+          >
+            <Anchor className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Check-in / Check-out
           </Button>
         </div>
       </div>
@@ -339,6 +347,11 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <CheckInOutDialog 
+        open={checkInOutDialogOpen}
+        onOpenChange={setCheckInOutDialogOpen}
+      />
     </div>
   );
 }
