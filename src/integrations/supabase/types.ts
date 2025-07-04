@@ -955,6 +955,101 @@ export type Database = {
           },
         ]
       }
+      purchasing_templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          template_data: Json
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          template_data?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          template_data?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchasing_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchasing_workflows: {
+        Row: {
+          approval_history: Json
+          created_at: string
+          created_by: string
+          current_step: string
+          id: string
+          order_id: string
+          steps: Json
+          updated_at: string
+          workflow_type: string
+        }
+        Insert: {
+          approval_history?: Json
+          created_at?: string
+          created_by: string
+          current_step?: string
+          id?: string
+          order_id: string
+          steps?: Json
+          updated_at?: string
+          workflow_type?: string
+        }
+        Update: {
+          approval_history?: Json
+          created_at?: string
+          created_by?: string
+          current_step?: string
+          id?: string
+          order_id?: string
+          steps?: Json
+          updated_at?: string
+          workflow_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchasing_workflows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchasing_workflows_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_maintenance: {
         Row: {
           boat_id: string
@@ -1106,7 +1201,28 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      purchasing_analytics: {
+        Row: {
+          avg_order_value: number | null
+          base_id: string | null
+          base_name: string | null
+          delivered_count: number | null
+          month: string | null
+          order_count: number | null
+          pending_count: number | null
+          supplier_category: string | null
+          total_amount: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_next_maintenance_date: {
@@ -1128,6 +1244,10 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      refresh_purchasing_analytics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

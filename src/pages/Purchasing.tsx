@@ -11,7 +11,8 @@ import {
   Truck, 
   QrCode,
   TrendingUp,
-  Globe
+  Globe,
+  Settings
 } from 'lucide-react';
 import { PurchasingDashboard } from '@/components/purchasing/PurchasingDashboard';
 import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
@@ -21,6 +22,9 @@ import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
 import { MobileScanning } from '@/components/purchasing/MobileScanning';
 import { PurchasingAnalytics } from '@/components/purchasing/PurchasingAnalytics';
 import { ExternalIntegrations } from '@/components/purchasing/ExternalIntegrations';
+import { WorkflowManager } from '@/components/purchasing/WorkflowManager';
+import { TemplateManager } from '@/components/purchasing/TemplateManager';
+import { SmartAlerts } from '@/components/purchasing/SmartAlerts';
 
 export default function Purchasing() {
   const { user } = useAuth();
@@ -39,14 +43,32 @@ export default function Purchasing() {
       component: PurchasingDashboard
     },
     {
+      id: 'alerts',
+      label: 'Alertes IA',
+      icon: TrendingUp,
+      component: SmartAlerts
+    },
+    {
+      id: 'workflows',
+      label: 'Workflows',
+      icon: Settings,
+      component: WorkflowManager
+    },
+    {
+      id: 'templates',
+      label: 'Templates',
+      icon: Package,
+      component: TemplateManager
+    },
+    {
       id: 'orders',
-      label: 'Commandes Avancées',
+      label: 'Commandes',
       icon: ShoppingCart,
       component: AdvancedOrders
     },
     {
       id: 'suppliers',
-      label: 'Gestion Fournisseurs',
+      label: 'Fournisseurs',
       icon: Users,
       component: SupplierManagement
     },
@@ -58,13 +80,13 @@ export default function Purchasing() {
     },
     {
       id: 'logistics',
-      label: 'Logistique Inter-Bases',
+      label: 'Logistique',
       icon: Truck,
       component: InterBaseLogistics
     },
     {
       id: 'scanning',
-      label: 'Scanner Mobile',
+      label: 'Scanner',
       icon: QrCode,
       component: MobileScanning
     },
@@ -95,7 +117,7 @@ export default function Purchasing() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:grid-cols-8 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-11 h-auto p-1">
           {tabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
