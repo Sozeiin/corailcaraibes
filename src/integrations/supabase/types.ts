@@ -605,6 +605,92 @@ export type Database = {
           },
         ]
       }
+      maintenance_manual_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          interval_unit: string
+          interval_value: number
+          manual_id: string
+          task_name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval_unit: string
+          interval_value: number
+          manual_id: string
+          task_name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          interval_unit?: string
+          interval_value?: number
+          manual_id?: string
+          task_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_manual_tasks_manual_id_fkey"
+            columns: ["manual_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_manuals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_manuals: {
+        Row: {
+          boat_id: string | null
+          boat_model: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          manufacturer: string
+          updated_at: string
+        }
+        Insert: {
+          boat_id?: string | null
+          boat_model: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          manufacturer: string
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string | null
+          boat_model?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          manufacturer?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_manuals_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_manuals_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_tasks: {
         Row: {
           actual_duration: number | null
@@ -803,6 +889,64 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scheduled_maintenance: {
+        Row: {
+          boat_id: string
+          created_at: string
+          id: string
+          intervention_id: string | null
+          manual_task_id: string
+          scheduled_date: string
+          status: string
+          task_name: string
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          created_at?: string
+          id?: string
+          intervention_id?: string | null
+          manual_task_id: string
+          scheduled_date: string
+          status?: string
+          task_name: string
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          created_at?: string
+          id?: string
+          intervention_id?: string | null
+          manual_task_id?: string
+          scheduled_date?: string
+          status?: string
+          task_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_maintenance_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_maintenance_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_maintenance_manual_task_id_fkey"
+            columns: ["manual_task_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_manual_tasks"
             referencedColumns: ["id"]
           },
         ]
