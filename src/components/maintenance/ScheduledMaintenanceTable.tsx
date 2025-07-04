@@ -50,6 +50,15 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, 
 
   const createInterventionFromSchedule = async (maintenance: ScheduledMaintenance) => {
     try {
+      // Récupérer les informations du bateau pour obtenir le base_id
+      const { data: boat, error: boatError } = await supabase
+        .from('boats')
+        .select('base_id')
+        .eq('id', maintenance.boatId)
+        .single();
+
+      if (boatError) throw boatError;
+
       // Créer l'intervention
       const { data: intervention, error: interventionError } = await supabase
         .from('interventions')
@@ -57,6 +66,7 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, 
           title: `Maintenance préventive - ${maintenance.taskName}`,
           description: `Intervention créée automatiquement depuis la maintenance programmée pour ${maintenance.boatName}`,
           boat_id: maintenance.boatId,
+          base_id: boat.base_id, // Ajout du base_id obligatoire
           scheduled_date: maintenance.scheduledDate,
           status: 'scheduled'
         })
