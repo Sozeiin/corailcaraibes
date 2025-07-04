@@ -84,6 +84,24 @@ export default function Stock() {
     setIsDuplicateDialogOpen(true);
   };
 
+  const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
+    try {
+      const { error } = await supabase
+        .from('stock_items')
+        .update({ 
+          quantity: newQuantity,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la quantité:', error);
+    }
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
@@ -171,6 +189,7 @@ export default function Stock() {
           isLoading={isLoading}
           onEdit={handleEdit}
           onDuplicate={handleDuplicate}
+          onUpdateQuantity={handleUpdateQuantity}
           canManage={canManageStock}
         />
       </div>

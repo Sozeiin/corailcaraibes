@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Package, AlertTriangle, Copy } from 'lucide-react';
+import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -17,10 +17,11 @@ interface StockTableProps {
   isLoading: boolean;
   onEdit: (item: StockItem) => void;
   onDuplicate?: (item: StockItem) => void;
+  onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
   canManage: boolean;
 }
 
-export function StockTable({ items, isLoading, onEdit, onDuplicate, canManage }: StockTableProps) {
+export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, canManage }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -95,9 +96,32 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, canManage }:
                   )}
                 </TableCell>
                 <TableCell className="font-medium">
-                  <span className={item.quantity <= item.minThreshold ? 'text-orange-600' : ''}>
-                    {item.quantity}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {canManage && onUpdateQuantity && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                        disabled={item.quantity === 0}
+                        title="Diminuer la quantité"
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <span className={`min-w-[3rem] text-center ${item.quantity <= item.minThreshold ? 'text-orange-600' : ''}`}>
+                      {item.quantity}
+                    </span>
+                    {canManage && onUpdateQuantity && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                        title="Augmenter la quantité"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="text-gray-600">
                   {item.minThreshold}
