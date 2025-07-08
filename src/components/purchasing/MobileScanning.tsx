@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { BrowserMultiFormatReader } from '@zxing/browser';
+import Quagga from 'quagga';
 
 // Déclarer les types Capacitor pour éviter les erreurs TS
 declare global {
@@ -72,29 +72,10 @@ export function MobileScanning() {
   };
 
   const startWebCameraScan = async () => {
-    // Demander l'accès à la caméra
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: { 
-        facingMode: 'environment', // Caméra arrière sur mobile
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    });
-
-    // Créer un élément vidéo temporaire
-    const video = document.createElement('video');
-    video.srcObject = stream;
-    video.autoplay = true;
-    video.playsInline = true;
-
-    // Attendre que la vidéo soit prête
-    await new Promise((resolve) => {
-      video.onloadedmetadata = () => resolve(null);
-    });
-
-    // Créer un overlay pour la caméra
-    const overlay = document.createElement('div');
-    overlay.style.cssText = `
+    // Créer un conteneur pour Quagga
+    const scannerContainer = document.createElement('div');
+    scannerContainer.id = 'barcode-scanner';
+    scannerContainer.style.cssText = `
       position: fixed;
       top: 0;
       left: 0;
@@ -112,133 +93,182 @@ export function MobileScanning() {
     videoContainer.style.cssText = `
       position: relative;
       width: 100%;
-      max-width: 500px;
-      aspect-ratio: 4/3;
-    `;
-
-    video.style.cssText = `
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    `;
-
-    const scanLine = document.createElement('div');
-    scanLine.style.cssText = `
-      position: absolute;
-      top: 50%;
-      left: 10%;
-      right: 10%;
-      height: 2px;
-      background: #00ff00;
-      box-shadow: 0 0 10px #00ff00;
-      animation: pulse 2s infinite;
+      max-width: 640px;
+      height: 480px;
+      background: black;
     `;
 
     const closeButton = document.createElement('button');
-    closeButton.textContent = '✕ Fermer';
+    closeButton.textContent = '✕ Fermer Scanner';
     closeButton.style.cssText = `
       margin-top: 20px;
-      padding: 10px 20px;
+      padding: 12px 24px;
       background: #ff4444;
       color: white;
       border: none;
-      border-radius: 5px;
+      border-radius: 8px;
       font-size: 16px;
       cursor: pointer;
+      font-weight: bold;
     `;
 
     const instructionText = document.createElement('p');
-    instructionText.textContent = 'Positionnez le code-barres dans le cadre et attendez la détection automatique';
+    instructionText.textContent = 'Placez le code-barres dans le cadre pour le scanner';
     instructionText.style.cssText = `
       color: white;
       margin-bottom: 20px;
       font-size: 18px;
       text-align: center;
+      font-weight: bold;
     `;
 
     const statusText = document.createElement('p');
-    statusText.textContent = 'Recherche de codes-barres...';
+    statusText.textContent = 'Initialisation du scanner...';
     statusText.style.cssText = `
       color: #00ff00;
-      margin-top: 10px;
+      margin-top: 15px;
       font-size: 14px;
       text-align: center;
     `;
 
-    videoContainer.appendChild(video);
-    videoContainer.appendChild(scanLine);
-    overlay.appendChild(instructionText);
-    overlay.appendChild(videoContainer);
-    overlay.appendChild(statusText);
-    overlay.appendChild(closeButton);
-    document.body.appendChild(overlay);
+    // Créer un overlay de visée
+    const targetOverlay = document.createElement('div');
+    targetOverlay.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 250px;
+      height: 150px;
+      border: 2px solid #00ff00;
+      border-radius: 8px;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+    `;
 
-    // Initialiser le lecteur de codes-barres ZXing
-    const codeReader = new BrowserMultiFormatReader();
+    videoContainer.appendChild(targetOverlay);
+    scannerContainer.appendChild(instructionText);
+    scannerContainer.appendChild(videoContainer);
+    scannerContainer.appendChild(statusText);
+    scannerContainer.appendChild(closeButton);
+    document.body.appendChild(scannerContainer);
+
     let isScanning = true;
-    let scanController: any = null;
 
-    // Fonction pour nettoyer
+    // Fonction de nettoyage
     const cleanup = () => {
       isScanning = false;
-      if (scanController) {
-        try {
-          scanController.stop();
-        } catch (e) {
-          console.log('Erreur lors de l\'arrêt du controller:', e);
-        }
+      try {
+        Quagga.stop();
+      } catch (e) {
+        console.log('Erreur lors de l\'arrêt de Quagga:', e);
       }
-      stream.getTracks().forEach(track => track.stop());
-      if (overlay.parentNode) {
-        document.body.removeChild(overlay);
+      if (scannerContainer.parentNode) {
+        document.body.removeChild(scannerContainer);
       }
     };
 
     closeButton.onclick = cleanup;
 
     try {
-      // Démarrer la détection en continu
-      scanController = await codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
-        if (result && isScanning) {
-          // Code-barres détecté !
-          const scannedCode = result.getText();
-          console.log('Code-barres détecté:', scannedCode);
-          
-          statusText.textContent = `Code détecté: ${scannedCode}`;
+      // Configuration de Quagga
+      await new Promise((resolve, reject) => {
+        Quagga.init({
+          inputStream: {
+            name: "Live",
+            type: "LiveStream",
+            target: videoContainer,
+            constraints: {
+              width: 640,
+              height: 480,
+              facingMode: "environment" // Caméra arrière
+            }
+          },
+          locator: {
+            patchSize: "medium",
+            halfSample: true
+          },
+          numOfWorkers: 2,
+          decoder: {
+            readers: [
+              "code_128_reader",
+              "ean_reader",
+              "ean_8_reader",
+              "code_39_reader",
+              "code_39_vin_reader",
+              "codabar_reader",
+              "upc_reader",
+              "upc_e_reader"
+            ]
+          },
+          locate: true
+        }, (err) => {
+          if (err) {
+            console.error('Erreur d\'initialisation Quagga:', err);
+            statusText.textContent = 'Erreur d\'accès à la caméra';
+            statusText.style.color = '#ff4444';
+            reject(err);
+            return;
+          }
+          console.log("Quagga initialisé avec succès");
+          statusText.textContent = 'Scanner prêt - Placez un code-barres dans le cadre';
+          statusText.style.color = '#00ff00';
+          resolve(null);
+        });
+      });
+
+      // Démarrer Quagga
+      Quagga.start();
+
+      // Gestionnaire de détection
+      Quagga.onDetected((result) => {
+        if (!isScanning) return;
+
+        const code = result.codeResult.code;
+        console.log('Code-barres détecté par Quagga:', code);
+        
+        // Vérifier que le code est valide (pas trop court)
+        if (code && code.length >= 3) {
+          statusText.textContent = `Code détecté: ${code}`;
           statusText.style.color = '#00ff00';
           
-          // Arrêter le scan et traiter le résultat
+          // Vibration si disponible
+          if (navigator.vibrate) {
+            navigator.vibrate(200);
+          }
+          
+          // Arrêter et traiter
           cleanup();
-          processScannedCode(scannedCode, 'camera');
+          processScannedCode(code, 'camera');
           
           toast({
             title: 'Code-barres détecté',
-            description: `Code scanné: ${scannedCode}`,
+            description: `Code scanné: ${code}`,
           });
-        } else if (error && isScanning) {
-          // Mettre à jour le statut de recherche
+        }
+      });
+
+      // Gestionnaire d'erreurs
+      Quagga.onProcessed((result) => {
+        if (!isScanning) return;
+        
+        if (!result) {
           statusText.textContent = 'Recherche de codes-barres...';
           statusText.style.color = '#ffff00';
         }
       });
+
     } catch (error) {
-      console.error('Erreur lors du scan ZXing:', error);
-      statusText.textContent = 'Erreur de détection - Vérifiez que le code-barres est bien visible et net';
+      console.error('Erreur lors du scan Quagga:', error);
+      statusText.textContent = 'Erreur: impossible d\'accéder à la caméra';
       statusText.style.color = '#ff4444';
       
-      // En cas d'erreur de ZXing, proposer la saisie manuelle
-      setTimeout(() => {
-        if (isScanning) {
-          statusText.textContent = 'Échec de la détection automatique - Essayez la saisie manuelle';
-          statusText.style.color = '#ffa500';
-        }
-      }, 3000);
+      toast({
+        title: 'Erreur de scanner',
+        description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
+        variant: 'destructive'
+      });
     }
-
-    // Gérer la fermeture explicite
-    closeButton.onclick = () => {
-      cleanup();
-    };
   };
 
   const processScannedCode = async (code: string, method: 'camera' | 'manual' | 'image') => {
