@@ -50,13 +50,18 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
-    if (code.length < 4 || code.length > 20) return false;
-    const alphanumericRegex = /^[A-Za-z0-9\-_]+$/;
-    if (!alphanumericRegex.test(code)) return false;
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < 3 || trimmedCode.length > 30) return false;
+    
+    // Accepter les caractères alphanumériques, tirets, points et underscores
+    const validCharsRegex = /^[A-Za-z0-9\-_.]+$/;
+    if (!validCharsRegex.test(trimmedCode)) return false;
+    
+    // Rejeter les codes trop simples
     const invalidPatterns = [
-      /^0+$/, /^1+$/, /^\d{1,3}$/, /^[A-Z]{1,2}$/
+      /^0+$/, /^1+$/, /^\d{1,2}$/, /^[A-Z]{1}$/
     ];
-    return !invalidPatterns.some(pattern => pattern.test(code));
+    return !invalidPatterns.some(pattern => pattern.test(trimmedCode));
   }, []);
 
   const startScan = async (operation: 'add' | 'remove') => {
@@ -282,23 +287,65 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   };
 
   const processScannedCode = (code: string, operation: 'add' | 'remove') => {
-    const stockItem = stockItems.find(item => 
-      item.reference === code || 
-      item.name.toLowerCase().includes(code.toLowerCase())
+    const trimmedCode = code.trim();
+    let matchType = '';
+    
+    // 1. Recherche exacte par référence (insensible à la casse)
+    let stockItem = stockItems.find(item => 
+      item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
     );
+    if (stockItem) {
+      matchType = 'Référence exacte';
+    }
+    
+    // 2. Recherche partielle dans les références
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.reference && 
+        item.reference.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+      if (stockItem) {
+        matchType = 'Référence partielle';
+      }
+    }
+    
+    // 3. Recherche par nom contenant le code
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.name.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+      if (stockItem) {
+        matchType = 'Nom d\'article';
+      }
+    }
+    
+    // 4. Recherche approximative dans les références (pour les codes avec variantes)
+    if (!stockItem && trimmedCode.length >= 5) {
+      const codeBase = trimmedCode.replace(/[-_.]/g, '').toLowerCase();
+      stockItem = stockItems.find(item => {
+        if (!item.reference) return false;
+        const refBase = item.reference.replace(/[-_.]/g, '').toLowerCase();
+        return refBase.includes(codeBase) || codeBase.includes(refBase);
+      });
+      if (stockItem) {
+        matchType = 'Référence similaire';
+      }
+    }
 
     if (!stockItem) {
-      setCodeToCreate(code);
+      setCodeToCreate(trimmedCode);
       setIsCreateDialogOpen(true);
       return;
     }
 
-    setScannedCode(code);
+    setScannedCode(trimmedCode);
     setCurrentOperation(operation);
     
     const newOperation: ScannedOperation = {
       id: Date.now(),
-      code,
+      code: trimmedCode,
       timestamp: new Date().toISOString(),
       operation,
       quantity: 1,
@@ -309,8 +356,8 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
     
     toast({
-      title: 'Article scanné',
-      description: `${stockItem.name} - Stock actuel: ${stockItem.quantity}`,
+      title: 'Article trouvé',
+      description: `${stockItem.name} (${matchType}) - Stock: ${stockItem.quantity}`,
     });
   };
 
