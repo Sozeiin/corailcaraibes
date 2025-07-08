@@ -342,7 +342,7 @@ export function MobileScanning() {
     };
 
     try {
-      // Configuration de Quagga optimisée pour la précision
+      // Configuration de Quagga optimisée pour une détection précise
       await new Promise((resolve, reject) => {
         Quagga.init({
           inputStream: {
@@ -352,25 +352,34 @@ export function MobileScanning() {
             constraints: {
               width: 640,
               height: 400,
-              facingMode: "environment"
+              facingMode: "environment", // Caméra arrière
+              focusMode: "continuous",    // Mise au point continue
+              exposureMode: "continuous"  // Exposition automatique
             }
           },
           locator: {
-            patchSize: "large",
-            halfSample: false
+            patchSize: "x-large",  // Zone de détection plus grande
+            halfSample: false      // Pas de réduction pour max précision
           },
-          numOfWorkers: 2,
-          frequency: 3, // Réduit pour éviter trop de détections rapides
+          numOfWorkers: navigator.hardwareConcurrency || 4, // Adaptatif selon CPU
+          frequency: 2,          // Réduit pour éviter spam mais assez rapide
           decoder: {
             readers: [
-              "ean_reader",      // EAN-13 prioritaire
-              "ean_8_reader",    // EAN-8
-              "code_128_reader", // Code 128
-              "upc_reader"       // UPC
+              "ean_reader",      // EAN-13/8 (codes produits)
+              "code_128_reader", // Code 128 (logistique)
+              "upc_reader",      // UPC-A/E (produits US)
+              "code_39_reader"   // Code 39 (industriel)
             ],
-            multiple: false
+            multiple: false,
+            debug: {
+              drawBoundingBox: false,
+              showFrequency: false,
+              drawScanline: false,
+              showPattern: false
+            }
           },
-          locate: true
+          locate: true,
+          debug: false
         }, (err) => {
           if (err) {
             console.error('Erreur d\'initialisation Quagga:', err);
@@ -385,18 +394,31 @@ export function MobileScanning() {
       // Démarrer Quagga
       Quagga.start();
 
-      // Gestionnaire de détection - ajouter tous les codes valides à la liste
+      // Gestionnaire de détection optimisé avec filtrage intelligent
       Quagga.onDetected((result) => {
         if (!isScanning) return;
 
         const code = result.codeResult.code;
         const format = result.codeResult.format;
+        const confidence = result.codeResult.decodedCodes[0]?.confidence || 0;
         
-        console.log('Code-barres détecté par Quagga:', code, 'Format:', format);
+        console.log('Code détecté:', code, 'Format:', format, 'Confiance:', confidence);
         
-        // Validation et ajout à la liste
-        if (code && code.length >= 6 && /^[0-9]+$/.test(code)) {
+        // Filtrage intelligent des codes valides
+        const isValidCode = 
+          code && 
+          code.length >= 8 &&                    // Longueur minimale pour EAN-8
+          code.length <= 14 &&                   // Longueur maximale pour EAN-13
+          /^[0-9]+$/.test(code) &&              // Uniquement des chiffres
+          confidence > 80;                       // Confiance élevée
+        
+        if (isValidCode) {
           addDetectedCode(code, format);
+          
+          // Vibration pour confirmer la détection
+          if (navigator.vibrate) {
+            navigator.vibrate(100);
+          }
         }
       });
 
