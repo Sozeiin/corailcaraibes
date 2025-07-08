@@ -78,7 +78,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
   });
 
   const isEditing = !!order;
-  const canEdit = user?.role === 'direction' || (order && order.requestedBy === user?.id && order.status === 'pending_approval');
+  const canEdit = user?.role === 'direction' || user?.role === 'chef_base' || (order && order.requestedBy === user?.id && order.status === 'pending_approval');
 
   // Fetch boats for selection
   const { data: boats = [] } = useQuery({
