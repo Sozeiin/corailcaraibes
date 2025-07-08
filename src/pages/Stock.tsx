@@ -10,8 +10,10 @@ import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
+import { StockScanner } from '@/components/stock/StockScanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { MobileTable } from '@/components/ui/mobile-table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { StockItem } from '@/types';
 
@@ -223,53 +225,74 @@ export default function Stock() {
         </Alert>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-3 sm:p-6 border-b">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher un article..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+      <Tabs defaultValue="inventory" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            Inventaire
+          </TabsTrigger>
+          <TabsTrigger value="scanner" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Scanner
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inventory" className="space-y-4">
+          <div className="bg-white rounded-lg shadow-sm border">
+            <div className="p-3 sm:p-6 border-b">
+              <div className="flex items-center space-x-4">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Rechercher un article..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              <StockFilters
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategoryChange={setSelectedCategory}
+                bases={bases}
+                selectedBase={selectedBase}
+                onBaseChange={setSelectedBase}
+                showLowStock={showLowStock}
+                onLowStockChange={setShowLowStock}
+                userRole={user?.role}
               />
             </div>
+
+            <div className="p-3 sm:p-0">
+              {isMobile ? (
+                <MobileTable
+                  data={filteredItems}
+                  columns={mobileColumns}
+                  onRowClick={canManageStock ? handleEdit : undefined}
+                  keyField="id"
+                />
+              ) : (
+                <StockTable
+                  items={filteredItems}
+                  isLoading={isLoading}
+                  onEdit={handleEdit}
+                  onDuplicate={handleDuplicate}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  canManage={canManageStock}
+                />
+              )}
+            </div>
           </div>
+        </TabsContent>
 
-          <StockFilters
-            categories={categories}
-            selectedCategory={selectedCategory}
-            onCategoryChange={setSelectedCategory}
-            bases={bases}
-            selectedBase={selectedBase}
-            onBaseChange={setSelectedBase}
-            showLowStock={showLowStock}
-            onLowStockChange={setShowLowStock}
-            userRole={user?.role}
-          />
-        </div>
-
-        <div className="p-3 sm:p-0">
-          {isMobile ? (
-            <MobileTable
-              data={filteredItems}
-              columns={mobileColumns}
-              onRowClick={canManageStock ? handleEdit : undefined}
-              keyField="id"
-            />
-          ) : (
-            <StockTable
-              items={filteredItems}
-              isLoading={isLoading}
-              onEdit={handleEdit}
-              onDuplicate={handleDuplicate}
-              onUpdateQuantity={handleUpdateQuantity}
-              canManage={canManageStock}
-            />
-          )}
-        </div>
-      </div>
+        <TabsContent value="scanner" className="space-y-4">
+          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
+            <StockScanner stockItems={filteredItems} />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       <StockDialog
         isOpen={isDialogOpen}
