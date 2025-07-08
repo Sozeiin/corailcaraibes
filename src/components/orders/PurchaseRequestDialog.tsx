@@ -121,24 +121,32 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
           .select()
           .single();
         
-        if (orderError) throw orderError;
+        if (orderError) {
+          console.error('Order insertion error:', orderError);
+          throw orderError;
+        }
 
         // Insert order items
         if (items.length > 0) {
           const orderItems = items.map(item => ({
             order_id: newOrder.id,
             product_name: item.productName,
-            reference: item.reference,
+            reference: item.reference || null,
             quantity: item.quantity,
             unit_price: item.unitPrice,
-            total_price: item.totalPrice
+            total_price: item.quantity * item.unitPrice
           }));
+
+          console.log('Inserting order items:', orderItems);
 
           const { error: itemsError } = await supabase
             .from('order_items')
             .insert(orderItems);
           
-          if (itemsError) throw itemsError;
+          if (itemsError) {
+            console.error('Order items insertion error:', itemsError);
+            throw itemsError;
+          }
         }
 
         return newOrder;
@@ -200,6 +208,9 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       return;
     }
 
+    console.log('Form data:', formData);
+    console.log('Items:', items);
+
     const submitData = {
       boat_id: formData.boatId === 'none' ? null : formData.boatId,
       urgency_level: formData.urgencyLevel,
@@ -212,8 +223,10 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       requested_by: user?.id,
       base_id: user?.baseId,
       order_date: new Date().toISOString().split('T')[0],
-      total_amount: items.reduce((sum, item) => sum + item.totalPrice, 0)
+      total_amount: items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
     };
+
+    console.log('Submit data:', submitData);
 
     mutation.mutate(submitData);
   };

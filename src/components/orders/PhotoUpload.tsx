@@ -148,7 +148,7 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
           <input
             type="file"
             accept="image/*"
-            capture
+            capture="environment"
             onChange={handleFileSelect}
             className="hidden"
             id="camera-capture"
