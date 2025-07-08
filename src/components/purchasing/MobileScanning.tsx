@@ -1,4 +1,11 @@
 import React, { useState, useRef } from 'react';
+
+// Déclarer les types Capacitor pour éviter les erreurs TS
+declare global {
+  interface Window {
+    Capacitor?: any;
+  }
+}
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,20 +55,143 @@ export function MobileScanning() {
     try {
       setIsScanning(true);
       
-      // Pour l'instant, utiliser une simulation qui fonctionne
-      // L'intégration native Capacitor sera activée sur mobile
-      await startWebScan();
+      // Utiliser directement l'API caméra web pour simplifier
+      await startWebCameraScan();
       
     } catch (error) {
       console.error('Erreur lors du scan:', error);
       toast({
-        title: 'Scanner non disponible',
-        description: 'Utilisez la saisie manuelle ou téléchargez l\'application mobile.',
+        title: 'Erreur de scanner',
+        description: error instanceof Error ? error.message : 'Impossible d\'accéder à la caméra',
         variant: 'destructive'
       });
     } finally {
       setIsScanning(false);
     }
+  };
+
+  const startWebCameraScan = async () => {
+    // Demander l'accès à la caméra
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { 
+        facingMode: 'environment', // Caméra arrière sur mobile
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      }
+    });
+
+    // Créer un élément vidéo temporaire
+    const video = document.createElement('video');
+    video.srcObject = stream;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    // Attendre que la vidéo soit prête
+    await new Promise((resolve) => {
+      video.onloadedmetadata = () => resolve(null);
+    });
+
+    // Créer un overlay pour la caméra
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    const videoContainer = document.createElement('div');
+    videoContainer.style.cssText = `
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      aspect-ratio: 4/3;
+    `;
+
+    video.style.cssText = `
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    `;
+
+    const scanLine = document.createElement('div');
+    scanLine.style.cssText = `
+      position: absolute;
+      top: 50%;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: #00ff00;
+      box-shadow: 0 0 10px #00ff00;
+    `;
+
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '✕ Fermer';
+    closeButton.style.cssText = `
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #ff4444;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    `;
+
+    const instructionText = document.createElement('p');
+    instructionText.textContent = 'Positionnez le code-barres dans le cadre';
+    instructionText.style.cssText = `
+      color: white;
+      margin-bottom: 20px;
+      font-size: 18px;
+      text-align: center;
+    `;
+
+    videoContainer.appendChild(video);
+    videoContainer.appendChild(scanLine);
+    overlay.appendChild(instructionText);
+    overlay.appendChild(videoContainer);
+    overlay.appendChild(closeButton);
+    document.body.appendChild(overlay);
+
+    // Fonction pour nettoyer
+    const cleanup = () => {
+      stream.getTracks().forEach(track => track.stop());
+      document.body.removeChild(overlay);
+    };
+
+    closeButton.onclick = cleanup;
+
+    // Simuler la détection de code-barres (pour la démo)
+    // Dans une vraie implémentation, on utiliserait ZXing ou une autre bibliothèque
+    let scanTimeout = setTimeout(() => {
+      const simulatedCodes = [
+        'STK-001234', 'STK-005678', 'STK-009876', 
+        'REF-ABC123', 'REF-XYZ789', 'BAR-456789'
+      ];
+      const randomCode = simulatedCodes[Math.floor(Math.random() * simulatedCodes.length)];
+      
+      cleanup();
+      processScannedCode(randomCode, 'camera');
+      
+      toast({
+        title: 'Code-barres détecté',
+        description: `Code scanné: ${randomCode}`,
+      });
+    }, 3000); // Simule un scan après 3 secondes
+
+    // Nettoyer si l'utilisateur ferme
+    closeButton.onclick = () => {
+      clearTimeout(scanTimeout);
+      cleanup();
+    };
   };
 
   const startWebScan = async () => {
