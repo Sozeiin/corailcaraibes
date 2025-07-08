@@ -60,7 +60,7 @@ export function ProductAutocomplete({
 
   // Filter items based on search - recherche par mots-clés
   const filteredItems = stockItems.filter(item => {
-    if (!searchValue.trim()) return false;
+    if (!searchValue || !searchValue.trim()) return false;
     
     const searchLower = searchValue.toLowerCase();
     const words = searchLower.split(' ').filter(word => word.length > 0);

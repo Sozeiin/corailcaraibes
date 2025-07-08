@@ -133,8 +133,8 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
             product_name: item.productName,
             reference: item.reference || null,
             quantity: item.quantity,
-            unit_price: item.unitPrice,
-            total_price: item.quantity * item.unitPrice
+            unit_price: item.unitPrice
+            // total_price sera calculé automatiquement par la base de données
           }));
 
           console.log('Inserting order items:', orderItems);
