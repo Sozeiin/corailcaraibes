@@ -5,8 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OrderTable } from '@/components/orders/OrderTable';
+import { OrderCards } from '@/components/orders/OrderCards';
 import { OrderDialog } from '@/components/orders/OrderDialog';
+import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { Order } from '@/types';
 
@@ -16,7 +17,9 @@ export default function Orders() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders'],
@@ -75,10 +78,20 @@ export default function Orders() {
     setIsDialogOpen(true);
   };
 
+  const handleViewDetails = (order: Order) => {
+    setDetailsOrder(order);
+    setIsDetailsDialogOpen(true);
+  };
+
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['orders'] });
+  };
+
+  const handleDetailsDialogClose = () => {
+    setIsDetailsDialogOpen(false);
+    setDetailsOrder(null);
   };
 
   const canManageOrders = user?.role === 'direction' || user?.role === 'chef_base';
@@ -124,10 +137,11 @@ export default function Orders() {
           />
         </div>
 
-        <OrderTable
+        <OrderCards
           orders={filteredOrders}
           isLoading={isLoading}
           onEdit={handleEdit}
+          onViewDetails={handleViewDetails}
           canManage={canManageOrders}
         />
       </div>
@@ -136,6 +150,12 @@ export default function Orders() {
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
         order={editingOrder}
+      />
+
+      <OrderDetailsDialog
+        order={detailsOrder}
+        isOpen={isDetailsDialogOpen}
+        onClose={handleDetailsDialogClose}
       />
     </div>
   );
