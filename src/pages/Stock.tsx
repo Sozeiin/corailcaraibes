@@ -5,22 +5,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StockTable } from '@/components/stock/StockTable';
+import { StockCards } from '@/components/stock/StockCards';
 import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { StockScanner } from '@/components/stock/StockScanner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { MobileTable } from '@/components/ui/mobile-table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { StockItem } from '@/types';
 
 export default function Stock() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const isMobile = useIsMobile();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBase, setSelectedBase] = useState('all');
@@ -135,46 +132,6 @@ export default function Stock() {
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
 
-  // Colonnes pour la vue mobile
-  const mobileColumns = [
-    {
-      key: 'name',
-      label: 'Article',
-      render: (value: string, item: StockItem) => (
-        <div className="flex items-center gap-2">
-          {item.quantity <= item.minThreshold && (
-            <AlertTriangle className="h-4 w-4 text-orange-500" />
-          )}
-          <span className="font-medium">{value}</span>
-        </div>
-      )
-    },
-    {
-      key: 'reference',
-      label: 'Référence',
-      render: (value: string) => value || '-'
-    },
-    {
-      key: 'quantity',
-      label: 'Quantité',
-      render: (value: number, item: StockItem) => (
-        <span className={`font-medium ${item.quantity <= item.minThreshold ? 'text-orange-600' : ''}`}>
-          {value} {item.unit || ''}
-        </span>
-      )
-    },
-    {
-      key: 'category',
-      label: 'Catégorie',
-      render: (value: string) => value || '-'
-    },
-    {
-      key: 'location',
-      label: 'Emplacement',
-      render: (value: string) => value || '-'
-    }
-  ];
-
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -190,7 +147,6 @@ export default function Stock() {
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)}
               className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
-              size={isMobile ? "sm" : "default"}
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               <span className="hidden xs:inline">Importer Excel</span>
@@ -199,7 +155,6 @@ export default function Stock() {
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-marine-600 hover:bg-marine-700 text-sm"
-              size={isMobile ? "sm" : "default"}
             >
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden xs:inline">Ajouter un article</span>
@@ -265,24 +220,15 @@ export default function Stock() {
               />
             </div>
 
-            <div className="p-3 sm:p-0">
-              {isMobile ? (
-                <MobileTable
-                  data={filteredItems}
-                  columns={mobileColumns}
-                  onRowClick={canManageStock ? handleEdit : undefined}
-                  keyField="id"
-                />
-              ) : (
-                <StockTable
-                  items={filteredItems}
-                  isLoading={isLoading}
-                  onEdit={handleEdit}
-                  onDuplicate={handleDuplicate}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  canManage={canManageStock}
-                />
-              )}
+            <div className="p-4 sm:p-6">
+              <StockCards
+                items={filteredItems}
+                isLoading={isLoading}
+                onEdit={handleEdit}
+                onDuplicate={handleDuplicate}
+                onUpdateQuantity={handleUpdateQuantity}
+                canManage={canManageStock}
+              />
             </div>
           </div>
         </TabsContent>
