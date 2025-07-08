@@ -1181,7 +1181,10 @@ export type Database = {
       }
       orders: {
         Row: {
+          approved_at: string | null
+          approved_by: string | null
           base_id: string | null
+          boat_id: string | null
           bulk_purchase_type: string | null
           created_at: string | null
           delivery_date: string | null
@@ -1190,15 +1193,25 @@ export type Database = {
           expected_delivery_date: string | null
           id: string
           is_bulk_purchase: boolean | null
+          is_purchase_request: boolean | null
           notes: string | null
           order_date: string | null
           order_number: string
+          photos: string[] | null
+          rejection_reason: string | null
+          request_notes: string | null
+          requested_by: string | null
           status: Database["public"]["Enums"]["order_status"] | null
           supplier_id: string | null
           total_amount: number | null
+          tracking_url: string | null
+          urgency_level: string | null
         }
         Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
           base_id?: string | null
+          boat_id?: string | null
           bulk_purchase_type?: string | null
           created_at?: string | null
           delivery_date?: string | null
@@ -1207,15 +1220,25 @@ export type Database = {
           expected_delivery_date?: string | null
           id?: string
           is_bulk_purchase?: boolean | null
+          is_purchase_request?: boolean | null
           notes?: string | null
           order_date?: string | null
           order_number: string
+          photos?: string[] | null
+          rejection_reason?: string | null
+          request_notes?: string | null
+          requested_by?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           supplier_id?: string | null
           total_amount?: number | null
+          tracking_url?: string | null
+          urgency_level?: string | null
         }
         Update: {
+          approved_at?: string | null
+          approved_by?: string | null
           base_id?: string | null
+          boat_id?: string | null
           bulk_purchase_type?: string | null
           created_at?: string | null
           delivery_date?: string | null
@@ -1224,19 +1247,47 @@ export type Database = {
           expected_delivery_date?: string | null
           id?: string
           is_bulk_purchase?: boolean | null
+          is_purchase_request?: boolean | null
           notes?: string | null
           order_date?: string | null
           order_number?: string
+          photos?: string[] | null
+          rejection_reason?: string | null
+          request_notes?: string | null
+          requested_by?: string | null
           status?: Database["public"]["Enums"]["order_status"] | null
           supplier_id?: string | null
           total_amount?: number | null
+          tracking_url?: string | null
+          urgency_level?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_base_id_fkey"
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1615,7 +1666,15 @@ export type Database = {
         | "cancelled"
       maintenance_priority: "low" | "medium" | "high" | "urgent"
       maintenance_status: "pending" | "in_progress" | "completed" | "cancelled"
-      order_status: "pending" | "confirmed" | "delivered" | "cancelled"
+      order_status:
+        | "pending"
+        | "confirmed"
+        | "delivered"
+        | "cancelled"
+        | "pending_approval"
+        | "supplier_requested"
+        | "shipping_mainland"
+        | "shipping_antilles"
       user_role: "direction" | "chef_base" | "technicien"
     }
     CompositeTypes: {
@@ -1757,7 +1816,16 @@ export const Constants = {
       ],
       maintenance_priority: ["low", "medium", "high", "urgent"],
       maintenance_status: ["pending", "in_progress", "completed", "cancelled"],
-      order_status: ["pending", "confirmed", "delivered", "cancelled"],
+      order_status: [
+        "pending",
+        "confirmed",
+        "delivered",
+        "cancelled",
+        "pending_approval",
+        "supplier_requested",
+        "shipping_mainland",
+        "shipping_antilles",
+      ],
       user_role: ["direction", "chef_base", "technicien"],
     },
   },

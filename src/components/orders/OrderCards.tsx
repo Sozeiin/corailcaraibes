@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Eye, Package, Calendar, Euro, Truck, Building2 } from 'lucide-react';
+import { Edit, Eye, Package, Calendar, Euro, Truck, Building2, Clock, CheckCircle, XCircle, Ship, AlertTriangle, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,14 +17,47 @@ const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800', 
   delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  cancelled: 'bg-red-100 text-red-800',
+  pending_approval: 'bg-orange-100 text-orange-800',
+  supplier_requested: 'bg-purple-100 text-purple-800',
+  shipping_mainland: 'bg-cyan-100 text-cyan-800',
+  shipping_antilles: 'bg-indigo-100 text-indigo-800'
 };
 
 const statusLabels = {
   pending: 'En attente',
   confirmed: 'Confirmée',
   delivered: 'Livrée', 
-  cancelled: 'Annulée'
+  cancelled: 'Annulée',
+  pending_approval: 'En attente d\'approbation',
+  supplier_requested: 'Demande effectuée',
+  shipping_mainland: 'Livraison Métropole',
+  shipping_antilles: 'Envoi Antilles'
+};
+
+const urgencyColors = {
+  low: 'bg-gray-100 text-gray-800',
+  normal: 'bg-blue-100 text-blue-800',
+  high: 'bg-orange-100 text-orange-800',
+  urgent: 'bg-red-100 text-red-800'
+};
+
+const urgencyLabels = {
+  low: 'Faible',
+  normal: 'Normale',
+  high: 'Élevée',
+  urgent: 'Urgente'
+};
+
+const statusIcons = {
+  pending: Clock,
+  confirmed: CheckCircle,
+  delivered: CheckCircle,
+  cancelled: XCircle,
+  pending_approval: Clock,
+  supplier_requested: CheckCircle,
+  shipping_mainland: Truck,
+  shipping_antilles: Ship
 };
 
 export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage }: OrderCardsProps) {
@@ -100,6 +133,30 @@ export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage
                 </div>
               </div>
             </div>
+
+            {/* Purchase request specific info */}
+            {order.isPurchaseRequest && (
+              <div className="space-y-2">
+                {order.urgencyLevel && (
+                  <Badge className={urgencyColors[order.urgencyLevel as keyof typeof urgencyColors]}>
+                    Urgence: {urgencyLabels[order.urgencyLevel as keyof typeof urgencyLabels]}
+                  </Badge>
+                )}
+                {order.trackingUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(order.trackingUrl, '_blank');
+                    }}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Suivi transporteur
+                  </Button>
+                )}
+              </div>
+            )}
 
             {/* Date de livraison */}
             {order.deliveryDate && (

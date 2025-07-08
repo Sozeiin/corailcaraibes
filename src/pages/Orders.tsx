@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { OrderCards } from '@/components/orders/OrderCards';
 import { OrderDialog } from '@/components/orders/OrderDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
+import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { Order } from '@/types';
 
@@ -16,7 +17,9 @@ export default function Orders() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedType, setSelectedType] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isPurchaseRequestDialogOpen, setIsPurchaseRequestDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
@@ -30,7 +33,10 @@ export default function Orders() {
           *,
           suppliers(name),
           bases(name, location),
-          order_items(*)
+          boats(name, model),
+          order_items(*),
+          requested_by_profile:profiles!requested_by(name),
+          approved_by_profile:profiles!approved_by(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -55,27 +61,49 @@ export default function Orders() {
           totalPrice: item.total_price
         })),
         documents: order.documents || [],
-        createdAt: order.created_at || new Date().toISOString()
+        createdAt: order.created_at || new Date().toISOString(),
+        // Purchase request fields
+        isPurchaseRequest: order.is_purchase_request || false,
+        boatId: order.boat_id || '',
+        urgencyLevel: order.urgency_level || 'normal',
+        requestedBy: order.requested_by || '',
+        approvedBy: order.approved_by || '',
+        approvedAt: order.approved_at || '',
+        photos: order.photos || [],
+        trackingUrl: order.tracking_url || '',
+        rejectionReason: order.rejection_reason || '',
+        requestNotes: order.request_notes || ''
       })) as Order[];
     }
   });
 
   // Get unique statuses for filter
-  const statuses = ['pending', 'confirmed', 'delivered', 'cancelled'];
+  const statuses = [
+    'pending', 'confirmed', 'delivered', 'cancelled', 
+    'pending_approval', 'supplier_requested', 'shipping_mainland', 'shipping_antilles'
+  ];
 
-  // Filter orders based on search and status
+  // Filter orders based on search, status, and type
   const filteredOrders = orders.filter(order => {
     const matchesSearch = searchTerm === '' || 
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
     
-    return matchesSearch && matchesStatus;
+    const matchesType = selectedType === 'all' || 
+      (selectedType === 'requests' && order.isPurchaseRequest) ||
+      (selectedType === 'orders' && !order.isPurchaseRequest);
+    
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const handleEdit = (order: Order) => {
     setEditingOrder(order);
-    setIsDialogOpen(true);
+    if (order.isPurchaseRequest) {
+      setIsPurchaseRequestDialogOpen(true);
+    } else {
+      setIsDialogOpen(true);
+    }
   };
 
   const handleViewDetails = (order: Order) => {
@@ -85,6 +113,12 @@ export default function Orders() {
 
   const handleDialogClose = () => {
     setIsDialogOpen(false);
+    setEditingOrder(null);
+    queryClient.invalidateQueries({ queryKey: ['orders'] });
+  };
+
+  const handlePurchaseRequestDialogClose = () => {
+    setIsPurchaseRequestDialogOpen(false);
     setEditingOrder(null);
     queryClient.invalidateQueries({ queryKey: ['orders'] });
   };
@@ -106,13 +140,23 @@ export default function Orders() {
           </p>
         </div>
         {canManageOrders && (
-          <Button
-            onClick={() => setIsDialogOpen(true)}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle commande
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setIsPurchaseRequestDialogOpen(true)}
+              variant="outline"
+              className="gap-2"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              Demande d'achat
+            </Button>
+            <Button
+              onClick={() => setIsDialogOpen(true)}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Nouvelle commande
+            </Button>
+          </div>
         )}
       </div>
 
@@ -134,6 +178,8 @@ export default function Orders() {
             statuses={statuses}
             selectedStatus={selectedStatus}
             onStatusChange={setSelectedStatus}
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
           />
         </div>
 
@@ -149,6 +195,12 @@ export default function Orders() {
       <OrderDialog
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
+        order={editingOrder}
+      />
+
+      <PurchaseRequestDialog
+        isOpen={isPurchaseRequestDialogOpen}
+        onClose={handlePurchaseRequestDialogClose}
         order={editingOrder}
       />
 

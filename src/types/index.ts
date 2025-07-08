@@ -48,13 +48,24 @@ export interface Order {
   supplierId: string;
   baseId: string;
   orderNumber: string;
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'pending_approval' | 'supplier_requested' | 'shipping_mainland' | 'shipping_antilles';
   totalAmount: number;
   orderDate: string;
   deliveryDate?: string;
   items: OrderItem[];
   documents: string[];
   createdAt: string;
+  // Purchase request specific fields
+  isPurchaseRequest?: boolean;
+  boatId?: string;
+  urgencyLevel?: 'low' | 'normal' | 'high' | 'urgent';
+  requestedBy?: string;
+  approvedBy?: string;
+  approvedAt?: string;
+  photos?: string[];
+  trackingUrl?: string;
+  rejectionReason?: string;
+  requestNotes?: string;
 }
 
 export interface OrderItem {
