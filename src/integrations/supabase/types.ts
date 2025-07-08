@@ -628,6 +628,319 @@ export type Database = {
           },
         ]
       }
+      logistics_receipt_items: {
+        Row: {
+          condition: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          product_name: string
+          product_reference: string | null
+          quantity_accepted: number
+          quantity_expected: number
+          quantity_received: number
+          receipt_id: string
+          scanned_at: string | null
+          scanned_by: string | null
+          shipment_item_id: string | null
+          stock_item_id: string | null
+        }
+        Insert: {
+          condition?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_name: string
+          product_reference?: string | null
+          quantity_accepted?: number
+          quantity_expected: number
+          quantity_received?: number
+          receipt_id: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          shipment_item_id?: string | null
+          stock_item_id?: string | null
+        }
+        Update: {
+          condition?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_name?: string
+          product_reference?: string | null
+          quantity_accepted?: number
+          quantity_expected?: number
+          quantity_received?: number
+          receipt_id?: string
+          scanned_at?: string | null
+          scanned_by?: string | null
+          shipment_item_id?: string | null
+          stock_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_receipt_items_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipt_items_scanned_by_fkey"
+            columns: ["scanned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipt_items_shipment_item_id_fkey"
+            columns: ["shipment_item_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_shipment_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipt_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics_receipts: {
+        Row: {
+          base_id: string
+          condition_notes: string | null
+          created_at: string
+          discrepancies: string | null
+          id: string
+          packages_expected: number | null
+          packages_received: number | null
+          receipt_number: string
+          received_by: string | null
+          received_date: string | null
+          shipment_id: string | null
+          status: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          base_id: string
+          condition_notes?: string | null
+          created_at?: string
+          discrepancies?: string | null
+          id?: string
+          packages_expected?: number | null
+          packages_received?: number | null
+          receipt_number: string
+          received_by?: string | null
+          received_date?: string | null
+          shipment_id?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          base_id?: string
+          condition_notes?: string | null
+          created_at?: string
+          discrepancies?: string | null
+          id?: string
+          packages_expected?: number | null
+          packages_received?: number | null
+          receipt_number?: string
+          received_by?: string | null
+          received_date?: string | null
+          shipment_id?: string | null
+          status?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_receipts_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipts_received_by_fkey"
+            columns: ["received_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipts_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_shipments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_receipts_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics_shipment_items: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          package_number: string | null
+          product_name: string
+          product_reference: string | null
+          quantity_shipped: number
+          scanned_at: string | null
+          scanned_by: string | null
+          shipment_id: string
+          stock_item_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          package_number?: string | null
+          product_name: string
+          product_reference?: string | null
+          quantity_shipped: number
+          scanned_at?: string | null
+          scanned_by?: string | null
+          shipment_id: string
+          stock_item_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          package_number?: string | null
+          product_name?: string
+          product_reference?: string | null
+          quantity_shipped?: number
+          scanned_at?: string | null
+          scanned_by?: string | null
+          shipment_id?: string
+          stock_item_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_shipment_items_scanned_by_fkey"
+            columns: ["scanned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "logistics_shipments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipment_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logistics_shipments: {
+        Row: {
+          base_destination_id: string | null
+          base_origin_id: string | null
+          carrier: string | null
+          created_at: string
+          created_by: string | null
+          estimated_arrival_date: string | null
+          id: string
+          notes: string | null
+          prepared_by: string | null
+          shipment_number: string
+          shipped_date: string | null
+          status: string
+          total_packages: number | null
+          total_weight: number | null
+          tracking_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          base_destination_id?: string | null
+          base_origin_id?: string | null
+          carrier?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_arrival_date?: string | null
+          id?: string
+          notes?: string | null
+          prepared_by?: string | null
+          shipment_number: string
+          shipped_date?: string | null
+          status?: string
+          total_packages?: number | null
+          total_weight?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          base_destination_id?: string | null
+          base_origin_id?: string | null
+          carrier?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_arrival_date?: string | null
+          id?: string
+          notes?: string | null
+          prepared_by?: string | null
+          shipment_number?: string
+          shipped_date?: string | null
+          status?: string
+          total_packages?: number | null
+          total_weight?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logistics_shipments_base_destination_id_fkey"
+            columns: ["base_destination_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipments_base_origin_id_fkey"
+            columns: ["base_origin_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipments_prepared_by_fkey"
+            columns: ["prepared_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_manual_tasks: {
         Row: {
           created_at: string
@@ -1236,6 +1549,14 @@ export type Database = {
           interval_value: number
           interval_unit: string
         }
+        Returns: string
+      }
+      generate_receipt_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_shipment_number: {
+        Args: Record<PropertyKey, never>
         Returns: string
       }
       generate_stock_reference: {

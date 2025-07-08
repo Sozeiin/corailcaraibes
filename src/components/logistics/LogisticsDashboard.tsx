@@ -1,76 +1,79 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
-  ShoppingCart, 
-  Users, 
-  BarChart3, 
   Package, 
   Truck, 
+  ClipboardList, 
   QrCode,
-  TrendingUp,
-  Globe,
-  Settings
+  BarChart3,
+  PackageCheck
 } from 'lucide-react';
-import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
-import { SupplierManagement } from '@/components/purchasing/SupplierManagement';
-import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
-import { MobileScanning } from '@/components/purchasing/MobileScanning';
-import { LogisticsDashboard } from '@/components/logistics/LogisticsDashboard';
+import { ShipmentPreparation } from './ShipmentPreparation';
+import { ShipmentTracking } from './ShipmentTracking';
+import { ReceptionManagement } from './ReceptionManagement';
+import { LogisticsAnalytics } from './LogisticsAnalytics';
+import { MobileScanning } from '../purchasing/MobileScanning';
 
-export default function Purchasing() {
+export function LogisticsDashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState('preparation');
 
-  // Restrict access to direction only
-  if (user?.role !== 'direction') {
-    return <Navigate to="/" replace />;
-  }
+  // Adapter les tabs selon le rôle et la base
+  const isDirection = user?.role === 'direction';
+  const isMetropole = user?.baseId === '550e8400-e29b-41d4-a716-446655440001'; // Base Métropole
 
   const tabs = [
-    {
-      id: 'orders',
-      label: 'Commandes',
-      icon: ShoppingCart,
-      component: AdvancedOrders
-    },
-    {
-      id: 'suppliers',
-      label: 'Fournisseurs',
-      icon: Users,
-      component: SupplierManagement
-    },
-    {
-      id: 'logistics',
-      label: 'Logistique',
-      icon: Truck,
-      component: LogisticsDashboard
-    },
-    {
-      id: 'interbases',
-      label: 'Inter-Bases',
-      icon: Package,
-      component: InterBaseLogistics
-    },
-    {
+    // Métropole : Préparation et expédition
+    ...(isMetropole ? [{
+      id: 'preparation',
+      label: 'Préparation',
+      icon: ClipboardList,
+      component: ShipmentPreparation
+    }, {
       id: 'scanning',
       label: 'Scanner',
       icon: QrCode,
       component: MobileScanning
-    }
+    }] : []),
+    
+    // Toutes bases : Réception
+    {
+      id: 'reception',
+      label: 'Réception',
+      icon: PackageCheck,
+      component: ReceptionManagement
+    },
+    
+    // Suivi des expéditions
+    {
+      id: 'tracking',
+      label: 'Suivi',
+      icon: Truck,
+      component: ShipmentTracking
+    },
+    
+    // Analytics pour direction
+    ...(isDirection ? [{
+      id: 'analytics',
+      label: 'Analytics',
+      icon: BarChart3,
+      component: LogisticsAnalytics
+    }] : [])
   ];
 
   return (
     <div className="container mx-auto py-6 px-4">
       <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
-          <ShoppingCart className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Module Achats</h1>
+          <Package className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold">Logistique</h1>
         </div>
         <p className="text-muted-foreground">
-          Suivi des commandes, réception et redistribution de marchandises
+          {isMetropole 
+            ? 'Préparation, scan et expédition vers les bases' 
+            : 'Réception et intégration des livraisons'}
         </p>
       </div>
 
@@ -97,7 +100,7 @@ export default function Purchasing() {
                   {tab.label}
                 </CardTitle>
                 <CardDescription>
-                  Module {tab.label.toLowerCase()} pour la gestion des achats
+                  Module {tab.label.toLowerCase()} pour la gestion logistique
                 </CardDescription>
               </CardHeader>
               <CardContent>
