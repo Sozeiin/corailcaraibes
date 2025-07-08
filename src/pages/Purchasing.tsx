@@ -17,7 +17,7 @@ import {
 import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
 import { SupplierManagement } from '@/components/purchasing/SupplierManagement';
 import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
-import { MobileScanning } from '@/components/purchasing/MobileScanningImproved';
+import { MobileScanning } from '@/components/purchasing/MobileScanning';
 
 export default function Purchasing() {
   const { user } = useAuth();
