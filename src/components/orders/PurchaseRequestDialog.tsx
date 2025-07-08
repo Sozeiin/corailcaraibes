@@ -114,23 +114,10 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
         if (error) throw error;
         return updated;
       } else {
-        // Generate order number
-        const orderNumber = `REQ-${Date.now().toString().slice(-6)}`;
-        
-        const orderData = {
-          ...data,
-          order_number: orderNumber,
-          is_purchase_request: true,
-          status: 'pending_approval',
-          requested_by: user?.id,
-          base_id: user?.baseId,
-          order_date: new Date().toISOString().split('T')[0],
-          total_amount: items.reduce((sum, item) => sum + item.totalPrice, 0)
-        };
-
+        // Insert new order
         const { data: newOrder, error: orderError } = await supabase
           .from('orders')
-          .insert(orderData)
+          .insert(data)
           .select()
           .single();
         
@@ -218,7 +205,14 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       urgency_level: formData.urgencyLevel,
       request_notes: formData.requestNotes,
       tracking_url: formData.trackingUrl || null,
-      photos: formData.photos
+      photos: formData.photos,
+      order_number: isEditing ? order?.orderNumber : `REQ-${Date.now().toString().slice(-6)}`,
+      is_purchase_request: true,
+      status: isEditing ? order?.status : 'pending_approval',
+      requested_by: user?.id,
+      base_id: user?.baseId,
+      order_date: new Date().toISOString().split('T')[0],
+      total_amount: items.reduce((sum, item) => sum + item.totalPrice, 0)
     };
 
     mutation.mutate(submitData);

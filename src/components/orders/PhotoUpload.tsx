@@ -101,11 +101,11 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
         return;
       }
 
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      // Validate file size (max 50MB)
+      if (file.size > 50 * 1024 * 1024) {
         toast({
           title: "Fichier trop volumineux",
-          description: "La taille maximale autorisée est de 5MB.",
+          description: "La taille maximale autorisée est de 50MB.",
           variant: "destructive",
         });
         return;
@@ -216,7 +216,7 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
             </p>
             {!disabled && (
               <p className="text-sm text-muted-foreground mt-2">
-                Formats acceptés: JPG, PNG • Taille max: 5MB
+                Formats acceptés: JPG, PNG • Taille max: 50MB
               </p>
             )}
           </CardContent>
