@@ -61,7 +61,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
   
   const [formData, setFormData] = useState({
     orderNumber: order?.orderNumber || '',
-    boatId: order?.boatId || '',
+    boatId: order?.boatId || 'none',
     urgencyLevel: (order?.urgencyLevel || 'normal') as 'low' | 'normal' | 'high' | 'urgent',
     requestNotes: order?.requestNotes || '',
     trackingUrl: order?.trackingUrl || '',
@@ -214,7 +214,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
     }
 
     const submitData = {
-      boat_id: formData.boatId || null,
+      boat_id: formData.boatId === 'none' ? null : formData.boatId,
       urgency_level: formData.urgencyLevel,
       request_notes: formData.requestNotes,
       tracking_url: formData.trackingUrl || null,
@@ -258,7 +258,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
             <div>
               <Label htmlFor="boat">Bateau concerné</Label>
               <Select
-                value={formData.boatId}
+                value={formData.boatId || 'none'}
                 onValueChange={(value) => setFormData({...formData, boatId: value})}
                 disabled={!canEdit}
               >
@@ -266,7 +266,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
                   <SelectValue placeholder="Sélectionner un bateau ou 'Pièce détachée'" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Pièce détachée (sans bateau spécifique)</SelectItem>
+                  <SelectItem value="none">Pièce détachée (sans bateau spécifique)</SelectItem>
                   {boats.map((boat) => (
                     <SelectItem key={boat.id} value={boat.id}>
                       {boat.name} - {boat.model}
