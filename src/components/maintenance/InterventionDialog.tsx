@@ -197,7 +197,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
       let interventionId: string;
 
-      if (intervention) {
+      if (intervention && intervention.id && intervention.id.trim() !== '') {
         // Update existing intervention
         const { error } = await supabase
           .from('interventions')
