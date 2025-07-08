@@ -11,6 +11,7 @@ import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { StockScanner } from '@/components/stock/StockScanner';
+import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StockItem } from '@/types';
@@ -27,6 +28,8 @@ export default function Stock() {
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
+  const [detailsItem, setDetailsItem] = useState<StockItem | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock'],
@@ -53,7 +56,10 @@ export default function Stock() {
         location: item.location || '',
         baseId: item.base_id || '',
         baseName: item.bases?.name || '',
-        lastUpdated: item.last_updated || new Date().toISOString()
+        lastUpdated: item.last_updated || new Date().toISOString(),
+        lastPurchaseDate: item.last_purchase_date,
+        lastPurchaseCost: item.last_purchase_cost,
+        lastSupplierId: item.last_supplier_id
       })) as StockItem[];
     }
   });
@@ -128,6 +134,16 @@ export default function Stock() {
   const handleDuplicateDialogClose = () => {
     setIsDuplicateDialogOpen(false);
     setDuplicatingItem(null);
+  };
+
+  const handleViewDetails = (item: StockItem) => {
+    setDetailsItem(item);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleDetailsDialogClose = () => {
+    setIsDetailsDialogOpen(false);
+    setDetailsItem(null);
   };
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
@@ -227,6 +243,7 @@ export default function Stock() {
                 onEdit={handleEdit}
                 onDuplicate={handleDuplicate}
                 onUpdateQuantity={handleUpdateQuantity}
+                onViewDetails={handleViewDetails}
                 canManage={canManageStock}
               />
             </div>
@@ -255,6 +272,12 @@ export default function Stock() {
         isOpen={isDuplicateDialogOpen}
         onClose={handleDuplicateDialogClose}
         item={duplicatingItem}
+      />
+
+      <StockItemDetailsDialog
+        item={detailsItem}
+        isOpen={isDetailsDialogOpen}
+        onClose={handleDetailsDialogClose}
       />
     </div>
   );

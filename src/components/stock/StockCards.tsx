@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus } from 'lucide-react';
+import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,10 +11,11 @@ interface StockCardsProps {
   onEdit: (item: StockItem) => void;
   onDuplicate?: (item: StockItem) => void;
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onViewDetails?: (item: StockItem) => void;
   canManage: boolean;
 }
 
-export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, canManage }: StockCardsProps) {
+export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onViewDetails, canManage }: StockCardsProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -147,28 +148,40 @@ export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
               </div>
 
               {/* Actions */}
-              {canManage && (
-                <div className="flex justify-end gap-2 pt-2 border-t">
-                  {onDuplicate && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDuplicate(item)}
-                      title="Dupliquer sur une autre base"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
-                  )}
+              <div className="flex justify-end gap-2 pt-2 border-t">
+                {onViewDetails && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onEdit(item)}
-                    title="Modifier"
+                    onClick={() => onViewDetails(item)}
+                    title="Voir les détails"
                   >
-                    <Edit className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </Button>
-                </div>
-              )}
+                )}
+                {canManage && (
+                  <>
+                    {onDuplicate && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDuplicate(item)}
+                        title="Dupliquer sur une autre base"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEdit(item)}
+                      title="Modifier"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
+              </div>
             </CardContent>
           </Card>
         );

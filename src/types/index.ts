@@ -78,6 +78,33 @@ export interface StockItem {
   baseId: string;
   baseName?: string;
   lastUpdated: string;
+  lastPurchaseDate?: string;
+  lastPurchaseCost?: number;
+  lastSupplierId?: string;
+  lastSupplierName?: string;
+}
+
+export interface PurchaseHistoryItem {
+  id: string;
+  orderNumber: string;
+  supplierName: string;
+  orderDate: string;
+  deliveryDate?: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  status: string;
+}
+
+export interface UsageHistoryItem {
+  id: string;
+  interventionTitle: string;
+  boatName: string;
+  usedAt: string;
+  quantity: number;
+  unitCost?: number;
+  totalCost?: number;
+  notes?: string;
 }
 
 export interface MaintenanceTask {

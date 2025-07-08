@@ -1138,6 +1138,7 @@ export type Database = {
           product_name: string
           quantity: number
           reference: string | null
+          stock_item_id: string | null
           total_price: number | null
           unit_price: number
         }
@@ -1147,6 +1148,7 @@ export type Database = {
           product_name: string
           quantity?: number
           reference?: string | null
+          stock_item_id?: string | null
           total_price?: number | null
           unit_price?: number
         }
@@ -1156,6 +1158,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           reference?: string | null
+          stock_item_id?: string | null
           total_price?: number | null
           unit_price?: number
         }
@@ -1165,6 +1168,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
             referencedColumns: ["id"]
           },
         ]
@@ -1431,6 +1441,9 @@ export type Database = {
           base_id: string | null
           category: string | null
           id: string
+          last_purchase_cost: number | null
+          last_purchase_date: string | null
+          last_supplier_id: string | null
           last_updated: string | null
           location: string | null
           min_threshold: number | null
@@ -1444,6 +1457,9 @@ export type Database = {
           base_id?: string | null
           category?: string | null
           id?: string
+          last_purchase_cost?: number | null
+          last_purchase_date?: string | null
+          last_supplier_id?: string | null
           last_updated?: string | null
           location?: string | null
           min_threshold?: number | null
@@ -1457,6 +1473,9 @@ export type Database = {
           base_id?: string | null
           category?: string | null
           id?: string
+          last_purchase_cost?: number | null
+          last_purchase_date?: string | null
+          last_supplier_id?: string | null
           last_updated?: string | null
           location?: string | null
           min_threshold?: number | null
@@ -1472,6 +1491,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_items_last_supplier_id_fkey"
+            columns: ["last_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
