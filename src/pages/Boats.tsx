@@ -49,77 +49,81 @@ interface BoatCardProps {
 
 const BoatCard = ({ boat, onEdit, onDelete, onHistory, onPreventiveMaintenance, canManage }: BoatCardProps) => (
   <Card className="hover:shadow-md transition-shadow">
-    <CardHeader className="pb-3">
+    <CardHeader className="pb-2 sm:pb-3">
       <div className="flex items-center justify-between">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Ship className="h-5 w-5 text-marine-600" />
-          {boat.name}
+        <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+          <Ship className="h-4 w-4 sm:h-5 sm:w-5 text-marine-600" />
+          <span className="truncate">{boat.name}</span>
         </CardTitle>
         {getStatusBadge(boat.status)}
       </div>
-      <p className="text-sm text-gray-600">{boat.model} • {boat.year}</p>
+      <p className="text-xs sm:text-sm text-gray-600">{boat.model} • {boat.year}</p>
     </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="space-y-2 text-sm">
+    <CardContent className="space-y-3 sm:space-y-4">
+      <div className="space-y-2 text-xs sm:text-sm">
         <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-gray-400" />
-          <span>{boat.baseName || 'Base inconnue'}</span>
+          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+          <span className="truncate">{boat.baseName || 'Base inconnue'}</span>
         </div>
         {boat.nextMaintenance && (
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span>Prochaine maintenance: {new Date(boat.nextMaintenance).toLocaleDateString('fr-FR')}</span>
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
+            <span className="text-xs">Maintenance: {new Date(boat.nextMaintenance).toLocaleDateString('fr-FR')}</span>
           </div>
         )}
         <div className="flex items-center gap-2">
-          <FileText className="h-4 w-4 text-gray-400" />
+          <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
           <span>{boat.documents?.length || 0} document(s)</span>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-500 truncate">
           N° série: {boat.serialNumber}
         </div>
       </div>
       
       <div className="flex flex-col gap-2">
-        <div className="flex gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1"
+            className="text-xs"
             onClick={() => onHistory(boat)}
           >
-            <History className="h-4 w-4 mr-2" />
-            Historique
+            <History className="h-3 w-3 mr-1" />
+            <span className="hidden xs:inline">Historique</span>
+            <span className="xs:hidden">Hist.</span>
           </Button>
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex-1"
+            className="text-xs"
             onClick={() => onPreventiveMaintenance(boat)}
           >
-            <Wrench className="h-4 w-4 mr-2" />
-            Maintenance
+            <Wrench className="h-3 w-3 mr-1" />
+            <span className="hidden xs:inline">Maintenance</span>
+            <span className="xs:hidden">Maint.</span>
           </Button>
         </div>
         {canManage && (
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Button 
               variant="outline" 
               size="sm"
-              className="flex-1"
+              className="text-xs"
               onClick={() => onEdit(boat)}
             >
-              <Edit className="h-4 w-4 mr-2" />
-              Modifier
+              <Edit className="h-3 w-3 mr-1" />
+              <span className="hidden xs:inline">Modifier</span>
+              <span className="xs:hidden">Edit</span>
             </Button>
             <Button 
               variant="outline" 
               size="sm"
-              className="flex-1 text-red-600 hover:text-red-700"
+              className="text-xs text-red-600 hover:text-red-700"
               onClick={() => onDelete(boat)}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Supprimer
+              <Trash2 className="h-3 w-3 mr-1" />
+              <span className="hidden xs:inline">Supprimer</span>
+              <span className="xs:hidden">Supp.</span>
             </Button>
           </div>
         )}
@@ -290,33 +294,34 @@ export default function Boats() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gestion des Bateaux</h1>
-          <p className="text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des Bateaux</h1>
+          <p className="text-gray-600 text-sm sm:text-base">
             Gérez votre flotte de catamarans • {filteredBoats.length} bateau(x) affiché(s)
           </p>
         </div>
         {canManageBoats && (
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-marine-600 hover:bg-marine-700">
+          <Button onClick={() => setIsDialogOpen(true)} className="bg-marine-600 hover:bg-marine-700 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
-            Nouveau bateau
+            <span className="hidden xs:inline">Nouveau bateau</span>
+            <span className="xs:hidden">Nouveau</span>
           </Button>
         )}
       </div>
 
       {/* Filters and Search */}
       <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col sm:flex-row gap-4 mb-4">
-            <div className="relative flex-1">
+        <CardContent className="p-3 sm:p-6">
+          <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
-                placeholder="Rechercher par nom, modèle ou numéro de série..."
+                placeholder="Rechercher par nom, modèle..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 text-sm"
               />
             </div>
           </div>
@@ -333,35 +338,35 @@ export default function Boats() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.available}</div>
-            <div className="text-sm text-gray-600">Disponibles</div>
+          <CardContent className="p-3 sm:p-4 text-center">
+            <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.available}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Disponibles</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.rented}</div>
-            <div className="text-sm text-gray-600">En location</div>
+          <CardContent className="p-3 sm:p-4 text-center">
+            <div className="text-xl sm:text-2xl font-bold text-blue-600">{stats.rented}</div>
+            <div className="text-xs sm:text-sm text-gray-600">En location</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-orange-600">{stats.maintenance}</div>
-            <div className="text-sm text-gray-600">En maintenance</div>
+          <CardContent className="p-3 sm:p-4 text-center">
+            <div className="text-xl sm:text-2xl font-bold text-orange-600">{stats.maintenance}</div>
+            <div className="text-xs sm:text-sm text-gray-600">En maintenance</div>
           </CardContent>
         </Card>
         <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">{stats.out_of_service}</div>
-            <div className="text-sm text-gray-600">Hors service</div>
+          <CardContent className="p-3 sm:p-4 text-center">
+            <div className="text-xl sm:text-2xl font-bold text-red-600">{stats.out_of_service}</div>
+            <div className="text-xs sm:text-sm text-gray-600">Hors service</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Boats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredBoats.map((boat) => (
           <BoatCard 
             key={boat.id} 

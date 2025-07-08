@@ -140,54 +140,57 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md w-[95vw]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Ship className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-lg sm:text-xl">
+            <Ship className="h-4 w-4 sm:h-5 sm:w-5" />
             {boat ? 'Modifier le bateau' : 'Nouveau bateau'}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {boat ? 'Modifiez les informations du bateau.' : 'Ajoutez un nouveau bateau à la flotte.'}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
           <div>
-            <Label htmlFor="name">Nom du bateau *</Label>
+            <Label htmlFor="name" className="text-sm">Nom du bateau *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Ex: Évasion"
               required
+              className="text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="model">Modèle *</Label>
+            <Label htmlFor="model" className="text-sm">Modèle *</Label>
             <Input
               id="model"
               value={formData.model}
               onChange={(e) => setFormData(prev => ({ ...prev, model: e.target.value }))}
               placeholder="Ex: Lagoon 380"
               required
+              className="text-sm"
             />
           </div>
 
           <div>
-            <Label htmlFor="serialNumber">Numéro de série *</Label>
+            <Label htmlFor="serialNumber" className="text-sm">Numéro de série *</Label>
             <Input
               id="serialNumber"
               value={formData.serialNumber}
               onChange={(e) => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
               placeholder="Ex: LAG380-2020-001"
               required
+              className="text-sm"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="year">Année *</Label>
+              <Label htmlFor="year" className="text-sm">Année *</Label>
               <Input
                 id="year"
                 type="number"
@@ -196,16 +199,17 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
                 value={formData.year}
                 onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
                 required
+                className="text-sm"
               />
             </div>
 
             <div>
-              <Label htmlFor="status">Statut</Label>
+              <Label htmlFor="status" className="text-sm">Statut</Label>
               <Select
                 value={formData.status}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, status: value as any }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -219,13 +223,13 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="base">Base *</Label>
+            <Label htmlFor="base" className="text-sm">Base *</Label>
             <Select
               value={formData.baseId}
               onValueChange={(value) => setFormData(prev => ({ ...prev, baseId: value }))}
               required
             >
-              <SelectTrigger>
+              <SelectTrigger className="text-sm">
                 <SelectValue placeholder="Sélectionner une base" />
               </SelectTrigger>
               <SelectContent>
@@ -239,20 +243,21 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="nextMaintenance">Prochaine maintenance</Label>
+            <Label htmlFor="nextMaintenance" className="text-sm">Prochaine maintenance</Label>
             <Input
               id="nextMaintenance"
               type="date"
               value={formData.nextMaintenance}
               onChange={(e) => setFormData(prev => ({ ...prev, nextMaintenance: e.target.value }))}
+              className="text-sm"
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+          <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4">
+            <Button type="button" variant="outline" onClick={onClose} disabled={loading} size="sm" className="text-sm">
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.name || !formData.model || !formData.serialNumber || !formData.baseId}>
+            <Button type="submit" disabled={loading || !formData.name || !formData.model || !formData.serialNumber || !formData.baseId} size="sm" className="text-sm">
               {loading ? 'Sauvegarde...' : boat ? 'Modifier' : 'Créer'}
             </Button>
           </div>

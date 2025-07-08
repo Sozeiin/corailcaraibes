@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   QrCode, 
   Camera, 
@@ -32,6 +33,7 @@ import {
 export function MobileScanning() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [activeMode, setActiveMode] = useState<'scan' | 'manual'>('scan');
   const [scanMode, setScanMode] = useState<'stock_entry' | 'preparation' | 'shipping'>('stock_entry');
   const [scannedItems, setScannedItems] = useState<any[]>([]);
@@ -118,7 +120,7 @@ export function MobileScanning() {
       };
     });
 
-    // Interface utilisateur améliorée
+    // Interface utilisateur mobile-first
     const overlay = document.createElement('div');
     overlay.style.cssText = `
       position: fixed;
@@ -138,9 +140,9 @@ export function MobileScanning() {
     const videoContainer = document.createElement('div');
     videoContainer.style.cssText = `
       position: relative;
-      width: 90%;
-      max-width: 600px;
-      aspect-ratio: 16/9;
+      width: ${isMobile ? '95%' : '90%'};
+      max-width: ${isMobile ? '400px' : '600px'};
+      aspect-ratio: ${isMobile ? '4/3' : '16/9'};
       border-radius: 12px;
       overflow: hidden;
       box-shadow: 0 10px 30px rgba(0,255,0,0.3);
@@ -152,14 +154,14 @@ export function MobileScanning() {
       object-fit: cover;
     `;
 
-    // Zone de scan visuelle améliorée
+    // Zone de scan visuelle responsive
     const scanOverlay = document.createElement('div');
     scanOverlay.style.cssText = `
       position: absolute;
-      top: 30%;
-      left: 10%;
-      right: 10%;
-      height: 40%;
+      top: ${isMobile ? '25%' : '30%'};
+      left: ${isMobile ? '5%' : '10%'};
+      right: ${isMobile ? '5%' : '10%'};
+      height: ${isMobile ? '50%' : '40%'};
       border: 3px solid #00ff00;
       border-radius: 8px;
       background: rgba(0,255,0,0.1);
@@ -180,13 +182,18 @@ export function MobileScanning() {
       animation: scan-sweep 2s linear infinite;
     `;
 
-    // Ajouter l'animation CSS
+    // CSS responsive pour l'animation
     const style = document.createElement('style');
     style.textContent = `
       @keyframes scan-sweep {
         0% { transform: translateY(0); opacity: 1; }
         50% { opacity: 1; }
-        100% { transform: translateY(200px); opacity: 0; }
+        100% { transform: translateY(${isMobile ? '150px' : '200px'}); opacity: 0; }
+      }
+      @media (max-width: 640px) {
+        .scan-instruction { font-size: 14px !important; }
+        .scan-status { font-size: 12px !important; padding: 8px 16px !important; }
+        .scan-button { padding: 8px 16px !important; font-size: 14px !important; }
       }
     `;
     document.head.appendChild(style);
@@ -195,23 +202,24 @@ export function MobileScanning() {
 
     const instructionText = document.createElement('div');
     instructionText.innerHTML = `
-      <p style="color: white; margin-bottom: 15px; font-size: 18px; text-align: center; font-weight: 500;">
+      <p class="scan-instruction" style="color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;">
         📱 Positionnez le code-barres dans la zone verte
       </p>
-      <p style="color: #00ff00; font-size: 14px; text-align: center; margin-bottom: 20px;">
+      <p class="scan-instruction" style="color: #00ff00; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;">
         Maintenez l'appareil stable pour une meilleure détection
       </p>
     `;
 
     const statusText = document.createElement('p');
     statusText.textContent = '🔍 Recherche active...';
+    statusText.className = 'scan-status';
     statusText.style.cssText = `
       color: #00ff00;
       margin-top: 20px;
-      font-size: 16px;
+      font-size: ${isMobile ? '12px' : '16px'};
       text-align: center;
       font-weight: 500;
-      padding: 10px 20px;
+      padding: ${isMobile ? '8px 16px' : '10px 20px'};
       background: rgba(0,255,0,0.1);
       border-radius: 20px;
       border: 1px solid rgba(0,255,0,0.3);
@@ -220,37 +228,43 @@ export function MobileScanning() {
     const buttonContainer = document.createElement('div');
     buttonContainer.style.cssText = `
       display: flex;
-      gap: 15px;
-      margin-top: 30px;
+      gap: ${isMobile ? '10px' : '15px'};
+      margin-top: ${isMobile ? '20px' : '30px'};
+      flex-direction: ${isMobile ? 'column' : 'row'};
+      width: ${isMobile ? '90%' : 'auto'};
     `;
 
     const closeButton = document.createElement('button');
     closeButton.innerHTML = '✕ Fermer';
+    closeButton.className = 'scan-button';
     closeButton.style.cssText = `
-      padding: 12px 24px;
+      padding: ${isMobile ? '12px 20px' : '12px 24px'};
       background: rgba(255,68,68,0.9);
       color: white;
       border: none;
       border-radius: 25px;
-      font-size: 16px;
+      font-size: ${isMobile ? '14px' : '16px'};
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
       box-shadow: 0 4px 15px rgba(255,68,68,0.3);
+      width: ${isMobile ? '100%' : 'auto'};
     `;
 
     const flashButton = document.createElement('button');
     flashButton.innerHTML = '💡 Flash';
+    flashButton.className = 'scan-button';
     flashButton.style.cssText = `
-      padding: 12px 24px;
+      padding: ${isMobile ? '12px 20px' : '12px 24px'};
       background: rgba(255,255,255,0.1);
       color: white;
       border: 2px solid rgba(255,255,255,0.3);
       border-radius: 25px;
-      font-size: 16px;
+      font-size: ${isMobile ? '14px' : '16px'};
       font-weight: 500;
       cursor: pointer;
       transition: all 0.3s ease;
+      width: ${isMobile ? '100%' : 'auto'};
     `;
 
     buttonContainer.appendChild(flashButton);
@@ -390,26 +404,11 @@ export function MobileScanning() {
         }
       );
       
-      // Nettoyage automatique après un certain temps
-      setTimeout(() => {
-        if (isScanning) {
-          statusText.textContent = '⏱️ Scanner actif depuis longtemps - Redémarrez si nécessaire';
-          statusText.style.color = '#ff8800';
-        }
-      }, 30000);
-      
     } catch (error) {
       console.error('Erreur du scanner ZXing:', error);
       statusText.textContent = '❌ Erreur de scanner - Vérifiez les permissions de caméra';
       statusText.style.color = '#ff4444';
       statusText.style.background = 'rgba(255,68,68,0.2)';
-      
-      setTimeout(() => {
-        if (isScanning) {
-          statusText.textContent = '💡 Essayez la saisie manuelle ou rechargez la page';
-          statusText.style.color = '#ffa500';
-        }
-      }, 3000);
     }
   };
 
@@ -468,46 +467,31 @@ export function MobileScanning() {
       )
     );
 
-    if (isValid) {
-      // Actions selon le mode de scan
-      if (scanMode === 'stock_entry' && item.stockItem) {
-        // Mode entrée stock : ajouter au stock
-        try {
-          const { error } = await supabase
-            .from('stock_items')
-            .update({ 
-              quantity: item.stockItem.quantity + 1,
-              last_updated: new Date().toISOString()
-            })
-            .eq('id', item.stockItem.id);
+    if (isValid && scanMode === 'stock_entry' && item.stockItem) {
+      // Mode entrée stock : ajouter au stock
+      try {
+        const { error } = await supabase
+          .from('stock_items')
+          .update({ 
+            quantity: item.stockItem.quantity + 1,
+            last_updated: new Date().toISOString()
+          })
+          .eq('id', item.stockItem.id);
 
-          if (error) throw error;
+        if (error) throw error;
 
-          toast({
-            title: 'Stock mis à jour',
-            description: `${item.stockItem.name} : +1 unité ajoutée au stock`
-          });
-
-          queryClient.invalidateQueries({ queryKey: ['stock-items'] });
-        } catch (error) {
-          console.error('Erreur mise à jour stock:', error);
-          toast({
-            title: 'Erreur',
-            description: 'Impossible de mettre à jour le stock',
-            variant: 'destructive'
-          });
-        }
-      } else if (scanMode === 'preparation') {
-        // Mode préparation : valider l'article pour préparation
         toast({
-          title: 'Article préparé',
-          description: `${item.code} validé pour préparation expédition`
+          title: 'Stock mis à jour',
+          description: `${item.stockItem.name} : +1 unité ajoutée au stock`
         });
-      } else if (scanMode === 'shipping') {
-        // Mode expédition : valider l'expédition
+
+        queryClient.invalidateQueries({ queryKey: ['stock-items'] });
+      } catch (error) {
+        console.error('Erreur mise à jour stock:', error);
         toast({
-          title: 'Expédition validée',
-          description: `${item.code} scanné et validé pour expédition`
+          title: 'Erreur',
+          description: 'Impossible de mettre à jour le stock',
+          variant: 'destructive'
         });
       }
     }
@@ -515,314 +499,213 @@ export function MobileScanning() {
 
   const clearHistory = () => {
     setScannedItems([]);
+    toast({
+      title: 'Historique effacé',
+      description: 'L\'historique des scans a été vidé'
+    });
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-0">
+      {/* Header avec mode de scan */}
+      <div className="flex flex-col gap-3 sm:gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Scanner Mobile</h2>
-          <p className="text-muted-foreground">
-            Scan de codes-barres et QR codes pour la gestion des stocks
+          <h2 className="text-xl sm:text-2xl font-bold">Scanner Mobile</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Scannez les codes-barres et gérez le stock en temps réel
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={clearHistory}>
-            <History className="h-4 w-4 mr-2" />
-            Effacer Historique
-          </Button>
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
-          </Button>
+
+        {/* Mode selector */}
+        <div className="flex flex-col xs:flex-row gap-2">
+          <select 
+            value={scanMode} 
+            onChange={(e) => setScanMode(e.target.value as any)}
+            className="px-3 py-2 border rounded-md text-sm flex-1"
+          >
+            <option value="stock_entry">Entrée en stock</option>
+            <option value="preparation">Préparation commande</option>
+            <option value="shipping">Expédition</option>
+          </select>
         </div>
       </div>
 
-      {/* Scanner Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Scanning Section */}
+      {/* Méthodes de scan responsive */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* Scanner caméra */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <QrCode className="h-5 w-5" />
-              Interface de Scan
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+              Scanner Caméra
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Scan Mode Selection */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <Button
-                variant={scanMode === 'stock_entry' ? 'default' : 'outline'}
-                onClick={() => setScanMode('stock_entry')}
-                size="sm"
-              >
-                📦 Entrée Stock
-              </Button>
-              <Button
-                variant={scanMode === 'preparation' ? 'default' : 'outline'}
-                onClick={() => setScanMode('preparation')}
-                size="sm"
-              >
-                📋 Préparation
-              </Button>
-              <Button
-                variant={scanMode === 'shipping' ? 'default' : 'outline'}
-                onClick={() => setScanMode('shipping')}
-                size="sm"
-              >
-                🚚 Expédition
-              </Button>
-            </div>
-
-            {/* Mode Selection */}
-            <div className="flex gap-2">
-              <Button
-                variant={activeMode === 'scan' ? 'default' : 'outline'}
-                onClick={() => setActiveMode('scan')}
-                className="flex-1"
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                Caméra
-              </Button>
-              <Button
-                variant={activeMode === 'manual' ? 'default' : 'outline'}
-                onClick={() => setActiveMode('manual')}
-                className="flex-1"
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Manuel
-              </Button>
-            </div>
-
-            {/* Camera View */}
-            {activeMode === 'scan' && (
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-                <Camera className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 mb-4">
-                  {isScanning ? 'Scan en cours...' : 'Appuyez pour scanner un code-barres'}
-                </p>
-                <div className="space-y-2">
-                  <Button 
-                    onClick={startScan}
-                    disabled={isScanning}
-                    className="w-full"
-                  >
-                    <QrCode className="h-4 w-4 mr-2" />
-                    {isScanning ? 'Scan en cours...' : 'Démarrer le Scan'}
-                  </Button>
-                  
-                  <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileUpload}
-                    ref={fileInputRef}
-                    className="hidden"
-                  />
-                  <Button 
-                    variant="outline" 
-                    onClick={() => fileInputRef.current?.click()}
-                    className="w-full"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Télécharger Image
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Manual Entry */}
-            {activeMode === 'manual' && (
-              <div className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Entrez le code-barres manuellement"
-                    value={currentScan}
-                    onChange={(e) => setCurrentScan(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleManualEntry()}
-                  />
-                  <Button onClick={handleManualEntry}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Alert>
-                  <Smartphone className="h-4 w-4" />
-                  <AlertDescription>
-                    Vous pouvez également utiliser un scanner Bluetooth externe pour plus de rapidité.
-                  </AlertDescription>
-                </Alert>
-              </div>
-            )}
-
-            {/* Mode Info */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-              <div className="text-sm font-medium text-blue-800">
-                Mode actuel: {scanMode === 'stock_entry' ? '📦 Entrée en Stock' : 
-                            scanMode === 'preparation' ? '📋 Préparation' : '🚚 Expédition'}
-              </div>
-              <div className="text-xs text-blue-600 mt-1">
-                {scanMode === 'stock_entry' && 'Scan des articles reçus pour entrée automatique en stock'}
-                {scanMode === 'preparation' && 'Scan des articles à préparer pour expédition'}
-                {scanMode === 'shipping' && 'Scan des cartons et palettes avant expédition'}
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {scannedItems.filter(item => item.status === 'validated').length}
-                </div>
-                <div className="text-sm text-muted-foreground">Validés</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {scannedItems.filter(item => item.status === 'pending').length}
-                </div>
-                <div className="text-sm text-muted-foreground">En attente</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {scannedItems.filter(item => item.status === 'rejected').length}
-                </div>
-                <div className="text-sm text-muted-foreground">Rejetés</div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Utilisez la caméra pour scanner les codes-barres
+            </p>
+            <Button 
+              onClick={startScan} 
+              disabled={isScanning}
+              className="w-full text-sm"
+              size="sm"
+            >
+              <QrCode className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              {isScanning ? 'Scan en cours...' : 'Démarrer le scan'}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Scanned Items */}
+        {/* Saisie manuelle */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Articles Scannés ({scannedItems.length})
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Smartphone className="h-4 w-4 sm:h-5 sm:w-5" />
+              Saisie Manuelle
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {scannedItems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Aucun article scanné</p>
-                  <p className="text-sm">Commencez par scanner un code-barres</p>
-                </div>
-              ) : (
-                scannedItems.map((item) => (
-                  <div key={item.id} className="border rounded-lg p-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-mono text-sm font-medium">{item.code}</div>
-                        {item.stockItem && (
-                          <div className="text-sm text-green-600 font-medium">
-                            {item.stockItem.name} (Stock: {item.stockItem.quantity})
-                          </div>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(item.timestamp).toLocaleString('fr-FR')} • {item.method}
-                          {item.found && ' • Trouvé en stock'}
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        {item.status === 'pending' && (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => validateItem(item.id, true)}
-                              className="text-green-600 hover:text-green-700"
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => validateItem(item.id, false)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        
-                        {item.status === 'validated' && (
-                          <Badge className="bg-green-100 text-green-800">
-                            Validé
-                          </Badge>
-                        )}
-                        
-                        {item.status === 'rejected' && (
-                          <Badge className="bg-red-100 text-red-800">
-                            Rejeté
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+          <CardContent className="space-y-3">
+            <Input
+              placeholder="Saisir le code-barres"
+              value={currentScan}
+              onChange={(e) => setCurrentScan(e.target.value)}
+              className="text-sm"
+            />
+            <Button 
+              onClick={handleManualEntry} 
+              variant="outline"
+              className="w-full text-sm"
+              size="sm"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              Ajouter
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Upload image */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+              Image
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <Button 
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="w-full text-sm"
+              size="sm"
+            >
+              <Scan className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
+              Sélectionner
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Integration Info */}
+      {/* Historique des scans */}
       <Card>
-        <CardHeader>
-          <CardTitle>Intégration Mobile</CardTitle>
+        <CardHeader className="pb-3">
+          <div className="flex flex-col xs:flex-row xs:items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <History className="h-4 w-4 sm:h-5 sm:w-5" />
+              Historique des scans ({scannedItems.length})
+            </CardTitle>
+            {scannedItems.length > 0 && (
+              <Button 
+                onClick={clearHistory} 
+                variant="outline" 
+                size="sm"
+                className="text-xs"
+              >
+                Effacer tout
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-medium mb-3">Applications Mobiles</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 p-3 border rounded-lg">
-                  <Smartphone className="h-8 w-8 text-blue-600" />
-                  <div>
-                    <div className="font-medium">FleetCat Scanner</div>
-                    <div className="text-sm text-muted-foreground">Application mobile dédiée</div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Télécharger
-                  </Button>
-                </div>
-                <div className="flex items-center gap-3 p-3 border rounded-lg">
-                  <QrCode className="h-8 w-8 text-green-600" />
-                  <div>
-                    <div className="font-medium">Scanner Web</div>
-                    <div className="text-sm text-muted-foreground">Interface web responsive</div>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Ouvrir
-                  </Button>
-                </div>
-              </div>
+          {scannedItems.length === 0 ? (
+            <div className="text-center py-6 sm:py-8">
+              <Package className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm sm:text-base">Aucun scan enregistré</p>
             </div>
-            
-            <div>
-              <h3 className="font-medium mb-3">Matériel Compatible</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center p-2 border rounded">
-                  <span className="text-sm">Smartphones iOS/Android</span>
-                  <Badge variant="outline">✓ Compatible</Badge>
+          ) : (
+            <div className="space-y-3">
+              {scannedItems.slice(0, 10).map((item) => (
+                <div key={item.id} className="flex flex-col xs:flex-row xs:items-center justify-between gap-2 p-3 border rounded-lg">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <code className="text-xs sm:text-sm font-mono bg-gray-100 px-2 py-1 rounded truncate">
+                        {item.code}
+                      </code>
+                      <Badge 
+                        variant={item.found ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {item.found ? 'Trouvé' : 'Inconnu'}
+                      </Badge>
+                    </div>
+                    
+                    {item.stockItem && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.stockItem.name} - Stock: {item.stockItem.quantity}
+                      </p>
+                    )}
+                    
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(item.timestamp).toLocaleTimeString('fr-FR')} • {item.method}
+                    </p>
+                  </div>
+                  
+                  {item.status === 'pending' && (
+                    <div className="flex gap-2 flex-shrink-0">
+                      <Button 
+                        onClick={() => validateItem(item.id, true)}
+                        size="sm"
+                        className="h-8 px-3 text-xs"
+                      >
+                        <Check className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        onClick={() => validateItem(item.id, false)}
+                        variant="outline"
+                        size="sm"
+                        className="h-8 px-3 text-xs"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {item.status !== 'pending' && (
+                    <Badge 
+                      variant={item.status === 'validated' ? 'default' : 'destructive'}
+                      className="text-xs flex-shrink-0"
+                    >
+                      {item.status === 'validated' ? 'Validé' : 'Rejeté'}
+                    </Badge>
+                  )}
                 </div>
-                <div className="flex justify-between items-center p-2 border rounded">
-                  <span className="text-sm">Scanners Bluetooth</span>
-                  <Badge variant="outline">✓ Compatible</Badge>
+              ))}
+              
+              {scannedItems.length > 10 && (
+                <div className="text-center pt-3 border-t">
+                  <p className="text-xs text-muted-foreground">
+                    +{scannedItems.length - 10} autres scans...
+                  </p>
                 </div>
-                <div className="flex justify-between items-center p-2 border rounded">
-                  <span className="text-sm">Tablettes</span>
-                  <Badge variant="outline">✓ Compatible</Badge>
-                </div>
-                <div className="flex justify-between items-center p-2 border rounded">
-                  <span className="text-sm">Lecteurs industriels</span>
-                  <Badge variant="outline">✓ Compatible</Badge>
-                </div>
-              </div>
+              )}
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -136,27 +136,30 @@ export function AdvancedOrders() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Actions */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Gestion Avancée des Commandes</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-xl sm:text-2xl font-bold">Gestion Avancée des Commandes</h2>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Vue complète et outils avancés pour la gestion des commandes
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Upload className="h-4 w-4 mr-2" />
-            Importer
+        <div className="flex flex-col xs:flex-row gap-2">
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Upload className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Importer</span>
+            <span className="xs:hidden">Import</span>
           </Button>
-          <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
+          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Exporter</span>
+            <span className="xs:hidden">Export</span>
           </Button>
-          <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouvelle Commande
+          <Button onClick={() => setIsDialogOpen(true)} size="sm" className="text-xs sm:text-sm">
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden xs:inline">Nouvelle Commande</span>
+            <span className="xs:hidden">Nouvelle</span>
           </Button>
         </div>
       </div>
@@ -171,28 +174,28 @@ export function AdvancedOrders() {
         <TabsContent value={viewMode} className="space-y-4">
           {/* Filters */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
+            <CardHeader className="pb-3 sm:pb-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
                 Filtres et Recherche
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher commandes..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
+            <CardContent className="space-y-3 sm:space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Rechercher commandes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 text-sm"
+                />
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <select
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="px-3 py-2 border rounded-md"
+                  className="px-3 py-2 border rounded-md text-sm"
                 >
                   <option value="all">Tous les statuts</option>
                   <option value="pending">En attente</option>
@@ -204,7 +207,7 @@ export function AdvancedOrders() {
                 <select
                   value={selectedBase}
                   onChange={(e) => setSelectedBase(e.target.value)}
-                  className="px-3 py-2 border rounded-md"
+                  className="px-3 py-2 border rounded-md text-sm"
                 >
                   <option value="all">Toutes les bases</option>
                   {bases.map(base => (
@@ -214,13 +217,13 @@ export function AdvancedOrders() {
                   ))}
                 </select>
 
-                <Button variant="outline" onClick={() => {
+                <Button variant="outline" size="sm" onClick={() => {
                   toast({
                     title: 'Période sélectionnée',
                     description: 'Sélecteur de période ouvert.'
                   });
-                }}>
-                  <Calendar className="h-4 w-4 mr-2" />
+                }} className="text-xs sm:text-sm">
+                  <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Période
                 </Button>
               </div>

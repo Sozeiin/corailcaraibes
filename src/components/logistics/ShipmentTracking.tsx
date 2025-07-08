@@ -55,52 +55,52 @@ export function ShipmentTracking() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Suivi des Expéditions</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl sm:text-2xl font-bold">Suivi des Expéditions</h2>
+        <p className="text-muted-foreground text-sm sm:text-base">
           Traçabilité des expéditions en cours et livrées
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3 sm:gap-4">
         {shipments.length === 0 ? (
           <Card>
-            <CardContent className="text-center py-8">
-              <Truck className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <p className="text-muted-foreground">Aucune expédition en transit</p>
+            <CardContent className="text-center py-6 sm:py-8">
+              <Truck className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-4 text-muted-foreground" />
+              <p className="text-muted-foreground text-sm sm:text-base">Aucune expédition en transit</p>
             </CardContent>
           </Card>
         ) : (
           shipments.map((shipment) => (
             <Card key={shipment.id}>
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
+              <CardHeader className="pb-3 sm:pb-4">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 sm:gap-0">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                       {getStatusIcon(shipment.status)}
-                      {shipment.shipment_number}
+                      <span className="truncate">{shipment.shipment_number}</span>
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {shipment.base_origin?.name} → {shipment.base_destination?.name}
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mt-1">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="truncate">{shipment.base_origin?.name} → {shipment.base_destination?.name}</span>
                     </div>
                   </div>
                   <Badge 
                     variant={shipment.status === 'delivered' ? 'default' : 'secondary'}
-                    className={getStatusColor(shipment.status)}
+                    className={`${getStatusColor(shipment.status)} text-xs flex-shrink-0`}
                   >
                     {shipment.status === 'shipped' ? 'En transit' : 'Livré'}
                   </Badge>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                   <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Expédié le</p>
-                      <p className="text-sm text-muted-foreground">
+                    <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">Expédié le</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {shipment.shipped_date 
                           ? new Date(shipment.shipped_date).toLocaleDateString('fr-FR')
                           : 'Non défini'
@@ -110,20 +110,20 @@ export function ShipmentTracking() {
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Transporteur</p>
-                      <p className="text-sm text-muted-foreground">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">Transporteur</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {shipment.carrier || 'Non spécifié'}
                       </p>
                     </div>
                   </div>
                   
                   <div className="flex items-center gap-2">
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">Numéro de suivi</p>
-                      <p className="text-sm text-muted-foreground">
+                    <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs sm:text-sm font-medium">N° de suivi</p>
+                      <p className="text-xs text-muted-foreground truncate">
                         {shipment.tracking_number || 'Non disponible'}
                       </p>
                     </div>
@@ -131,8 +131,8 @@ export function ShipmentTracking() {
                 </div>
                 
                 {shipment.logistics_receipts && shipment.logistics_receipts.length > 0 && (
-                  <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                    <p className="text-sm font-medium text-green-800">
+                  <div className="p-3 bg-green-50 rounded-lg">
+                    <p className="text-xs sm:text-sm font-medium text-green-800">
                       ✅ Réception confirmée
                     </p>
                     <p className="text-xs text-green-600">
