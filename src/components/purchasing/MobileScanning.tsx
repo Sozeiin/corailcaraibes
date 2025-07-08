@@ -185,23 +185,30 @@ export function MobileScanning() {
             }
           },
           locator: {
-            patchSize: "medium",
-            halfSample: true
+            patchSize: "large", // Augmenté pour une meilleure détection
+            halfSample: false   // Désactivé pour plus de précision
           },
-          numOfWorkers: 2,
+          numOfWorkers: 4, // Augmenté pour plus de performance
+          frequency: 10,   // Fréquence de scan plus élevée
           decoder: {
             readers: [
-              "code_128_reader",
-              "ean_reader",
-              "ean_8_reader",
-              "code_39_reader",
-              "code_39_vin_reader",
-              "codabar_reader",
-              "upc_reader",
-              "upc_e_reader"
-            ]
+              "ean_reader",       // EAN-13 (prioritaire pour votre code)
+              "ean_8_reader",     // EAN-8
+              "code_128_reader",  // Code 128
+              "code_39_reader",   // Code 39
+              "upc_reader",       // UPC-A
+              "upc_e_reader",     // UPC-E
+              "codabar_reader"    // Codabar
+            ],
+            multiple: false // Une seule lecture à la fois pour éviter les erreurs
           },
-          locate: true
+          locate: true,
+          debug: {
+            drawBoundingBox: false,
+            showFrequency: false,
+            drawScanline: false,
+            showPattern: false
+          }
         }, (err) => {
           if (err) {
             console.error('Erreur d\'initialisation Quagga:', err);
@@ -220,31 +227,51 @@ export function MobileScanning() {
       // Démarrer Quagga
       Quagga.start();
 
-      // Gestionnaire de détection
+      // Gestionnaire de détection avec validation améliorée
+      let detectionCount = 0;
+      let lastCode = '';
+      
       Quagga.onDetected((result) => {
         if (!isScanning) return;
 
         const code = result.codeResult.code;
-        console.log('Code-barres détecté par Quagga:', code);
+        console.log('Code-barres détecté par Quagga:', code, 'Format:', result.codeResult.format);
         
-        // Vérifier que le code est valide (pas trop court)
-        if (code && code.length >= 3) {
-          statusText.textContent = `Code détecté: ${code}`;
-          statusText.style.color = '#00ff00';
-          
-          // Vibration si disponible
-          if (navigator.vibrate) {
-            navigator.vibrate(200);
+        // Validation stricte du code
+        if (code && code.length >= 8) { // Minimum 8 caractères pour EAN-8
+          // Vérifier si c'est le même code plusieurs fois pour confirmer
+          if (code === lastCode) {
+            detectionCount++;
+          } else {
+            lastCode = code;
+            detectionCount = 1;
           }
           
-          // Arrêter et traiter
-          cleanup();
-          processScannedCode(code, 'camera');
+          statusText.textContent = `Détection: ${code} (${detectionCount}/2)`;
+          statusText.style.color = '#ffff00';
           
-          toast({
-            title: 'Code-barres détecté',
-            description: `Code scanné: ${code}`,
-          });
+          // Confirmer la détection après 2 lectures identiques
+          if (detectionCount >= 2) {
+            statusText.textContent = `Code confirmé: ${code}`;
+            statusText.style.color = '#00ff00';
+            
+            // Vibration si disponible
+            if (navigator.vibrate) {
+              navigator.vibrate(200);
+            }
+            
+            // Arrêter et traiter
+            cleanup();
+            processScannedCode(code, 'camera');
+            
+            toast({
+              title: 'Code-barres détecté',
+              description: `Code scanné: ${code}`,
+            });
+          }
+        } else {
+          statusText.textContent = 'Code trop court détecté, continuez...';
+          statusText.style.color = '#ffa500';
         }
       });
 
