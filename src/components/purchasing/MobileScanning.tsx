@@ -33,6 +33,7 @@ export function MobileScanning() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeMode, setActiveMode] = useState<'scan' | 'manual'>('scan');
+  const [scanMode, setScanMode] = useState<'stock_entry' | 'preparation' | 'shipping'>('stock_entry');
   const [scannedItems, setScannedItems] = useState<any[]>([]);
   const [currentScan, setCurrentScan] = useState('');
   const [isScanning, setIsScanning] = useState(false);
@@ -467,31 +468,46 @@ export function MobileScanning() {
       )
     );
 
-    if (isValid && item.stockItem) {
-      // Intégrer au stock - incrémenter la quantité
-      try {
-        const { error } = await supabase
-          .from('stock_items')
-          .update({ 
-            quantity: item.stockItem.quantity + 1,
-            last_updated: new Date().toISOString()
-          })
-          .eq('id', item.stockItem.id);
+    if (isValid) {
+      // Actions selon le mode de scan
+      if (scanMode === 'stock_entry' && item.stockItem) {
+        // Mode entrée stock : ajouter au stock
+        try {
+          const { error } = await supabase
+            .from('stock_items')
+            .update({ 
+              quantity: item.stockItem.quantity + 1,
+              last_updated: new Date().toISOString()
+            })
+            .eq('id', item.stockItem.id);
 
-        if (error) throw error;
+          if (error) throw error;
 
+          toast({
+            title: 'Stock mis à jour',
+            description: `${item.stockItem.name} : +1 unité ajoutée au stock`
+          });
+
+          queryClient.invalidateQueries({ queryKey: ['stock-items'] });
+        } catch (error) {
+          console.error('Erreur mise à jour stock:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible de mettre à jour le stock',
+            variant: 'destructive'
+          });
+        }
+      } else if (scanMode === 'preparation') {
+        // Mode préparation : valider l'article pour préparation
         toast({
-          title: 'Stock mis à jour',
-          description: `${item.stockItem.name} : +1 unité ajoutée`
+          title: 'Article préparé',
+          description: `${item.code} validé pour préparation expédition`
         });
-
-        queryClient.invalidateQueries({ queryKey: ['stock-items'] });
-      } catch (error) {
-        console.error('Erreur mise à jour stock:', error);
+      } else if (scanMode === 'shipping') {
+        // Mode expédition : valider l'expédition
         toast({
-          title: 'Erreur',
-          description: 'Impossible de mettre à jour le stock',
-          variant: 'destructive'
+          title: 'Expédition validée',
+          description: `${item.code} scanné et validé pour expédition`
         });
       }
     }
@@ -534,6 +550,31 @@ export function MobileScanning() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Scan Mode Selection */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <Button
+                variant={scanMode === 'stock_entry' ? 'default' : 'outline'}
+                onClick={() => setScanMode('stock_entry')}
+                size="sm"
+              >
+                📦 Entrée Stock
+              </Button>
+              <Button
+                variant={scanMode === 'preparation' ? 'default' : 'outline'}
+                onClick={() => setScanMode('preparation')}
+                size="sm"
+              >
+                📋 Préparation
+              </Button>
+              <Button
+                variant={scanMode === 'shipping' ? 'default' : 'outline'}
+                onClick={() => setScanMode('shipping')}
+                size="sm"
+              >
+                🚚 Expédition
+              </Button>
+            </div>
+
             {/* Mode Selection */}
             <div className="flex gap-2">
               <Button
@@ -613,6 +654,19 @@ export function MobileScanning() {
                 </Alert>
               </div>
             )}
+
+            {/* Mode Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="text-sm font-medium text-blue-800">
+                Mode actuel: {scanMode === 'stock_entry' ? '📦 Entrée en Stock' : 
+                            scanMode === 'preparation' ? '📋 Préparation' : '🚚 Expédition'}
+              </div>
+              <div className="text-xs text-blue-600 mt-1">
+                {scanMode === 'stock_entry' && 'Scan des articles reçus pour entrée automatique en stock'}
+                {scanMode === 'preparation' && 'Scan des articles à préparer pour expédition'}
+                {scanMode === 'shipping' && 'Scan des cartons et palettes avant expédition'}
+              </div>
+            </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-3 gap-4 pt-4 border-t">
