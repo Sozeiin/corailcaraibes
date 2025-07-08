@@ -99,14 +99,15 @@ export function ProductAutocomplete({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50 bg-background border shadow-lg" align="start">
+        <Command className="bg-background">
           <CommandInput 
             placeholder="Taper pour rechercher..."
             value={searchValue}
             onValueChange={setSearchValue}
+            className="bg-background"
           />
-          <CommandList>
+          <CommandList className="bg-background max-h-[200px]">
             <CommandEmpty>
               <div className="p-2 text-center">
                 <p className="text-sm text-muted-foreground mb-2">
