@@ -2,12 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Check, ChevronsUpDown, Plus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Plus, Search } from 'lucide-react';
 import { StockItem } from '@/types';
 
 interface ProductAutocompleteProps {
@@ -26,8 +23,8 @@ export function ProductAutocomplete({
   placeholder = "Rechercher un produit..." 
 }: ProductAutocompleteProps) {
   const { user } = useAuth();
-  const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState(value);
+  const [showResults, setShowResults] = useState(false);
 
   const { data: stockItems = [] } = useQuery({
     queryKey: ['stock-items-autocomplete', user?.baseId],
@@ -61,108 +58,118 @@ export function ProductAutocomplete({
     enabled: !!user
   });
 
-  // Filter items based on search
-  const filteredItems = stockItems.filter(item =>
-    item.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-    (item.reference && item.reference.toLowerCase().includes(searchValue.toLowerCase()))
-  );
+  // Filter items based on search - recherche par mots-clés
+  const filteredItems = stockItems.filter(item => {
+    if (!searchValue.trim()) return false;
+    
+    const searchLower = searchValue.toLowerCase();
+    const words = searchLower.split(' ').filter(word => word.length > 0);
+    
+    return words.every(word => 
+      item.name.toLowerCase().includes(word) ||
+      (item.reference && item.reference.toLowerCase().includes(word)) ||
+      (item.category && item.category.toLowerCase().includes(word))
+    );
+  });
 
   useEffect(() => {
     setSearchValue(value);
   }, [value]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setSearchValue(newValue);
+    setShowResults(newValue.trim().length > 0);
+    
+    // Si la valeur correspond exactement à un produit, le sélectionner
+    const exactMatch = stockItems.find(item => 
+      item.name.toLowerCase() === newValue.toLowerCase()
+    );
+    if (exactMatch) {
+      onValueChange(exactMatch.name, exactMatch.reference);
+    } else if (newValue !== value) {
+      onValueChange(newValue, '');
+    }
+  };
+
   const handleSelect = (item: StockItem) => {
     onValueChange(item.name, item.reference);
     setSearchValue(item.name);
-    setOpen(false);
+    setShowResults(false);
   };
 
   const handleCreateNew = () => {
     if (searchValue.trim() && onCreateNew) {
       onCreateNew(searchValue.trim());
-      setOpen(false);
+      setShowResults(false);
     }
   };
 
-  const selectedItem = stockItems.find(item => item.name === value);
+  const handleInputFocus = () => {
+    if (searchValue.trim().length > 0) {
+      setShowResults(true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Delay hiding results to allow clicking on items
+    setTimeout(() => setShowResults(false), 200);
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          {value || placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 z-50 bg-background border shadow-lg" align="start">
-        <Command className="bg-background">
-          <CommandInput 
-            placeholder="Taper pour rechercher..."
-            value={searchValue}
-            onValueChange={setSearchValue}
-            className="bg-background"
-          />
-          <CommandList className="bg-background max-h-[200px]">
-            <CommandEmpty>
-              <div className="p-2 text-center">
-                <p className="text-sm text-muted-foreground mb-2">
-                  Aucun produit trouvé
-                </p>
-                {onCreateNew && searchValue.trim() && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCreateNew}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Créer "{searchValue}"
-                  </Button>
-                )}
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <Input
+          type="text"
+          placeholder={placeholder}
+          value={searchValue}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          className="pl-10"
+        />
+      </div>
+
+      {showResults && filteredItems.length > 0 && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+          {filteredItems.slice(0, 10).map((item) => (
+            <div
+              key={item.id}
+              className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+              onClick={() => handleSelect(item)}
+            >
+              <div className="font-medium text-gray-900">{item.name}</div>
+              <div className="text-sm text-gray-500 mt-1">
+                {item.reference && `Réf: ${item.reference}`}
+                {item.category && ` • ${item.category}`}
+                {` • Stock: ${item.quantity} ${item.unit}`}
               </div>
-            </CommandEmpty>
-            <CommandGroup>
-              {filteredItems.map((item) => (
-                <CommandItem
-                  key={item.id}
-                  value={item.name}
-                  onSelect={() => handleSelect(item)}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === item.name ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.reference && `Réf: ${item.reference}`}
-                      {item.category && ` • ${item.category}`}
-                      {` • Stock: ${item.quantity} ${item.unit}`}
-                    </div>
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-            {onCreateNew && searchValue.trim() && !filteredItems.some(item => 
-              item.name.toLowerCase() === searchValue.toLowerCase()
-            ) && (
-              <CommandGroup>
-                <CommandItem onSelect={handleCreateNew}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Créer "{searchValue}"
-                </CommandItem>
-              </CommandGroup>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showResults && filteredItems.length === 0 && searchValue.trim() && (
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+          <div className="p-4 text-center">
+            <p className="text-sm text-gray-500 mb-3">
+              Aucun produit trouvé pour "{searchValue}"
+            </p>
+            {onCreateNew && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCreateNew}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Créer "{searchValue}"
+              </Button>
             )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
