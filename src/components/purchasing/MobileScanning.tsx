@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 
 // Déclarer les types Capacitor pour éviter les erreurs TS
 declare global {
@@ -130,6 +131,7 @@ export function MobileScanning() {
       height: 2px;
       background: #00ff00;
       box-shadow: 0 0 10px #00ff00;
+      animation: pulse 2s infinite;
     `;
 
     const closeButton = document.createElement('button');
@@ -146,7 +148,7 @@ export function MobileScanning() {
     `;
 
     const instructionText = document.createElement('p');
-    instructionText.textContent = 'Positionnez le code-barres dans le cadre';
+    instructionText.textContent = 'Positionnez le code-barres dans le cadre et attendez la détection automatique';
     instructionText.style.cssText = `
       color: white;
       margin-bottom: 20px;
@@ -154,55 +156,89 @@ export function MobileScanning() {
       text-align: center;
     `;
 
+    const statusText = document.createElement('p');
+    statusText.textContent = 'Recherche de codes-barres...';
+    statusText.style.cssText = `
+      color: #00ff00;
+      margin-top: 10px;
+      font-size: 14px;
+      text-align: center;
+    `;
+
     videoContainer.appendChild(video);
     videoContainer.appendChild(scanLine);
     overlay.appendChild(instructionText);
     overlay.appendChild(videoContainer);
+    overlay.appendChild(statusText);
     overlay.appendChild(closeButton);
     document.body.appendChild(overlay);
 
+    // Initialiser le lecteur de codes-barres ZXing
+    const codeReader = new BrowserMultiFormatReader();
+    let isScanning = true;
+    let scanController: any = null;
+
     // Fonction pour nettoyer
     const cleanup = () => {
+      isScanning = false;
+      if (scanController) {
+        try {
+          scanController.stop();
+        } catch (e) {
+          console.log('Erreur lors de l\'arrêt du controller:', e);
+        }
+      }
       stream.getTracks().forEach(track => track.stop());
-      document.body.removeChild(overlay);
+      if (overlay.parentNode) {
+        document.body.removeChild(overlay);
+      }
     };
 
     closeButton.onclick = cleanup;
 
-    // Simuler la détection de code-barres (pour la démo)
-    // Dans une vraie implémentation, on utiliserait ZXing ou une autre bibliothèque
-    let scanTimeout = setTimeout(() => {
-      const simulatedCodes = [
-        'STK-001234', 'STK-005678', 'STK-009876', 
-        'REF-ABC123', 'REF-XYZ789', 'BAR-456789'
-      ];
-      const randomCode = simulatedCodes[Math.floor(Math.random() * simulatedCodes.length)];
-      
-      cleanup();
-      processScannedCode(randomCode, 'camera');
-      
-      toast({
-        title: 'Code-barres détecté',
-        description: `Code scanné: ${randomCode}`,
+    try {
+      // Démarrer la détection en continu
+      scanController = await codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
+        if (result && isScanning) {
+          // Code-barres détecté !
+          const scannedCode = result.getText();
+          console.log('Code-barres détecté:', scannedCode);
+          
+          statusText.textContent = `Code détecté: ${scannedCode}`;
+          statusText.style.color = '#00ff00';
+          
+          // Arrêter le scan et traiter le résultat
+          cleanup();
+          processScannedCode(scannedCode, 'camera');
+          
+          toast({
+            title: 'Code-barres détecté',
+            description: `Code scanné: ${scannedCode}`,
+          });
+        } else if (error && isScanning) {
+          // Mettre à jour le statut de recherche
+          statusText.textContent = 'Recherche de codes-barres...';
+          statusText.style.color = '#ffff00';
+        }
       });
-    }, 3000); // Simule un scan après 3 secondes
+    } catch (error) {
+      console.error('Erreur lors du scan ZXing:', error);
+      statusText.textContent = 'Erreur de détection - Vérifiez que le code-barres est bien visible et net';
+      statusText.style.color = '#ff4444';
+      
+      // En cas d'erreur de ZXing, proposer la saisie manuelle
+      setTimeout(() => {
+        if (isScanning) {
+          statusText.textContent = 'Échec de la détection automatique - Essayez la saisie manuelle';
+          statusText.style.color = '#ffa500';
+        }
+      }, 3000);
+    }
 
-    // Nettoyer si l'utilisateur ferme
+    // Gérer la fermeture explicite
     closeButton.onclick = () => {
-      clearTimeout(scanTimeout);
       cleanup();
     };
-  };
-
-  const startWebScan = async () => {
-    // Simuler un scan pour l'environnement web
-    const simulatedCodes = [
-      'STK-001234', 'STK-005678', 'STK-009876', 
-      'REF-ABC123', 'REF-XYZ789', 'BAR-456789'
-    ];
-    
-    const randomCode = simulatedCodes[Math.floor(Math.random() * simulatedCodes.length)];
-    await processScannedCode(randomCode, 'camera');
   };
 
   const processScannedCode = async (code: string, method: 'camera' | 'manual' | 'image') => {
