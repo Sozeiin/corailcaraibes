@@ -16,6 +16,7 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
   const { user } = useAuth();
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
 
   const uploadPhoto = async (file: File) => {
     if (!user) return;
@@ -147,7 +148,7 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
           <input
             type="file"
             accept="image/*"
-            capture="environment"
+            capture
             onChange={handleFileSelect}
             className="hidden"
             id="camera-capture"
