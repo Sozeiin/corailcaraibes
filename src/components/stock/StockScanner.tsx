@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 
 interface StockScannerProps {
   stockItems: any[];
@@ -44,6 +45,8 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   const [selectedQuantity, setSelectedQuantity] = useState(1);
   const [isScanning, setIsScanning] = useState(false);
   const [operations, setOperations] = useState<ScannedOperation[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [codeToCreate, setCodeToCreate] = useState('');
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
@@ -285,11 +288,8 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     );
 
     if (!stockItem) {
-      toast({
-        title: 'Article non trouvé',
-        description: `Aucun article trouvé pour le code: ${code}`,
-        variant: 'destructive'
-      });
+      setCodeToCreate(code);
+      setIsCreateDialogOpen(true);
       return;
     }
 
@@ -390,6 +390,13 @@ export function StockScanner({ stockItems }: StockScannerProps) {
           : op
       )
     );
+  };
+
+  const handleItemCreated = () => {
+    // Actualiser les données de stock après création
+    queryClient.invalidateQueries({ queryKey: ['stock'] });
+    setCodeToCreate('');
+    setIsCreateDialogOpen(false);
   };
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
@@ -558,6 +565,14 @@ export function StockScanner({ stockItems }: StockScannerProps) {
           </CardContent>
         </Card>
       )}
+
+      {/* Dialog de création d'article */}
+      <CreateStockItemFromScanner
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        scannedCode={codeToCreate}
+        onItemCreated={handleItemCreated}
+      />
     </div>
   );
 }
