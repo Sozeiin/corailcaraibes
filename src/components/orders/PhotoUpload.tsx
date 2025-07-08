@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, X, ImageIcon } from 'lucide-react';
+import { Upload, X, ImageIcon, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -116,9 +116,10 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
 
   return (
     <div className="space-y-4">
-      {/* Upload Button */}
+      {/* Upload Buttons */}
       {!disabled && (
-        <div>
+        <div className="flex gap-2 flex-wrap">
+          {/* Upload from gallery */}
           <input
             type="file"
             accept="image/*"
@@ -137,7 +138,32 @@ export function PhotoUpload({ photos, onPhotosChange, disabled }: PhotoUploadPro
             >
               <span>
                 <Upload className="h-4 w-4 mr-2" />
-                {uploading ? 'Téléchargement...' : 'Ajouter une photo'}
+                {uploading ? 'Téléchargement...' : 'Galerie'}
+              </span>
+            </Button>
+          </label>
+
+          {/* Take photo with camera */}
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+            id="camera-capture"
+            disabled={uploading}
+          />
+          <label htmlFor="camera-capture">
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              disabled={uploading}
+              asChild
+            >
+              <span>
+                <Camera className="h-4 w-4 mr-2" />
+                {uploading ? 'Téléchargement...' : 'Prendre une photo'}
               </span>
             </Button>
           </label>
