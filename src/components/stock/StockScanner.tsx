@@ -399,7 +399,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     setIsCreateDialogOpen(false);
   };
 
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
+  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
 
   if (!canManageStock) {
     return null;

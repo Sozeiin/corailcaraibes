@@ -133,7 +133,7 @@ export default function Stock() {
     setDuplicatingItem(null);
   };
 
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
+  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
 
   // Colonnes pour la vue mobile
   const mobileColumns = [
