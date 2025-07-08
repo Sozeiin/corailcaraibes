@@ -44,13 +44,18 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
     queryKey: ['boat-scheduled-maintenance', boat?.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('maintenance_tasks')
+        .from('scheduled_maintenance')
         .select(`
           *,
-          profiles(name)
+          maintenance_manual_tasks!inner(
+            task_name,
+            description,
+            interval_value,
+            interval_unit
+          )
         `)
         .eq('boat_id', boat?.id)
-        .order('created_at', { ascending: false });
+        .order('scheduled_date', { ascending: true });
 
       if (error) throw error;
       return data;
@@ -225,44 +230,39 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
                     <Card key={task.id}>
                       <CardHeader>
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg">{task.title}</CardTitle>
+                          <CardTitle className="text-lg">{task.task_name}</CardTitle>
                           <div className="flex gap-2">
-                            {getTaskPriorityBadge(task.priority)}
                             {getStatusBadge(task.status)}
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-2">
-                        {task.description && (
-                          <p className="text-gray-600">{task.description}</p>
+                        {task.maintenance_manual_tasks?.description && (
+                          <p className="text-gray-600">{task.maintenance_manual_tasks.description}</p>
                         )}
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium">Durée estimée:</span> {task.estimated_duration || 'Non définie'} min
-                          </div>
-                          <div>
-                            <span className="font-medium">Assignée à:</span> {task.profiles?.name || 'Non assigné'}
+                            <span className="font-medium">Fréquence:</span> {task.maintenance_manual_tasks.interval_value} {task.maintenance_manual_tasks.interval_unit}
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-400" />
                             <span>
+                              Programmée: {format(new Date(task.scheduled_date), 'dd/MM/yyyy', { locale: fr })}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-gray-400" />
+                            <span>
                               Créée: {format(new Date(task.created_at), 'dd/MM/yyyy', { locale: fr })}
                             </span>
                           </div>
-                          {task.completed_at && (
+                          {task.intervention_id && (
                             <div className="flex items-center gap-2">
                               <CheckCircle className="h-4 w-4 text-green-500" />
-                              <span>
-                                Terminée: {format(new Date(task.completed_at), 'dd/MM/yyyy', { locale: fr })}
-                              </span>
+                              <span>Liée à une intervention</span>
                             </div>
                           )}
                         </div>
-                        {task.notes && (
-                          <div className="mt-2">
-                            <span className="font-medium">Notes:</span> {task.notes}
-                          </div>
-                        )}
                       </CardContent>
                     </Card>
                   ))
