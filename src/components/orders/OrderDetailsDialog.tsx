@@ -40,11 +40,49 @@ const statusLabels: Record<string, string> = {
 };
 
 export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialogProps) {
+  // Tous les hooks doivent être appelés AVANT les conditions qui retournent
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
+  
+  // Mutation pour mettre à jour le statut - doit être déclarée AVANT les conditions
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      if (!order) return;
+      
+      const updateData: any = { status };
+      
+      // Si le statut passe à delivered, ajouter la date de livraison
+      if (status === 'delivered' && !order.deliveryDate) {
+        updateData.delivery_date = new Date().toISOString().split('T')[0];
+      }
+      
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', order.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Succès",
+        description: "Le statut de la commande a été mis à jour."
+      });
+      setIsEditingStatus(false);
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut de la commande.",
+        variant: "destructive"
+      });
+      console.error('Error updating order status:', error);
+    }
+  });
   
   console.log('OrderDetailsDialog render', { order: order?.id, isOpen, status: order?.status });
   
@@ -84,41 +122,6 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
     'delivered',
     'cancelled'
   ];
-
-  // Mutation pour mettre à jour le statut
-  const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
-      const updateData: any = { status };
-      
-      // Si le statut passe à delivered, ajouter la date de livraison
-      if (status === 'delivered' && !order.deliveryDate) {
-        updateData.delivery_date = new Date().toISOString().split('T')[0];
-      }
-      
-      const { error } = await supabase
-        .from('orders')
-        .update(updateData)
-        .eq('id', order.id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Succès",
-        description: "Le statut de la commande a été mis à jour."
-      });
-      setIsEditingStatus(false);
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut de la commande.",
-        variant: "destructive"
-      });
-      console.error('Error updating order status:', error);
-    }
-  });
 
   const handleStartEditStatus = () => {
     setNewStatus(order.status);
