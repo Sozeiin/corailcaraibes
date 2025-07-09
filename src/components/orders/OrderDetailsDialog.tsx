@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { OrderTrackingWidget } from './OrderTrackingWidget';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -83,6 +84,58 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
       console.error('Error updating order status:', error);
     }
   });
+
+  // Mutation pour mettre à jour les informations de suivi
+  const updateTrackingMutation = useMutation({
+    mutationFn: async ({ trackingNumber, carrier }: { trackingNumber: string; carrier: string }) => {
+      if (!order) return;
+      
+      // Stocker le transporteur dans les notes pour l'instant
+      const carrierInfo = `Transporteur: ${carrier}`;
+      const existingNotes = order.requestNotes || '';
+      const updatedNotes = existingNotes.includes('Transporteur:') 
+        ? existingNotes.replace(/Transporteur: \w+/g, carrierInfo)
+        : `${existingNotes}${existingNotes ? '\n' : ''}${carrierInfo}`;
+      
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          tracking_url: trackingNumber,
+          request_notes: updatedNotes
+        })
+        .eq('id', order.id);
+      
+      if (error) throw error;
+      
+      return { trackingNumber, carrier };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({
+        title: "Suivi mis à jour",
+        description: "Les informations de suivi ont été enregistrées avec succès."
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour les informations de suivi.",
+        variant: "destructive"
+      });
+      console.error('Error updating tracking info:', error);
+    }
+  });
+
+  // Extraire le transporteur des notes
+  const extractCarrierFromNotes = (notes: string | null): string | undefined => {
+    if (!notes) return undefined;
+    const match = notes.match(/Transporteur: (\w+)/);
+    return match ? match[1] : undefined;
+  };
+
+  const handleUpdateTracking = (trackingNumber: string, carrier: string) => {
+    updateTrackingMutation.mutate({ trackingNumber, carrier });
+  };
   
   console.log('OrderDetailsDialog render', { order: order?.id, isOpen, status: order?.status });
   
@@ -377,6 +430,20 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
                 </div>
               </CardContent>
             </Card>
+          )}
+
+          {/* Widget de suivi de colis */}
+          {(order.isPurchaseRequest && 
+            (order.status === 'shipping_mainland' || 
+             order.status === 'shipping_antilles' || 
+             order.status === 'delivered' || 
+             order.trackingUrl)) && (
+            <OrderTrackingWidget
+              orderId={order.id}
+              trackingNumber={order.trackingUrl}
+              carrier={extractCarrierFromNotes(order.requestNotes)}
+              onUpdateTracking={handleUpdateTracking}
+            />
           )}
         </div>
       </DialogContent>
