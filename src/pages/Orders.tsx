@@ -58,7 +58,7 @@ export default function Orders() {
           reference: item.reference || '',
           quantity: item.quantity,
           unitPrice: item.unit_price,
-          totalPrice: item.total_price
+          totalPrice: item.total_price || (item.quantity * item.unit_price)
         })),
         documents: order.documents || [],
         createdAt: order.created_at || new Date().toISOString(),
