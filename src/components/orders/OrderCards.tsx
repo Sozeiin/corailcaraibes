@@ -128,7 +128,7 @@ export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage
                 <div>
                   <p className="text-muted-foreground">Articles</p>
                   <p className="font-semibold">
-                    {order.items.length} article{order.items.length > 1 ? 's' : ''}
+                    {(order.items || []).length} article{(order.items || []).length > 1 ? 's' : ''}
                   </p>
                 </div>
               </div>
@@ -175,15 +175,15 @@ export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage
             <div className="border-t pt-3">
               <p className="text-sm text-muted-foreground mb-2">Articles :</p>
               <div className="space-y-1">
-                {order.items.slice(0, 2).map((item, index) => (
+                {(order.items || []).slice(0, 2).map((item, index) => (
                   <div key={index} className="text-sm flex justify-between">
                     <span className="truncate">{item.productName}</span>
                     <span className="text-muted-foreground ml-2">x{item.quantity}</span>
                   </div>
                 ))}
-                {order.items.length > 2 && (
+                {(order.items || []).length > 2 && (
                   <p className="text-xs text-muted-foreground">
-                    ... et {order.items.length - 2} autre(s) article(s)
+                    ... et {(order.items || []).length - 2} autre(s) article(s)
                   </p>
                 )}
               </div>

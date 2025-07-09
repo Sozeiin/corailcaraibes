@@ -46,6 +46,8 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [newStatus, setNewStatus] = useState<string>('');
   
+  console.log('OrderDetailsDialog render', { order: order?.id, isOpen, status: order?.status });
+  
   if (!order) return null;
 
   const formatCurrency = (amount: number) => {
@@ -55,10 +57,18 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
     }).format(amount);
   };
 
-  const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalQuantity = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
 
   // Vérifier si l'utilisateur peut modifier le statut
   const canEditStatus = user?.role === 'direction' || user?.role === 'chef_base';
+  
+  console.log('OrderDetailsDialog computed values', { 
+    totalQuantity, 
+    canEditStatus, 
+    orderStatus: order.status,
+    statusColor: statusColors[order.status],
+    statusLabel: statusLabels[order.status]
+  });
 
   // Statuts disponibles selon le contexte
   const availableStatuses = order.isPurchaseRequest ? [
@@ -192,7 +202,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
           </div>
         </DialogHeader>
 
-        <div className="space-y-6">
+            <div className="space-y-6">
           {/* Informations générales */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
@@ -214,7 +224,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
                   <span className="text-sm text-muted-foreground">Articles</span>
                 </div>
                 <div className="text-xl font-bold">
-                  {order.items.length}
+                  {order.items?.length || 0}
                 </div>
               </CardContent>
             </Card>
@@ -271,7 +281,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {order.items.map((item, index) => (
+                {(order.items || []).map((item, index) => (
                   <div 
                     key={item.id || index} 
                     className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
