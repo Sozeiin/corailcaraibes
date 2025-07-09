@@ -1,9 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Euro, Package, Building2, Truck, FileText, ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Calendar, Euro, Package, Building2, Truck, FileText, ImageIcon, Edit, Save, X } from 'lucide-react';
 import { Order } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface OrderDetailsDialogProps {
   order: Order | null;
@@ -34,6 +40,12 @@ const statusLabels = {
 };
 
 export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialogProps) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [newStatus, setNewStatus] = useState<string>('');
+  
   if (!order) return null;
 
   const formatCurrency = (amount: number) => {
@@ -44,6 +56,77 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
   };
 
   const totalQuantity = order.items.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Vérifier si l'utilisateur peut modifier le statut
+  const canEditStatus = user?.role === 'direction' || user?.role === 'chef_base';
+
+  // Statuts disponibles selon le contexte
+  const availableStatuses = order.isPurchaseRequest ? [
+    'pending_approval',
+    'supplier_requested',
+    'shipping_mainland',
+    'shipping_antilles',
+    'delivered',
+    'cancelled'
+  ] : [
+    'pending',
+    'confirmed',
+    'delivered',
+    'cancelled'
+  ];
+
+  // Mutation pour mettre à jour le statut
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      const updateData: any = { status };
+      
+      // Si le statut passe à delivered, ajouter la date de livraison
+      if (status === 'delivered' && !order.deliveryDate) {
+        updateData.delivery_date = new Date().toISOString().split('T')[0];
+      }
+      
+      const { error } = await supabase
+        .from('orders')
+        .update(updateData)
+        .eq('id', order.id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Succès",
+        description: "Le statut de la commande a été mis à jour."
+      });
+      setIsEditingStatus(false);
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut de la commande.",
+        variant: "destructive"
+      });
+      console.error('Error updating order status:', error);
+    }
+  });
+
+  const handleStartEditStatus = () => {
+    setNewStatus(order.status);
+    setIsEditingStatus(true);
+  };
+
+  const handleSaveStatus = () => {
+    if (newStatus && newStatus !== order.status) {
+      updateStatusMutation.mutate(newStatus);
+    } else {
+      setIsEditingStatus(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingStatus(false);
+    setNewStatus('');
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -58,9 +141,54 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
                 Créée le {new Date(order.orderDate).toLocaleDateString('fr-FR')}
               </p>
             </div>
-            <Badge className={statusColors[order.status]}>
-              {statusLabels[order.status]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {isEditingStatus ? (
+                <div className="flex items-center gap-2">
+                  <Select value={newStatus} onValueChange={setNewStatus}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Sélectionner un statut" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableStatuses.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {statusLabels[status]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button 
+                    size="sm" 
+                    onClick={handleSaveStatus}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <Save className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={updateStatusMutation.isPending}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Badge className={statusColors[order.status]}>
+                    {statusLabels[order.status]}
+                  </Badge>
+                  {canEditStatus && (
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={handleStartEditStatus}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
