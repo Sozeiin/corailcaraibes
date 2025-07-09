@@ -17,7 +17,7 @@ interface OrderDetailsDialogProps {
   onClose: () => void;
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800', 
   delivered: 'bg-green-100 text-green-800',
@@ -28,7 +28,7 @@ const statusColors = {
   shipping_antilles: 'bg-indigo-100 text-indigo-800'
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   pending: 'En attente',
   confirmed: 'Confirmée',
   delivered: 'Livrée', 
@@ -151,7 +151,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
                     <SelectContent>
                       {availableStatuses.map((status) => (
                         <SelectItem key={status} value={status}>
-                          {statusLabels[status]}
+                          {statusLabels[status] || status}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -174,8 +174,8 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <Badge className={statusColors[order.status]}>
-                    {statusLabels[order.status]}
+                  <Badge className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}>
+                    {statusLabels[order.status] || order.status}
                   </Badge>
                   {canEditStatus && (
                     <Button 
