@@ -2,7 +2,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Euro, Package, Building2, Truck, FileText } from 'lucide-react';
+import { Calendar, Euro, Package, Building2, Truck, FileText, ImageIcon } from 'lucide-react';
 import { Order } from '@/types';
 
 interface OrderDetailsDialogProps {
@@ -15,14 +15,22 @@ const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800', 
   delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  cancelled: 'bg-red-100 text-red-800',
+  pending_approval: 'bg-orange-100 text-orange-800',
+  supplier_requested: 'bg-purple-100 text-purple-800',
+  shipping_mainland: 'bg-cyan-100 text-cyan-800',
+  shipping_antilles: 'bg-indigo-100 text-indigo-800'
 };
 
 const statusLabels = {
   pending: 'En attente',
   confirmed: 'Confirmée',
   delivered: 'Livrée', 
-  cancelled: 'Annulée'
+  cancelled: 'Annulée',
+  pending_approval: 'En attente d\'approbation',
+  supplier_requested: 'Demande effectuée auprès du fournisseur',
+  shipping_mainland: 'Commande en cours de livraison - Métropole',
+  shipping_antilles: 'Commande en cours d\'envoi - Antilles'
 };
 
 export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialogProps) {
@@ -178,6 +186,35 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
               </div>
             </CardContent>
           </Card>
+
+          {/* Photos */}
+          {order.photos && order.photos.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  Photos
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {order.photos.map((photo, index) => (
+                    <div key={index} className="relative aspect-square">
+                      <img
+                        src={photo}
+                        alt={`Photo ${index + 1}`}
+                        className="w-full h-full object-cover rounded border"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="%236b7280">Image non disponible</text></svg>';
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Documents */}
           {order.documents && order.documents.length > 0 && (
