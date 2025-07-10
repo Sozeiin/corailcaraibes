@@ -142,7 +142,7 @@ export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage
                     Urgence: {urgencyLabels[order.urgencyLevel as keyof typeof urgencyLabels]}
                   </Badge>
                 )}
-                {order.trackingUrl && (
+                {order.trackingUrl && order.trackingUrl.startsWith('http') && (
                   <Button
                     variant="outline"
                     size="sm"
