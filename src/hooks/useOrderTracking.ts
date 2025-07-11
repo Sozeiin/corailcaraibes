@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface TrackingData {
   status: 'pending' | 'in_transit' | 'delivered' | 'exception';
@@ -54,42 +55,49 @@ const CARRIER_CONFIGS = {
   }
 };
 
-// Fonction pour simuler l'API de suivi (à remplacer par de vraies APIs)
+// Fonction pour récupérer les vraies données de suivi via l'API Supabase
 const fetchTrackingData = async (trackingNumber: string, carrier: string): Promise<TrackingData> => {
-  // Simuler un délai d'API
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  const config = CARRIER_CONFIGS[carrier as keyof typeof CARRIER_CONFIGS];
-  
-  if (!config) {
-    throw new Error(`Transporteur non supporté: ${carrier}`);
-  }
-
-  // Simulation de données de suivi
-  // Dans un vrai projet, ici on ferait un appel à l'API du transporteur
-  const mockData: TrackingData = {
-    status: 'in_transit',
-    estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
-    lastUpdate: new Date().toLocaleString('fr-FR'),
-    location: 'Centre de tri - Paris',
-    trackingUrl: config.trackingUrl(trackingNumber),
-    events: [
-      {
-        date: new Date().toLocaleString('fr-FR'),
-        status: 'in_transit',
-        location: 'Centre de tri - Paris',
-        description: 'Colis en cours de traitement'
-      },
-      {
-        date: new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleString('fr-FR'),
-        status: 'pending',
-        location: 'Dépôt - Lyon',
-        description: 'Colis pris en charge par le transporteur'
+  try {
+    const { data: trackingData, error } = await supabase.functions.invoke('carrier-tracking', {
+      body: {
+        trackingNumber,
+        carrier
       }
-    ]
-  };
+    });
 
-  return mockData;
+    if (error) {
+      throw new Error(`Erreur API: ${error.message}`);
+    }
+    
+    // Assurer que l'URL de suivi est disponible
+    const config = CARRIER_CONFIGS[carrier as keyof typeof CARRIER_CONFIGS];
+    if (config && !trackingData.trackingUrl) {
+      trackingData.trackingUrl = config.trackingUrl(trackingNumber);
+    }
+
+    return trackingData;
+  } catch (error) {
+    console.error('Erreur lors de la récupération du suivi:', error);
+    
+    // Fallback avec données minimales en cas d'erreur
+    const config = CARRIER_CONFIGS[carrier as keyof typeof CARRIER_CONFIGS];
+    if (!config) {
+      throw new Error(`Transporteur non supporté: ${carrier}`);
+    }
+
+    return {
+      status: 'pending',
+      location: 'Informations non disponibles',
+      lastUpdate: new Date().toLocaleDateString('fr-FR'),
+      trackingUrl: config.trackingUrl(trackingNumber),
+      events: [{
+        date: new Date().toLocaleDateString('fr-FR'),
+        status: 'pending',
+        location: 'Suivi externe',
+        description: 'Consultez le suivi complet chez le transporteur'
+      }]
+    };
+  }
 };
 
 export const useOrderTracking = ({ trackingNumber, carrier }: UseOrderTrackingProps) => {
