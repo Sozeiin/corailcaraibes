@@ -101,18 +101,15 @@ const fetchTrackingData = async (trackingNumber: string, carrier: string): Promi
 };
 
 export const useOrderTracking = ({ trackingNumber, carrier }: UseOrderTrackingProps) => {
-  const [enabled, setEnabled] = useState(false);
-
   const query = useQuery({
     queryKey: ['orderTracking', trackingNumber, carrier],
     queryFn: () => fetchTrackingData(trackingNumber!, carrier!),
-    enabled: enabled && !!trackingNumber && !!carrier,
+    enabled: !!trackingNumber && !!carrier,
     refetchInterval: 5 * 60 * 1000, // Actualiser toutes les 5 minutes
     staleTime: 2 * 60 * 1000, // Considérer les données comme obsolètes après 2 minutes
   });
 
   const refetch = () => {
-    setEnabled(true);
     query.refetch();
   };
 
