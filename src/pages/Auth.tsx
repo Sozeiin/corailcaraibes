@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,43 +9,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-
 export default function Auth() {
-  const { isAuthenticated } = useAuth();
+  const {
+    isAuthenticated
+  } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [signupForm, setSignupForm] = useState({ 
-    email: '', 
-    password: '', 
-    name: '', 
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: ''
+  });
+  const [signupForm, setSignupForm] = useState({
+    email: '',
+    password: '',
+    name: '',
     confirmPassword: '',
     role: '',
     baseId: ''
   });
-  const [bases, setBases] = useState<Array<{ id: string; name: string }>>([]);
-
+  const [bases, setBases] = useState<Array<{
+    id: string;
+    name: string;
+  }>>([]);
   useEffect(() => {
     const fetchBases = async () => {
-      const { data } = await supabase.from('bases').select('id, name').order('name');
+      const {
+        data
+      } = await supabase.from('bases').select('id, name').order('name');
       setBases(data || []);
     };
     fetchBases();
   }, []);
-
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const {
+        error
+      } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password
       });
-
       if (error) {
         toast({
           title: "Erreur de connexion",
@@ -64,10 +69,8 @@ export default function Auth() {
       setLoading(false);
     }
   };
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (signupForm.password !== signupForm.confirmPassword) {
       toast({
         title: "Erreur",
@@ -76,7 +79,6 @@ export default function Auth() {
       });
       return;
     }
-
     if (!signupForm.role || !signupForm.baseId) {
       toast({
         title: "Erreur",
@@ -85,11 +87,11 @@ export default function Auth() {
       });
       return;
     }
-
     setLoading(true);
-
     try {
-      const { error } = await supabase.auth.signUp({
+      const {
+        error
+      } = await supabase.auth.signUp({
         email: signupForm.email,
         password: signupForm.password,
         options: {
@@ -101,7 +103,6 @@ export default function Auth() {
           emailRedirectTo: `${window.location.origin}/`
         }
       });
-
       if (error) {
         toast({
           title: "Erreur d'inscription",
@@ -111,7 +112,7 @@ export default function Auth() {
       } else {
         toast({
           title: "Inscription réussie",
-          description: "Vérifiez votre email pour confirmer votre compte",
+          description: "Vérifiez votre email pour confirmer votre compte"
         });
       }
     } catch (error) {
@@ -124,15 +125,13 @@ export default function Auth() {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center mx-auto mb-4">
             <span className="text-white font-bold text-2xl">FC</span>
           </div>
-          <CardTitle className="text-2xl">FleetCat</CardTitle>
+          <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>
             Gestion de flotte de catamarans
           </CardDescription>
@@ -148,23 +147,17 @@ export default function Auth() {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    value={loginForm.email}
-                    onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                    required
-                  />
+                  <Input id="login-email" type="email" value={loginForm.email} onChange={e => setLoginForm({
+                  ...loginForm,
+                  email: e.target.value
+                })} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Mot de passe</Label>
-                  <Input
-                    id="login-password"
-                    type="password"
-                    value={loginForm.password}
-                    onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                    required
-                  />
+                  <Input id="login-password" type="password" value={loginForm.password} onChange={e => setLoginForm({
+                  ...loginForm,
+                  password: e.target.value
+                })} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Connexion...' : 'Se connecter'}
@@ -176,51 +169,38 @@ export default function Auth() {
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-name">Nom complet</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    value={signupForm.name}
-                    onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
-                    required
-                  />
+                  <Input id="signup-name" type="text" value={signupForm.name} onChange={e => setSignupForm({
+                  ...signupForm,
+                  name: e.target.value
+                })} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={signupForm.email}
-                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
-                    required
-                  />
+                  <Input id="signup-email" type="email" value={signupForm.email} onChange={e => setSignupForm({
+                  ...signupForm,
+                  email: e.target.value
+                })} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Mot de passe</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={signupForm.password}
-                    onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
-                    required
-                  />
+                  <Input id="signup-password" type="password" value={signupForm.password} onChange={e => setSignupForm({
+                  ...signupForm,
+                  password: e.target.value
+                })} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
-                  <Input
-                    id="confirm-password"
-                    type="password"
-                    value={signupForm.confirmPassword}
-                    onChange={(e) => setSignupForm({ ...signupForm, confirmPassword: e.target.value })}
-                    required
-                  />
+                  <Input id="confirm-password" type="password" value={signupForm.confirmPassword} onChange={e => setSignupForm({
+                  ...signupForm,
+                  confirmPassword: e.target.value
+                })} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="role">Rôle</Label>
-                  <Select 
-                    value={signupForm.role} 
-                    onValueChange={(value) => setSignupForm({ ...signupForm, role: value })}
-                    required
-                  >
+                  <Select value={signupForm.role} onValueChange={value => setSignupForm({
+                  ...signupForm,
+                  role: value
+                })} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un rôle" />
                     </SelectTrigger>
@@ -232,20 +212,17 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="base">Base d'affectation</Label>
-                  <Select 
-                    value={signupForm.baseId} 
-                    onValueChange={(value) => setSignupForm({ ...signupForm, baseId: value })}
-                    required
-                  >
+                  <Select value={signupForm.baseId} onValueChange={value => setSignupForm({
+                  ...signupForm,
+                  baseId: value
+                })} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner une base" />
                     </SelectTrigger>
                     <SelectContent>
-                      {bases.map((base) => (
-                        <SelectItem key={base.id} value={base.id}>
+                      {bases.map(base => <SelectItem key={base.id} value={base.id}>
                           {base.name}
-                        </SelectItem>
-                      ))}
+                        </SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -257,6 +234,5 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }
