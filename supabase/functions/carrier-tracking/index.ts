@@ -170,15 +170,17 @@ async function fetchDHLTracking(trackingNumber: string): Promise<TrackingData> {
     console.log('Fetching DHL tracking for:', trackingNumber);
     
     // Simulation de données réalistes pour DHL
-    // En production, vous devriez utiliser l'API DHL avec une clé API
     const trackingUrl = CARRIER_CONFIGS.dhl.trackingUrl(trackingNumber);
+    const estimatedDelivery = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR');
+    
+    console.log('DHL estimated delivery calculated:', estimatedDelivery);
     
     // Données simulées mais réalistes
-    return {
+    const trackingData: TrackingData = {
       status: 'in_transit',
       location: 'Centre de tri DHL - Paris',
       lastUpdate: new Date().toLocaleDateString('fr-FR'),
-      estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
+      estimatedDelivery: estimatedDelivery,
       trackingUrl,
       events: [
         {
@@ -195,6 +197,9 @@ async function fetchDHLTracking(trackingNumber: string): Promise<TrackingData> {
         }
       ]
     };
+    
+    console.log('DHL tracking data prepared:', trackingData);
+    return trackingData;
   } catch (error) {
     console.error('Erreur DHL:', error);
     // Fallback avec données minimales
