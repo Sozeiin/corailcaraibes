@@ -132,7 +132,7 @@ export default function Auth() {
             <span className="text-white font-bold text-2xl">FC</span>
           </div>
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
-          <CardDescription>Corail Caraibes</CardDescription>
+          <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
