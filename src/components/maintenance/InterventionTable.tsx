@@ -106,7 +106,7 @@ export function InterventionTable({
               <TableCell>
                 <div className="text-sm">
                   {/* {intervention.boats?.name} */}
-                  Bateau #{intervention.boatName.slice(0, 8)}
+                  Bateau #{intervention.boatId.slice(0, 8)}
                 </div>
               </TableCell>
               <TableCell>
