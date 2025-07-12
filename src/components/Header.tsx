@@ -38,7 +38,7 @@ export const Header = () => {
         return role;
     }
   };
-  return <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm">
+  return <header className="h-14 sm:h-16 border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm bg-marine-50">
       <div className="flex items-center gap-2 sm:gap-4">
         <SidebarTrigger className="text-marine-600 hover:text-marine-700" />
         <div className="flex items-center gap-2 sm:gap-3">
