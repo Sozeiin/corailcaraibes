@@ -263,7 +263,7 @@ export default function Dashboard() {
               <AlertItem key={index} {...alert} />
             ))}
             <Button variant="outline" className="w-full mt-4">
-              Voir toutes les alertes
+              Toutes les alertes
             </Button>
           </CardContent>
         </Card>
@@ -273,7 +273,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Wrench className="h-5 w-5 text-blue-500" />
-              Maintenances Programmées
+              Maintenances
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
