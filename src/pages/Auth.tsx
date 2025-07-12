@@ -129,7 +129,7 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-2xl">FC</span>
+            <span className="text-white font-bold text-2xl">CC</span>
           </div>
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
@@ -205,6 +205,7 @@ export default function Auth() {
                     <SelectContent>
                       <SelectItem value="chef_base">Chef de base</SelectItem>
                       <SelectItem value="technicien">Technicien</SelectItem>
+                      <SelectItem value="direction">Direction</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
