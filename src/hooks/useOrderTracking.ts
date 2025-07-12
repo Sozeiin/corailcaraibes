@@ -57,7 +57,10 @@ const CARRIER_CONFIGS = {
 
 // Fonction pour récupérer les vraies données de suivi via l'API Supabase
 const fetchTrackingData = async (trackingNumber: string, carrier: string): Promise<TrackingData> => {
+  console.log('fetchTrackingData started with:', { trackingNumber, carrier });
+  
   try {
+    console.log('Calling Supabase function carrier-tracking...');
     const { data: trackingData, error } = await supabase.functions.invoke('carrier-tracking', {
       body: {
         trackingNumber,
@@ -65,7 +68,10 @@ const fetchTrackingData = async (trackingNumber: string, carrier: string): Promi
       }
     });
 
+    console.log('Supabase function response:', { data: trackingData, error });
+
     if (error) {
+      console.error('Supabase function error:', error);
       throw new Error(`Erreur API: ${error.message}`);
     }
     
@@ -75,6 +81,7 @@ const fetchTrackingData = async (trackingNumber: string, carrier: string): Promi
       trackingData.trackingUrl = config.trackingUrl(trackingNumber);
     }
 
+    console.log('Final tracking data:', trackingData);
     return trackingData;
   } catch (error) {
     console.error('Erreur lors de la récupération du suivi:', error);
@@ -101,15 +108,28 @@ const fetchTrackingData = async (trackingNumber: string, carrier: string): Promi
 };
 
 export const useOrderTracking = ({ trackingNumber, carrier }: UseOrderTrackingProps) => {
+  console.log('useOrderTracking called with:', { trackingNumber, carrier });
+  
   const query = useQuery({
     queryKey: ['orderTracking', trackingNumber, carrier],
-    queryFn: () => fetchTrackingData(trackingNumber!, carrier!),
+    queryFn: () => {
+      console.log('fetchTrackingData called with:', { trackingNumber, carrier });
+      return fetchTrackingData(trackingNumber!, carrier!);
+    },
     enabled: !!trackingNumber && !!carrier,
     refetchInterval: 5 * 60 * 1000, // Actualiser toutes les 5 minutes
     staleTime: 2 * 60 * 1000, // Considérer les données comme obsolètes après 2 minutes
   });
 
+  console.log('Query status:', { 
+    isLoading: query.isLoading, 
+    error: query.error, 
+    data: query.data,
+    enabled: !!trackingNumber && !!carrier 
+  });
+
   const refetch = () => {
+    console.log('Manual refetch triggered');
     query.refetch();
   };
 
