@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -9,11 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-
 export const Header = () => {
-  const { user, logout } = useAuth();
+  const {
+    user,
+    logout
+  } = useAuth();
   const navigate = useNavigate();
-
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
       case 'direction':
@@ -26,7 +26,6 @@ export const Header = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
-
   const getRoleLabel = (role: string) => {
     switch (role) {
       case 'direction':
@@ -39,16 +38,14 @@ export const Header = () => {
         return role;
     }
   };
-
-  return (
-    <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm">
+  return <header className="h-14 sm:h-16 bg-white border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm">
       <div className="flex items-center gap-2 sm:gap-4">
         <SidebarTrigger className="text-marine-600 hover:text-marine-700" />
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xs sm:text-sm">FC</span>
           </div>
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 hidden xs:block">FleetCat</h1>
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 hidden xs:block">Corail Caraibes</h1>
         </div>
       </div>
 
@@ -87,6 +84,5 @@ export const Header = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-    </header>
-  );
+    </header>;
 };
