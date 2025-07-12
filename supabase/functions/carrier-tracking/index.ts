@@ -165,6 +165,49 @@ async function fetchColissimoTracking(trackingNumber: string): Promise<TrackingD
   }
 }
 
+async function fetchDHLTracking(trackingNumber: string): Promise<TrackingData> {
+  try {
+    console.log('Fetching DHL tracking for:', trackingNumber);
+    
+    // Simulation de données réalistes pour DHL
+    // En production, vous devriez utiliser l'API DHL avec une clé API
+    const trackingUrl = CARRIER_CONFIGS.dhl.trackingUrl(trackingNumber);
+    
+    // Données simulées mais réalistes
+    return {
+      status: 'in_transit',
+      location: 'Centre de tri DHL - Paris',
+      lastUpdate: new Date().toLocaleDateString('fr-FR'),
+      estimatedDelivery: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
+      trackingUrl,
+      events: [
+        {
+          date: new Date().toLocaleDateString('fr-FR'),
+          status: 'in_transit',
+          location: 'Centre de tri DHL - Paris',
+          description: 'Colis en cours d\'acheminement'
+        },
+        {
+          date: new Date(Date.now() - 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
+          status: 'pending',
+          location: 'Dépôt DHL - France',
+          description: 'Colis pris en charge par DHL'
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('Erreur DHL:', error);
+    // Fallback avec données minimales
+    return {
+      status: 'pending',
+      location: 'Informations non disponibles',
+      lastUpdate: new Date().toLocaleDateString('fr-FR'),
+      trackingUrl: CARRIER_CONFIGS.dhl.trackingUrl(trackingNumber),
+      events: []
+    };
+  }
+}
+
 async function fetchGenericTracking(carrier: string, trackingNumber: string): Promise<TrackingData> {
   const config = CARRIER_CONFIGS[carrier as keyof typeof CARRIER_CONFIGS];
   
@@ -193,7 +236,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { trackingNumber, carrier } = await req.json()
+    console.log('Edge function called with:', req.method);
+    const { trackingNumber, carrier } = await req.json();
+    console.log('Request body:', { trackingNumber, carrier });
 
     if (!trackingNumber || !carrier) {
       return new Response(
@@ -208,6 +253,7 @@ Deno.serve(async (req) => {
     let trackingData: TrackingData;
 
     // Récupérer les données selon le transporteur
+    console.log('Switching on carrier:', carrier.toLowerCase());
     switch (carrier.toLowerCase()) {
       case 'chronopost':
         trackingData = await fetchChronopostTracking(trackingNumber);
@@ -215,10 +261,15 @@ Deno.serve(async (req) => {
       case 'colissimo':
         trackingData = await fetchColissimoTracking(trackingNumber);
         break;
+      case 'dhl':
+        trackingData = await fetchDHLTracking(trackingNumber);
+        break;
       default:
         trackingData = await fetchGenericTracking(carrier, trackingNumber);
         break;
     }
+    
+    console.log('Final tracking data from edge function:', trackingData);
 
     return new Response(
       JSON.stringify(trackingData),
