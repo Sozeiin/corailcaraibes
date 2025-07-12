@@ -43,7 +43,7 @@ export const Header = () => {
         <SidebarTrigger className="text-marine-600 hover:text-marine-700" />
         <div className="flex items-center gap-2 sm:gap-3">
           <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xs sm:text-sm">FC</span>
+            <span className="text-white font-bold text-xs sm:text-sm">CC</span>
           </div>
           <h1 className="text-lg sm:text-xl font-semibold text-gray-900 hidden xs:block">Corail Caraibes</h1>
         </div>
