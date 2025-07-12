@@ -4,19 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Plus, 
-  Search, 
-  Ship, 
-  Calendar, 
-  MapPin,
-  FileText,
-  Settings,
-  Edit,
-  Trash2,
-  History,
-  Wrench
-} from 'lucide-react';
+import { Plus, Search, Ship, Calendar, MapPin, FileText, Settings, Edit, Trash2, History, Wrench } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -25,30 +13,46 @@ import { BoatFilters } from '@/components/boats/BoatFilters';
 import { BoatHistoryDialog } from '@/components/boats/BoatHistoryDialog';
 import { BoatPreventiveMaintenanceDialog } from '@/components/boats/BoatPreventiveMaintenanceDialog';
 import { Boat } from '@/types';
-
 const getStatusBadge = (status: string) => {
   const statusConfig = {
-    available: { label: 'Disponible', class: 'bg-green-100 text-green-800' },
-    rented: { label: 'En location', class: 'bg-blue-100 text-blue-800' },
-    maintenance: { label: 'Maintenance', class: 'bg-orange-100 text-orange-800' },
-    out_of_service: { label: 'Hors service', class: 'bg-red-100 text-red-800' }
+    available: {
+      label: 'Disponible',
+      class: 'bg-green-100 text-green-800'
+    },
+    rented: {
+      label: 'En location',
+      class: 'bg-blue-100 text-blue-800'
+    },
+    maintenance: {
+      label: 'Maintenance',
+      class: 'bg-orange-100 text-orange-800'
+    },
+    out_of_service: {
+      label: 'Hors service',
+      class: 'bg-red-100 text-red-800'
+    }
   };
-  
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.available;
   return <Badge className={config.class}>{config.label}</Badge>;
 };
-
 interface BoatCardProps {
-  boat: Boat & { baseName?: string };
+  boat: Boat & {
+    baseName?: string;
+  };
   onEdit: (boat: Boat) => void;
   onDelete: (boat: Boat) => void;
   onHistory: (boat: Boat) => void;
   onPreventiveMaintenance: (boat: Boat) => void;
   canManage: boolean;
 }
-
-const BoatCard = ({ boat, onEdit, onDelete, onHistory, onPreventiveMaintenance, canManage }: BoatCardProps) => (
-  <Card className="hover:shadow-md transition-shadow">
+const BoatCard = ({
+  boat,
+  onEdit,
+  onDelete,
+  onHistory,
+  onPreventiveMaintenance,
+  canManage
+}: BoatCardProps) => <Card className="hover:shadow-md transition-shadow">
     <CardHeader className="pb-2 sm:pb-3">
       <div className="flex items-center justify-between">
         <CardTitle className="text-base sm:text-lg flex items-center gap-2">
@@ -65,12 +69,10 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onPreventiveMaintenance, 
           <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
           <span className="truncate">{boat.baseName || 'Base inconnue'}</span>
         </div>
-        {boat.nextMaintenance && (
-          <div className="flex items-center gap-2">
+        {boat.nextMaintenance && <div className="flex items-center gap-2">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
             <span className="text-xs">Maintenance: {new Date(boat.nextMaintenance).toLocaleDateString('fr-FR')}</span>
-          </div>
-        )}
+          </div>}
         <div className="flex items-center gap-2">
           <FileText className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 flex-shrink-0" />
           <span>{boat.documents?.length || 0} document(s)</span>
@@ -82,59 +84,39 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onPreventiveMaintenance, 
       
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-2 gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs"
-            onClick={() => onHistory(boat)}
-          >
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => onHistory(boat)}>
             <History className="h-3 w-3 mr-1" />
             <span className="hidden xs:inline">Historique</span>
             <span className="xs:hidden">Hist.</span>
           </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-xs"
-            onClick={() => onPreventiveMaintenance(boat)}
-          >
+          <Button variant="outline" size="sm" className="text-xs" onClick={() => onPreventiveMaintenance(boat)}>
             <Wrench className="h-3 w-3 mr-1" />
             <span className="hidden xs:inline">Maintenance</span>
             <span className="xs:hidden">Maint.</span>
           </Button>
         </div>
-        {canManage && (
-          <div className="grid grid-cols-2 gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="text-xs"
-              onClick={() => onEdit(boat)}
-            >
+        {canManage && <div className="grid grid-cols-2 gap-2">
+            <Button variant="outline" size="sm" className="text-xs" onClick={() => onEdit(boat)}>
               <Edit className="h-3 w-3 mr-1" />
               <span className="hidden xs:inline">Modifier</span>
               <span className="xs:hidden">Edit</span>
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              className="text-xs text-red-600 hover:text-red-700"
-              onClick={() => onDelete(boat)}
-            >
+            <Button variant="outline" size="sm" className="text-xs text-red-600 hover:text-red-700" onClick={() => onDelete(boat)}>
               <Trash2 className="h-3 w-3 mr-1" />
               <span className="hidden xs:inline">Supprimer</span>
               <span className="xs:hidden">Supp.</span>
             </Button>
-          </div>
-        )}
+          </div>}
       </div>
     </CardContent>
-  </Card>
-);
-
+  </Card>;
 export default function Boats() {
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -147,19 +129,20 @@ export default function Boats() {
   const [preventiveMaintenanceBoat, setPreventiveMaintenanceBoat] = useState<Boat | null>(null);
 
   // Fetch boats data
-  const { data: boats = [], isLoading } = useQuery({
+  const {
+    data: boats = [],
+    isLoading
+  } = useQuery({
     queryKey: ['boats'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('boats')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('boats').select(`
           *,
           bases(name)
-        `)
-        .order('name');
-
+        `).order('name');
       if (error) throw error;
-
       return data.map(boat => ({
         id: boat.id,
         name: boat.name,
@@ -173,18 +156,22 @@ export default function Boats() {
         createdAt: boat.created_at,
         updatedAt: boat.updated_at,
         baseName: boat.bases?.name
-      })) as (Boat & { baseName?: string })[];
+      })) as (Boat & {
+        baseName?: string;
+      })[];
     }
   });
 
   // Fetch bases for filters
-  const { data: bases = [] } = useQuery({
+  const {
+    data: bases = []
+  } = useQuery({
     queryKey: ['bases'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bases')
-        .select('id, name')
-        .order('name');
+      const {
+        data,
+        error
+      } = await supabase.from('bases').select('id, name').order('name');
       if (error) throw error;
       return data;
     }
@@ -192,14 +179,9 @@ export default function Boats() {
 
   // Filter boats based on search, status, and base
   const filteredBoats = boats.filter(boat => {
-    const matchesSearch = searchTerm === '' || 
-      boat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      boat.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      boat.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = searchTerm === '' || boat.name.toLowerCase().includes(searchTerm.toLowerCase()) || boat.model.toLowerCase().includes(searchTerm.toLowerCase()) || boat.serialNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || boat.status === selectedStatus;
     const matchesBase = selectedBase === 'all' || boat.baseId === selectedBase;
-    
     return matchesSearch && matchesStatus && matchesBase;
   });
 
@@ -208,72 +190,59 @@ export default function Boats() {
     available: boats.filter(b => b.status === 'available').length,
     rented: boats.filter(b => b.status === 'rented').length,
     maintenance: boats.filter(b => b.status === 'maintenance').length,
-    out_of_service: boats.filter(b => b.status === 'out_of_service').length,
+    out_of_service: boats.filter(b => b.status === 'out_of_service').length
   };
-
   const handleEdit = (boat: Boat) => {
     setEditingBoat(boat);
     setIsDialogOpen(true);
   };
-
   const handleDelete = async (boat: Boat) => {
     if (!confirm(`Êtes-vous sûr de vouloir supprimer le bateau "${boat.name}" ?`)) {
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('boats')
-        .delete()
-        .eq('id', boat.id);
-
+      const {
+        error
+      } = await supabase.from('boats').delete().eq('id', boat.id);
       if (error) throw error;
-
       toast({
         title: 'Bateau supprimé',
-        description: `${boat.name} a été supprimé de la flotte.`,
+        description: `${boat.name} a été supprimé de la flotte.`
       });
-
-      queryClient.invalidateQueries({ queryKey: ['boats'] });
+      queryClient.invalidateQueries({
+        queryKey: ['boats']
+      });
     } catch (error) {
       toast({
         title: 'Erreur',
         description: 'Impossible de supprimer le bateau.',
-        variant: 'destructive',
+        variant: 'destructive'
       });
     }
   };
-
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingBoat(null);
   };
-
   const handleHistory = (boat: Boat) => {
     setHistoryBoat(boat);
     setIsHistoryDialogOpen(true);
   };
-
   const handleHistoryDialogClose = () => {
     setIsHistoryDialogOpen(false);
     setHistoryBoat(null);
   };
-
   const handlePreventiveMaintenance = (boat: Boat) => {
     setPreventiveMaintenanceBoat(boat);
     setIsPreventiveMaintenanceDialogOpen(true);
   };
-
   const handlePreventiveMaintenanceDialogClose = () => {
     setIsPreventiveMaintenanceDialogOpen(false);
     setPreventiveMaintenanceBoat(null);
   };
-
   const canManageBoats = user?.role === 'direction' || user?.role === 'chef_base';
-
   if (isLoading) {
-    return (
-      <div className="space-y-6">
+    return <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Gestion des Bateaux</h1>
@@ -281,34 +250,25 @@ export default function Boats() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className="animate-pulse">
+          {[1, 2, 3].map(i => <Card key={i} className="animate-pulse">
               <CardContent className="p-6">
                 <div className="h-32 bg-gray-200 rounded"></div>
               </CardContent>
-            </Card>
-          ))}
+            </Card>)}
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
+  return <div className="space-y-4 sm:space-y-6 px-3 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Gestion des Bateaux</h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            Gérez votre flotte de catamarans • {filteredBoats.length} bateau(x) affiché(s)
-          </p>
+          
         </div>
-        {canManageBoats && (
-          <Button onClick={() => setIsDialogOpen(true)} className="bg-marine-600 hover:bg-marine-700 w-full sm:w-auto">
+        {canManageBoats && <Button onClick={() => setIsDialogOpen(true)} className="bg-marine-600 hover:bg-marine-700 w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             <span className="hidden xs:inline">Nouveau bateau</span>
             <span className="xs:hidden">Nouveau</span>
-          </Button>
-        )}
+          </Button>}
       </div>
 
       {/* Filters and Search */}
@@ -317,23 +277,11 @@ export default function Boats() {
           <div className="flex flex-col gap-3 sm:gap-4 mb-3 sm:mb-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Rechercher par nom, modèle..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-sm"
-              />
+              <Input placeholder="Rechercher par nom, modèle..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 text-sm" />
             </div>
           </div>
 
-          <BoatFilters
-            selectedStatus={selectedStatus}
-            onStatusChange={setSelectedStatus}
-            selectedBase={selectedBase}
-            onBaseChange={setSelectedBase}
-            bases={bases}
-            userRole={user?.role || ''}
-          />
+          <BoatFilters selectedStatus={selectedStatus} onStatusChange={setSelectedStatus} selectedBase={selectedBase} onBaseChange={setSelectedBase} bases={bases} userRole={user?.role || ''} />
         </CardContent>
       </Card>
 
@@ -367,62 +315,29 @@ export default function Boats() {
 
       {/* Boats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        {filteredBoats.map((boat) => (
-          <BoatCard 
-            key={boat.id} 
-            boat={boat} 
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onHistory={handleHistory}
-            onPreventiveMaintenance={handlePreventiveMaintenance}
-            canManage={canManageBoats}
-          />
-        ))}
+        {filteredBoats.map(boat => <BoatCard key={boat.id} boat={boat} onEdit={handleEdit} onDelete={handleDelete} onHistory={handleHistory} onPreventiveMaintenance={handlePreventiveMaintenance} canManage={canManageBoats} />)}
       </div>
 
-      {filteredBoats.length === 0 && !isLoading && (
-        <Card>
+      {filteredBoats.length === 0 && !isLoading && <Card>
           <CardContent className="p-8 text-center">
             <Ship className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               {boats.length === 0 ? 'Aucun bateau dans cette base' : 'Aucun bateau trouvé'}
             </h3>
             <p className="text-gray-600">
-              {boats.length === 0 
-                ? 'Commencez par ajouter vos premiers bateaux à la flotte.' 
-                : 'Essayez de modifier vos critères de recherche ou filtres.'
-              }
+              {boats.length === 0 ? 'Commencez par ajouter vos premiers bateaux à la flotte.' : 'Essayez de modifier vos critères de recherche ou filtres.'}
             </p>
-            {canManageBoats && boats.length === 0 && (
-              <Button 
-                onClick={() => setIsDialogOpen(true)} 
-                className="mt-4 bg-marine-600 hover:bg-marine-700"
-              >
+            {canManageBoats && boats.length === 0 && <Button onClick={() => setIsDialogOpen(true)} className="mt-4 bg-marine-600 hover:bg-marine-700">
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter le premier bateau
-              </Button>
-            )}
+              </Button>}
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      <BoatDialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-        boat={editingBoat}
-      />
+      <BoatDialog isOpen={isDialogOpen} onClose={handleDialogClose} boat={editingBoat} />
 
-      <BoatHistoryDialog
-        isOpen={isHistoryDialogOpen}
-        onClose={handleHistoryDialogClose}
-        boat={historyBoat}
-      />
+      <BoatHistoryDialog isOpen={isHistoryDialogOpen} onClose={handleHistoryDialogClose} boat={historyBoat} />
 
-      <BoatPreventiveMaintenanceDialog
-        isOpen={isPreventiveMaintenanceDialogOpen}
-        onClose={handlePreventiveMaintenanceDialogClose}
-        boat={preventiveMaintenanceBoat}
-      />
-    </div>
-  );
+      <BoatPreventiveMaintenanceDialog isOpen={isPreventiveMaintenanceDialogOpen} onClose={handlePreventiveMaintenanceDialogClose} boat={preventiveMaintenanceBoat} />
+    </div>;
 }
