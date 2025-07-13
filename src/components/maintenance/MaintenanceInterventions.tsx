@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { InterventionTable } from '@/components/maintenance/InterventionTable';
+import { InterventionCards } from '@/components/maintenance/InterventionCards';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 import { Intervention } from '@/types';
 
@@ -148,12 +148,14 @@ export function MaintenanceInterventions() {
           </div>
         </div>
 
-        <InterventionTable
-          interventions={filteredInterventions}
-          isLoading={isLoading}
-          onEdit={handleEdit}
-          canManage={canManage}
-        />
+        <div className="p-6">
+          <InterventionCards
+            interventions={filteredInterventions}
+            isLoading={isLoading}
+            onEdit={handleEdit}
+            canManage={canManage}
+          />
+        </div>
       </div>
 
       <InterventionDialog
