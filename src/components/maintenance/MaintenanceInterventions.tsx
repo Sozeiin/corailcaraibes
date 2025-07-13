@@ -44,7 +44,11 @@ export function MaintenanceInterventions() {
         completedDate: intervention.completed_date || '',
         tasks: [], // Will be loaded separately
         baseId: intervention.base_id || '',
-        createdAt: intervention.created_at || new Date().toISOString()
+        createdAt: intervention.created_at || new Date().toISOString(),
+        boat: intervention.boats ? {
+          name: intervention.boats.name,
+          model: intervention.boats.model
+        } : undefined
       })) as Intervention[];
     }
   });

@@ -99,7 +99,7 @@ export function InterventionCards({
             <CardContent className="pt-0 space-y-3">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Wrench className="h-4 w-4" />
-                <span>Bateau #{intervention.boatId.slice(0, 8)}</span>
+                <span>{intervention.boat?.name || `Bateau #${intervention.boatId.slice(0, 8)}`}</span>
               </div>
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

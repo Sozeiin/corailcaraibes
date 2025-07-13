@@ -145,6 +145,10 @@ export interface Intervention {
   tasks: MaintenanceTask[];
   baseId: string;
   createdAt: string;
+  boat?: {
+    name: string;
+    model: string;
+  };
 }
 
 export interface ChecklistItem {
