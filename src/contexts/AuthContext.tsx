@@ -23,38 +23,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         
         if (session?.user) {
-          // Defer the profile fetch to avoid deadlock
-          setTimeout(async () => {
-            try {
-              const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-              
-              console.log('Profile fetched:', profile);
-              console.log('Profile error:', error);
-              
-              if (profile) {
-                const userData = {
-                  id: profile.id,
-                  email: profile.email,
-                  name: profile.name,
-                  role: profile.role,
-                  baseId: profile.base_id,
-                  createdAt: profile.created_at
-                };
-                console.log('Setting user data:', userData);
-                setUser(userData);
-              }
-            } catch (error) {
-              console.error('Error fetching profile:', error);
+          // Ensure the session is properly set before fetching profile
+          try {
+            console.log('Session user ID:', session.user.id);
+            
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            console.log('Profile fetched:', profile);
+            console.log('Profile error:', error);
+            
+            if (profile) {
+              const userData = {
+                id: profile.id,
+                email: profile.email,
+                name: profile.name,
+                role: profile.role,
+                baseId: profile.base_id,
+                createdAt: profile.created_at
+              };
+              console.log('Setting user data:', userData);
+              setUser(userData);
             }
-          }, 0);
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+          }
         } else {
           setUser(null);
         }
