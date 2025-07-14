@@ -27,9 +27,9 @@ export const Layout = ({
   return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-slate-50">
         <AppSidebar />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
-          <main className="flex-1 overflow-y-auto p-3 sm:p-6 rounded">
+          <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
             {children}
           </main>
         </div>

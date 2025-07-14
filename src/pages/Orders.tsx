@@ -131,45 +131,49 @@ export default function Orders() {
   const canManageOrders = user?.role === 'direction' || user?.role === 'chef_base';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Commandes</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Commandes</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
             Gestion des commandes et approvisionnements
           </p>
         </div>
         {canManageOrders && (
-          <div className="flex gap-2">
+          <div className="flex flex-col xs:flex-row gap-2 w-full xs:w-auto">
             <Button
               onClick={() => setIsPurchaseRequestDialogOpen(true)}
               variant="outline"
-              className="gap-2"
+              className="gap-2 text-xs sm:text-sm"
+              size="sm"
             >
-              <ShoppingCart className="h-4 w-4" />
-              Demande d'achat
+              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Demande d'achat</span>
+              <span className="xs:hidden">Demande</span>
             </Button>
             <Button
               onClick={() => setIsDialogOpen(true)}
-              className="gap-2"
+              className="gap-2 text-xs sm:text-sm"
+              size="sm"
             >
-              <Plus className="h-4 w-4" />
-              Nouvelle commande
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Nouvelle commande</span>
+              <span className="xs:hidden">Nouveau</span>
             </Button>
           </div>
         )}
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <div className="p-3 sm:p-4 lg:p-6 border-b">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="relative flex-1 max-w-full sm:max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3 sm:h-4 sm:w-4" />
               <Input
                 placeholder="Rechercher une commande..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-8 sm:pl-10 text-sm"
               />
             </div>
           </div>
