@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
+import { StockItemAutocomplete } from './StockItemAutocomplete';
 
 interface StockScannerProps {
   stockItems: any[];
@@ -367,6 +368,28 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     setScannedCode('');
   };
 
+  const handleItemSelect = (item: any) => {
+    if (!currentOperation) return;
+    
+    const newOperation: ScannedOperation = {
+      id: Date.now(),
+      code: item.reference || item.name,
+      timestamp: new Date().toISOString(),
+      operation: currentOperation,
+      quantity: 1,
+      stockItem: item,
+      status: 'pending'
+    };
+    
+    setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
+    setScannedCode('');
+    
+    toast({
+      title: 'Article sélectionné',
+      description: `${item.name} - Stock: ${item.quantity}`,
+    });
+  };
+
   const executeOperation = async (operationId: number) => {
     const operation = operations.find(op => op.id === operationId);
     if (!operation) return;
@@ -507,10 +530,12 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex gap-2">
-            <Input
-              placeholder="Code-barres ou référence"
+            <StockItemAutocomplete
+              stockItems={stockItems}
               value={scannedCode}
-              onChange={(e) => setScannedCode(e.target.value)}
+              onChange={setScannedCode}
+              onSelect={handleItemSelect}
+              placeholder="Rechercher un article ou saisir un code..."
               className="text-sm"
             />
             <Button 
@@ -518,6 +543,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
               variant={currentOperation === 'add' ? 'default' : 'outline'}
               size="sm"
               className="px-3"
+              title="Ajouter au stock"
             >
               <Plus className="h-3 w-3" />
             </Button>
@@ -526,6 +552,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
               variant={currentOperation === 'remove' ? 'default' : 'outline'}
               size="sm"
               className="px-3"
+              title="Retirer du stock"
             >
               <Minus className="h-3 w-3" />
             </Button>
@@ -537,7 +564,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
             size="sm"
           >
             <Scan className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-            Valider
+            Valider la saisie manuelle
           </Button>
         </CardContent>
       </Card>
