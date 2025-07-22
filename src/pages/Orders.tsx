@@ -52,8 +52,8 @@ export default function Orders() {
         suppliers!left(name),
         bases!left(name, location),
         boats!left(name, model),
-        requested_by_profile:profiles!left(name),
-        approved_by_profile:profiles!left(name),
+        requested_by_profile:profiles!orders_requested_by_fkey(name),
+        approved_by_profile:profiles!orders_approved_by_fkey(name),
         order_items!left(*)
       `);
 
