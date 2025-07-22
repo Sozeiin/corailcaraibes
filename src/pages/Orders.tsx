@@ -25,20 +25,46 @@ export default function Orders() {
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders'],
+    queryKey: ['orders', user?.role, user?.baseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select(`
-          *,
-          suppliers(name),
-          bases(name, location),
-          boats(name, model),
-          order_items(*),
-          requested_by_profile:profiles!requested_by(name),
-          approved_by_profile:profiles!approved_by(name)
-        `)
-        .order('created_at', { ascending: false });
+      // Optimisation : Sélectionner seulement les champs nécessaires
+      let query = supabase.from('orders').select(`
+        id,
+        supplier_id,
+        base_id,
+        order_number,
+        status,
+        total_amount,
+        order_date,
+        delivery_date,
+        created_at,
+        is_purchase_request,
+        boat_id,
+        urgency_level,
+        requested_by,
+        approved_by,
+        approved_at,
+        photos,
+        tracking_url,
+        rejection_reason,
+        request_notes,
+        documents,
+        suppliers!left(name),
+        bases!left(name, location),
+        boats!left(name, model),
+        requested_by_profile:profiles!left(name),
+        approved_by_profile:profiles!left(name),
+        order_items!left(*)
+      `);
+
+      // Filtrage côté serveur selon le rôle
+      if (user?.role !== 'direction') {
+        query = query.eq('base_id', user?.baseId);
+      }
+
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(200); // Limiter le nombre de commandes
 
       if (error) throw error;
 
@@ -74,7 +100,9 @@ export default function Orders() {
         rejectionReason: order.rejection_reason || '',
         requestNotes: order.request_notes || ''
       })) as Order[];
-    }
+    },
+    staleTime: 30000, // Cache pendant 30 secondes
+    gcTime: 300000, // Garde en cache 5 minutes
   });
 
   // Get unique statuses for filter

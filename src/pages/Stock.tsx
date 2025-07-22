@@ -32,15 +32,34 @@ export default function Stock() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
 
   const { data: stockItems = [], isLoading } = useQuery({
-    queryKey: ['stock'],
+    queryKey: ['stock', user?.role, user?.baseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('stock_items')
-        .select(`
-          *,
-          bases(name, location)
-        `)
-        .order('name');
+      // Optimisation : Sélectionner seulement ce qui est nécessaire
+      let query = supabase.from('stock_items').select(`
+        id,
+        name,
+        reference,
+        category,
+        quantity,
+        min_threshold,
+        unit,
+        location,
+        base_id,
+        last_updated,
+        last_purchase_date,
+        last_purchase_cost,
+        last_supplier_id,
+        bases!inner(name, location)
+      `);
+
+      // Filtrage côté serveur selon le rôle
+      if (user?.role !== 'direction') {
+        query = query.eq('base_id', user?.baseId);
+      }
+
+      const { data, error } = await query
+        .order('name')
+        .limit(500); // Limiter à 500 articles pour éviter les surcharges
 
       if (error) throw error;
 
@@ -61,7 +80,9 @@ export default function Stock() {
         lastPurchaseCost: item.last_purchase_cost,
         lastSupplierId: item.last_supplier_id
       })) as StockItem[];
-    }
+    },
+    staleTime: 30000, // Cache pendant 30 secondes
+    gcTime: 300000, // Garde en cache 5 minutes
   });
 
   // Get bases for filter

@@ -41,38 +41,48 @@ export function ShipmentPreparation() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedShipment, setSelectedShipment] = useState<any>(null);
 
-  // Récupérer les expéditions
+  // Récupérer les expéditions avec optimisations
   const { data: shipments = [] } = useQuery({
     queryKey: ['logistics-shipments'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('logistics_shipments')
         .select(`
-          *,
-          base_origin:bases!logistics_shipments_base_origin_id_fkey(name),
+          id,
+          shipment_number,
+          base_destination_id,
+          status,
+          total_packages,
+          carrier,
+          created_at,
+          updated_at,
           base_destination:bases!logistics_shipments_base_destination_id_fkey(name),
-          created_by_profile:profiles!logistics_shipments_created_by_fkey(name),
-          logistics_shipment_items(*)
+          logistics_shipment_items(id)
         `)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Limiter à 50 expéditions récentes
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 30000,
+    gcTime: 300000,
   });
 
-  // Récupérer les bases de destination
+  // Récupérer les bases de destination avec optimisation
   const { data: bases = [] } = useQuery({
-    queryKey: ['bases'],
+    queryKey: ['bases-minimal'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bases')
-        .select('*')
+        .select('id, name')
         .order('name');
       
       if (error) throw error;
       return data || [];
-    }
+    },
+    staleTime: 60000, // Cache plus longtemps car les bases changent rarement
+    gcTime: 600000, // 10 minutes en cache
   });
 
   const createShipment = async (formData: any) => {
