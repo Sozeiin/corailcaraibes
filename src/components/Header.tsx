@@ -38,31 +38,31 @@ export const Header = () => {
         return role;
     }
   };
-  return <header className="h-12 sm:h-16 border-b border-gray-200 flex items-center justify-between px-3 sm:px-6 shadow-sm bg-white">
-      <div className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1">
-        <SidebarTrigger className="lg:hidden" />
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-xs sm:text-sm">CC</span>
+  return <header className="h-12 sm:h-14 lg:h-16 border-b border-gray-200 flex items-center justify-between px-2 sm:px-4 lg:px-6 shadow-sm bg-marine-50">
+      <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0 flex-1">
+        <SidebarTrigger className="text-marine-600 hover:text-marine-700 flex-shrink-0" />
+        <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 min-w-0">
+          <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-white font-bold text-xs lg:text-sm">CC</span>
           </div>
-          <h1 className="text-lg sm:text-xl font-semibold text-gray-900 hidden sm:block truncate">Corail Caraibes</h1>
+          <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+      <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-shrink-0">
         <NotificationDropdown />
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="flex items-center gap-2 sm:gap-3 h-auto p-1 sm:p-2">
+            <Button variant="ghost" className="flex items-center gap-1 sm:gap-2 lg:gap-3 h-auto p-1 lg:p-2">
               <div className="text-right hidden md:block">
-                <div className="font-medium text-sm truncate">{user?.name}</div>
+                <div className="font-medium text-xs sm:text-sm truncate max-w-24 lg:max-w-none">{user?.name}</div>
                 <Badge className={`text-xs ${getRoleBadgeColor(user?.role || '')}`}>
                   {getRoleLabel(user?.role || '')}
                 </Badge>
               </div>
-              <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                <AvatarFallback className="bg-blue-100 text-blue-700 text-xs sm:text-sm">
+              <Avatar className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8">
+                <AvatarFallback className="bg-marine-100 text-marine-700 text-xs lg:text-sm">
                   {user?.name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -71,15 +71,15 @@ export const Header = () => {
           <DropdownMenuContent align="end" className="w-48 sm:w-56 bg-white z-50">
             <DropdownMenuItem onClick={() => navigate('/settings?tab=profile')}>
               <User className="mr-2 h-4 w-4" />
-              <span>Profil</span>
+              <span className="text-sm">Profil</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate('/settings')}>
               <Settings className="mr-2 h-4 w-4" />
-              <span>Paramètres</span>
+              <span className="text-sm">Paramètres</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={logout} className="text-red-600">
               <LogOut className="mr-2 h-4 w-4" />
-              <span>Déconnexion</span>
+              <span className="text-sm">Déconnexion</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

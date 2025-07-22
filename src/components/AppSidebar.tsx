@@ -69,10 +69,10 @@ export function AppSidebar() {
     const isActive = location.pathname === path;
     return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`;
   };
-  return <Sidebar className="w-56 sm:w-64 gradient-ocean wave-pattern">
-      <SidebarContent className="p-3 sm:p-4">
+  return <Sidebar className="w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern">
+      <SidebarContent className="p-2 sm:p-3 lg:p-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-3 sm:mb-4">
+          <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-2 sm:mb-3 lg:mb-4">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -81,7 +81,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild>
                     <NavLink to={item.url} className={getNavClass(item.url)}>
                       <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <span className="text-sm sm:text-base truncate">{item.title}</span>
+                      <span className="text-xs sm:text-sm lg:text-base truncate">{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>)}
@@ -89,7 +89,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-6 sm:mt-8 p-3 sm:p-4 bg-white/10 rounded-lg">
+        <div className="mt-4 sm:mt-6 lg:mt-8 p-2 sm:p-3 lg:p-4 bg-white/10 rounded-lg">
           <h3 className="text-white text-xs sm:text-sm font-medium mb-1 sm:mb-2">Base actuelle</h3>
           <p className="text-white/80 text-xs break-words">
             {user?.role === 'direction' ? 'Toutes les bases' : baseName || 'Chargement...'}
