@@ -22,6 +22,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { MobileScanning } from '../purchasing/MobileScanning';
+import { ReceptionScanner } from './ReceptionScanner';
 
 export function ReceptionManagement() {
   const { toast } = useToast();
@@ -199,7 +200,7 @@ export function ReceptionManagement() {
             Retour
           </Button>
         </div>
-        <MobileScanning />
+        <ReceptionScanner />
       </div>
     );
   }
