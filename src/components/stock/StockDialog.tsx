@@ -153,7 +153,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         min_threshold: data.minThreshold,
         unit: data.unit || null,
         location: data.location || null,
-        base_id: data.baseId || null,
+        base_id: data.baseId,
         last_updated: new Date().toISOString()
       };
 
@@ -363,9 +363,10 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
               <FormField
                 control={form.control}
                 name="baseId"
+                rules={{ required: "La base est requise" }}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Base</FormLabel>
+                    <FormLabel>Base *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
