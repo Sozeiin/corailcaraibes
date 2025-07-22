@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { BrowserMultiFormatReader } from '@zxing/browser';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,8 +23,10 @@ import {
   Package, 
   Trash2,
   Edit,
-  QrCode
+  QrCode,
+  Camera
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ShipmentItemsManagerProps {
   shipment: any;
@@ -35,11 +38,13 @@ export function ShipmentItemsManager({ shipment, isOpen, onClose }: ShipmentItem
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [selectedStockItem, setSelectedStockItem] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
   const [packageNumber, setPackageNumber] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
 
   // Récupérer les articles du stock de la base
   const { data: stockItems = [] } = useQuery({
@@ -77,6 +82,291 @@ export function ShipmentItemsManager({ shipment, isOpen, onClose }: ShipmentItem
     },
     enabled: !!shipment?.id
   });
+
+  // Validation du format de code-barres
+  const validateBarcodeFormat = useCallback((code: string): boolean => {
+    if (!code || typeof code !== 'string') return false;
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < 3 || trimmedCode.length > 30) return false;
+    
+    const validCharsRegex = /^[A-Za-z0-9\-_.]+$/;
+    if (!validCharsRegex.test(trimmedCode)) return false;
+    
+    const invalidPatterns = [
+      /^0+$/, /^1+$/, /^\d{1,2}$/, /^[A-Z]{1}$/
+    ];
+    return !invalidPatterns.some(pattern => pattern.test(trimmedCode));
+  }, []);
+
+  // Fonction de scan avec caméra
+  const startScan = async () => {
+    if (!canModifyShipment) return;
+    
+    setIsScanning(true);
+    
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920, min: 720 },
+          height: { ideal: 1080, min: 480 }
+        }
+      });
+
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+          video.play().then(() => resolve(null));
+        };
+      });
+
+      const overlay = document.createElement('div');
+      overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+      `;
+
+      const videoContainer = document.createElement('div');
+      videoContainer.style.cssText = `
+        position: relative;
+        width: ${isMobile ? '95%' : '90%'};
+        max-width: ${isMobile ? '400px' : '600px'};
+        aspect-ratio: ${isMobile ? '4/3' : '16/9'};
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(34,197,94,0.3);
+      `;
+
+      video.style.cssText = `
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      `;
+
+      const scanOverlay = document.createElement('div');
+      scanOverlay.style.cssText = `
+        position: absolute;
+        top: ${isMobile ? '25%' : '30%'};
+        left: ${isMobile ? '5%' : '10%'};
+        right: ${isMobile ? '5%' : '10%'};
+        height: ${isMobile ? '50%' : '40%'};
+        border: 3px solid #22c55e;
+        border-radius: 8px;
+        background: rgba(34,197,94,0.1);
+        box-shadow: 
+          inset 0 0 20px rgba(34,197,94,0.3),
+          0 0 20px rgba(34,197,94,0.5);
+      `;
+
+      const scanLine = document.createElement('div');
+      scanLine.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, transparent, #22c55e, transparent);
+        animation: scan-sweep 2s linear infinite;
+      `;
+
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes scan-sweep {
+          0% { transform: translateY(0); opacity: 1; }
+          50% { opacity: 1; }
+          100% { transform: translateY(${isMobile ? '150px' : '200px'}); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+
+      scanOverlay.appendChild(scanLine);
+
+      const instructionText = document.createElement('div');
+      instructionText.innerHTML = `
+        <p style="color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;">
+          📦 Scanner pour ajouter à l'expédition
+        </p>
+        <p style="color: #22c55e; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;">
+          Positionnez le code-barres dans la zone verte
+        </p>
+      `;
+
+      const statusText = document.createElement('p');
+      statusText.textContent = '🔍 Recherche active...';
+      statusText.style.cssText = `
+        color: #22c55e;
+        margin-top: 20px;
+        font-size: ${isMobile ? '12px' : '16px'};
+        text-align: center;
+        font-weight: 500;
+        padding: ${isMobile ? '8px 16px' : '10px 20px'};
+        background: rgba(34,197,94,0.1);
+        border-radius: 20px;
+        border: 1px solid rgba(34,197,94,0.3);
+      `;
+
+      const closeButton = document.createElement('button');
+      closeButton.innerHTML = '✕ Fermer';
+      closeButton.style.cssText = `
+        padding: ${isMobile ? '12px 20px' : '12px 24px'};
+        background: rgba(255,68,68,0.9);
+        color: white;
+        border: none;
+        border-radius: 25px;
+        font-size: ${isMobile ? '14px' : '16px'};
+        font-weight: 500;
+        cursor: pointer;
+        margin-top: ${isMobile ? '20px' : '30px'};
+        box-shadow: 0 4px 15px rgba(255,68,68,0.3);
+      `;
+
+      videoContainer.appendChild(video);
+      videoContainer.appendChild(scanOverlay);
+      overlay.appendChild(instructionText);
+      overlay.appendChild(videoContainer);
+      overlay.appendChild(statusText);
+      overlay.appendChild(closeButton);
+      document.body.appendChild(overlay);
+
+      const codeReader = new BrowserMultiFormatReader();
+      let isScanning = true;
+      let scanController: any = null;
+      let consecutiveScans: string[] = [];
+
+      const cleanup = () => {
+        isScanning = false;
+        if (scanController) {
+          try {
+            scanController.stop();
+          } catch (e) {
+            console.log('Arrêt du scanner:', e);
+          }
+        }
+        stream.getTracks().forEach(track => track.stop());
+        if (overlay.parentNode) {
+          document.body.removeChild(overlay);
+        }
+        if (style.parentNode) {
+          document.head.removeChild(style);
+        }
+        setIsScanning(false);
+      };
+
+      closeButton.onclick = cleanup;
+
+      try {
+        scanController = await codeReader.decodeFromVideoDevice(
+          undefined, 
+          video, 
+          (result, error) => {
+            if (result && isScanning) {
+              const scannedCode = result.getText().trim();
+              
+              if (validateBarcodeFormat(scannedCode)) {
+                consecutiveScans.push(scannedCode);
+                
+                if (consecutiveScans.length > 3) {
+                  consecutiveScans.shift();
+                }
+                
+                const mostFrequent = consecutiveScans.reduce((a, b, i, arr) =>
+                  arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
+                );
+                
+                const confirmationCount = consecutiveScans.filter(code => code === mostFrequent).length;
+                
+                if (confirmationCount >= 2) {
+                  statusText.textContent = `✅ Code validé: ${mostFrequent}`;
+                  statusText.style.color = '#22c55e';
+                  
+                  setTimeout(() => {
+                    cleanup();
+                    processScannedCode(mostFrequent);
+                  }, 500);
+                } else {
+                  statusText.textContent = `🔄 Confirmation... (${confirmationCount}/2)`;
+                }
+              }
+            }
+          }
+        );
+      } catch (error) {
+        console.error('Erreur du scanner:', error);
+        statusText.textContent = '❌ Erreur de scanner';
+        cleanup();
+      }
+      
+    } catch (error) {
+      console.error('Erreur caméra:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'accéder à la caméra',
+        variant: 'destructive'
+      });
+      setIsScanning(false);
+    }
+  };
+
+  // Traiter le code scanné
+  const processScannedCode = (code: string) => {
+    const trimmedCode = code.trim();
+    
+    // Recherche exacte par référence (insensible à la casse)
+    let stockItem = stockItems.find(item => 
+      item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
+    );
+    
+    // Recherche partielle dans les références
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.reference && 
+        item.reference.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+    }
+    
+    // Recherche par nom contenant le code
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.name.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+    }
+
+    if (!stockItem) {
+      toast({
+        title: 'Article non trouvé',
+        description: `Aucun article trouvé pour le code: ${trimmedCode}`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Sélectionner l'article trouvé
+    setSelectedStockItem(stockItem);
+    setSearchQuery(stockItem.name);
+    setQuantity(1);
+
+    toast({
+      title: 'Article trouvé',
+      description: `${stockItem.name} - Stock: ${stockItem.quantity}`,
+    });
+  };
 
   const addItemToShipment = async () => {
     if (!selectedStockItem || quantity <= 0) return;
@@ -217,7 +507,18 @@ export function ShipmentItemsManager({ shipment, isOpen, onClose }: ShipmentItem
           {canModifyShipment && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Ajouter un article</CardTitle>
+                <CardTitle className="text-lg flex items-center justify-between">
+                  Ajouter un article
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={startScan}
+                    disabled={isScanning}
+                  >
+                    <Camera className="h-4 w-4 mr-2" />
+                    Scanner
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
