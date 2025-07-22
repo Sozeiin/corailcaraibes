@@ -70,6 +70,16 @@ export function ProductAutocomplete({
       (item.reference && item.reference.toLowerCase().includes(word)) ||
       (item.category && item.category.toLowerCase().includes(word))
     );
+  }).sort((a, b) => {
+    // Priorité aux références scannées (non auto-générées) et les plus récentes
+    const aIsScanned = a.reference && !a.reference.startsWith('STK-');
+    const bIsScanned = b.reference && !b.reference.startsWith('STK-');
+    
+    if (aIsScanned && !bIsScanned) return -1;
+    if (!aIsScanned && bIsScanned) return 1;
+    
+    // Si même type de référence, trier par date de dernière mise à jour
+    return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
   });
 
   useEffect(() => {
@@ -81,12 +91,24 @@ export function ProductAutocomplete({
     setSearchValue(newValue);
     setShowResults(newValue.trim().length > 0);
     
-    // Si la valeur correspond exactement à un produit, le sélectionner
-    const exactMatch = stockItems.find(item => 
+    // Si la valeur correspond exactement à un produit, sélectionner le plus pertinent
+    const exactMatches = stockItems.filter(item => 
       item.name.toLowerCase() === newValue.toLowerCase()
     );
-    if (exactMatch) {
-      onValueChange(exactMatch.name, exactMatch.reference);
+    
+    if (exactMatches.length > 0) {
+      // Privilégier les références scannées et les plus récentes
+      const bestMatch = exactMatches.sort((a, b) => {
+        const aIsScanned = a.reference && !a.reference.startsWith('STK-');
+        const bIsScanned = b.reference && !b.reference.startsWith('STK-');
+        
+        if (aIsScanned && !bIsScanned) return -1;
+        if (!aIsScanned && bIsScanned) return 1;
+        
+        return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+      })[0];
+      
+      onValueChange(bestMatch.name, bestMatch.reference);
     } else if (newValue !== value) {
       onValueChange(newValue, '');
     }
