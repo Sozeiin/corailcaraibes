@@ -29,8 +29,11 @@ import {
   Send, 
   Eye,
   Truck,
-  QrCode
+  QrCode,
+  Edit,
+  Settings
 } from 'lucide-react';
+import { ShipmentItemsManager } from './ShipmentItemsManager';
 
 export function ShipmentPreparation() {
   const { toast } = useToast();
@@ -287,17 +290,17 @@ export function ShipmentPreparation() {
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setSelectedShipment(shipment)}
                   >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Détails
+                    <Settings className="h-4 w-4 mr-1" />
+                    Gérer articles
                   </Button>
                   
-                  {shipment.status === 'preparing' && (
+                  {shipment.status === 'preparing' && shipment.logistics_shipment_items?.length > 0 && (
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -323,6 +326,15 @@ export function ShipmentPreparation() {
           ))
         )}
       </div>
+
+      {/* Dialog de gestion des articles */}
+      {selectedShipment && (
+        <ShipmentItemsManager
+          shipment={selectedShipment}
+          isOpen={!!selectedShipment}
+          onClose={() => setSelectedShipment(null)}
+        />
+      )}
     </div>
   );
 }
