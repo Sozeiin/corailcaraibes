@@ -16,11 +16,13 @@ import {
   Package,
   Scan,
   Check,
-  X
+  X,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 import { StockItemAutocomplete } from './StockItemAutocomplete';
+import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@/lib/stockUtils';
 
 interface StockScannerProps {
   stockItems: any[];
@@ -34,6 +36,8 @@ interface ScannedOperation {
   quantity: number;
   stockItem: any | null;
   status: 'pending' | 'completed' | 'error';
+  isImported?: boolean;
+  sourceBase?: string;
 }
 
 export function StockScanner({ stockItems }: StockScannerProps) {
@@ -287,19 +291,20 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     }
   };
 
-  const processScannedCode = (code: string, operation: 'add' | 'remove') => {
+  const processScannedCode = async (code: string, operation: 'add' | 'remove') => {
     const trimmedCode = code.trim();
     let matchType = '';
+    let isImported = false;
+    let sourceBase = '';
     
-    // 1. Recherche exacte par référence (insensible à la casse)
+    // 1. Recherche locale d'abord (logique existante)
     let stockItem = stockItems.find(item => 
       item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
     );
     if (stockItem) {
-      matchType = 'Référence exacte';
+      matchType = 'Référence exacte (local)';
     }
     
-    // 2. Recherche partielle dans les références
     if (!stockItem) {
       stockItem = stockItems.find(item => 
         item.reference && 
@@ -307,22 +312,76 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         trimmedCode.length >= 3
       );
       if (stockItem) {
-        matchType = 'Référence partielle';
+        matchType = 'Référence partielle (local)';
       }
     }
     
-    // 3. Recherche par nom contenant le code
     if (!stockItem) {
       stockItem = stockItems.find(item => 
         item.name.toLowerCase().includes(trimmedCode.toLowerCase()) &&
         trimmedCode.length >= 3
       );
       if (stockItem) {
-        matchType = 'Nom d\'article';
+        matchType = 'Nom d\'article (local)';
       }
     }
-    
-    // 4. Recherche approximative dans les références (pour les codes avec variantes)
+
+    // 2. Si pas trouvé localement, recherche globale
+    if (!stockItem) {
+      console.log('Article non trouvé localement, recherche globale...');
+      
+      try {
+        const globalItem = await searchGlobalStockItems(trimmedCode);
+        
+        if (globalItem && globalItem.baseId !== user?.baseId) {
+          console.log('Article trouvé dans une autre base:', globalItem);
+          
+          // Créer une copie locale automatiquement
+          const copyResult = await createLocalStockCopy(
+            globalItem,
+            user?.baseId || '',
+            operation === 'add' ? 1 : 0,
+            `Importé de ${globalItem.baseName}`
+          );
+
+          if (copyResult.success) {
+            // Transformer l'item global en format local
+            stockItem = {
+              id: copyResult.itemId,
+              name: globalItem.name,
+              reference: globalItem.reference,
+              category: globalItem.category,
+              quantity: operation === 'add' ? 1 : 0,
+              minThreshold: globalItem.minThreshold,
+              unit: globalItem.unit,
+              location: `Importé de ${globalItem.baseName}`,
+              baseId: user?.baseId,
+              lastUpdated: new Date().toISOString()
+            };
+            
+            matchType = `Importé de ${globalItem.baseName}`;
+            isImported = true;
+            sourceBase = globalItem.baseName;
+            
+            // Actualiser les données de stock
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+            
+            toast({
+              title: 'Article importé',
+              description: `${globalItem.name} importé depuis ${globalItem.baseName} et ajouté à votre stock`,
+            });
+          } else {
+            toast({
+              title: 'Erreur d\'importation',
+              description: copyResult.error || 'Impossible d\'importer l\'article',
+              variant: 'destructive'
+            });
+            return;
+          }
+        }
+    }
+
+    // 3. Recherche approximative locale si toujours pas trouvé
     if (!stockItem && trimmedCode.length >= 5) {
       const codeBase = trimmedCode.replace(/[-_.]/g, '').toLowerCase();
       stockItem = stockItems.find(item => {
@@ -330,11 +389,12 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         const refBase = item.reference.replace(/[-_.]/g, '').toLowerCase();
         return refBase.includes(codeBase) || codeBase.includes(refBase);
       });
-      if (stockItem) {
-        matchType = 'Référence similaire';
+      if (stockItem && !isImported) {
+        matchType = 'Référence similaire (local)';
       }
     }
 
+    // 4. Si toujours pas trouvé, proposer la création
     if (!stockItem) {
       setCodeToCreate(trimmedCode);
       setIsCreateDialogOpen(true);
@@ -351,15 +411,24 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       operation,
       quantity: 1,
       stockItem,
-      status: 'pending'
+      status: 'pending',
+      isImported,
+      sourceBase
     };
     
     setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
     
     toast({
-      title: 'Article trouvé',
+      title: isImported ? 'Article importé et trouvé' : 'Article trouvé',
       description: `${stockItem.name} (${matchType}) - Stock: ${stockItem.quantity}`,
     });
+  } catch (error) {
+      console.error('Erreur lors de la recherche globale:', error);
+      
+      // Si erreur de recherche globale, proposer la création
+      setCodeToCreate(trimmedCode);
+      setIsCreateDialogOpen(true);
+    }
   };
 
   const handleManualCode = () => {
@@ -592,6 +661,12 @@ export function StockScanner({ stockItems }: StockScannerProps) {
                       <span className="font-medium text-sm truncate">
                         {operation.stockItem.name}
                       </span>
+                      {operation.isImported && (
+                        <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                          <Download className="h-2 w-2" />
+                          Importé
+                        </Badge>
+                      )}
                       <Badge 
                         variant={operation.status === 'completed' ? 'default' : 
                                 operation.status === 'error' ? 'destructive' : 'secondary'}
@@ -604,6 +679,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
                     
                     <p className="text-xs text-muted-foreground">
                       Stock actuel: {operation.stockItem.quantity} • Code: {operation.code}
+                      {operation.sourceBase && ` • Importé de: ${operation.sourceBase}`}
                     </p>
                   </div>
                   

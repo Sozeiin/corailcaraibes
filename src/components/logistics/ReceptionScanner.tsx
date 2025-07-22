@@ -17,7 +17,8 @@ import {
   Check,
   X,
   MapPin,
-  AlertCircle
+  AlertCircle,
+  Download
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
@@ -35,6 +36,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { searchGlobalStockItems, createLocalStockCopy } from '@/lib/stockUtils';
 
 interface ReceptionOperation {
   id: number;
@@ -45,6 +47,8 @@ interface ReceptionOperation {
   status: 'pending' | 'completed' | 'error';
   targetBaseId: string;
   notes?: string;
+  isImported?: boolean;
+  sourceBase?: string;
 }
 
 export function ReceptionScanner() {
@@ -335,11 +339,13 @@ export function ReceptionScanner() {
     }
   };
 
-  const processScannedCode = (code: string) => {
+  const processScannedCode = async (code: string) => {
     const trimmedCode = code.trim();
     let matchType = '';
+    let isImported = false;
+    let sourceBase = '';
     
-    // Recherche dans les articles existants (toutes bases confondues)
+    // Recherche dans les articles existants (toutes bases confondues via la base de données)
     let stockItem = stockItems.find(item => 
       item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
     );
@@ -368,6 +374,65 @@ export function ReceptionScanner() {
       }
     }
 
+    // Si pas trouvé dans la recherche locale, essayer la recherche globale
+    if (!stockItem) {
+      console.log('Article non trouvé localement pour la réception, recherche globale...');
+      
+      try {
+        const globalItem = await searchGlobalStockItems(trimmedCode);
+        
+        if (globalItem) {
+          console.log('Article trouvé globalement pour réception:', globalItem);
+          
+          // Pour la réception, on crée directement l'article dans la base de destination
+          // avec la quantité de réception
+          const copyResult = await createLocalStockCopy(
+            globalItem,
+            selectedTargetBase,
+            1, // Quantité initiale pour la réception
+            `Réceptionné - Référence ${globalItem.baseName}`
+          );
+
+          if (copyResult.success) {
+            // Transformer l'item global en format local pour la réception
+            stockItem = {
+              id: copyResult.itemId,
+              name: globalItem.name,
+              reference: globalItem.reference,
+              category: globalItem.category,
+              quantity: 1,
+              minThreshold: globalItem.minThreshold,
+              unit: globalItem.unit,
+              location: `Réceptionné - Référence ${globalItem.baseName}`,
+              baseId: selectedTargetBase,
+              lastUpdated: new Date().toISOString()
+            };
+            
+            matchType = `Importé de ${globalItem.baseName}`;
+            isImported = true;
+            sourceBase = globalItem.baseName;
+            
+            // Actualiser les données
+            queryClient.invalidateQueries({ queryKey: ['stock-items-all'] });
+            
+            toast({
+              title: 'Article importé pour réception',
+              description: `${globalItem.name} importé depuis ${globalItem.baseName} pour réception`,
+            });
+          } else {
+            toast({
+              title: 'Erreur d\'importation',
+              description: copyResult.error || 'Impossible d\'importer l\'article',
+              variant: 'destructive'
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche globale pour réception:', error);
+      }
+    }
+
     if (!stockItem) {
       // Proposer de créer l'article
       setCodeToCreate(trimmedCode);
@@ -384,13 +449,15 @@ export function ReceptionScanner() {
       quantity: 1,
       stockItem,
       status: 'pending',
-      targetBaseId: selectedTargetBase
+      targetBaseId: selectedTargetBase,
+      isImported,
+      sourceBase
     };
     
     setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
     
     toast({
-      title: 'Article trouvé',
+      title: isImported ? 'Article importé et prêt pour réception' : 'Article trouvé',
       description: `${stockItem.name} (${matchType}) - Prêt pour réception`,
     });
   };
@@ -635,6 +702,12 @@ export function ReceptionScanner() {
                         <span className="font-medium text-sm truncate">
                           {operation.stockItem?.name || 'Article inconnu'}
                         </span>
+                        {operation.isImported && (
+                          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                            <Download className="h-2 w-2" />
+                            Importé
+                          </Badge>
+                        )}
                         <Badge 
                           variant={operation.status === 'completed' ? 'default' : 
                                   operation.status === 'error' ? 'destructive' : 'secondary'}
@@ -647,6 +720,7 @@ export function ReceptionScanner() {
                       
                       <p className="text-xs text-muted-foreground">
                         Code: {operation.code} • Destination: {bases.find(b => b.id === operation.targetBaseId)?.name}
+                        {operation.sourceBase && ` • Importé de: ${operation.sourceBase}`}
                       </p>
                     </div>
                   </div>
