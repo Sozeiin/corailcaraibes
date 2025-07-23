@@ -253,15 +253,42 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         console.log('Initialisation du scanner ZXing...');
         statusText.textContent = '🔄 Initialisation du scanner...';
         
-        // Attendre que la vidéo soit prête
-        await new Promise((resolve) => {
-          video.oncanplay = () => {
-            console.log('Vidéo prête, démarrage du scan...');
-            statusText.textContent = '🔍 Recherche active...';
-            resolve(null);
+        // Attendre que la vidéo soit prête avec plusieurs événements possibles
+        console.log('Attente du chargement de la vidéo...');
+        await new Promise((resolve, reject) => {
+          let resolved = false;
+          
+          const handleReady = () => {
+            if (!resolved) {
+              resolved = true;
+              console.log('Vidéo prête, démarrage du scan...');
+              statusText.textContent = '🔍 Recherche active...';
+              resolve(null);
+            }
           };
+          
+          // Essayer plusieurs événements
+          video.oncanplay = handleReady;
+          video.onloadeddata = handleReady;
+          video.onplaying = handleReady;
+          
+          // Timeout de sécurité
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              console.log('Timeout - forcer le démarrage du scan...');
+              statusText.textContent = '🔍 Recherche active...';
+              resolve(null);
+            }
+          }, 2000);
+          
+          // Vérifier si la vidéo est déjà prête
+          if (video.readyState >= 2) {
+            handleReady();
+          }
         });
 
+        console.log('Démarrage du décodage ZXing...');
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
           video, 
@@ -311,7 +338,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       } catch (error) {
         console.error('Erreur du scanner:', error);
         statusText.textContent = '❌ Erreur de scanner: ' + (error instanceof Error ? error.message : 'Erreur inconnue');
-        cleanup();
+        setTimeout(cleanup, 1000);
       }
       
     } catch (error) {
