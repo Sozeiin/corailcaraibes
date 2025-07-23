@@ -74,6 +74,11 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     setIsScanning(true);
     
     try {
+      // Vérifier si getUserMedia est disponible
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('L\'accès à la caméra n\'est pas supporté par ce navigateur');
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
@@ -282,9 +287,23 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       
     } catch (error) {
       console.error('Erreur caméra:', error);
+      let errorMessage = 'Impossible d\'accéder à la caméra';
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = 'Permission d\'accès à la caméra refusée. Veuillez autoriser l\'accès et réessayer.';
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = 'Aucune caméra trouvée sur cet appareil.';
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = 'L\'accès à la caméra n\'est pas supporté par ce navigateur.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'accéder à la caméra',
+        description: errorMessage,
         variant: 'destructive'
       });
       setIsScanning(false);
