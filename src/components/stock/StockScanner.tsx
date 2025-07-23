@@ -223,17 +223,23 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       let consecutiveScans: string[] = [];
 
       const cleanup = () => {
+        console.log('Nettoyage du scanner...');
         isScanning = false;
         if (scanController) {
           try {
             scanController.stop();
+            console.log('Scanner arrêté');
           } catch (e) {
-            console.log('Arrêt du scanner:', e);
+            console.log('Erreur lors de l\'arrêt du scanner:', e);
           }
         }
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(track => {
+          track.stop();
+          console.log('Track de caméra arrêté');
+        });
         if (overlay.parentNode) {
           document.body.removeChild(overlay);
+          console.log('Overlay supprimé');
         }
         if (style.parentNode) {
           document.head.removeChild(style);
@@ -244,15 +250,29 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       closeButton.onclick = cleanup;
 
       try {
+        console.log('Initialisation du scanner ZXing...');
+        statusText.textContent = '🔄 Initialisation du scanner...';
+        
+        // Attendre que la vidéo soit prête
+        await new Promise((resolve) => {
+          video.oncanplay = () => {
+            console.log('Vidéo prête, démarrage du scan...');
+            statusText.textContent = '🔍 Recherche active...';
+            resolve(null);
+          };
+        });
+
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
           video, 
           (result, error) => {
             if (result && isScanning) {
               const scannedCode = result.getText().trim();
+              console.log('Code scanné:', scannedCode);
               
               if (validateBarcodeFormat(scannedCode)) {
                 consecutiveScans.push(scannedCode);
+                console.log('Code valide ajouté:', scannedCode, 'Total:', consecutiveScans.length);
                 
                 if (consecutiveScans.length > 3) {
                   consecutiveScans.shift();
@@ -265,6 +285,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
                 const confirmationCount = consecutiveScans.filter(code => code === mostFrequent).length;
                 
                 if (confirmationCount >= 2) {
+                  console.log('Code confirmé:', mostFrequent);
                   statusText.textContent = `✅ Code validé: ${mostFrequent}`;
                   statusText.style.color = operation === 'add' ? '#22c55e' : '#ef4444';
                   
@@ -275,13 +296,21 @@ export function StockScanner({ stockItems }: StockScannerProps) {
                 } else {
                   statusText.textContent = `🔄 Confirmation... (${confirmationCount}/2)`;
                 }
+              } else {
+                console.log('Code rejeté (format invalide):', scannedCode);
               }
+            }
+            
+            if (error && error.name !== 'NotFoundException') {
+              console.log('Erreur de scan (non critique):', error.name, error.message);
             }
           }
         );
+        
+        console.log('Scanner démarré avec succès');
       } catch (error) {
         console.error('Erreur du scanner:', error);
-        statusText.textContent = '❌ Erreur de scanner';
+        statusText.textContent = '❌ Erreur de scanner: ' + (error instanceof Error ? error.message : 'Erreur inconnue');
         cleanup();
       }
       
