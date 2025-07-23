@@ -379,6 +379,14 @@ export function StockScanner({ stockItems }: StockScannerProps) {
             return;
           }
         }
+      } catch (error) {
+        console.error('Erreur lors de la recherche globale:', error);
+        
+        // Si erreur de recherche globale, proposer la création
+        setCodeToCreate(trimmedCode);
+        setIsCreateDialogOpen(true);
+        return;
+      }
     }
 
     // 3. Recherche approximative locale si toujours pas trouvé
@@ -422,13 +430,6 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       title: isImported ? 'Article importé et trouvé' : 'Article trouvé',
       description: `${stockItem.name} (${matchType}) - Stock: ${stockItem.quantity}`,
     });
-  } catch (error) {
-      console.error('Erreur lors de la recherche globale:', error);
-      
-      // Si erreur de recherche globale, proposer la création
-      setCodeToCreate(trimmedCode);
-      setIsCreateDialogOpen(true);
-    }
   };
 
   const handleManualCode = () => {

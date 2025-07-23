@@ -401,11 +401,15 @@ export function ReceptionScanner() {
               reference: globalItem.reference,
               category: globalItem.category,
               quantity: 1,
-              minThreshold: globalItem.minThreshold,
+              min_threshold: globalItem.minThreshold,
               unit: globalItem.unit,
               location: `Réceptionné - Référence ${globalItem.baseName}`,
-              baseId: selectedTargetBase,
-              lastUpdated: new Date().toISOString()
+              base_id: selectedTargetBase,
+              last_updated: new Date().toISOString(),
+              last_purchase_cost: 0,
+              last_purchase_date: new Date().toISOString(),
+              last_supplier_id: '',
+              unit_price: 0
             };
             
             matchType = `Importé de ${globalItem.baseName}`;
