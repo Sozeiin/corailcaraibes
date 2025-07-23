@@ -289,6 +289,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         });
 
         console.log('Démarrage du décodage ZXing...');
+        
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
           video, 
@@ -298,31 +299,16 @@ export function StockScanner({ stockItems }: StockScannerProps) {
               console.log('Code scanné:', scannedCode);
               
               if (validateBarcodeFormat(scannedCode)) {
-                consecutiveScans.push(scannedCode);
-                console.log('Code valide ajouté:', scannedCode, 'Total:', consecutiveScans.length);
+                // Scan immédiat sans attendre plusieurs confirmations
+                console.log('Code confirmé:', scannedCode);
+                statusText.textContent = `✅ Code validé: ${scannedCode}`;
+                statusText.style.color = operation === 'add' ? '#22c55e' : '#ef4444';
                 
-                if (consecutiveScans.length > 3) {
-                  consecutiveScans.shift();
-                }
-                
-                const mostFrequent = consecutiveScans.reduce((a, b, i, arr) =>
-                  arr.filter(v => v === a).length >= arr.filter(v => v === b).length ? a : b
-                );
-                
-                const confirmationCount = consecutiveScans.filter(code => code === mostFrequent).length;
-                
-                if (confirmationCount >= 2) {
-                  console.log('Code confirmé:', mostFrequent);
-                  statusText.textContent = `✅ Code validé: ${mostFrequent}`;
-                  statusText.style.color = operation === 'add' ? '#22c55e' : '#ef4444';
-                  
-                  setTimeout(() => {
-                    cleanup();
-                    processScannedCode(mostFrequent, operation);
-                  }, 500);
-                } else {
-                  statusText.textContent = `🔄 Confirmation... (${confirmationCount}/2)`;
-                }
+                // Traitement immédiat
+                setTimeout(() => {
+                  cleanup();
+                  processScannedCode(scannedCode, operation);
+                }, 100);
               } else {
                 console.log('Code rejeté (format invalide):', scannedCode);
               }
