@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               .from('profiles')
               .select('*')
               .eq('id', session.user.id)
-              .single();
+              .maybeSingle(); // Changed from .single() to avoid errors when no profile exists
             
             console.log('Profile fetched:', profile);
             console.log('Profile error:', error);
@@ -51,9 +51,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               };
               console.log('Setting user data:', userData);
               setUser(userData);
+            } else if (error) {
+              console.error('Error fetching profile:', error);
+              // If profile doesn't exist but session is valid, still mark as not loading
+              setLoading(false);
+            } else {
+              console.log('No profile found for user:', session.user.id);
+              setLoading(false);
             }
           } catch (error) {
             console.error('Error fetching profile:', error);
+            // Even if there's an error, we should stop loading
+            setLoading(false);
           }
         } else {
           setUser(null);
