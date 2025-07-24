@@ -225,7 +225,7 @@ serve(async (req) => {
         const asciiMatches = pdfContent.match(asciiPattern) || [];
         
         for (const match of asciiMatches) {
-          if (match.trim().length > 4 && !match.includes('\0') && !match.includes('\x')) {
+          if (match.trim().length > 4 && !match.includes('\\0') && !match.includes('\\x')) {
             extractedParts.push(match.trim());
           }
         }
