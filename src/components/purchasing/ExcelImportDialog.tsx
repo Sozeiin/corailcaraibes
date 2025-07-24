@@ -109,7 +109,7 @@ export const ExcelImportDialog: React.FC<ExcelImportDialogProps> = ({
           const item: any = {
             campaign_id: campaignId,
             product_name: row[parseInt(mapping.product_name)] || '',
-            category: row[parseInt(mapping.category)] || 'Autre',
+            category: mapping.category && mapping.category !== 'none' ? row[parseInt(mapping.category)] || 'Autre' : 'Autre',
             total_quantity: parseInt(row[parseInt(mapping.quantity)]) || 0,
             estimated_unit_price: parseFloat(row[parseInt(mapping.estimated_price)]) || 0,
             priority: row[parseInt(mapping.priority)] || 'medium',
@@ -215,7 +215,7 @@ export const ExcelImportDialog: React.FC<ExcelImportDialogProps> = ({
                         <SelectValue placeholder="Catégorie (optionnel)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Aucune</SelectItem>
+                        <SelectItem value="none">Aucune colonne</SelectItem>
                         {preview[0]?.map((header: string, index: number) => (
                           <SelectItem key={index} value={index.toString()}>
                             Colonne {index + 1}: {header}
