@@ -172,35 +172,98 @@ serve(async (req) => {
     const arrayBuffer = await file.arrayBuffer();
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
-    console.log("Starting real PDF processing...");
+    console.log("Starting advanced PDF processing...");
     
-    // Convert PDF to text using PDFLib for JavaScript
+    // Convert PDF to text using a more robust approach
     const pdfBytes = new Uint8Array(arrayBuffer);
     let extractedText = '';
     
     try {
-      // Import PDF processing library
-      const { createWorker } = await import('https://cdn.skypack.dev/tesseract.js@4.1.1');
+      // Import PDF processing libraries
+      console.log("Loading PDF processing library...");
       
-      // Convert PDF to image first (basic approach)
-      // For production, you'd want to use a proper PDF-to-text library
-      // This is a simplified approach for demonstration
+      // Method 1: Try to extract text using PDF parsing
+      try {
+        // Use a more sophisticated approach to extract text from PDF
+        const textDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false });
+        const pdfContent = textDecoder.decode(pdfBytes);
+        
+        // Look for text objects in PDF structure
+        const textPatterns = [
+          /\/Text\s*\(\s*([^)]+)\s*\)/g,
+          /BT\s+([^ET]+)\s+ET/g,
+          /Tj\s*\[\s*\(([^)]+)\)\s*\]/g,
+          /Td\s+\(([^)]+)\)/g,
+          /\(([A-Za-zÀ-ÿ0-9\s\-\.\,\€\$\%\:\;\/\\]{3,})\)\s*Tj/g
+        ];
+        
+        const extractedParts: string[] = [];
+        
+        for (const pattern of textPatterns) {
+          const matches = pdfContent.matchAll(pattern);
+          for (const match of matches) {
+            if (match[1] && match[1].trim().length > 2) {
+              // Clean and decode the text
+              let cleanText = match[1]
+                .replace(/\\n/g, ' ')
+                .replace(/\\r/g, ' ')
+                .replace(/\\t/g, ' ')
+                .replace(/\\\(/g, '(')
+                .replace(/\\\)/g, ')')
+                .replace(/\\\\/g, '\\')
+                .trim();
+              
+              if (cleanText.length > 2) {
+                extractedParts.push(cleanText);
+              }
+            }
+          }
+        }
+        
+        // Also try to find readable ASCII text in the PDF
+        const asciiPattern = /[A-Za-zÀ-ÿ0-9\s\-\.\,\€\$\%\:\;\/\\]{5,}/g;
+        const asciiMatches = pdfContent.match(asciiPattern) || [];
+        
+        for (const match of asciiMatches) {
+          if (match.trim().length > 4 && !match.includes('\0') && !match.includes('\x')) {
+            extractedParts.push(match.trim());
+          }
+        }
+        
+        extractedText = extractedParts.join(' ');
+        console.log("Raw extraction result length:", extractedText.length);
+        
+      } catch (error) {
+        console.error("Text extraction failed:", error);
+      }
       
-      // For now, we'll extract text patterns from the PDF bytes
-      // This is a basic text extraction - in production use proper OCR/PDF libraries
-      const textDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: false });
-      const possibleText = textDecoder.decode(pdfBytes);
-      
-      // Extract readable text from PDF content
-      const textMatches = possibleText.match(/[A-Za-zÀ-ÿ0-9\s\-\.\,\€\$]{10,}/g) || [];
-      extractedText = textMatches.join(' ');
-      
-      console.log("Extracted text length:", extractedText.length);
+      // Method 2: If no text found, try binary search for readable content
+      if (extractedText.length < 50) {
+        console.log("Trying binary content analysis...");
+        const binaryString = Array.from(pdfBytes)
+          .map(byte => String.fromCharCode(byte))
+          .join('');
+        
+        // Look for readable text patterns in binary data
+        const readablePattern = /[A-Za-zÀ-ÿ]{3,}[\s\-\.\,\€\$\%\:\;\/\\0-9]*[A-Za-zÀ-ÿ0-9]{1,}/g;
+        const readableMatches = binaryString.match(readablePattern) || [];
+        
+        const filteredMatches = readableMatches
+          .filter(match => match.length > 3 && match.length < 100)
+          .filter(match => !/^[A-F0-9]+$/.test(match)) // Filter out hex strings
+          .filter(match => !match.includes('obj') && !match.includes('endobj'))
+          .slice(0, 200); // Limit to prevent too much noise
+        
+        extractedText = filteredMatches.join(' ');
+        console.log("Binary extraction result length:", extractedText.length);
+      }
       
     } catch (error) {
       console.error("Error processing PDF:", error);
       extractedText = '';
     }
+
+    console.log("Final extracted text sample:", extractedText.substring(0, 500));
 
     // Parse the extracted text to find quote information
     const extractedQuote = parseQuoteFromText(extractedText, file.name);
