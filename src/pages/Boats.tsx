@@ -133,16 +133,33 @@ export default function Boats() {
     data: boats = [],
     isLoading
   } = useQuery({
-    queryKey: ['boats'],
+    queryKey: ['boats', user?.role, user?.baseId],
     queryFn: async () => {
+      if (!user?.baseId) return [];
+      
+      console.log('Fetching boats for user:', { role: user.role, baseId: user.baseId });
+      
+      let query = supabase
+        .from('boats')
+        .select(`
+          *,
+          bases(name)
+        `)
+        .order('name');
+
+      // Filter by base_id unless user is direction (can see all)
+      if (user.role !== 'direction') {
+        query = query.eq('base_id', user.baseId);
+      }
+
       const {
         data,
         error
-      } = await supabase.from('boats').select(`
-          *,
-          bases(name)
-        `).order('name');
+      } = await query;
       if (error) throw error;
+      
+      console.log('Boats fetched:', data?.length || 0);
+      
       return data.map(boat => ({
         id: boat.id,
         name: boat.name,
@@ -159,7 +176,8 @@ export default function Boats() {
       })) as (Boat & {
         baseName?: string;
       })[];
-    }
+    },
+    enabled: !!user
   });
 
   // Fetch bases for filters

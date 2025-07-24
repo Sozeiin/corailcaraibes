@@ -24,20 +24,30 @@ export default function Suppliers() {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const { data: suppliers = [], isLoading, error } = useQuery({
-    queryKey: ['suppliers'],
+    queryKey: ['suppliers', user?.id, user?.baseId],
     queryFn: async () => {
-      console.log('Fetching suppliers...');
-      const { data, error } = await supabase
+      if (!user?.baseId) return [];
+      
+      console.log('Fetching suppliers for user:', { role: user.role, baseId: user.baseId });
+      
+      let query = supabase
         .from('suppliers')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Filter by base_id unless user is direction (can see all)
+      if (user.role !== 'direction') {
+        query = query.or(`base_id.eq.${user.baseId},base_id.is.null`);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching suppliers:', error);
         throw error;
       }
 
-      console.log('Suppliers fetched:', data);
+      console.log('Suppliers fetched:', data?.length || 0);
       
       // Transform database fields to match Supplier interface
       return data.map(supplier => ({
@@ -50,7 +60,8 @@ export default function Suppliers() {
         baseId: supplier.base_id || '',
         createdAt: supplier.created_at || new Date().toISOString()
       })) as Supplier[];
-    }
+    },
+    enabled: !!user
   });
 
   const handleDelete = async (supplierId: string) => {
