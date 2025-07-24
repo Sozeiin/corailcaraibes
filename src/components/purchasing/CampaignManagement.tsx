@@ -30,10 +30,7 @@ export const CampaignManagement = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('bulk_purchase_campaigns')
-        .select(`
-          *,
-          campaign_items(count)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -538,7 +538,22 @@ export type Database = {
           requested_quantity?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_campaign_base_distributions_base_id"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_base_distributions_campaign_item_id"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       campaign_items: {
         Row: {
@@ -595,7 +610,29 @@ export type Database = {
           unit?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_campaign_items_campaign_id"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_purchase_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_items_selected_quote_id"
+            columns: ["selected_quote_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_items_selected_supplier_id"
+            columns: ["selected_supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       checklist_items: {
         Row: {
@@ -1604,7 +1641,15 @@ export type Database = {
           recommendation?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_quote_analysis_campaign_item_id"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_maintenance: {
         Row: {
@@ -1782,7 +1827,22 @@ export type Database = {
           valid_until?: string | null
           warranty_months?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_supplier_quotes_campaign_item_id"
+            columns: ["campaign_item_id"]
+            isOneToOne: false
+            referencedRelation: "campaign_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_supplier_quotes_supplier_id"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suppliers: {
         Row: {
