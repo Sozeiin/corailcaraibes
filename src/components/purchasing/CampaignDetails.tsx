@@ -13,6 +13,10 @@ import {
   Target,
   Users
 } from 'lucide-react';
+import { CampaignItemsTab } from './CampaignItemsTab';
+import { CampaignQuotesTab } from './CampaignQuotesTab';
+import { CampaignAnalysisTab } from './CampaignAnalysisTab';
+import { CampaignOrdersTab } from './CampaignOrdersTab';
 
 interface CampaignDetailsProps {
   campaign: any;
@@ -152,63 +156,19 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
         </TabsList>
 
         <TabsContent value="items" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Articles de la Campagne</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-4" />
-                <p>Aucun article pour le moment</p>
-                <p className="text-sm">Importez un fichier Excel pour commencer</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignItemsTab campaignId={campaign.id} />
         </TabsContent>
 
         <TabsContent value="quotes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Devis des Fournisseurs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4" />
-                <p>Aucun devis disponible</p>
-                <p className="text-sm">Les devis apparaîtront après l'ajout d'articles</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignQuotesTab campaignId={campaign.id} />
         </TabsContent>
 
         <TabsContent value="analysis" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analyse Comparative</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <BarChart3 className="h-12 w-12 mx-auto mb-4" />
-                <p>Analyse non disponible</p>
-                <p className="text-sm">Collectez des devis pour lancer l'analyse</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignAnalysisTab campaignId={campaign.id} />
         </TabsContent>
 
         <TabsContent value="orders" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Commandes Générées</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8 text-muted-foreground">
-                <Target className="h-12 w-12 mx-auto mb-4" />
-                <p>Aucune commande générée</p>
-                <p className="text-sm">Les commandes seront créées après la sélection des fournisseurs</p>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignOrdersTab campaignId={campaign.id} />
         </TabsContent>
 
         <TabsContent value="distribution" className="space-y-4">
