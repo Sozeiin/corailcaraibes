@@ -12,17 +12,19 @@ import {
   QrCode,
   TrendingUp,
   Globe,
-  Settings
+  Settings,
+  Target
 } from 'lucide-react';
 import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
 import { SupplierManagement } from '@/components/purchasing/SupplierManagement';
 import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
 import { MobileScanning } from '@/components/purchasing/MobileScanning';
 import { LogisticsDashboard } from '@/components/logistics/LogisticsDashboard';
+import { CampaignManagement } from '@/components/purchasing/CampaignManagement';
 
 export default function Purchasing() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState('campaigns');
 
   // Restrict access to direction only
   if (user?.role !== 'direction') {
@@ -30,6 +32,12 @@ export default function Purchasing() {
   }
 
   const tabs = [
+    {
+      id: 'campaigns',
+      label: 'Campagnes',
+      icon: Target,
+      component: CampaignManagement
+    },
     {
       id: 'orders',
       label: 'Commandes',
@@ -75,7 +83,7 @@ export default function Purchasing() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto p-1">
           {tabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 

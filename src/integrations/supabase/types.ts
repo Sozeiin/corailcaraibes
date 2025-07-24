@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instanciate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "12.2.3 (519615d)"
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
   public: {
     Tables: {
@@ -300,6 +300,51 @@ export type Database = {
           },
         ]
       }
+      bulk_purchase_campaigns: {
+        Row: {
+          campaign_year: number
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string
+          total_estimated_value: number | null
+          total_items: number | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_year?: number
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string
+          total_estimated_value?: number | null
+          total_items?: number | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_year?: number
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string
+          total_estimated_value?: number | null
+          total_items?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bulk_purchase_distributions: {
         Row: {
           allocated_quantity: number
@@ -458,6 +503,99 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      campaign_base_distributions: {
+        Row: {
+          allocated_quantity: number | null
+          base_id: string
+          campaign_item_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          priority: string | null
+          requested_quantity: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_quantity?: number | null
+          base_id: string
+          campaign_item_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          requested_quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_quantity?: number | null
+          base_id?: string
+          campaign_item_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          requested_quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      campaign_items: {
+        Row: {
+          campaign_id: string
+          category: string | null
+          consolidation_status: string | null
+          created_at: string
+          description: string | null
+          estimated_unit_price: number | null
+          id: string
+          notes: string | null
+          original_requests: Json | null
+          priority: string | null
+          product_name: string
+          selected_quote_id: string | null
+          selected_supplier_id: string | null
+          total_quantity: number
+          unit: string | null
+          updated_at: string
+        }
+        Insert: {
+          campaign_id: string
+          category?: string | null
+          consolidation_status?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_unit_price?: number | null
+          id?: string
+          notes?: string | null
+          original_requests?: Json | null
+          priority?: string | null
+          product_name: string
+          selected_quote_id?: string | null
+          selected_supplier_id?: string | null
+          total_quantity?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campaign_id?: string
+          category?: string | null
+          consolidation_status?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_unit_price?: number | null
+          id?: string
+          notes?: string | null
+          original_requests?: Json | null
+          priority?: string | null
+          product_name?: string
+          selected_quote_id?: string | null
+          selected_supplier_id?: string | null
+          total_quantity?: number
+          unit?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       checklist_items: {
         Row: {
@@ -1429,6 +1567,45 @@ export type Database = {
           },
         ]
       }
+      quote_analysis: {
+        Row: {
+          analysis_data: Json
+          analysis_date: string | null
+          best_price_quote_id: string | null
+          best_quality_quote_id: string | null
+          best_value_quote_id: string | null
+          campaign_item_id: string
+          created_at: string
+          id: string
+          recommendation: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_data?: Json
+          analysis_date?: string | null
+          best_price_quote_id?: string | null
+          best_quality_quote_id?: string | null
+          best_value_quote_id?: string | null
+          campaign_item_id: string
+          created_at?: string
+          id?: string
+          recommendation?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_data?: Json
+          analysis_date?: string | null
+          best_price_quote_id?: string | null
+          best_quality_quote_id?: string | null
+          best_value_quote_id?: string | null
+          campaign_item_id?: string
+          created_at?: string
+          id?: string
+          recommendation?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduled_maintenance: {
         Row: {
           boat_id: string
@@ -1552,6 +1729,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_quotes: {
+        Row: {
+          campaign_item_id: string
+          created_at: string
+          delivery_time_days: number | null
+          id: string
+          minimum_quantity: number | null
+          notes: string | null
+          quality_rating: number | null
+          quote_date: string | null
+          quote_reference: string | null
+          status: string | null
+          supplier_id: string
+          unit_price: number
+          updated_at: string
+          valid_until: string | null
+          warranty_months: number | null
+        }
+        Insert: {
+          campaign_item_id: string
+          created_at?: string
+          delivery_time_days?: number | null
+          id?: string
+          minimum_quantity?: number | null
+          notes?: string | null
+          quality_rating?: number | null
+          quote_date?: string | null
+          quote_reference?: string | null
+          status?: string | null
+          supplier_id: string
+          unit_price?: number
+          updated_at?: string
+          valid_until?: string | null
+          warranty_months?: number | null
+        }
+        Update: {
+          campaign_item_id?: string
+          created_at?: string
+          delivery_time_days?: number | null
+          id?: string
+          minimum_quantity?: number | null
+          notes?: string | null
+          quality_rating?: number | null
+          quote_date?: string | null
+          quote_reference?: string | null
+          status?: string | null
+          supplier_id?: string
+          unit_price?: number
+          updated_at?: string
+          valid_until?: string | null
+          warranty_months?: number | null
+        }
+        Relationships: []
       }
       suppliers: {
         Row: {
