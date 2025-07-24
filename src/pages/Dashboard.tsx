@@ -63,23 +63,30 @@ export default function Dashboard() {
   const [baseName, setBaseName] = useState<string>('');
   const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchBaseName = async () => {
-      if (user?.baseId && user.role !== 'direction') {
-        const { data } = await supabase
-          .from('bases')
-          .select('name')
-          .eq('id', user.baseId)
-          .single();
-        
-        if (data) {
-          setBaseName(data.name);
-        }
-      }
-    };
+  // Récupération du nom de la base avec useQuery pour optimiser
+  const { data: baseData } = useQuery({
+    queryKey: ['base-name', user?.baseId],
+    queryFn: async () => {
+      if (!user?.baseId || user.role === 'direction') return null;
+      
+      const { data, error } = await supabase
+        .from('bases')
+        .select('name')
+        .eq('id', user.baseId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.baseId && user?.role !== 'direction',
+    staleTime: 300000, // Cache 5 minutes
+  });
 
-    fetchBaseName();
-  }, [user?.baseId, user?.role]);
+  useEffect(() => {
+    if (baseData?.name) {
+      setBaseName(baseData.name);
+    }
+  }, [baseData]);
 
   // Récupération des interventions filtrées pour les techniciens
   const { data: interventions = [], isLoading: interventionsLoading } = useQuery({

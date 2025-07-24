@@ -27,7 +27,11 @@ export default function Orders() {
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders', user?.role, user?.baseId],
     queryFn: async () => {
-      // Optimisation : Sélectionner seulement les champs nécessaires
+      if (!user?.baseId) return [];
+      
+      console.log('Fetching orders for user:', { role: user.role, baseId: user.baseId });
+      
+      // Requête optimisée - pas de JOIN pour éviter la lenteur
       let query = supabase.from('orders').select(`
         id,
         supplier_id,
@@ -44,29 +48,21 @@ export default function Orders() {
         requested_by,
         approved_by,
         approved_at,
-        photos,
-        tracking_url,
-        rejection_reason,
-        request_notes,
-        documents,
-        suppliers!left(name),
-        bases!left(name, location),
-        boats!left(name, model),
-        requested_by_profile:profiles!orders_requested_by_fkey(name),
-        approved_by_profile:profiles!orders_approved_by_fkey(name),
-        order_items!left(*)
+        documents
       `);
 
       // Filtrage côté serveur selon le rôle
-      if (user?.role !== 'direction') {
-        query = query.eq('base_id', user?.baseId);
+      if (user.role !== 'direction') {
+        query = query.eq('base_id', user.baseId);
       }
 
       const { data, error } = await query
         .order('created_at', { ascending: false })
-        .limit(200); // Limiter le nombre de commandes
+        .limit(100); // Réduire la limite
 
       if (error) throw error;
+
+      console.log('Orders fetched:', data?.length || 0);
 
       // Transform database fields to match Order interface
       return data.map(order => ({
@@ -78,14 +74,7 @@ export default function Orders() {
         totalAmount: Number(order.total_amount) || 0,
         orderDate: order.order_date || new Date().toISOString().split('T')[0],
         deliveryDate: order.delivery_date || '',
-        items: (order.order_items || []).map((item: any) => ({
-          id: item.id || '',
-          productName: item.product_name || '',
-          reference: item.reference || '',
-          quantity: Number(item.quantity) || 0,
-          unitPrice: Number(item.unit_price) || 0,
-          totalPrice: Number(item.total_price) || (Number(item.quantity || 0) * Number(item.unit_price || 0))
-        })),
+        items: [], // Chargement à la demande
         documents: Array.isArray(order.documents) ? order.documents : [],
         createdAt: order.created_at || new Date().toISOString(),
         // Purchase request fields
@@ -95,14 +84,15 @@ export default function Orders() {
         requestedBy: order.requested_by || '',
         approvedBy: order.approved_by || '',
         approvedAt: order.approved_at || '',
-        photos: Array.isArray(order.photos) ? order.photos : [],
-        trackingUrl: order.tracking_url || '',
-        rejectionReason: order.rejection_reason || '',
-        requestNotes: order.request_notes || ''
+        photos: [],
+        trackingUrl: '',
+        rejectionReason: '',
+        requestNotes: ''
       })) as Order[];
     },
-    staleTime: 30000, // Cache pendant 30 secondes
-    gcTime: 300000, // Garde en cache 5 minutes
+    enabled: !!user,
+    staleTime: 60000, // Cache plus long
+    gcTime: 300000,
   });
 
   // Get unique statuses for filter

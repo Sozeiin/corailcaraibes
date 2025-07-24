@@ -34,7 +34,11 @@ export default function Stock() {
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock', user?.role, user?.baseId],
     queryFn: async () => {
-      // Optimisation : Sélectionner seulement ce qui est nécessaire
+      if (!user?.baseId) return [];
+      
+      console.log('Fetching stock for user:', { role: user.role, baseId: user.baseId });
+      
+      // Requête optimisée sans JOIN
       let query = supabase.from('stock_items').select(`
         id,
         name,
@@ -45,23 +49,21 @@ export default function Stock() {
         unit,
         location,
         base_id,
-        last_updated,
-        last_purchase_date,
-        last_purchase_cost,
-        last_supplier_id,
-        bases!inner(name, location)
+        last_updated
       `);
 
       // Filtrage côté serveur selon le rôle
-      if (user?.role !== 'direction') {
-        query = query.eq('base_id', user?.baseId);
+      if (user.role !== 'direction') {
+        query = query.eq('base_id', user.baseId);
       }
 
       const { data, error } = await query
         .order('name')
-        .limit(500); // Limiter à 500 articles pour éviter les surcharges
+        .limit(300); // Réduire la limite
 
       if (error) throw error;
+
+      console.log('Stock items fetched:', data?.length || 0);
 
       // Transform database fields to match StockItem interface
       return data.map(item => ({
@@ -74,15 +76,16 @@ export default function Stock() {
         unit: item.unit || '',
         location: item.location || '',
         baseId: item.base_id || '',
-        baseName: item.bases?.name || '',
+        baseName: '', // Chargement à la demande si nécessaire
         lastUpdated: item.last_updated || new Date().toISOString(),
-        lastPurchaseDate: item.last_purchase_date,
-        lastPurchaseCost: item.last_purchase_cost,
-        lastSupplierId: item.last_supplier_id
+        lastPurchaseDate: null,
+        lastPurchaseCost: null,
+        lastSupplierId: null
       })) as StockItem[];
     },
-    staleTime: 30000, // Cache pendant 30 secondes
-    gcTime: 300000, // Garde en cache 5 minutes
+    enabled: !!user,
+    staleTime: 60000, // Cache plus long
+    gcTime: 300000,
   });
 
   // Get bases for filter
