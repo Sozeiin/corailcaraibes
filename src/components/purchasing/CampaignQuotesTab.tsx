@@ -16,11 +16,14 @@ import {
   Trash2,
   Clock,
   Award,
-  Calendar
+  Calendar,
+  Upload,
+  FileUp
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { QuoteImportDialog } from './QuoteImportDialog';
 
 interface CampaignQuotesTabProps {
   campaignId: string;
@@ -28,6 +31,7 @@ interface CampaignQuotesTabProps {
 
 export const CampaignQuotesTab: React.FC<CampaignQuotesTabProps> = ({ campaignId }) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const [selectedItem, setSelectedItem] = useState<string>('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -303,13 +307,18 @@ export const CampaignQuotesTab: React.FC<CampaignQuotesTabProps> = ({ campaignId
             Gérez les devis reçus pour les articles de cette campagne
           </p>
         </div>
-        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un devis
-            </Button>
-          </DialogTrigger>
+        <div className="flex space-x-2">
+          <Button variant="outline" onClick={() => setShowImportDialog(true)}>
+            <FileUp className="h-4 w-4 mr-2" />
+            Importer PDF
+          </Button>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter un devis
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader>
               <DialogTitle>Ajouter un devis</DialogTitle>
@@ -323,7 +332,17 @@ export const CampaignQuotesTab: React.FC<CampaignQuotesTabProps> = ({ campaignId
             />
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      <QuoteImportDialog
+        open={showImportDialog}
+        onOpenChange={setShowImportDialog}
+        campaignId={campaignId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['campaign-quotes', campaignId] });
+        }}
+      />
 
       {quotes && quotes.length > 0 ? (
         <Card>

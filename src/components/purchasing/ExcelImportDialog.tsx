@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, FileSpreadsheet, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
 interface ExcelImportDialogProps {
@@ -122,6 +123,21 @@ export const ExcelImportDialog: React.FC<ExcelImportDialogProps> = ({
         }).filter(item => item.product_name.trim() !== '');
         
         console.log('Données à importer:', processedData);
+        
+        // Insert data into database
+        const { error } = await supabase
+          .from('campaign_items')
+          .insert(processedData);
+        
+        if (error) {
+          console.error('Erreur lors de l\'insertion:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Erreur lors de l\'insertion en base de données',
+            variant: 'destructive'
+          });
+          return;
+        }
         
         toast({
           title: 'Import terminé',

@@ -17,6 +17,9 @@ import { CampaignItemsTab } from './CampaignItemsTab';
 import { CampaignQuotesTab } from './CampaignQuotesTab';
 import { CampaignAnalysisTab } from './CampaignAnalysisTab';
 import { CampaignOrdersTab } from './CampaignOrdersTab';
+import { ExcelImportDialog } from './ExcelImportDialog';
+import { CampaignExportDialog } from './CampaignExportDialog';
+import * as XLSX from 'xlsx';
 
 interface CampaignDetailsProps {
   campaign: any;
@@ -30,6 +33,8 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
   onUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState('items');
+  const [showExcelImport, setShowExcelImport] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,6 +60,10 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
     }
   };
 
+  const handleAnalysis = () => {
+    setActiveTab('analysis');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -72,15 +81,15 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
           </Badge>
         </div>
         <div className="flex space-x-2">
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowExcelImport(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importer Excel
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setShowExportDialog(true)}>
             <Download className="h-4 w-4 mr-2" />
             Exporter
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleAnalysis}>
             <BarChart3 className="h-4 w-4 mr-2" />
             Analyse
           </Button>
@@ -186,6 +195,19 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
           </Card>
         </TabsContent>
       </Tabs>
+
+      <ExcelImportDialog
+        open={showExcelImport}
+        onOpenChange={setShowExcelImport}
+        campaignId={campaign.id}
+        onSuccess={onUpdate}
+      />
+
+      <CampaignExportDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        campaign={campaign}
+      />
     </div>
   );
 };
