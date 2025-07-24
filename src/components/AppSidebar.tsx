@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, Zap } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useIsMobile } from '@/hooks/use-mobile';
 const menuItems = [{
   title: 'Tableau de bord',
   url: '/',
@@ -47,9 +48,9 @@ const menuItems = [{
 }];
 export function AppSidebar() {
   const location = useLocation();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
+  const isMobile = useIsMobile();
   const [baseName, setBaseName] = useState<string>('');
   useEffect(() => {
     const fetchBaseName = async () => {
@@ -65,6 +66,13 @@ export function AppSidebar() {
     fetchBaseName();
   }, [user?.baseId, user?.role]);
   const filteredMenuItems = menuItems.filter(item => user && item.roles.includes(user.role));
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   const getNavClass = (path: string) => {
     const isActive = location.pathname === path;
     return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`;
@@ -79,7 +87,11 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-1">
               {filteredMenuItems.map(item => <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <NavLink to={item.url} className={getNavClass(item.url)}>
+                    <NavLink 
+                      to={item.url} 
+                      className={getNavClass(item.url)}
+                      onClick={handleNavClick}
+                    >
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                       <span className="text-xs sm:text-sm lg:text-base truncate">{item.title}</span>
                     </NavLink>
