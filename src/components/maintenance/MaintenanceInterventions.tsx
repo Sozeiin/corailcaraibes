@@ -20,8 +20,10 @@ export function MaintenanceInterventions() {
   const [editingIntervention, setEditingIntervention] = useState<Intervention | null>(null);
 
   const { data: interventions = [], isLoading } = useQuery({
-    queryKey: ['interventions'],
+    queryKey: ['interventions', user?.role, user?.baseId],
     queryFn: async () => {
+      console.log('Fetching interventions for user:', { role: user?.role, baseId: user?.baseId });
+      
       const { data, error } = await supabase
         .from('interventions')
         .select(`
@@ -31,8 +33,12 @@ export function MaintenanceInterventions() {
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching interventions:', error);
+        throw error;
+      }
 
+      console.log('Fetched interventions:', data?.length || 0);
       return data.map(intervention => ({
         id: intervention.id,
         boatId: intervention.boat_id || '',
@@ -50,20 +56,29 @@ export function MaintenanceInterventions() {
           model: intervention.boats.model
         } : undefined
       })) as Intervention[];
-    }
+    },
+    enabled: !!user
   });
 
   const { data: boats = [] } = useQuery({
-    queryKey: ['boats'],
+    queryKey: ['boats', user?.role, user?.baseId],
     queryFn: async () => {
+      console.log('Fetching boats for user:', { role: user?.role, baseId: user?.baseId });
+      
       const { data, error } = await supabase
         .from('boats')
         .select('id, name, model')
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching boats:', error);
+        throw error;
+      }
+      
+      console.log('Fetched boats:', data?.length || 0);
       return data;
-    }
+    },
+    enabled: !!user
   });
 
   // Filter interventions

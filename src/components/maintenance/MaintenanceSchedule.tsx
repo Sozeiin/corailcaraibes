@@ -12,10 +12,12 @@ export function MaintenanceSchedule() {
   const { user } = useAuth();
 
   const { data: weeklySchedule = [], isLoading } = useQuery({
-    queryKey: ['weekly-schedule'],
+    queryKey: ['weekly-schedule', user?.role, user?.baseId],
     queryFn: async () => {
       const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
       const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
+
+      console.log('Fetching weekly schedule for user:', { role: user?.role, baseId: user?.baseId });
 
       const { data, error } = await supabase
         .from('interventions')
@@ -28,14 +30,22 @@ export function MaintenanceSchedule() {
         .lte('scheduled_date', endDate.toISOString().split('T')[0])
         .order('scheduled_date');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching weekly schedule:', error);
+        throw error;
+      }
+      
+      console.log('Fetched weekly schedule:', data?.length || 0);
       return data;
-    }
+    },
+    enabled: !!user
   });
 
   const { data: technicianStats = [], isLoading: statsLoading } = useQuery({
-    queryKey: ['technician-stats'],
+    queryKey: ['technician-stats', user?.role, user?.baseId],
     queryFn: async () => {
+      console.log('Fetching technician stats for user:', { role: user?.role, baseId: user?.baseId });
+
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -49,9 +59,15 @@ export function MaintenanceSchedule() {
         `)
         .eq('role', 'technicien');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching technician stats:', error);
+        throw error;
+      }
+      
+      console.log('Fetched technician stats:', data?.length || 0);
       return data;
-    }
+    },
+    enabled: !!user
   });
 
   const getStatusColor = (status: string) => {

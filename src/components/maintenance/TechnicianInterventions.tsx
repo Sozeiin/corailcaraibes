@@ -52,9 +52,15 @@ export function TechnicianInterventions() {
 
   // Récupération de toutes les interventions pertinentes pour le technicien
   const { data: interventions = [], isLoading } = useQuery({
-    queryKey: ['technician-interventions', user?.id],
+    queryKey: ['technician-interventions', user?.id, user?.baseId],
     queryFn: async () => {
       if (!user || user.role !== 'technicien') return [];
+
+      console.log('Fetching technician interventions for user:', { 
+        id: user.id, 
+        role: user.role, 
+        baseId: user.baseId 
+      });
 
       const { data, error } = await supabase
         .from('interventions')
@@ -65,7 +71,12 @@ export function TechnicianInterventions() {
         .or(`technician_id.eq.${user.id},and(base_id.eq.${user.baseId},technician_id.is.null)`)
         .order('scheduled_date', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching technician interventions:', error);
+        throw error;
+      }
+      
+      console.log('Fetched technician interventions:', data?.length || 0);
       return data || [];
     },
     enabled: !!user && user.role === 'technicien'
@@ -81,6 +92,14 @@ export function TechnicianInterventions() {
     i.status !== 'completed' &&
     i.status !== 'cancelled'
   );
+
+  console.log('Filtering interventions:', {
+    total: interventions.length,
+    myInterventions: myInterventions.length,
+    availableInterventions: availableInterventions.length,
+    userId: user?.id,
+    baseId: user?.baseId
+  });
 
   const handleCompleteIntervention = async (interventionId: string) => {
     if (!user) return;
