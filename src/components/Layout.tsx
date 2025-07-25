@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +11,14 @@ interface LayoutProps {
 
 export const Layout = ({ children }: LayoutProps) => {
   const { isAuthenticated, loading } = useAuth();
+  const { isNative } = useMobileCapacitor();
+
+  useEffect(() => {
+    // Add mobile-specific classes
+    if (isNative) {
+      document.body.classList.add('mobile-native');
+    }
+  }, [isNative]);
 
   if (loading) {
     return (

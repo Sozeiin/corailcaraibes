@@ -1,21 +1,42 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.a67ce1cfd84a489ebe55b2c675431676',
-  appName: 'catamaran-fleet-manager-pro',
+  appId: 'com.corailcaraibes.fleetmanager',
+  appName: 'Corail Caraibes Fleet Manager',
   webDir: 'dist',
   bundledWebRuntime: false,
-  server: {
-    url: 'https://a67ce1cf-d84a-489e-be55-b2c675431676.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   plugins: {
     BarcodeScanner: {
       shouldShowOverlay: true,
       shouldShowTorchButton: true,
       shouldShowScanArea: true,
       shouldShowBackButton: true
+    },
+    SplashScreen: {
+      launchShowDuration: 2000,
+      backgroundColor: '#0f172a',
+      androidSplashResourceName: 'splash',
+      showSpinner: false
+    },
+    StatusBar: {
+      style: 'Dark',
+      backgroundColor: '#0f172a'
+    },
+    Keyboard: {
+      resize: 'body',
+      style: 'dark'
     }
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
+    loggingBehavior: 'none'
+  },
+  ios: {
+    contentInset: 'automatic',
+    scrollEnabled: true,
+    backgroundColor: '#0f172a'
   }
 };
 
