@@ -42,13 +42,11 @@ export default function Auth() {
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setLoading(true);
     try {
-      const {
-        error
-      } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password
       });
@@ -57,6 +55,11 @@ export default function Auth() {
           title: "Erreur de connexion",
           description: error.message,
           variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Connexion réussie",
+          description: "Redirection en cours..."
         });
       }
     } catch (error) {
@@ -135,11 +138,63 @@ export default function Auth() {
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+          <Tabs defaultValue="demo" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="demo">Démo</TabsTrigger>
               <TabsTrigger value="login">Connexion</TabsTrigger>
               <TabsTrigger value="signup">Inscription</TabsTrigger>
             </TabsList>
+            
+            <TabsContent value="demo">
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground text-center mb-4">
+                  Connexion rapide avec les comptes de démonstration
+                </p>
+                
+                <Button 
+                  onClick={() => setLoginForm({email: '2b.services36@gmail.com', password: 'demo123'})}
+                  variant="outline" 
+                  className="w-full justify-start"
+                >
+                  <div className="text-left">
+                    <div className="font-medium">Chef de Base Martinique</div>
+                    <div className="text-xs text-muted-foreground">Gestion complète d'une base</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  onClick={() => setLoginForm({email: 'optitberry@gmail.com', password: 'demo123'})}
+                  variant="outline" 
+                  className="w-full justify-start"
+                >
+                  <div className="text-left">
+                    <div className="font-medium">Chef de Base Guadeloupe</div>
+                    <div className="text-xs text-muted-foreground">Gestion complète d'une base</div>
+                  </div>
+                </Button>
+                
+                <Button 
+                  onClick={() => setLoginForm({email: 'technique@corail-caraibes.com', password: 'demo123'})}
+                  variant="outline" 
+                  className="w-full justify-start"
+                >
+                  <div className="text-left">
+                    <div className="font-medium">Direction</div>
+                    <div className="text-xs text-muted-foreground">Accès à toutes les bases</div>
+                  </div>
+                </Button>
+                
+                <div className="mt-4">
+                  <Button 
+                    onClick={handleLogin}
+                    className="w-full"
+                    disabled={!loginForm.email || !loginForm.password || loading}
+                  >
+                    {loading ? 'Connexion...' : 'Se connecter avec le compte sélectionné'}
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
             
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
