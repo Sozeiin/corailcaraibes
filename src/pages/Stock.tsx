@@ -220,7 +220,7 @@ export default function Stock() {
         </Alert>
       )}
 
-      <Tabs defaultValue="inventory" className="space-y-4">
+      <Tabs defaultValue="inventory" className="space-y-4" key="stock-tabs">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="inventory" className="flex items-center gap-2">
             <Search className="h-4 w-4" />
@@ -232,7 +232,7 @@ export default function Stock() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="inventory" className="space-y-4">
+        <TabsContent value="inventory" className="space-y-4" forceMount style={{ display: undefined }}>
           <div className="bg-white rounded-lg shadow-sm border">
             <div className="p-3 sm:p-6 border-b">
               <div className="flex items-center space-x-4">
@@ -274,7 +274,7 @@ export default function Stock() {
           </div>
         </TabsContent>
 
-        <TabsContent value="scanner" className="space-y-4">
+        <TabsContent value="scanner" className="space-y-4" forceMount style={{ display: undefined }}>
           <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
             <StockScanner stockItems={filteredItems} />
           </div>
