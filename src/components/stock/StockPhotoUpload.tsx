@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -213,41 +214,42 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
         disabled={disabled || isUploading}
       />
 
-      {/* Interface caméra */}
-      {showCamera && (
-        <div className="bg-gray-900 rounded-lg p-4 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-white font-medium">Prendre une photo</h3>
-            <Button
-              onClick={closeCamera}
-              variant="outline"
-              size="sm"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Modal caméra */}
+      <Dialog open={showCamera} onOpenChange={(open) => !open && closeCamera()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Prendre une photo</DialogTitle>
+          </DialogHeader>
           
-          <div className="relative">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full h-64 object-cover rounded-lg bg-gray-800"
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full h-64 object-cover rounded-lg bg-gray-800"
+              />
+            </div>
+            
+            <div className="flex justify-center gap-2">
+              <Button
+                onClick={capturePhoto}
+                className="flex-1"
+                disabled={isUploading}
+              >
+                <Camera className="h-4 w-4 mr-2" />
+                Capturer
+              </Button>
+              <Button
+                onClick={closeCamera}
+                variant="outline"
+              >
+                Annuler
+              </Button>
+            </div>
           </div>
-          
-          <div className="flex justify-center">
-            <Button
-              onClick={capturePhoto}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              size="lg"
-            >
-              <Camera className="h-5 w-5 mr-2" />
-              Capturer la photo
-            </Button>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <canvas ref={canvasRef} className="hidden" />
 
