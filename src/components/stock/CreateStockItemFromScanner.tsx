@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Base } from '@/types';
+import { StockPhotoUpload } from './StockPhotoUpload';
 
 interface CreateStockItemFromScannerProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ interface StockFormData {
   unit: string;
   location: string;
   baseId: string;
+  photoUrl: string;
 }
 
 export function CreateStockItemFromScanner({ 
@@ -67,6 +69,7 @@ export function CreateStockItemFromScanner({
       unit: 'pièce',
       location: '',
       baseId: user?.baseId || '',
+      photoUrl: '',
     },
   });
 
@@ -131,6 +134,7 @@ export function CreateStockItemFromScanner({
         unit: 'pièce',
         location: '',
         baseId: user?.role === 'direction' ? '' : (user?.baseId || ''),
+        photoUrl: '',
       });
     }
   }, [isOpen, scannedCode, form, user]);
@@ -148,6 +152,7 @@ export function CreateStockItemFromScanner({
         unit: data.unit || null,
         location: data.location || null,
         base_id: data.baseId || null,
+        photo_url: data.photoUrl || null,
         last_updated: new Date().toISOString()
       };
 
@@ -365,6 +370,19 @@ export function CreateStockItemFromScanner({
                 )}
               />
             )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Photo de l'article</label>
+                <div className="mt-2">
+                  <StockPhotoUpload
+                    photoUrl={form.watch('photoUrl')}
+                    onPhotoChange={(url) => form.setValue('photoUrl', url || '')}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </div>
 
             <div className="flex justify-end space-x-3 pt-4">
               <Button
