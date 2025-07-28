@@ -18,6 +18,12 @@ interface StockItemDetailsDialogProps {
 export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetailsDialogProps) {
   if (!item) return null;
 
+  console.log('Stock item details:', {
+    name: item.name,
+    photoUrl: item.photoUrl,
+    hasPhoto: !!item.photoUrl
+  });
+
   const getStockStatus = (item: StockItem) => {
     if (item.quantity === 0) {
       return { label: 'Rupture', variant: 'destructive' as const };
@@ -61,6 +67,13 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
                   alt={item.name}
                   className="w-24 h-24 object-cover rounded-lg border"
                   loading="lazy"
+                  onError={(e) => {
+                    console.error('Failed to load image:', item.photoUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('Image loaded successfully:', item.photoUrl);
+                  }}
                 />
               </div>
             )}
