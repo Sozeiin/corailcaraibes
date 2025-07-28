@@ -353,10 +353,13 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   };
 
   const processScannedCode = async (code: string, operation: 'add' | 'remove') => {
+    console.log('🔍 Processing scanned code:', code, 'Operation:', operation);
     const trimmedCode = code.trim();
     let matchType = '';
     let isImported = false;
     let sourceBase = '';
+    
+    console.log('📦 Available stock items:', stockItems.length);
     
     // 1. Recherche locale d'abord (logique existante)
     let stockItem = stockItems.find(item => 
@@ -444,6 +447,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         console.error('Erreur lors de la recherche globale:', error);
         
         // Si erreur de recherche globale, proposer la création
+        console.log('❌ Global search error, opening create dialog:', error);
         setCodeToCreate(trimmedCode);
         setIsCreateDialogOpen(true);
         return;
@@ -465,10 +469,13 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
     // 4. Si toujours pas trouvé, proposer la création
     if (!stockItem) {
+      console.log('❌ No stock item found, opening create dialog');
       setCodeToCreate(trimmedCode);
       setIsCreateDialogOpen(true);
       return;
     }
+
+    console.log('✅ Stock item found:', stockItem.name, 'Match type:', matchType);
 
     setScannedCode(trimmedCode);
     setCurrentOperation(operation);
@@ -485,7 +492,12 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       sourceBase
     };
     
-    setOperations(prev => [newOperation, ...prev.slice(0, 9)]);
+    console.log('➕ Adding new operation to list:', newOperation);
+    setOperations(prev => {
+      const newOps = [newOperation, ...prev.slice(0, 9)];
+      console.log('📋 Updated operations list:', newOps.length);
+      return newOps;
+    });
     
     toast({
       title: isImported ? 'Article importé et trouvé' : 'Article trouvé',
