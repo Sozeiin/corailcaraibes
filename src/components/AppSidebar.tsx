@@ -55,11 +55,23 @@ export function AppSidebar() {
   useEffect(() => {
     const fetchBaseName = async () => {
       if (user?.baseId && user.role !== 'direction') {
-        const {
-          data
-        } = await supabase.from('bases').select('name').eq('id', user.baseId).single();
-        if (data) {
-          setBaseName(data.name);
+        try {
+          const { data, error } = await supabase
+            .from('bases')
+            .select('name')
+            .eq('id', user.baseId)
+            .maybeSingle();
+          
+          if (error) {
+            console.error('Error fetching base name:', error);
+            return;
+          }
+          
+          if (data) {
+            setBaseName(data.name);
+          }
+        } catch (error) {
+          console.error('Error in fetchBaseName:', error);
         }
       }
     };

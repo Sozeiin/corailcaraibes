@@ -18,11 +18,16 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
       // Get current supplier info
       let currentSupplier = null;
       if (stockItem.lastSupplierId) {
-        const { data: supplier } = await supabase
+        const { data: supplier, error } = await supabase
           .from('suppliers')
           .select('*')
           .eq('id', stockItem.lastSupplierId)
-          .single();
+          .maybeSingle();
+        
+        if (error) {
+          console.error('Error fetching supplier:', error);
+          return;
+        }
         currentSupplier = supplier;
       }
 

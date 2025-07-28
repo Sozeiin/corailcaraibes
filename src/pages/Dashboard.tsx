@@ -73,9 +73,12 @@ export default function Dashboard() {
         .from('bases')
         .select('name')
         .eq('id', user.baseId)
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching base:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!user?.baseId && user?.role !== 'direction',

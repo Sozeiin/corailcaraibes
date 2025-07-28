@@ -117,7 +117,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           base_id: '550e8400-e29b-41d4-a716-446655440001'
         })
         .select()
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error creating profile:', error);
