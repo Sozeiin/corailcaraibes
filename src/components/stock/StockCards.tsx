@@ -36,6 +36,16 @@ const StockCard = memo(({
   
   return (
     <Card className={`transition-shadow hover:shadow-md ${isLowStock ? 'border-orange-200' : ''}`}>
+      {item.photoUrl && (
+        <div className="mb-4">
+          <img
+            src={item.photoUrl}
+            alt={item.name}
+            className="w-full h-32 object-cover rounded-t-lg"
+            loading="lazy"
+          />
+        </div>
+      )}
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-lg">
           <div className="flex items-center gap-2 min-w-0 flex-1">

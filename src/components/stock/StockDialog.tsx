@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StockItem, Base } from '@/types';
+import { StockPhotoUpload } from './StockPhotoUpload';
 
 interface StockDialogProps {
   isOpen: boolean;
@@ -45,6 +46,7 @@ interface StockFormData {
   unit: string;
   location: string;
   baseId: string;
+  photoUrl: string;
 }
 
 export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
@@ -62,6 +64,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       unit: '',
       location: '',
       baseId: '',
+      photoUrl: '',
     },
   });
 
@@ -119,99 +122,96 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     if (item) {
       form.reset({
         name: item.name,
-        reference: item.reference,
-        category: item.category,
+        reference: item.reference || '',
+        category: item.category || '',
         quantity: item.quantity,
         minThreshold: item.minThreshold,
-        unit: item.unit,
-        location: item.location,
+        unit: item.unit || 'pièce',
+        location: item.location || '',
         baseId: item.baseId,
+        photoUrl: item.photoUrl || '',
       });
     } else {
+      const defaultBaseId = user?.role === 'direction' ? '' : user?.baseId || '';
       form.reset({
         name: '',
-        reference: '', // Sera auto-généré par la base de données
+        reference: '',
         category: '',
         quantity: 0,
         minThreshold: 0,
-        unit: '',
+        unit: 'pièce',
         location: '',
-        baseId: user?.role === 'direction' ? '' : (user?.baseId || ''),
+        baseId: defaultBaseId,
+        photoUrl: '',
       });
     }
   }, [item, form, user]);
 
   const onSubmit = async (data: StockFormData) => {
-    setIsSubmitting(true);
-    
     try {
+      setIsSubmitting(true);
+      
       const stockData = {
         name: data.name,
-        reference: data.reference || null, // Si vide, sera auto-généré
-        category: data.category || null,
+        reference: data.reference || null,
+        category: data.category,
         quantity: data.quantity,
         min_threshold: data.minThreshold,
-        unit: data.unit || null,
+        unit: data.unit,
         location: data.location || null,
         base_id: data.baseId,
-        last_updated: new Date().toISOString()
+        photo_url: data.photoUrl || null,
+        last_updated: new Date().toISOString(),
       };
 
+      let result;
       if (item) {
-        // Update existing item
-        const { error } = await supabase
+        result = await supabase
           .from('stock_items')
           .update(stockData)
-          .eq('id', item.id);
-
-        if (error) throw error;
-
-        toast({
-          title: "Article modifié",
-          description: "L'article a été mis à jour avec succès."
-        });
+          .eq('id', item.id)
+          .select();
       } else {
-        // Create new item
-        const { error } = await supabase
+        result = await supabase
           .from('stock_items')
-          .insert(stockData);
-
-        if (error) throw error;
-
-        toast({
-          title: "Article créé",
-          description: "Le nouvel article a été ajouté au stock."
-        });
+          .insert([stockData])
+          .select();
       }
+
+      const { error } = result;
+
+      if (error) throw error;
+
+      toast({
+        title: item ? 'Article modifié' : 'Article ajouté',
+        description: item 
+          ? 'L\'article a été modifié avec succès.' 
+          : 'L\'article a été ajouté avec succès.',
+      });
 
       onClose();
     } catch (error) {
       console.error('Error saving stock item:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder l'article.",
-        variant: "destructive"
+        variant: 'destructive',
+        title: 'Erreur',
+        description: item 
+          ? 'Erreur lors de la modification de l\'article.'
+          : 'Erreur lors de l\'ajout de l\'article.',
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
-
-  const availableBases = user?.role === 'direction' 
-    ? bases 
-    : bases.filter(base => base.id === user?.baseId);
+  const showBaseSelection = user?.role === 'direction' || (user?.role === 'chef_base' && bases.length > 1);
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {item ? 'Modifier l\'article' : 'Nouvel article'}
+            {item ? 'Modifier l\'article' : 'Ajouter un article'}
           </DialogTitle>
         </DialogHeader>
 
@@ -221,12 +221,11 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
               <FormField
                 control={form.control}
                 name="name"
-                rules={{ required: "Le nom est requis" }}
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="md:col-span-2">
                     <FormLabel>Nom de l'article *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nom de l'article" {...field} />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -240,24 +239,19 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                   <FormItem>
                     <FormLabel>Référence</FormLabel>
                     <FormControl>
-                      <Input 
-                        placeholder={item ? "REF-001" : "Auto-généré si vide"} 
-                        {...field} 
-                      />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="category"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Catégorie</FormLabel>
+                    <FormLabel>Catégorie *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -279,10 +273,48 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
 
               <FormField
                 control={form.control}
+                name="quantity"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Quantité *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="minThreshold"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Seuil minimum *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="unit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Unité</FormLabel>
+                    <FormLabel>Unité *</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -301,107 +333,68 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                   </FormItem>
                 )}
               />
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
                 control={form.control}
-                name="quantity"
-                rules={{ required: "La quantité est requise", min: 0 }}
+                name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Quantité actuelle *</FormLabel>
+                    <FormLabel>Emplacement</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
+                      <Input {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="minThreshold"
-                rules={{ required: "Le seuil minimum est requis", min: 0 }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Seuil minimum *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        min="0"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Emplacement</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Entrepôt A, Étagère 3, etc." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+              {showBaseSelection && (
+                <FormField
+                  control={form.control}
+                  name="baseId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Base *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner une base" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {bases.map((base) => (
+                            <SelectItem key={base.id} value={base.id}>
+                              {base.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
-            />
+            </div>
 
-            {availableBases.length > 0 && (
-              <FormField
-                control={form.control}
-                name="baseId"
-                rules={{ required: "La base est requise" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Base *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner une base" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableBases.filter(base => base.id && base.id.trim() !== '').map((base) => (
-                          <SelectItem key={base.id} value={base.id}>
-                            {base.name} - {base.location}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Photo de l'article</label>
+                <div className="mt-2">
+                  <StockPhotoUpload
+                    photoUrl={form.watch('photoUrl')}
+                    onPhotoChange={(url) => form.setValue('photoUrl', url || '')}
+                    disabled={isSubmitting}
+                  />
+                </div>
+              </div>
+            </div>
 
-            <div className="flex justify-end space-x-3 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-                disabled={isSubmitting}
-              >
+            <div className="flex justify-end space-x-2">
+              <Button type="button" variant="outline" onClick={onClose}>
                 Annuler
               </Button>
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-marine-600 hover:bg-marine-700"
-              >
-                {isSubmitting ? 'Sauvegarde...' : (item ? 'Modifier' : 'Créer')}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Enregistrement..." : item ? "Modifier" : "Ajouter"}
               </Button>
             </div>
           </form>

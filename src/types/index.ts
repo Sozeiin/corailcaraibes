@@ -93,6 +93,7 @@ export interface StockItem {
   lastPurchaseCost?: number;
   lastSupplierId?: string;
   lastSupplierName?: string;
+  photoUrl?: string;
 }
 
 export interface PurchaseHistoryItem {

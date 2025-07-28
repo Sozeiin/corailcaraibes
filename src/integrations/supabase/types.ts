@@ -1721,6 +1721,7 @@ export type Database = {
           location: string | null
           min_threshold: number | null
           name: string
+          photo_url: string | null
           quantity: number | null
           reference: string | null
           unit: string | null
@@ -1737,6 +1738,7 @@ export type Database = {
           location?: string | null
           min_threshold?: number | null
           name: string
+          photo_url?: string | null
           quantity?: number | null
           reference?: string | null
           unit?: string | null
@@ -1753,6 +1755,7 @@ export type Database = {
           location?: string | null
           min_threshold?: number | null
           name?: string
+          photo_url?: string | null
           quantity?: number | null
           reference?: string | null
           unit?: string | null

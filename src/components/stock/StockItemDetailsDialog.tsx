@@ -54,6 +54,16 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
                 )}
               </div>
             </div>
+            {item.photoUrl && (
+              <div className="flex-shrink-0">
+                <img
+                  src={item.photoUrl}
+                  alt={item.name}
+                  className="w-24 h-24 object-cover rounded-lg border"
+                  loading="lazy"
+                />
+              </div>
+            )}
             <div className="text-right">
               <div className="text-2xl font-bold">
                 {item.quantity}

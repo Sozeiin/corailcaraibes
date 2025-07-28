@@ -403,6 +403,7 @@ export function ReceptionScanner() {
               quantity: 1,
               min_threshold: globalItem.minThreshold,
               unit: globalItem.unit,
+              photo_url: null,
               location: `Réceptionné - Référence ${globalItem.baseName}`,
               base_id: selectedTargetBase,
               last_updated: new Date().toISOString(),
