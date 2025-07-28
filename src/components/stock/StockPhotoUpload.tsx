@@ -215,34 +215,36 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
 
       {/* Interface caméra */}
       {showCamera && (
-        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center">
-          <div className="relative w-full max-w-md">
+        <div className="bg-gray-900 rounded-lg p-4 space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-white font-medium">Prendre une photo</h3>
             <Button
               onClick={closeCamera}
               variant="outline"
               size="sm"
-              className="absolute top-4 right-4 z-10"
             >
               <X className="h-4 w-4" />
             </Button>
-            
+          </div>
+          
+          <div className="relative">
             <video
               ref={videoRef}
               autoPlay
               playsInline
-              className="w-full h-auto rounded-lg"
+              className="w-full h-64 object-cover rounded-lg bg-gray-800"
             />
-            
-            <div className="mt-4 flex justify-center gap-4">
-              <Button
-                onClick={capturePhoto}
-                className="bg-white text-black hover:bg-gray-100"
-                size="lg"
-              >
-                <Camera className="h-6 w-6 mr-2" />
-                Capturer
-              </Button>
-            </div>
+          </div>
+          
+          <div className="flex justify-center">
+            <Button
+              onClick={capturePhoto}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              size="lg"
+            >
+              <Camera className="h-5 w-5 mr-2" />
+              Capturer la photo
+            </Button>
           </div>
         </div>
       )}
