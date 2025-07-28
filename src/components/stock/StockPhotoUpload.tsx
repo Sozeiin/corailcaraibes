@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { Camera, Upload, Trash2 } from 'lucide-react';
+import { Camera, Upload, Trash2, X } from 'lucide-react';
 
 interface StockPhotoUploadProps {
   photoUrl?: string;
@@ -15,6 +15,10 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
   const { user } = useAuth();
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const uploadPhoto = async (file: File): Promise<void> => {
     if (!user) return;
@@ -118,6 +122,62 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
     e.target.value = '';
   };
 
+  const startCamera = async () => {
+    try {
+      setShowCamera(true);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment', // Utilise la caméra arrière sur mobile
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+      
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
+      });
+      setShowCamera(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      if (context) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const file = new File([blob], 'camera-photo.jpg', { type: 'image/jpeg' });
+            uploadPhoto(file);
+            closeCamera();
+          }
+        }, 'image/jpeg', 0.8);
+      }
+    }
+  };
+
+  const closeCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -137,7 +197,7 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
           variant="outline"
           size="sm"
           disabled={disabled || isUploading}
-          onClick={() => document.getElementById('stock-photo-camera')?.click()}
+          onClick={startCamera}
         >
           <Camera className="h-4 w-4 mr-2" />
           Prendre une photo
@@ -153,15 +213,41 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
         disabled={disabled || isUploading}
       />
 
-      <input
-        id="stock-photo-camera"
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileSelect}
-        className="hidden"
-        disabled={disabled || isUploading}
-      />
+      {/* Interface caméra */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center">
+          <div className="relative w-full max-w-md">
+            <Button
+              onClick={closeCamera}
+              variant="outline"
+              size="sm"
+              className="absolute top-4 right-4 z-10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              className="w-full h-auto rounded-lg"
+            />
+            
+            <div className="mt-4 flex justify-center gap-4">
+              <Button
+                onClick={capturePhoto}
+                className="bg-white text-black hover:bg-gray-100"
+                size="lg"
+              >
+                <Camera className="h-6 w-6 mr-2" />
+                Capturer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <canvas ref={canvasRef} className="hidden" />
 
       {photoUrl && (
         <div className="relative">
