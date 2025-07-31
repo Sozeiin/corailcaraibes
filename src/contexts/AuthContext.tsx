@@ -31,16 +31,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('Starting auth initialization...');
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('Initial session check:', initialSession?.user?.id);
+        console.log('Initial session check:', initialSession?.user?.id || 'No session');
         
         if (initialSession) {
+          console.log('Session found, setting session and fetching profile');
           setSession(initialSession);
           await fetchUserProfile(initialSession);
+        } else {
+          console.log('No session found, user needs to login');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
       } finally {
+        console.log('Auth initialization complete, setting loading to false');
         setLoading(false);
       }
     };
