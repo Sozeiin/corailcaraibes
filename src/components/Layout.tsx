@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isNative } = useMobileCapacitor();
 
   useEffect(() => {
@@ -20,21 +20,12 @@ export const Layout = ({ children }: LayoutProps) => {
     }
   }, [isNative]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-50 to-slate-100">
-        <div className="text-center p-8 rounded-xl bg-white shadow-lg">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement de l'application...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Pour les pages non authentifiées (comme /auth), on affiche juste les enfants
   if (!isAuthenticated) {
     return <>{children}</>;
   }
 
+  // Pour les pages authentifiées, on affiche le layout complet
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex w-full bg-slate-50">

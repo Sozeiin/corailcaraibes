@@ -8,7 +8,6 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
-import Index from "./pages/Index";
 import Boats from "./pages/Boats";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
@@ -24,7 +23,10 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   
+  console.log('ProtectedRoute - loading:', loading, 'isAuthenticated:', isAuthenticated);
+  
   if (loading) {
+    console.log('ProtectedRoute - showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -35,7 +37,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
+  if (!isAuthenticated) {
+    console.log('ProtectedRoute - redirecting to /auth');
+    return <Navigate to="/auth" />;
+  }
+  
+  console.log('ProtectedRoute - rendering children');
+  return <>{children}</>;
 }
 
 function AppRoutes() {
@@ -124,20 +132,23 @@ function AppRoutes() {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <AuthProvider>
-        <BrowserRouter>
-          <Layout>
-            <AppRoutes />
-          </Layout>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  console.log('App component rendering');
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <AuthProvider>
+          <BrowserRouter>
+            <Layout>
+              <AppRoutes />
+            </Layout>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
