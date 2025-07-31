@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useSecureTextInput, useSecureEmailInput, useSecurePhoneInput } from '@/hooks/useSecureInput';
 
 interface BoatRentalSelectorProps {
   type: 'checkin' | 'checkout';
@@ -28,9 +29,10 @@ interface BoatRentalSelectorProps {
 export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: BoatRentalSelectorProps) {
   const { user } = useAuth();
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  // Use secure input hooks for customer data
+  const customerName = useSecureTextInput("", { required: true, maxLength: 100 });
+  const customerEmail = useSecureEmailInput("", { required: true });
+  const customerPhone = useSecurePhoneInput("", { required: true });
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -131,9 +133,9 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
 
     const rentalData = type === 'checkin' ? {
       boat_id: selectedBoatId,
-      customer_name: customerName,
-      customer_email: customerEmail,
-      customer_phone: customerPhone,
+      customer_name: customerName.sanitizedValue,
+      customer_email: customerEmail.sanitizedValue,
+      customer_phone: customerPhone.sanitizedValue,
       start_date: startDate,
       end_date: endDate,
       notes: notes,
@@ -144,7 +146,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
 
     // Pour le check-in, on vérifie juste qu'on a les données de base
     // Pour le check-out, on vérifie qu'on a une location sélectionnée
-    const isValidForCheckin = type === 'checkin' && selectedBoatId && customerName.trim() && startDate && endDate;
+    const isValidForCheckin = type === 'checkin' && selectedBoatId && customerName.isValid && startDate && endDate;
     const isValidForCheckout = type === 'checkout' && selectedRental;
 
     if (isValidForCheckin || isValidForCheckout) {
@@ -153,7 +155,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
     } else {
       console.log('Rental data not complete yet - checkin valid:', isValidForCheckin, 'checkout valid:', isValidForCheckout);
     }
-  }, [type, selectedBoatId, customerName, customerEmail, customerPhone, startDate, endDate, notes, selectedRental, user?.baseId, onRentalDataChange]);
+  }, [type, selectedBoatId, customerName.sanitizedValue, customerEmail.sanitizedValue, customerPhone.sanitizedValue, startDate, endDate, notes, selectedRental, user?.baseId, onRentalDataChange]);
 
   const handleRentalSelect = (rentalId: string) => {
     const rental = activeRentals.find(r => r.id === rentalId);
@@ -221,8 +223,8 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
                 <Label htmlFor="customerName">Nom du client *</Label>
                 <Input
                   id="customerName"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
+                  value={customerName.value}
+                  onChange={customerName.handleChange}
                   placeholder="Nom complet"
                 />
               </div>
@@ -231,8 +233,8 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
                 <Input
                   id="customerEmail"
                   type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  value={customerEmail.value}
+                  onChange={customerEmail.handleChange}
                   placeholder="email@exemple.com"
                 />
               </div>
@@ -240,8 +242,8 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
                 <Label htmlFor="customerPhone">Téléphone</Label>
                 <Input
                   id="customerPhone"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  value={customerPhone.value}
+                  onChange={customerPhone.handleChange}
                   placeholder="+33 6 12 34 56 78"
                 />
               </div>

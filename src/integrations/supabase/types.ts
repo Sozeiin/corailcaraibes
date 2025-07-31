@@ -1474,6 +1474,36 @@ export type Database = {
           },
         ]
       }
+      profile_audit_log: {
+        Row: {
+          action: string
+          changed_by: string
+          created_at: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          profile_id: string
+        }
+        Insert: {
+          action: string
+          changed_by: string
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          profile_id: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          profile_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           base_id: string | null

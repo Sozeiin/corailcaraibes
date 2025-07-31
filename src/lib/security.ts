@@ -146,7 +146,7 @@ export function createSecureElement(
   if (attributes) {
     Object.entries(attributes).forEach(([key, value]) => {
       // Only allow safe attributes
-      const safeAttributes = ['id', 'class', 'title', 'alt', 'role', 'aria-label'];
+      const safeAttributes = ['id', 'class', 'title', 'alt', 'role', 'aria-label', 'data-testid'];
       if (safeAttributes.includes(key)) {
         element.setAttribute(key, sanitizeInput(value));
       }
@@ -154,6 +154,106 @@ export function createSecureElement(
   }
   
   return element;
+}
+
+/**
+ * Secure alternative to innerHTML - replaces dangerous HTML manipulation
+ * Use this instead of element.innerHTML = content
+ */
+export function setSecureHTML(element: HTMLElement, content: string): void {
+  // Clear existing content
+  element.innerHTML = '';
+  
+  // Parse content as text only (no HTML execution)
+  const sanitized = sanitizeDisplayText(content);
+  element.textContent = sanitized;
+}
+
+/**
+ * Enhanced HTML sanitization for rich content (when HTML is needed)
+ * Only allows safe tags and attributes
+ */
+export function sanitizeHTML(html: string): string {
+  if (typeof html !== 'string') return '';
+  
+  // Allow only safe HTML tags
+  const allowedTags = ['p', 'br', 'strong', 'em', 'span', 'div'];
+  const allowedAttrs = ['class', 'id'];
+  
+  // Remove all script and style tags completely
+  let cleaned = html
+    .replace(/<script[^>]*>.*?<\/script>/gi, '')
+    .replace(/<style[^>]*>.*?<\/style>/gi, '')
+    .replace(/<link[^>]*>/gi, '')
+    .replace(/<meta[^>]*>/gi, '');
+  
+  // Remove dangerous event handlers
+  cleaned = cleaned.replace(/on\w+\s*=\s*["'][^"']*["']/gi, '');
+  
+  // Remove dangerous attributes
+  cleaned = cleaned.replace(/href\s*=\s*["']javascript:[^"']*["']/gi, '');
+  cleaned = cleaned.replace(/src\s*=\s*["']javascript:[^"']*["']/gi, '');
+  
+  // Only allow specific tags
+  const tagRegex = /<\/?([a-zA-Z0-9]+)[^>]*>/g;
+  cleaned = cleaned.replace(tagRegex, (match, tagName) => {
+    if (allowedTags.includes(tagName.toLowerCase())) {
+      return match;
+    }
+    return '';
+  });
+  
+  return cleaned.trim();
+}
+
+/**
+ * Validates file upload security
+ */
+export function validateFileUpload(file: File): { isValid: boolean; error?: string } {
+  // Check file size (5MB limit)
+  const maxSize = 5 * 1024 * 1024;
+  if (file.size > maxSize) {
+    return { isValid: false, error: 'File size exceeds 5MB limit' };
+  }
+  
+  // Check allowed file types
+  const allowedTypes = [
+    'image/jpeg',
+    'image/jpg', 
+    'image/png',
+    'image/gif',
+    'image/webp',
+    'application/pdf',
+    'text/plain',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ];
+  
+  if (!allowedTypes.includes(file.type)) {
+    return { isValid: false, error: 'File type not allowed' };
+  }
+  
+  // Check filename for dangerous patterns
+  const dangerousPatterns = [
+    /\.exe$/i,
+    /\.bat$/i,
+    /\.cmd$/i,
+    /\.scr$/i,
+    /\.php$/i,
+    /\.jsp$/i,
+    /\.asp$/i,
+    /\.js$/i,
+    /\.html$/i,
+    /\.htm$/i
+  ];
+  
+  for (const pattern of dangerousPatterns) {
+    if (pattern.test(file.name)) {
+      return { isValid: false, error: 'File type not allowed for security reasons' };
+    }
+  }
+  
+  return { isValid: true };
 }
 
 /**
