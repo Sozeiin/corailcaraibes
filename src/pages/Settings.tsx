@@ -2,7 +2,7 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User } from 'lucide-react';
+import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { BaseSettings } from '@/components/settings/BaseSettings';
 import { UserSettings } from '@/components/settings/UserSettings';
@@ -10,6 +10,7 @@ import { ChecklistSettings } from '@/components/settings/ChecklistSettings';
 import { MaintenanceSettings } from '@/components/settings/MaintenanceSettings';
 import { StockSettings } from '@/components/settings/StockSettings';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
+import { SecurityMonitoringDashboard } from '@/components/settings/SecurityMonitoringDashboard';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -24,7 +25,8 @@ export default function Settings() {
     if (user?.role === 'direction') {
       tabs.unshift(
         { id: 'bases', label: 'Bases', icon: Building, component: BaseSettings },
-        { id: 'users', label: 'Utilisateurs', icon: Users, component: UserSettings }
+        { id: 'users', label: 'Utilisateurs', icon: Users, component: UserSettings },
+        { id: 'security', label: 'Sécurité', icon: Shield, component: SecurityMonitoringDashboard }
       );
     }
 
