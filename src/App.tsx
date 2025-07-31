@@ -35,11 +35,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isAuthenticated ? (
-    <Layout>
-      {children}
-    </Layout>
-  ) : <Navigate to="/auth" />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
 }
 
 function AppRoutes() {
@@ -53,10 +49,6 @@ function AppRoutes() {
       />
       <Route
         path="/"
-        element={<Index />}
-      />
-      <Route
-        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -139,7 +131,9 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <AppRoutes />
+          <Layout>
+            <AppRoutes />
+          </Layout>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
