@@ -211,17 +211,23 @@ export function ReceptionScanner() {
 
       const targetBaseName = bases.find(b => b.id === selectedTargetBase)?.name || 'Base sélectionnée';
       const instructionText = document.createElement('div');
-      instructionText.innerHTML = `
-        <p style="color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;">
-          📦 Scanner pour réceptionner
-        </p>
-        <p style="color: #22c55e; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 10px;">
-          Réception pour: ${targetBaseName}
-        </p>
-        <p style="color: #22c55e; font-size: ${isMobile ? '10px' : '12px'}; text-align: center; margin-bottom: 20px;">
-          Positionnez le code-barres dans la zone verte
-        </p>
-      `;
+      
+      // Security fix: Replace innerHTML with secure DOM creation
+      const title = document.createElement('p');
+      title.textContent = '📦 Scanner pour réceptionner';
+      title.style.cssText = `color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;`;
+      
+      const baseInfo = document.createElement('p');
+      baseInfo.textContent = `Réception pour: ${targetBaseName}`;
+      baseInfo.style.cssText = `color: #22c55e; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 10px;`;
+      
+      const instructions = document.createElement('p');
+      instructions.textContent = 'Positionnez le code-barres dans la zone verte';
+      instructions.style.cssText = `color: #22c55e; font-size: ${isMobile ? '10px' : '12px'}; text-align: center; margin-bottom: 20px;`;
+      
+      instructionText.appendChild(title);
+      instructionText.appendChild(baseInfo);
+      instructionText.appendChild(instructions);
 
       const statusText = document.createElement('p');
       statusText.textContent = '🔍 Recherche active...';
@@ -238,7 +244,7 @@ export function ReceptionScanner() {
       `;
 
       const closeButton = document.createElement('button');
-      closeButton.innerHTML = '✕ Fermer';
+      closeButton.textContent = '✕ Fermer';
       closeButton.style.cssText = `
         padding: ${isMobile ? '12px 20px' : '12px 24px'};
         background: rgba(255,68,68,0.9);

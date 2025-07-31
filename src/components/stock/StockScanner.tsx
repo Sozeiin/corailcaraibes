@@ -174,14 +174,18 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       scanOverlay.appendChild(scanLine);
 
       const instructionText = document.createElement('div');
-      instructionText.innerHTML = `
-        <p style="color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;">
-          ${operation === 'add' ? '📦 Scan pour AJOUTER au stock' : '📤 Scan pour RETIRER du stock'}
-        </p>
-        <p style="color: ${operation === 'add' ? '#22c55e' : '#ef4444'}; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;">
-          Positionnez le code-barres dans la zone colorée
-        </p>
-      `;
+      
+      // Security fix: Replace innerHTML with secure DOM creation
+      const title = document.createElement('p');
+      title.textContent = operation === 'add' ? '📦 Scan pour AJOUTER au stock' : '📤 Scan pour RETIRER du stock';
+      title.style.cssText = `color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;`;
+      
+      const instructions = document.createElement('p');
+      instructions.textContent = 'Positionnez le code-barres dans la zone colorée';
+      instructions.style.cssText = `color: ${operation === 'add' ? '#22c55e' : '#ef4444'}; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;`;
+      
+      instructionText.appendChild(title);
+      instructionText.appendChild(instructions);
 
       const statusText = document.createElement('p');
       statusText.textContent = '🔍 Recherche active...';
@@ -198,7 +202,7 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       `;
 
       const closeButton = document.createElement('button');
-      closeButton.innerHTML = '✕ Fermer';
+      closeButton.textContent = '✕ Fermer';
       closeButton.style.cssText = `
         padding: ${isMobile ? '12px 20px' : '12px 24px'};
         background: rgba(255,68,68,0.9);

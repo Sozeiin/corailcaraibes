@@ -201,14 +201,20 @@ export function MobileScanning() {
     scanOverlay.appendChild(scanLine);
 
     const instructionText = document.createElement('div');
-    instructionText.innerHTML = `
-      <p class="scan-instruction" style="color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;">
-        📱 Positionnez le code-barres dans la zone verte
-      </p>
-      <p class="scan-instruction" style="color: #00ff00; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;">
-        Maintenez l'appareil stable pour une meilleure détection
-      </p>
-    `;
+    
+    // Security fix: Replace innerHTML with secure DOM creation
+    const mainInstruction = document.createElement('p');
+    mainInstruction.className = 'scan-instruction';
+    mainInstruction.textContent = '📱 Positionnez le code-barres dans la zone verte';
+    mainInstruction.style.cssText = `color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;`;
+    
+    const stabilityTip = document.createElement('p');
+    stabilityTip.className = 'scan-instruction';
+    stabilityTip.textContent = 'Maintenez l\'appareil stable pour une meilleure détection';
+    stabilityTip.style.cssText = `color: #00ff00; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;`;
+    
+    instructionText.appendChild(mainInstruction);
+    instructionText.appendChild(stabilityTip);
 
     const statusText = document.createElement('p');
     statusText.textContent = '🔍 Recherche active...';
@@ -235,7 +241,7 @@ export function MobileScanning() {
     `;
 
     const closeButton = document.createElement('button');
-    closeButton.innerHTML = '✕ Fermer';
+    closeButton.textContent = '✕ Fermer';
     closeButton.className = 'scan-button';
     closeButton.style.cssText = `
       padding: ${isMobile ? '12px 20px' : '12px 24px'};
@@ -252,7 +258,7 @@ export function MobileScanning() {
     `;
 
     const flashButton = document.createElement('button');
-    flashButton.innerHTML = '💡 Flash';
+    flashButton.textContent = '💡 Flash';
     flashButton.className = 'scan-button';
     flashButton.style.cssText = `
       padding: ${isMobile ? '12px 20px' : '12px 24px'};
