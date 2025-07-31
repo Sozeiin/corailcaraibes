@@ -59,9 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(null);
         }
         
-        if (!loading) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     );
 
