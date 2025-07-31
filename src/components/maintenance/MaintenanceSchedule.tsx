@@ -17,7 +17,7 @@ export function MaintenanceSchedule() {
       const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
       const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
 
-      console.log('Fetching weekly schedule for user:', { role: user?.role, baseId: user?.baseId });
+      
 
       const { data, error } = await supabase
         .from('interventions')
@@ -35,7 +35,6 @@ export function MaintenanceSchedule() {
         throw error;
       }
       
-      console.log('Fetched weekly schedule:', data?.length || 0);
       return data;
     },
     enabled: !!user
@@ -44,7 +43,7 @@ export function MaintenanceSchedule() {
   const { data: technicianStats = [], isLoading: statsLoading } = useQuery({
     queryKey: ['technician-stats', user?.role, user?.baseId],
     queryFn: async () => {
-      console.log('Fetching technician stats for user:', { role: user?.role, baseId: user?.baseId });
+      
 
       const { data, error } = await supabase
         .from('profiles')
@@ -64,7 +63,6 @@ export function MaintenanceSchedule() {
         throw error;
       }
       
-      console.log('Fetched technician stats:', data?.length || 0);
       return data;
     },
     enabled: !!user

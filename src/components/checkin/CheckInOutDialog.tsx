@@ -32,18 +32,14 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
   };
 
   const handleCheckInComplete = (data: any) => {
-    console.log('Check-in completed:', data);
     // Handle check-in completion
     onOpenChange(false);
   };
 
   const handleCheckOutComplete = (data: any) => {
-    console.log('Check-out completed:', data);
     // Handle check-out completion  
     onOpenChange(false);
   };
-
-  console.log('CheckInOutDialog render - open:', open);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -77,16 +73,14 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
                   <div className="space-y-4">
                     <BoatRentalSelector
                       type="checkin"
-                      onBoatSelect={(boat) => {
-                        console.log('Boat selected:', boat);
-                        setSelectedBoat(boat);
-                      }}
-                      onRentalDataChange={(data) => {
-                        console.log('Rental data changed:', data);
-                        setRentalData(data);
-                      }}
+                        onBoatSelect={(boat) => {
+                          setSelectedBoat(boat);
+                        }}
+                        onRentalDataChange={(data) => {
+                          setRentalData(data);
+                        }}
                     />
-                    {/* Debug: selectedBoat and rentalData */}
+                    
                     {selectedBoat && rentalData && (
                       <ChecklistForm
                         boat={selectedBoat}

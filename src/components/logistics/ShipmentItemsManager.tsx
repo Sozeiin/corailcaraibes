@@ -258,7 +258,7 @@ export function ShipmentItemsManager({ shipment, isOpen, onClose }: ShipmentItem
           try {
             scanController.stop();
           } catch (e) {
-            console.log('Arrêt du scanner:', e);
+            // Scanner stopped silently
           }
         }
         stream.getTracks().forEach(track => track.stop());

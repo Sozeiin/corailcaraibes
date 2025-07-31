@@ -137,7 +137,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
     updateTrackingMutation.mutate({ trackingNumber, carrier });
   };
   
-  console.log('OrderDetailsDialog render', { order: order?.id, isOpen, status: order?.status });
+  
   
   if (!order) return null;
 
@@ -152,14 +152,6 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
 
   // Vérifier si l'utilisateur peut modifier le statut
   const canEditStatus = user?.role === 'direction' || user?.role === 'chef_base';
-  
-  console.log('OrderDetailsDialog computed values', { 
-    totalQuantity, 
-    canEditStatus, 
-    orderStatus: order.status,
-    statusColor: statusColors[order.status],
-    statusLabel: statusLabels[order.status]
-  });
 
   // Statuts disponibles selon le contexte
   const availableStatuses = order.isPurchaseRequest ? [

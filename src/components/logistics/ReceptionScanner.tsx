@@ -277,7 +277,7 @@ export function ReceptionScanner() {
           try {
             scanController.stop();
           } catch (e) {
-            console.log('Arrêt du scanner:', e);
+            // Scanner stopped silently
           }
         }
         stream.getTracks().forEach(track => track.stop());
@@ -382,13 +382,10 @@ export function ReceptionScanner() {
 
     // Si pas trouvé dans la recherche locale, essayer la recherche globale
     if (!stockItem) {
-      console.log('Article non trouvé localement pour la réception, recherche globale...');
-      
       try {
         const globalItem = await searchGlobalStockItems(trimmedCode);
         
         if (globalItem) {
-          console.log('Article trouvé globalement pour réception:', globalItem);
           
           // Pour la réception, on crée directement l'article dans la base de destination
           // avec la quantité de réception

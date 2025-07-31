@@ -68,7 +68,6 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       notes: ''
     };
 
-    console.log('Adding stock item:', stockItem.name, 'with price:', stockItem.unit_price);
     onPartsChange([...parts, newPart]);
     setSelectedStockItem('');
   };

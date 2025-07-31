@@ -137,7 +137,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
             // total_price sera calculé automatiquement par la base de données
           }));
 
-          console.log('Inserting order items:', orderItems);
+          
 
           const { error: itemsError } = await supabase
             .from('order_items')
@@ -208,8 +208,6 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       return;
     }
 
-    console.log('Form data:', formData);
-    console.log('Items:', items);
 
     const submitData = {
       boat_id: formData.boatId === 'none' ? null : formData.boatId,
@@ -226,7 +224,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       total_amount: items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
     };
 
-    console.log('Submit data:', submitData);
+    
 
     mutation.mutate(submitData);
   };

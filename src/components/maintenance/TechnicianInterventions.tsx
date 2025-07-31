@@ -56,11 +56,6 @@ export function TechnicianInterventions() {
     queryFn: async () => {
       if (!user || user.role !== 'technicien') return [];
 
-      console.log('Fetching technician interventions for user:', { 
-        id: user.id, 
-        role: user.role, 
-        baseId: user.baseId 
-      });
 
       const { data, error } = await supabase
         .from('interventions')
@@ -76,7 +71,6 @@ export function TechnicianInterventions() {
         throw error;
       }
       
-      console.log('Fetched technician interventions:', data?.length || 0);
       return data || [];
     },
     enabled: !!user && user.role === 'technicien'
@@ -93,13 +87,6 @@ export function TechnicianInterventions() {
     i.status !== 'cancelled'
   );
 
-  console.log('Filtering interventions:', {
-    total: interventions.length,
-    myInterventions: myInterventions.length,
-    availableInterventions: availableInterventions.length,
-    userId: user?.id,
-    baseId: user?.baseId
-  });
 
   const handleCompleteIntervention = async (interventionId: string) => {
     if (!user) return;

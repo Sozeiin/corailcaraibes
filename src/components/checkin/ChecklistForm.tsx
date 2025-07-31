@@ -33,7 +33,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [customerEmail, setCustomerEmail] = useState<string>(rentalData?.customer_email || '');
   const [sendEmailReport, setSendEmailReport] = useState<boolean>(!!customerEmail);
 
-  console.log('ChecklistForm rendered - currentStep:', currentStep, 'boat:', boat, 'rentalData:', rentalData);
+  
 
   // Get checklist items
   const { data: availableItems = [] } = useQuery({
@@ -318,12 +318,10 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       // Send email report if requested
       if (sendEmailReport && customerEmail) {
         try {
-          console.log('Attempting to send email to:', customerEmail);
           await sendEmailMutation.mutateAsync({
             checklistId: checklist.id,
             email: customerEmail
           });
-          console.log('Email sent successfully');
           toast({
             title: "Email envoyé",
             description: "Le rapport a été envoyé par email au client.",

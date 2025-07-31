@@ -22,7 +22,6 @@ export function MaintenanceInterventions() {
   const { data: interventions = [], isLoading } = useQuery({
     queryKey: ['interventions', user?.role, user?.baseId],
     queryFn: async () => {
-      console.log('Fetching interventions for user:', { role: user?.role, baseId: user?.baseId });
       
       const { data, error } = await supabase
         .from('interventions')
@@ -38,7 +37,6 @@ export function MaintenanceInterventions() {
         throw error;
       }
 
-      console.log('Fetched interventions:', data?.length || 0);
       return data.map(intervention => ({
         id: intervention.id,
         boatId: intervention.boat_id || '',
@@ -63,7 +61,6 @@ export function MaintenanceInterventions() {
   const { data: boats = [] } = useQuery({
     queryKey: ['boats', user?.role, user?.baseId],
     queryFn: async () => {
-      console.log('Fetching boats for user:', { role: user?.role, baseId: user?.baseId });
       
       const { data, error } = await supabase
         .from('boats')
@@ -75,7 +72,6 @@ export function MaintenanceInterventions() {
         throw error;
       }
       
-      console.log('Fetched boats:', data?.length || 0);
       return data;
     },
     enabled: !!user
