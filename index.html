@@ -5,21 +5,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     
-    <!-- Security: Enhanced Content Security Policy -->
+    <!-- Security: Content Security Policy -->
     <meta http-equiv="Content-Security-Policy" content="
       default-src 'self';
-      script-src 'self' 'nonce-CSP_NONCE';
-      style-src 'self' 'nonce-CSP_NONCE' https://fonts.googleapis.com;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
       font-src 'self' https://fonts.gstatic.com;
-      img-src 'self' data: blob: https://gdhiiynmlokocelkqsiz.supabase.co https://api.ipify.org;
+      img-src 'self' data: blob: https://gdhiiynmlokocelkqsiz.supabase.co;
       media-src 'self' blob:;
-      connect-src 'self' https://gdhiiynmlokocelkqsiz.supabase.co wss://gdhiiynmlokocelkqsiz.supabase.co https://api.ipify.org;
+      connect-src 'self' https://gdhiiynmlokocelkqsiz.supabase.co wss://gdhiiynmlokocelkqsiz.supabase.co;
       frame-src 'none';
       object-src 'none';
       base-uri 'self';
-      form-action 'self';
-      upgrade-insecure-requests;
-      block-all-mixed-content
+      form-action 'self'
     " />
     
     <!-- Security: Additional headers -->

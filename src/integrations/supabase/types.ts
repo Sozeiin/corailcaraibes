@@ -55,45 +55,6 @@ export type Database = {
           },
         ]
       }
-      api_logs: {
-        Row: {
-          created_at: string
-          duration: number
-          endpoint: string
-          error: string | null
-          id: string
-          ip_address: string | null
-          method: string
-          status: number
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          duration: number
-          endpoint: string
-          error?: string | null
-          id?: string
-          ip_address?: string | null
-          method: string
-          status: number
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          duration?: number
-          endpoint?: string
-          error?: string | null
-          id?: string
-          ip_address?: string | null
-          method?: string
-          status?: number
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       bases: {
         Row: {
           created_at: string | null
@@ -841,36 +802,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      login_attempts: {
-        Row: {
-          created_at: string
-          email: string | null
-          failure_reason: string | null
-          id: string
-          ip_address: string | null
-          success: boolean
-          user_agent: string | null
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          failure_reason?: string | null
-          id?: string
-          ip_address?: string | null
-          success?: boolean
-          user_agent?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          failure_reason?: string | null
-          id?: string
-          ip_address?: string | null
-          success?: boolean
-          user_agent?: string | null
-        }
-        Relationships: []
       }
       logistics_receipt_items: {
         Row: {
@@ -2053,10 +1984,6 @@ export type Database = {
           interval_unit: string
         }
         Returns: string
-      }
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
       generate_receipt_number: {
         Args: Record<PropertyKey, never>
