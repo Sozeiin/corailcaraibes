@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
+import Index from "./pages/Index";
 import Boats from "./pages/Boats";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
@@ -34,7 +35,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return isAuthenticated ? <>{children}</> : <Navigate to="/auth" />;
+  return isAuthenticated ? (
+    <Layout>
+      {children}
+    </Layout>
+  ) : <Navigate to="/auth" />;
 }
 
 function AppRoutes() {
@@ -48,6 +53,10 @@ function AppRoutes() {
       />
       <Route
         path="/"
+        element={<Index />}
+      />
+      <Route
+        path="/dashboard"
         element={
           <ProtectedRoute>
             <Dashboard />
@@ -130,9 +139,7 @@ const App = () => (
       <Sonner />
       <AuthProvider>
         <BrowserRouter>
-          <Layout>
-            <AppRoutes />
-          </Layout>
+          <AppRoutes />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

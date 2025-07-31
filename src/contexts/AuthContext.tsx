@@ -31,21 +31,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get initial session
     const initializeAuth = async () => {
       try {
-        console.log('Starting auth initialization...');
         const { data: { session: initialSession } } = await supabase.auth.getSession();
-        console.log('Initial session check:', initialSession?.user?.id || 'No session');
         
         if (initialSession) {
-          console.log('Session found, setting session and fetching profile');
           setSession(initialSession);
           await fetchUserProfile(initialSession);
-        } else {
-          console.log('No session found, user needs to login');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
       } finally {
-        console.log('Auth initialization complete, setting loading to false');
         setLoading(false);
       }
     };
@@ -55,7 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, newSession) => {
-        console.log('Auth state change:', event, newSession?.user?.id);
         setSession(newSession);
         
         if (newSession?.user && event === 'SIGNED_IN') {
@@ -73,8 +66,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (session: Session) => {
     try {
-      console.log('Fetching profile for user:', session.user.id);
-      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -95,10 +86,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           baseId: profile.base_id,
           createdAt: profile.created_at
         };
-        console.log('Profile loaded successfully:', userData);
         setUser(userData);
       } else {
-        console.log('No profile found, creating default profile');
         await createDefaultProfile(session.user);
       }
     } catch (error) {
@@ -108,8 +97,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const createDefaultProfile = async (authUser: SupabaseUser) => {
     try {
-      console.log('Creating default profile for:', authUser.email);
-      
       const { data: profile, error } = await supabase
         .from('profiles')
         .insert({
@@ -136,7 +123,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           baseId: profile.base_id,
           createdAt: profile.created_at
         };
-        console.log('Default profile created:', userData);
         setUser(userData);
       }
     } catch (error) {
@@ -147,7 +133,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setLoading(true);
-      console.log('Attempting login for:', email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
