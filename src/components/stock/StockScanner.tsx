@@ -52,6 +52,9 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   const [operations, setOperations] = useState<ScannedOperation[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [codeToCreate, setCodeToCreate] = useState('');
+  
+  // Debug logs for dialog state
+  console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
@@ -448,8 +451,10 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         
         // Si erreur de recherche globale, proposer la création
         console.log('❌ Global search error, opening create dialog:', error);
+        console.log('Setting codeToCreate to:', trimmedCode);
         setCodeToCreate(trimmedCode);
         setIsCreateDialogOpen(true);
+        console.log('CreateDialog should be open now');
         return;
       }
     }
@@ -470,8 +475,10 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     // 4. Si toujours pas trouvé, proposer la création
     if (!stockItem) {
       console.log('❌ No stock item found, opening create dialog');
+      console.log('Setting codeToCreate to:', trimmedCode);
       setCodeToCreate(trimmedCode);
       setIsCreateDialogOpen(true);
+      console.log('CreateDialog should be open now');
       return;
     }
 
