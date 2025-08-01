@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MobileTable } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { 
   ShoppingCart,
@@ -176,6 +178,8 @@ export const CampaignOrdersTab: React.FC<CampaignOrdersTabProps> = ({ campaignId
     }
   };
 
+  const isMobile = useIsMobile();
+
   if (isLoading) {
     return <div>Chargement...</div>;
   }
@@ -292,59 +296,101 @@ export const CampaignOrdersTab: React.FC<CampaignOrdersTabProps> = ({ campaignId
             <CardTitle>Commandes de la Campagne</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>N° Commande</TableHead>
-                  <TableHead>Fournisseur</TableHead>
-                  <TableHead>Articles</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {generatedOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell className="font-medium">
-                      {order.order_number}
-                    </TableCell>
-                    <TableCell>
-                      {order.suppliers?.name}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Package className="h-4 w-4 mr-1" />
-                        {order.order_items?.length || 0}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {Number(order.total_amount).toLocaleString('fr-FR', {
-                        style: 'currency',
-                        currency: 'EUR'
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
-                        {format(new Date(order.order_date), 'dd MMM yyyy', { locale: fr })}
-                      </div>
-                    </TableCell>
-                    <TableCell>
+            {isMobile ? (
+              <MobileTable
+                data={generatedOrders}
+                columns={[
+                  {
+                    key: 'order_number',
+                    label: 'Commande',
+                    render: (order) => (
+                      <div className="font-medium">{order.order_number}</div>
+                    )
+                  },
+                  {
+                    key: 'supplier',
+                    label: 'Fournisseur',
+                    render: (order) => order.suppliers?.name
+                  },
+                  {
+                    key: 'amount',
+                    label: 'Montant',
+                    render: (order) => Number(order.total_amount).toLocaleString('fr-FR', {
+                      style: 'currency',
+                      currency: 'EUR'
+                    })
+                  },
+                  {
+                    key: 'date',
+                    label: 'Date',
+                    render: (order) => format(new Date(order.order_date), 'dd/MM/yyyy', { locale: fr })
+                  },
+                  {
+                    key: 'status',
+                    label: 'Statut',
+                    render: (order) => (
                       <Badge className={getOrderStatusColor(order.status)}>
                         {getOrderStatusLabel(order.status)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+                    )
+                  }
+                ]}
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>N° Commande</TableHead>
+                    <TableHead>Fournisseur</TableHead>
+                    <TableHead>Articles</TableHead>
+                    <TableHead>Montant</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {generatedOrders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        {order.order_number}
+                      </TableCell>
+                      <TableCell>
+                        {order.suppliers?.name}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Package className="h-4 w-4 mr-1" />
+                          {order.order_items?.length || 0}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {Number(order.total_amount).toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {format(new Date(order.order_date), 'dd MMM yyyy', { locale: fr })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getOrderStatusColor(order.status)}>
+                          {getOrderStatusLabel(order.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       ) : (

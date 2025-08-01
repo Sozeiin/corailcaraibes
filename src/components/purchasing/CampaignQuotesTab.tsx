@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MobileTable } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   FileText,
   Plus,
@@ -294,6 +296,8 @@ export const CampaignQuotesTab: React.FC<CampaignQuotesTabProps> = ({ campaignId
     }
   };
 
+  const isMobile = useIsMobile();
+
   if (isLoading) {
     return <div>Chargement...</div>;
   }
@@ -347,91 +351,140 @@ export const CampaignQuotesTab: React.FC<CampaignQuotesTabProps> = ({ campaignId
       {quotes && quotes.length > 0 ? (
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Article</TableHead>
-                  <TableHead>Fournisseur</TableHead>
-                  <TableHead>Prix unitaire</TableHead>
-                  <TableHead>Qté min</TableHead>
-                  <TableHead>Délai</TableHead>
-                  <TableHead>Qualité</TableHead>
-                  <TableHead>Garantie</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {quotes.map((quote) => (
-                  <TableRow key={quote.id}>
-                    <TableCell>
-                      <div className="font-medium">
-                        {quote.campaign_items?.product_name}
+            {isMobile ? (
+              <MobileTable
+                data={quotes}
+                columns={[
+                  {
+                    key: 'product',
+                    label: 'Article',
+                    render: (quote) => (
+                      <div>
+                        <div className="font-medium">{quote.campaign_items?.product_name}</div>
+                        {quote.quote_reference && (
+                          <div className="text-sm text-muted-foreground">
+                            Réf: {quote.quote_reference}
+                          </div>
+                        )}
                       </div>
-                      {quote.quote_reference && (
-                        <div className="text-sm text-muted-foreground">
-                          Réf: {quote.quote_reference}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>{quote.suppliers?.name}</TableCell>
-                    <TableCell>
-                      {Number(quote.unit_price).toLocaleString('fr-FR', {
-                        style: 'currency',
-                        currency: 'EUR'
-                      })}
-                    </TableCell>
-                    <TableCell>{quote.minimum_quantity}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Clock className="h-4 w-4 mr-1" />
-                        {quote.delivery_time_days}j
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center">
-                        <Award className="h-4 w-4 mr-1" />
-                        {quote.quality_rating}/5
-                      </div>
-                    </TableCell>
-                    <TableCell>{quote.warranty_months}m</TableCell>
-                    <TableCell>
+                    )
+                  },
+                  {
+                    key: 'supplier',
+                    label: 'Fournisseur',
+                    render: (quote) => quote.suppliers?.name
+                  },
+                  {
+                    key: 'price',
+                    label: 'Prix',
+                    render: (quote) => Number(quote.unit_price).toLocaleString('fr-FR', {
+                      style: 'currency',
+                      currency: 'EUR'
+                    })
+                  },
+                  {
+                    key: 'delivery',
+                    label: 'Délai',
+                    render: (quote) => `${quote.delivery_time_days}j`
+                  },
+                  {
+                    key: 'status',
+                    label: 'Statut',
+                    render: (quote) => (
                       <Badge className={getStatusColor(quote.status)}>
                         {getStatusLabel(quote.status)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        {quote.status === 'pending' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateQuoteStatusMutation.mutate({
-                              id: quote.id,
-                              status: 'received'
-                            })}
-                          >
-                            Marquer reçu
-                          </Button>
-                        )}
-                        {quote.status === 'received' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => updateQuoteStatusMutation.mutate({
-                              id: quote.id,
-                              status: 'selected'
-                            })}
-                          >
-                            Sélectionner
-                          </Button>
-                        )}
-                      </div>
-                    </TableCell>
+                    )
+                  }
+                ]}
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Article</TableHead>
+                    <TableHead>Fournisseur</TableHead>
+                    <TableHead>Prix unitaire</TableHead>
+                    <TableHead>Qté min</TableHead>
+                    <TableHead>Délai</TableHead>
+                    <TableHead>Qualité</TableHead>
+                    <TableHead>Garantie</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {quotes.map((quote) => (
+                    <TableRow key={quote.id}>
+                      <TableCell>
+                        <div className="font-medium">
+                          {quote.campaign_items?.product_name}
+                        </div>
+                        {quote.quote_reference && (
+                          <div className="text-sm text-muted-foreground">
+                            Réf: {quote.quote_reference}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell>{quote.suppliers?.name}</TableCell>
+                      <TableCell>
+                        {Number(quote.unit_price).toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        })}
+                      </TableCell>
+                      <TableCell>{quote.minimum_quantity}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Clock className="h-4 w-4 mr-1" />
+                          {quote.delivery_time_days}j
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          <Award className="h-4 w-4 mr-1" />
+                          {quote.quality_rating}/5
+                        </div>
+                      </TableCell>
+                      <TableCell>{quote.warranty_months}m</TableCell>
+                      <TableCell>
+                        <Badge className={getStatusColor(quote.status)}>
+                          {getStatusLabel(quote.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          {quote.status === 'pending' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateQuoteStatusMutation.mutate({
+                                id: quote.id,
+                                status: 'received'
+                              })}
+                            >
+                              Marquer reçu
+                            </Button>
+                          )}
+                          {quote.status === 'received' && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => updateQuoteStatusMutation.mutate({
+                                id: quote.id,
+                                status: 'selected'
+                              })}
+                            >
+                              Sélectionner
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       ) : (

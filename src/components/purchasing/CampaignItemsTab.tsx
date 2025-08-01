@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MobileTable } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   Package,
   Plus,
@@ -276,6 +278,8 @@ export const CampaignItemsTab: React.FC<CampaignItemsTabProps> = ({ campaignId }
     return <div>Chargement...</div>;
   }
 
+  const isMobile = useIsMobile();
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -310,49 +314,53 @@ export const CampaignItemsTab: React.FC<CampaignItemsTabProps> = ({ campaignId }
       {items && items.length > 0 ? (
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Produit</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Quantité</TableHead>
-                  <TableHead>Prix estimé</TableHead>
-                  <TableHead>Total estimé</TableHead>
-                  <TableHead>Priorité</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell>
+            {isMobile ? (
+              <MobileTable
+                data={items}
+                columns={[
+                  {
+                    key: 'product_name',
+                    label: 'Produit',
+                    render: (item) => (
                       <div>
                         <div className="font-medium">{item.product_name}</div>
                         {item.description && (
                           <div className="text-sm text-muted-foreground">{item.description}</div>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>{item.category || '-'}</TableCell>
-                    <TableCell>{item.total_quantity} {item.unit}</TableCell>
-                    <TableCell>
-                      {Number(item.estimated_unit_price).toLocaleString('fr-FR', {
-                        style: 'currency',
-                        currency: 'EUR'
-                      })}
-                    </TableCell>
-                    <TableCell>
-                      {(Number(item.estimated_unit_price) * Number(item.total_quantity)).toLocaleString('fr-FR', {
-                        style: 'currency',
-                        currency: 'EUR'
-                      })}
-                    </TableCell>
-                    <TableCell>
+                    )
+                  },
+                  {
+                    key: 'category',
+                    label: 'Catégorie',
+                    render: (item) => item.category || '-'
+                  },
+                  {
+                    key: 'quantity',
+                    label: 'Quantité',
+                    render: (item) => `${item.total_quantity} ${item.unit}`
+                  },
+                  {
+                    key: 'price',
+                    label: 'Prix',
+                    render: (item) => Number(item.estimated_unit_price).toLocaleString('fr-FR', {
+                      style: 'currency',
+                      currency: 'EUR'
+                    })
+                  },
+                  {
+                    key: 'priority',
+                    label: 'Priorité',
+                    render: (item) => (
                       <Badge className={getPriorityColor(item.priority)}>
                         {getPriorityLabel(item.priority)}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
+                    )
+                  },
+                  {
+                    key: 'actions',
+                    label: 'Actions',
+                    render: (item) => (
                       <div className="flex space-x-2">
                         <Button
                           variant="ghost"
@@ -369,11 +377,76 @@ export const CampaignItemsTab: React.FC<CampaignItemsTabProps> = ({ campaignId }
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
-                    </TableCell>
+                    )
+                  }
+                ]}
+              />
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Produit</TableHead>
+                    <TableHead>Catégorie</TableHead>
+                    <TableHead>Quantité</TableHead>
+                    <TableHead>Prix estimé</TableHead>
+                    <TableHead>Total estimé</TableHead>
+                    <TableHead>Priorité</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {items.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{item.product_name}</div>
+                          {item.description && (
+                            <div className="text-sm text-muted-foreground">{item.description}</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{item.category || '-'}</TableCell>
+                      <TableCell>{item.total_quantity} {item.unit}</TableCell>
+                      <TableCell>
+                        {Number(item.estimated_unit_price).toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        {(Number(item.estimated_unit_price) * Number(item.total_quantity)).toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'EUR'
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getPriorityColor(item.priority)}>
+                          {getPriorityLabel(item.priority)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingItem(item)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteItemMutation.mutate(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       ) : (
