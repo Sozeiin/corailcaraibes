@@ -15,15 +15,15 @@ interface MobileTableProps {
 
 export function MobileTable({ data, columns, onRowClick, keyField = 'id' }: MobileTableProps) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 p-1">
       {data.map((item) => (
         <Card 
           key={item[keyField]}
-          className={`${onRowClick ? 'cursor-pointer hover:bg-gray-50 transition-colors' : ''}`}
+          className={`${onRowClick ? 'cursor-pointer hover:bg-muted/50' : ''} transition-colors border-l-4 border-l-primary/20`}
           onClick={() => onRowClick?.(item)}
         >
-          <CardContent className="p-4">
-            <div className="space-y-2">
+          <CardContent className="p-3">
+            <div className="space-y-1.5">
               {columns.map((column, index) => {
                 const value = item[column.key];
                 const displayValue = column.render ? column.render(value, item) : value;
@@ -31,29 +31,43 @@ export function MobileTable({ data, columns, onRowClick, keyField = 'id' }: Mobi
                 if (index === 0) {
                   // Premier élément : titre principal
                   return (
-                    <div key={column.key} className="flex justify-between items-start">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">{displayValue}</h4>
-                      </div>
+                    <div key={column.key} className="font-medium text-sm leading-tight">
+                      {displayValue}
                     </div>
                   );
                 } else if (index === 1) {
                   // Deuxième élément : sous-titre
                   return (
-                    <p key={column.key} className="text-xs text-gray-600 truncate">
+                    <div key={column.key} className="text-xs text-muted-foreground leading-tight">
                       {displayValue}
-                    </p>
-                  );
-                } else {
-                  // Autres éléments : informations supplémentaires
-                  return (
-                    <div key={column.key} className="flex justify-between items-center text-xs">
-                      <span className="text-gray-500">{column.label}:</span>
-                      <span className="font-medium">{displayValue}</span>
                     </div>
                   );
+                } else {
+                  // Autres éléments : informations supplémentaires en grid compact
+                  return null; // On va traiter ces éléments différemment
                 }
               })}
+              
+              {/* Informations supplémentaires en grid compact */}
+              {columns.length > 2 && (
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-1.5 mt-1.5 border-t border-border/30">
+                  {columns.slice(2).map((column) => {
+                    const value = item[column.key];
+                    const displayValue = column.render ? column.render(value, item) : value;
+                    
+                    return (
+                      <div key={column.key} className="flex flex-col text-xs">
+                        <span className="text-muted-foreground text-[10px] uppercase tracking-wide font-medium">
+                          {column.label}
+                        </span>
+                        <span className="font-medium leading-tight mt-0.5">
+                          {displayValue}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

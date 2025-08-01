@@ -71,44 +71,46 @@ export default function Purchasing() {
   ];
 
   return (
-    <div className="container mx-auto py-4 sm:py-6 px-3 sm:px-4">
-      <div className="mb-4 sm:mb-6">
-        <div className="flex items-center gap-2 sm:gap-3 mb-2">
-          <ShoppingCart className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold">Module Achats</h1>
+    <div className="container mx-auto py-2 sm:py-6 px-2 sm:px-4">
+      <div className="mb-3 sm:mb-6">
+        <div className="flex items-center gap-2 mb-2">
+          <ShoppingCart className="h-5 w-5 sm:h-8 sm:w-8 text-primary" />
+          <h1 className="text-lg sm:text-3xl font-bold">Module Achats</h1>
         </div>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <p className="text-muted-foreground text-xs sm:text-base">
           Suivi des commandes, réception et redistribution de marchandises
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
-          {tabs.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
-              value={tab.id} 
-              className="flex flex-col items-center gap-1 p-1.5 sm:p-3 text-xs min-h-[60px] sm:min-h-auto"
-            >
-              <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-              <span className="text-[9px] xs:text-[10px] sm:text-xs text-center leading-tight">{tab.label}</span>
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2 sm:space-y-6">
+        <div className="overflow-x-auto">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 min-w-max">
+            {tabs.map((tab) => (
+              <TabsTrigger 
+                key={tab.id} 
+                value={tab.id} 
+                className="flex flex-col items-center gap-1 p-2 sm:p-3 text-xs min-h-[50px] sm:min-h-auto whitespace-nowrap"
+              >
+                <tab.icon className="h-3 w-3 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="text-[8px] xs:text-[9px] sm:text-xs text-center leading-tight">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {tabs.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id} className="space-y-4">
+          <TabsContent key={tab.id} value={tab.id} className="space-y-2 sm:space-y-4">
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <tab.icon className="h-5 w-5" />
+              <CardHeader className="pb-2 sm:pb-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-xl">
+                  <tab.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   {tab.label}
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Module {tab.label.toLowerCase()} pour la gestion des achats
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-2 sm:p-6">
                 <tab.component />
               </CardContent>
             </Card>
