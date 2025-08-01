@@ -26,14 +26,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let isSubscribed = true;
+    let isInitialized = false;
 
     // Set up auth state listener first to catch all events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         console.log('Auth state change:', event, newSession?.user?.id);
         
         if (!isSubscribed) return;
@@ -53,8 +53,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Mark as not loading after first auth state change
-        if (!initialized) {
-          setInitialized(true);
+        if (!isInitialized) {
+          isInitialized = true;
           setLoading(false);
         }
       }
@@ -68,14 +68,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (error) {
           console.error('Error getting initial session:', error);
           setLoading(false);
-          setInitialized(true);
+          isInitialized = true;
           return;
         }
         
         if (!isSubscribed) return;
         
         // If we have a session but haven't been initialized by the listener yet
-        if (initialSession && !initialized) {
+        if (initialSession && !isInitialized) {
           setSession(initialSession);
           setTimeout(() => {
             if (isSubscribed) {
@@ -85,15 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         // Ensure loading is false after initialization
-        if (!initialized) {
-          setInitialized(true);
+        if (!isInitialized) {
+          isInitialized = true;
           setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (isSubscribed) {
           setLoading(false);
-          setInitialized(true);
+          isInitialized = true;
         }
       }
     };
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isSubscribed = false;
       subscription.unsubscribe();
     };
-  }, [initialized]);
+  }, []);
 
   const fetchUserProfile = async (session: Session) => {
     try {
