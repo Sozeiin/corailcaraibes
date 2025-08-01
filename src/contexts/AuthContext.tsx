@@ -26,43 +26,85 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    // Get initial session
+    let isSubscribed = true;
+
+    // Set up auth state listener first to catch all events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, newSession) => {
+        console.log('Auth state change:', event, newSession?.user?.id);
+        
+        if (!isSubscribed) return;
+
+        // Handle session changes synchronously first
+        setSession(newSession);
+        
+        if (newSession?.user) {
+          // Defer profile fetching to avoid blocking auth state updates
+          setTimeout(() => {
+            if (isSubscribed) {
+              fetchUserProfile(newSession);
+            }
+          }, 0);
+        } else {
+          setUser(null);
+        }
+        
+        // Mark as not loading after first auth state change
+        if (!initialized) {
+          setInitialized(true);
+          setLoading(false);
+        }
+      }
+    );
+
+    // Get initial session after setting up listener
     const initializeAuth = async () => {
       try {
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
+        const { data: { session: initialSession }, error } = await supabase.auth.getSession();
         
-        if (initialSession) {
+        if (error) {
+          console.error('Error getting initial session:', error);
+          setLoading(false);
+          setInitialized(true);
+          return;
+        }
+        
+        if (!isSubscribed) return;
+        
+        // If we have a session but haven't been initialized by the listener yet
+        if (initialSession && !initialized) {
           setSession(initialSession);
-          await fetchUserProfile(initialSession);
+          setTimeout(() => {
+            if (isSubscribed) {
+              fetchUserProfile(initialSession);
+            }
+          }, 0);
+        }
+        
+        // Ensure loading is false after initialization
+        if (!initialized) {
+          setInitialized(true);
+          setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-      } finally {
-        setLoading(false);
+        if (isSubscribed) {
+          setLoading(false);
+          setInitialized(true);
+        }
       }
     };
 
     initializeAuth();
 
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
-        setSession(newSession);
-        
-        if (newSession?.user && event === 'SIGNED_IN') {
-          await fetchUserProfile(newSession);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      isSubscribed = false;
+      subscription.unsubscribe();
+    };
+  }, [initialized]);
 
   const fetchUserProfile = async (session: Session) => {
     try {
@@ -161,12 +203,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      setLoading(true);
-      await supabase.auth.signOut();
+      // Clear state immediately for better UX
       setUser(null);
       setSession(null);
+      setLoading(true);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        // Even if logout fails, keep local state cleared
+      }
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, keep local state cleared
     } finally {
       setLoading(false);
     }

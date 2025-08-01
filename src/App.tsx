@@ -21,28 +21,25 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, session, user } = useAuth();
   
-  console.log('ProtectedRoute - loading:', loading, 'isAuthenticated:', isAuthenticated);
-  
+  // Show loading spinner while auth is initializing
   if (loading) {
-    console.log('ProtectedRoute - showing loading spinner');
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement...</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-50 to-slate-100">
+        <div className="text-center p-8 rounded-xl bg-white shadow-lg">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Chargement de l'application...</p>
         </div>
       </div>
     );
   }
   
-  if (!isAuthenticated) {
-    console.log('ProtectedRoute - redirecting to /auth');
-    return <Navigate to="/auth" />;
+  // Check for valid authentication (both session and user profile)
+  if (!session || !user || !isAuthenticated) {
+    return <Navigate to="/auth" replace />;
   }
   
-  console.log('ProtectedRoute - rendering children');
   return <>{children}</>;
 }
 
@@ -132,23 +129,20 @@ function AppRoutes() {
   );
 }
 
-const App = () => {
-  console.log('App component rendering');
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AuthProvider>
-          <BrowserRouter>
-            <Layout>
-              <AppRoutes />
-            </Layout>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  );
-};
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <AuthProvider>
+        <BrowserRouter>
+          <Layout>
+            <AppRoutes />
+          </Layout>
+        </BrowserRouter>
+      </AuthProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;
