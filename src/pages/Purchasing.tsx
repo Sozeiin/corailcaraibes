@@ -83,15 +83,15 @@ export default function Purchasing() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto p-1">
+        <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1">
           {tabs.map((tab) => (
             <TabsTrigger 
               key={tab.id} 
               value={tab.id} 
-              className="flex flex-col items-center gap-1 p-2 sm:p-3 text-xs"
+              className="flex flex-col items-center gap-1 p-1.5 sm:p-3 text-xs min-h-[60px] sm:min-h-auto"
             >
-              <tab.icon className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden xs:inline text-[10px] sm:text-xs">{tab.label}</span>
+              <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+              <span className="text-[9px] xs:text-[10px] sm:text-xs text-center leading-tight">{tab.label}</span>
             </TabsTrigger>
           ))}
         </TabsList>
