@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
 import { Building2, Phone, Mail, MapPin, Calendar } from 'lucide-react';
 import { StockItem } from '@/types';
 
@@ -14,6 +14,7 @@ interface SupplierHistoryProps {
 export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
   const { data: supplierData, isLoading } = useQuery({
     queryKey: ['supplier-history', stockItem.id],
+    staleTime: 10 * 60 * 1000, // 10 minutes
     queryFn: async () => {
       // Get current supplier info
       let currentSupplier = null;
@@ -97,20 +98,7 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
   });
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-4 w-40" />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <OptimizedSkeleton type="grid" count={2} />;
   }
 
   const { currentSupplier, supplierHistory } = supplierData || {};

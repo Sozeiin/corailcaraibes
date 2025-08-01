@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, TrendingUp, Wrench, User } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Wrench, User, Package } from 'lucide-react';
 import { StockItem } from '@/types';
 import { PurchaseHistory } from './PurchaseHistory';
 import { SupplierHistory } from './SupplierHistory';
 import { PriceAnalysis } from './PriceAnalysis';
 import { UsageAnalysis } from './UsageAnalysis';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface StockItemDetailsDialogProps {
   item: StockItem | null;
@@ -17,12 +18,6 @@ interface StockItemDetailsDialogProps {
 
 export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetailsDialogProps) {
   if (!item) return null;
-
-  console.log('Stock item details:', {
-    name: item.name,
-    photoUrl: item.photoUrl,
-    hasPhoto: !!item.photoUrl
-  });
 
   const getStockStatus = (item: StockItem) => {
     if (item.quantity === 0) {
@@ -60,23 +55,22 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
                 )}
               </div>
             </div>
-            {item.photoUrl && (
-              <div className="flex-shrink-0">
-                <img
-                  src={item.photoUrl}
-                  alt={item.name}
-                  className="w-24 h-24 object-cover rounded-lg border"
-                  loading="lazy"
-                  onError={(e) => {
-                    console.error('Failed to load image:', item.photoUrl);
-                    e.currentTarget.style.display = 'none';
-                  }}
-                  onLoad={() => {
-                    console.log('Image loaded successfully:', item.photoUrl);
-                  }}
-                />
-              </div>
-            )}
+            <div className="flex-shrink-0">
+              <OptimizedImage
+                src={item.photoUrl}
+                alt={item.name}
+                size="lg"
+                className="hidden sm:block"
+                fallbackIcon={<Package className="h-8 w-8 text-muted-foreground" />}
+              />
+              <OptimizedImage
+                src={item.photoUrl}
+                alt={item.name}
+                size="md"
+                className="block sm:hidden"
+                fallbackIcon={<Package className="h-6 w-6 text-muted-foreground" />}
+              />
+            </div>
             <div className="text-right">
               <div className="text-2xl font-bold">
                 {item.quantity}

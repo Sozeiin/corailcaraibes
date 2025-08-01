@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
 import { TrendingUp, TrendingDown, Minus, Euro, BarChart3 } from 'lucide-react';
 
 interface PriceAnalysisProps {
@@ -13,6 +13,7 @@ interface PriceAnalysisProps {
 export function PriceAnalysis({ stockItemId }: PriceAnalysisProps) {
   const { data: priceData, isLoading } = useQuery({
     queryKey: ['price-analysis', stockItemId],
+    staleTime: 15 * 60 * 1000, // 15 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_items')
@@ -87,20 +88,7 @@ export function PriceAnalysis({ stockItemId }: PriceAnalysisProps) {
   });
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-6 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
+    return <OptimizedSkeleton type="grid" count={4} />;
   }
 
   if (!priceData) {

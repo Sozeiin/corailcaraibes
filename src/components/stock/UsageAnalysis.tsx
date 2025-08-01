@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
 import { Wrench, Calendar, Ship, AlertCircle, TrendingUp } from 'lucide-react';
 import { UsageHistoryItem } from '@/types';
 
@@ -14,6 +14,7 @@ interface UsageAnalysisProps {
 export function UsageAnalysis({ stockItemId }: UsageAnalysisProps) {
   const { data: usageData, isLoading } = useQuery({
     queryKey: ['usage-analysis', stockItemId],
+    staleTime: 10 * 60 * 1000, // 10 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from('intervention_parts')
@@ -102,25 +103,7 @@ export function UsageAnalysis({ stockItemId }: UsageAnalysisProps) {
   });
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="h-4 w-20 mb-2" />
-                <Skeleton className="h-6 w-16" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        <Card>
-          <CardContent className="p-4">
-            <Skeleton className="h-32 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <OptimizedSkeleton type="grid" count={4} />;
   }
 
   if (!usageData || usageData.usageHistory.length === 0) {

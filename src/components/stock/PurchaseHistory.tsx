@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
 import { Package, Calendar, Euro, Truck } from 'lucide-react';
 import { PurchaseHistoryItem } from '@/types';
 
@@ -14,6 +14,7 @@ interface PurchaseHistoryProps {
 export function PurchaseHistory({ stockItemId }: PurchaseHistoryProps) {
   const { data: purchases = [], isLoading } = useQuery({
     queryKey: ['purchase-history', stockItemId],
+    staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
         .from('order_items')
@@ -69,24 +70,7 @@ export function PurchaseHistory({ stockItemId }: PurchaseHistoryProps) {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {[...Array(3)].map((_, i) => (
-          <Card key={i}>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-4 w-32" />
-                  <Skeleton className="h-3 w-48" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
-                <Skeleton className="h-6 w-16" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
+    return <OptimizedSkeleton type="list" count={3} />;
   }
 
   if (purchases.length === 0) {
