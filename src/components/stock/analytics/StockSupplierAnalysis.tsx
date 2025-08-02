@@ -139,7 +139,7 @@ export function StockSupplierAnalysis({ baseId, timeRange }: StockSupplierAnalys
       // Calculate averages and performance metrics
       Object.values(supplierStats).forEach((supplier: any) => {
         if (supplier.deliveryTimes.length > 0) {
-        supplier.avgDeliveryTime = supplier.deliveryTimes.reduce((sum: number, time: number) => sum + time, 0) / supplier.deliveryTimes.length;
+        supplier.avgDeliveryTime = supplier.deliveryTimes.reduce((sum: number, time: number) => sum + time, 0) / Number(supplier.deliveryTimes.length);
         }
         supplier.onTimePercentage = supplier.totalOrders > 0 ? (supplier.onTimeDeliveries / supplier.totalOrders) * 100 : 0;
         supplier.avgOrderValue = supplier.totalOrders > 0 ? supplier.totalValue / supplier.totalOrders : 0;
@@ -197,7 +197,7 @@ export function StockSupplierAnalysis({ baseId, timeRange }: StockSupplierAnalys
     totalSuppliers: supplierData?.length || 0,
     totalValue: supplierData?.reduce((sum: number, supplier: any) => sum + supplier.totalValue, 0) || 0,
     avgDeliveryTime: supplierData?.length > 0 
-      ? supplierData.reduce((sum: number, supplier: any) => sum + supplier.avgDeliveryTime, 0) / supplierData.length 
+      ? Number(supplierData.reduce((sum: number, supplier: any) => sum + Number(supplier.avgDeliveryTime || 0), 0)) / Number(supplierData.length) 
       : 0,
     topPerformer: supplierData?.sort((a: any, b: any) => (b as any).performanceScore - (a as any).performanceScore)?.[0] as any
   };
@@ -223,7 +223,7 @@ export function StockSupplierAnalysis({ baseId, timeRange }: StockSupplierAnalys
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valeur Totale</p>
-                <p className="text-2xl font-bold">{summary.totalValue.toLocaleString('fr-FR')} €</p>
+                <p className="text-2xl font-bold">{Number(summary.totalValue).toLocaleString('fr-FR')} €</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>

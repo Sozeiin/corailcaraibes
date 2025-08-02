@@ -75,8 +75,8 @@ export function StockPredictiveAnalysis({ baseId, category }: StockPredictiveAna
         }, {});
 
         const usageDays = Object.keys(dailyUsage).length;
-        const totalUsage = Object.values(dailyUsage).reduce((sum: number, qty: any) => sum + qty, 0);
-        const avgDailyUsage = usageDays > 0 ? totalUsage / usageDays : 0;
+        const totalUsage = Object.values(dailyUsage).reduce((sum: number, qty: any) => sum + Number(qty || 0), 0);
+        const avgDailyUsage = usageDays > 0 ? Number(totalUsage) / Number(usageDays) : 0;
 
         // Calculate trend (simple linear regression slope)
         const sortedDates = Object.keys(dailyUsage).sort();
@@ -133,7 +133,7 @@ export function StockPredictiveAnalysis({ baseId, category }: StockPredictiveAna
           urgencyScore,
           confidence,
           recommendedOrderQuantity: Math.ceil(adjustedUsage * 30), // 30 days supply
-          usageVariability: usageDays > 1 ? this.calculateVariability(Object.values(dailyUsage)) : 0
+          usageVariability: usageDays > 1 ? calculateVariability(Object.values(dailyUsage)) : 0
         };
       });
 

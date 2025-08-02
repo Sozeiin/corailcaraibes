@@ -2,6 +2,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Wrench, FileText, Calendar, AlertTriangle } from 'lucide-react';
+import { AutomaticSchedulingSettings } from '../maintenance/AutomaticSchedulingSettings';
 
 export function MaintenanceSettings() {
   return (
@@ -32,38 +33,7 @@ export function MaintenanceSettings() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Planification automatique
-            </CardTitle>
-            <CardDescription>
-              Configuration de la planification automatique des maintenances préventives
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Définissez les règles de planification automatique des maintenances en fonction des heures d'utilisation, du temps écoulé, etc.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg">
-                  <h5 className="font-medium mb-2">Maintenance préventive</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Planification basée sur les intervalles définis dans les manuels
-                  </p>
-                </div>
-                <div className="p-4 border rounded-lg">
-                  <h5 className="font-medium mb-2">Maintenance corrective</h5>
-                  <p className="text-sm text-muted-foreground">
-                    Gestion des pannes et réparations urgentes
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <AutomaticSchedulingSettings />
 
         <Card>
           <CardHeader>
