@@ -332,7 +332,7 @@ export default function Boats() {
       </div>
 
       {/* Boats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         {filteredBoats.map(boat => <BoatCard key={boat.id} boat={boat} onEdit={handleEdit} onDelete={handleDelete} onHistory={handleHistory} onPreventiveMaintenance={handlePreventiveMaintenance} canManage={canManageBoats} />)}
       </div>
 
