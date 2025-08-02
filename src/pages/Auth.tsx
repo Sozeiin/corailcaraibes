@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { secureStorage } from '@/lib/storage';
 export default function Auth() {
   const {
     isAuthenticated
@@ -18,6 +20,7 @@ export default function Auth() {
     email: '',
     password: ''
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [signupForm, setSignupForm] = useState({
     email: '',
     password: '',
@@ -38,6 +41,15 @@ export default function Auth() {
       setBases(data || []);
     };
     fetchBases();
+
+    // Load remembered email on component mount
+    const rememberedEmail = secureStorage.getRememberedEmail();
+    const isRemembered = secureStorage.isRememberMeEnabled();
+    
+    if (rememberedEmail && isRemembered) {
+      setLoginForm(prev => ({ ...prev, email: rememberedEmail }));
+      setRememberMe(true);
+    }
   }, []);
   if (isAuthenticated) {
     return <Navigate to="/" replace />;
@@ -57,6 +69,9 @@ export default function Auth() {
           variant: "destructive"
         });
       } else {
+        // Save/clear remembered email based on remember me checkbox
+        secureStorage.saveRememberedEmail(loginForm.email, rememberMe);
+        
         toast({
           title: "Connexion réussie",
           description: "Redirection en cours..."
@@ -160,6 +175,18 @@ export default function Auth() {
                   password: e.target.value
                 })} required />
                 </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="remember-me" 
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                  />
+                  <Label htmlFor="remember-me" className="text-sm font-normal">
+                    Se souvenir de moi
+                  </Label>
+                </div>
+                
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>

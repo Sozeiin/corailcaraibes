@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useIdleTimer } from '@/hooks/useIdleTimer';
+import { IdleWarningModal } from '@/components/auth/IdleWarningModal';
 
 interface User {
   id: string;
@@ -26,6 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showIdleWarning, setShowIdleWarning] = useState(false);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -207,6 +210,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(null);
       setSession(null);
       setLoading(true);
+      setShowIdleWarning(false);
       
       // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
@@ -222,6 +226,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Idle timer for automatic logout (30 minutes)
+  const { isWarning, remainingTime, resetTimer } = useIdleTimer({
+    timeout: 30 * 60 * 1000, // 30 minutes
+    warningTime: 60 * 1000, // 1 minute warning
+    onIdle: () => {
+      setShowIdleWarning(false);
+      logout();
+    },
+    onWarning: () => {
+      if (session && user) {
+        setShowIdleWarning(true);
+      }
+    },
+  });
+
+  // Handle staying logged in
+  const handleStayLoggedIn = () => {
+    setShowIdleWarning(false);
+    resetTimer();
+  };
+
+  // Handle logout from idle warning
+  const handleIdleLogout = () => {
+    setShowIdleWarning(false);
+    logout();
+  };
+
   const value = {
     user,
     session,
@@ -234,6 +265,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   return (
     <AuthContext.Provider value={value}>
       {children}
+      <IdleWarningModal
+        isOpen={showIdleWarning}
+        remainingSeconds={remainingTime}
+        onStayLoggedIn={handleStayLoggedIn}
+        onLogout={handleIdleLogout}
+      />
     </AuthContext.Provider>
   );
 };
