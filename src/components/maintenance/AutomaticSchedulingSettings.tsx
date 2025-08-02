@@ -14,12 +14,16 @@ import {
   TrendingUp,
   AlertTriangle,
   CheckCircle,
-  Activity
+  Activity,
+  Cloud,
+  CloudRain
 } from 'lucide-react';
 import { SchedulingRulesManager } from './scheduling/SchedulingRulesManager';
 import { IntervalConfigManager } from './scheduling/IntervalConfigManager';
 import { NotificationConfigManager } from './scheduling/NotificationConfigManager';
 import { SchedulingAnalytics } from './scheduling/SchedulingAnalytics';
+import { WeatherRulesManager } from './scheduling/WeatherRulesManager';
+import { WeatherDashboard } from './scheduling/WeatherDashboard';
 
 export function AutomaticSchedulingSettings() {
   const [activeTab, setActiveTab] = useState('rules');
@@ -144,7 +148,7 @@ export function AutomaticSchedulingSettings() {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="rules" className="flex items-center gap-2">
                 <Settings className="h-4 w-4" />
                 Règles
@@ -156,6 +160,14 @@ export function AutomaticSchedulingSettings() {
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <Bell className="h-4 w-4" />
                 Notifications
+              </TabsTrigger>
+              <TabsTrigger value="weather" className="flex items-center gap-2">
+                <Cloud className="h-4 w-4" />
+                Météo
+              </TabsTrigger>
+              <TabsTrigger value="weather-dashboard" className="flex items-center gap-2">
+                <CloudRain className="h-4 w-4" />
+                Dashboard
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
@@ -173,6 +185,14 @@ export function AutomaticSchedulingSettings() {
 
             <TabsContent value="notifications" className="mt-6">
               <NotificationConfigManager isEnabled={isAutoSchedulingEnabled} />
+            </TabsContent>
+
+            <TabsContent value="weather" className="mt-6">
+              <WeatherRulesManager isEnabled={isAutoSchedulingEnabled} />
+            </TabsContent>
+
+            <TabsContent value="weather-dashboard" className="mt-6">
+              <WeatherDashboard isEnabled={isAutoSchedulingEnabled} />
             </TabsContent>
 
             <TabsContent value="analytics" className="mt-6">

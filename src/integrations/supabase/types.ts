@@ -55,6 +55,45 @@ export type Database = {
           },
         ]
       }
+      api_logs: {
+        Row: {
+          created_at: string
+          duration: number
+          endpoint: string
+          error: string | null
+          id: string
+          ip_address: string | null
+          method: string
+          status: number
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          duration: number
+          endpoint: string
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          method: string
+          status: number
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          duration?: number
+          endpoint?: string
+          error?: string | null
+          id?: string
+          ip_address?: string | null
+          method?: string
+          status?: number
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       bases: {
         Row: {
           created_at: string | null
@@ -802,6 +841,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      login_attempts: {
+        Row: {
+          created_at: string
+          email: string | null
+          failure_reason: string | null
+          id: string
+          ip_address: string | null
+          success: boolean
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          failure_reason?: string | null
+          id?: string
+          ip_address?: string | null
+          success?: boolean
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       logistics_receipt_items: {
         Row: {
@@ -1951,6 +2020,144 @@ export type Database = {
           },
         ]
       }
+      weather_adjustment_rules: {
+        Row: {
+          action: string
+          adjustment_days: number | null
+          base_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          max_precipitation: number | null
+          max_temperature: number | null
+          max_wind_speed: number | null
+          min_temperature: number | null
+          priority_adjustment: number | null
+          rule_name: string
+          updated_at: string
+          weather_condition: string
+        }
+        Insert: {
+          action: string
+          adjustment_days?: number | null
+          base_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_precipitation?: number | null
+          max_temperature?: number | null
+          max_wind_speed?: number | null
+          min_temperature?: number | null
+          priority_adjustment?: number | null
+          rule_name: string
+          updated_at?: string
+          weather_condition: string
+        }
+        Update: {
+          action?: string
+          adjustment_days?: number | null
+          base_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_precipitation?: number | null
+          max_temperature?: number | null
+          max_wind_speed?: number | null
+          min_temperature?: number | null
+          priority_adjustment?: number | null
+          rule_name?: string
+          updated_at?: string
+          weather_condition?: string
+        }
+        Relationships: []
+      }
+      weather_forecasts: {
+        Row: {
+          base_id: string
+          created_at: string
+          fetched_at: string
+          forecast_date: string
+          humidity: number | null
+          id: string
+          precipitation: number | null
+          temperature_max: number
+          temperature_min: number
+          weather_code: string | null
+          weather_condition: string
+          wind_speed: number | null
+        }
+        Insert: {
+          base_id: string
+          created_at?: string
+          fetched_at?: string
+          forecast_date: string
+          humidity?: number | null
+          id?: string
+          precipitation?: number | null
+          temperature_max: number
+          temperature_min: number
+          weather_code?: string | null
+          weather_condition: string
+          wind_speed?: number | null
+        }
+        Update: {
+          base_id?: string
+          created_at?: string
+          fetched_at?: string
+          forecast_date?: string
+          humidity?: number | null
+          id?: string
+          precipitation?: number | null
+          temperature_max?: number
+          temperature_min?: number
+          weather_code?: string | null
+          weather_condition?: string
+          wind_speed?: number | null
+        }
+        Relationships: []
+      }
+      weather_notifications: {
+        Row: {
+          base_id: string
+          created_at: string
+          id: string
+          is_sent: boolean
+          maintenance_id: string | null
+          message: string
+          notification_type: string
+          scheduled_for: string | null
+          sent_at: string | null
+          severity: string
+          weather_condition: string
+        }
+        Insert: {
+          base_id: string
+          created_at?: string
+          id?: string
+          is_sent?: boolean
+          maintenance_id?: string | null
+          message: string
+          notification_type: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          severity?: string
+          weather_condition: string
+        }
+        Update: {
+          base_id?: string
+          created_at?: string
+          id?: string
+          is_sent?: boolean
+          maintenance_id?: string | null
+          message?: string
+          notification_type?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          severity?: string
+          weather_condition?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       purchasing_analytics: {
@@ -1984,6 +2191,14 @@ export type Database = {
           interval_unit: string
         }
         Returns: string
+      }
+      cleanup_old_logs: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      evaluate_weather_for_maintenance: {
+        Args: { maintenance_date: string; base_id_param: string }
+        Returns: Json
       }
       generate_receipt_number: {
         Args: Record<PropertyKey, never>
