@@ -1,16 +1,40 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Package, AlertTriangle, Truck, BarChart3 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { StockAnalyticsDashboard } from '@/components/stock/analytics/StockAnalyticsDashboard';
+import { Package, AlertTriangle, Truck, BarChart3, Settings, TrendingUp } from 'lucide-react';
 
 export function StockSettings() {
+  const [activeTab, setActiveTab] = useState('config');
+
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold">Configuration du stock</h3>
-      
-      <div className="grid gap-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold">Gestion du Stock</h3>
+          <p className="text-sm text-muted-foreground">
+            Configuration, analytiques et rapports de stock
+          </p>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="config" className="flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            Configuration
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Analytiques
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="config" className="space-y-6">
+          <div className="grid gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -163,7 +187,13 @@ export function StockSettings() {
             </div>
           </CardContent>
         </Card>
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <StockAnalyticsDashboard />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
