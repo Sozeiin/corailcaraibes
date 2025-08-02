@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { StockCards } from '@/components/stock/StockCards';
+import { StockTable } from '@/components/stock/StockTable';
 import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
@@ -15,6 +15,8 @@ import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialo
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StockItem } from '@/types';
+import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Stock() {
   const { user } = useAuth();
@@ -30,6 +32,7 @@ export default function Stock() {
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
   const [detailsItem, setDetailsItem] = useState<StockItem | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   const { data: stockItems = [], isLoading } = useQuery({
     queryKey: ['stock', user?.role, user?.baseId],
@@ -120,6 +123,30 @@ export default function Stock() {
     
     return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
   });
+
+  const getStockStatus = (item: StockItem) => {
+    if (item.quantity === 0) {
+      return { label: 'Rupture', variant: 'destructive' as const, icon: '✗' };
+    } else if (item.quantity <= item.minThreshold) {
+      return { label: 'Stock faible', variant: 'secondary' as const, icon: '⚠' };
+    } else {
+      return { label: 'En stock', variant: 'default' as const, icon: '✓' };
+    }
+  };
+
+  const mobileColumns = [
+    { key: 'name', label: 'Article' },
+    { key: 'reference', label: 'Réf' },
+    { key: 'quantity', label: 'Qté' },
+    {
+      key: 'status',
+      label: 'Statut',
+      render: (_: any, item: StockItem) => {
+        const status = getStockStatus(item);
+        return <ResponsiveBadge variant={status.variant}>{status.icon}</ResponsiveBadge>;
+      }
+    }
+  ];
 
   const handleEdit = (item: StockItem) => {
     setEditingItem(item);
@@ -261,15 +288,26 @@ export default function Stock() {
             </div>
 
             <div className="p-4 sm:p-6">
-              <StockCards
-                items={filteredItems}
-                isLoading={isLoading}
-                onEdit={handleEdit}
-                onDuplicate={handleDuplicate}
-                onUpdateQuantity={handleUpdateQuantity}
-                onViewDetails={handleViewDetails}
-                canManage={canManageStock}
-              />
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
+                </div>
+              ) : isMobile ? (
+                <MobileTable
+                  data={filteredItems}
+                  columns={mobileColumns}
+                  onRowClick={handleViewDetails}
+                />
+              ) : (
+                <StockTable
+                  items={filteredItems}
+                  isLoading={isLoading}
+                  onEdit={handleEdit}
+                  onDuplicate={handleDuplicate}
+                  onUpdateQuantity={handleUpdateQuantity}
+                  canManage={canManageStock}
+                />
+              )}
             </div>
           </div>
         </TabsContent>

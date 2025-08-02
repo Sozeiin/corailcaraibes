@@ -5,13 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OrderCards } from '@/components/orders/OrderCards';
+import { OrderTable } from '@/components/orders/OrderTable';
 import { OrderDialog } from '@/components/orders/OrderDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Order } from '@/types';
+import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { formatCurrency } from '@/lib/utils';
 
 export default function Orders() {
   console.log('Orders page rendering...');
@@ -25,6 +28,7 @@ export default function Orders() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
+  const isMobile = useIsMobile();
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['orders', user?.role, user?.baseId],
@@ -105,7 +109,7 @@ export default function Orders() {
 
   // Filter orders based on search, status, and type
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
@@ -116,6 +120,38 @@ export default function Orders() {
     
     return matchesSearch && matchesStatus && matchesType;
   });
+
+  const mobileColumns = [
+    { key: 'orderNumber', label: 'Commande' },
+    {
+      key: 'orderDate',
+      label: 'Date',
+      render: (value: string) => new Date(value).toLocaleDateString('fr-FR')
+    },
+    {
+      key: 'status',
+      label: 'Statut',
+      render: (_: any, order: Order) => {
+        const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive', icon: string }> = {
+          pending: { variant: 'secondary', icon: '⏳' },
+          confirmed: { variant: 'default', icon: '✓' },
+          delivered: { variant: 'default', icon: '✓' },
+          cancelled: { variant: 'destructive', icon: '✗' },
+          pending_approval: { variant: 'secondary', icon: '⏳' },
+          supplier_requested: { variant: 'default', icon: '✓' },
+          shipping_mainland: { variant: 'default', icon: '🚚' },
+          shipping_antilles: { variant: 'default', icon: '🚢' }
+        };
+        const status = statusMap[order.status] || { variant: 'default', icon: '?' };
+        return <ResponsiveBadge variant={status.variant}>{status.icon}</ResponsiveBadge>;
+      }
+    },
+    {
+      key: 'totalAmount',
+      label: 'Montant',
+      render: (value: number) => formatCurrency(value)
+    }
+  ];
 
   const handleEdit = (order: Order) => {
     setEditingOrder(order);
@@ -209,13 +245,24 @@ export default function Orders() {
               />
             </div>
 
-            <OrderCards
-              orders={filteredOrders}
-              isLoading={isLoading}
-              onEdit={handleEdit}
-              onViewDetails={handleViewDetails}
-              canManage={canManageOrders}
-            />
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : isMobile ? (
+              <MobileTable
+                data={filteredOrders}
+                columns={mobileColumns}
+                onRowClick={handleViewDetails}
+              />
+            ) : (
+              <OrderTable
+                orders={filteredOrders}
+                isLoading={isLoading}
+                onEdit={handleEdit}
+                canManage={canManageOrders}
+              />
+            )}
           </div>
         </ErrorBoundary>
 
