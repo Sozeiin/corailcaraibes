@@ -89,7 +89,8 @@ export function AppSidebar() {
     const isActive = location.pathname === path;
     return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`;
   };
-  return <Sidebar className="w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern">
+  return (
+    <Sidebar className={`${!isMobile ? 'hidden sm:block' : ''} w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern`}>
       <SidebarContent className="p-2 sm:p-3 lg:p-4">
         <SidebarGroup>
           <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-2 sm:mb-3 lg:mb-4">
@@ -120,5 +121,6 @@ export function AppSidebar() {
           </p>
         </div>
       </SidebarContent>
-    </Sidebar>;
+    </Sidebar>
+  );
 }
