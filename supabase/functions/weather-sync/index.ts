@@ -58,7 +58,9 @@ serve(async (req) => {
         console.log(`Fetching weather for base: ${base.name} (${base.location})`);
         
         // Get coordinates for the location using Nominatim (free geocoding service)
-        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(base.location)}&format=json&limit=1`;
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(base.location)}&format=json&limit=1&addressdetails=1`;
+        console.log(`Geocoding URL: ${geocodeUrl}`);
+        
         const geocodeResponse = await fetch(geocodeUrl, {
           headers: {
             'User-Agent': 'WeatherSync/1.0 (maintenance-app)'
@@ -67,10 +69,13 @@ serve(async (req) => {
         
         if (!geocodeResponse.ok) {
           console.error(`Geocoding failed for ${base.location}:`, geocodeResponse.statusText);
+          const errorText = await geocodeResponse.text();
+          console.error(`Geocoding error details:`, errorText);
           continue;
         }
         
         const geocodeData = await geocodeResponse.json();
+        console.log(`Geocoding result for ${base.location}:`, JSON.stringify(geocodeData, null, 2));
         
         if (!geocodeData || geocodeData.length === 0) {
           console.error(`No coordinates found for location: ${base.location}`);
@@ -78,9 +83,21 @@ serve(async (req) => {
         }
         
         const { lat, lon } = geocodeData[0];
+        console.log(`Coordinates for ${base.location}: lat=${lat}, lon=${lon}`);
+        
+        // Validate coordinates
+        const latitude = parseFloat(lat);
+        const longitude = parseFloat(lon);
+        
+        if (isNaN(latitude) || isNaN(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+          console.error(`Invalid coordinates for ${base.location}: lat=${lat}, lon=${lon}`);
+          continue;
+        }
         
         // Get 7-day weather forecast from Open-Meteo
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,relative_humidity_2m,weathercode&timezone=auto&forecast_days=7`;
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,relative_humidity_2m,weathercode&timezone=auto&forecast_days=7`;
+        console.log(`Weather API URL: ${weatherUrl}`);
+        
         const weatherResponse = await fetch(weatherUrl);
         
         if (!weatherResponse.ok) {
