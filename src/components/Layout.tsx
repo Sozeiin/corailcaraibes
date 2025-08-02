@@ -28,7 +28,7 @@ export const Layout = ({ children }: LayoutProps) => {
   // Pour les pages authentifiées, on affiche le layout complet
   return (
     <SidebarProvider defaultOpen={false}>
-      <div className="min-h-screen flex w-full bg-slate-50">
+      <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />

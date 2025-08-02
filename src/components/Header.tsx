@@ -45,7 +45,7 @@ export const Header = () => {
           <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-xs lg:text-sm">CC</span>
           </div>
-          <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
+          <h1 className="text-xs sm:text-lg lg:text-xl font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export const Header = () => {
             <Button variant="ghost" className="flex items-center gap-1 sm:gap-2 lg:gap-3 h-auto p-1 lg:p-2">
               <div className="text-right hidden md:block">
                 <div className="font-medium text-xs sm:text-sm truncate max-w-24 lg:max-w-none">{user?.name}</div>
-                <Badge className={`text-xs ${getRoleBadgeColor(user?.role || '')}`}>
+                <Badge className={`text-xs truncate ${getRoleBadgeColor(user?.role || '')}`}>
                   {getRoleLabel(user?.role || '')}
                 </Badge>
               </div>
