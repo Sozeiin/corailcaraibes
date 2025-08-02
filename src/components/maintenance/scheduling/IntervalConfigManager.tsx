@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { Clock, Wrench, AlertCircle, Calendar } from 'lucide-react';
 
 interface IntervalConfigManagerProps {
@@ -160,17 +161,24 @@ export function IntervalConfigManager({ isEnabled }: IntervalConfigManagerProps)
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
-                  <Label>Considérer les conditions météo</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Ajuste selon les conditions climatiques
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <div>
+                    <Label>Considérer les conditions météo</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Ajuste selon les conditions climatiques
+                    </p>
+                  </div>
+                  <Switch
+                    checked={globalSettings.considerWeather}
+                    onCheckedChange={(checked) => updateGlobalSetting('considerWeather', checked)}
+                    disabled={!isEnabled}
+                  />
                 </div>
-                <Switch
-                  checked={globalSettings.considerWeather}
-                  onCheckedChange={(checked) => updateGlobalSetting('considerWeather', checked)}
-                  disabled={!isEnabled}
-                />
+                {globalSettings.considerWeather && (
+                  <Badge variant="secondary" className="text-xs">
+                    Intégration météo active
+                  </Badge>
+                )}
               </div>
 
               <div>
