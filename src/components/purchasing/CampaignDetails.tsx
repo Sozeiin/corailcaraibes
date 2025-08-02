@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -65,8 +66,9 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <ErrorBoundary>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" onClick={onBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -208,6 +210,7 @@ export const CampaignDetails: React.FC<CampaignDetailsProps> = ({
         onOpenChange={setShowExportDialog}
         campaign={campaign}
       />
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
