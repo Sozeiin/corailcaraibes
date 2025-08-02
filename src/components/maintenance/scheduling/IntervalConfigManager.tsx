@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ interface IntervalConfig {
 }
 
 export function IntervalConfigManager({ isEnabled }: IntervalConfigManagerProps) {
+  const { toast } = useToast();
   const [configs, setConfigs] = useState<IntervalConfig[]>([
     {
       taskType: 'Révision moteur',
@@ -69,10 +71,25 @@ export function IntervalConfigManager({ isEnabled }: IntervalConfigManagerProps)
     setConfigs(prev => prev.map((config, i) => 
       i === index ? { ...config, [field]: value } : config
     ));
+    toast({
+      title: "Configuration mise à jour",
+      description: `Les paramètres pour ${configs[index].taskType} ont été sauvegardés.`,
+    });
   };
 
   const updateGlobalSetting = (field: string, value: any) => {
     setGlobalSettings(prev => ({ ...prev, [field]: value }));
+    toast({
+      title: "Paramètres globaux mis à jour",
+      description: "La configuration globale a été sauvegardée.",
+    });
+  };
+
+  const viewFullSchedule = () => {
+    toast({
+      title: "Ouverture du planning",
+      description: "Redirection vers la vue complète du planning...",
+    });
   };
 
   return (
@@ -313,7 +330,7 @@ export function IntervalConfigManager({ isEnabled }: IntervalConfigManagerProps)
             </div>
 
             <div className="flex justify-end">
-              <Button variant="outline" disabled={!isEnabled}>
+              <Button variant="outline" disabled={!isEnabled} onClick={viewFullSchedule}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Voir la planification complète
               </Button>

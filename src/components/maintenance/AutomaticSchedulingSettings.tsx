@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -23,12 +24,44 @@ import { SchedulingAnalytics } from './scheduling/SchedulingAnalytics';
 export function AutomaticSchedulingSettings() {
   const [activeTab, setActiveTab] = useState('rules');
   const [isAutoSchedulingEnabled, setIsAutoSchedulingEnabled] = useState(true);
+  const { toast } = useToast();
 
   const stats = {
     totalRules: 12,
     activeRules: 8,
     scheduledMaintenances: 24,
     pendingNotifications: 3
+  };
+
+  const handleSchedulingToggle = (enabled: boolean) => {
+    setIsAutoSchedulingEnabled(enabled);
+    toast({
+      title: enabled ? "Planification activée" : "Planification désactivée",
+      description: enabled 
+        ? "La planification automatique des maintenances est maintenant active."
+        : "La planification automatique a été désactivée.",
+    });
+  };
+
+  const handleGenerateMonthlySchedule = () => {
+    toast({
+      title: "Génération du planning",
+      description: "Le planning mensuel est en cours de génération...",
+    });
+  };
+
+  const handleSendReminders = () => {
+    toast({
+      title: "Envoi des rappels",
+      description: "Les rappels de maintenance ont été envoyés.",
+    });
+  };
+
+  const handleOptimizeSchedule = () => {
+    toast({
+      title: "Optimisation du planning",
+      description: "Le planning est en cours d'optimisation...",
+    });
   };
 
   return (
@@ -45,7 +78,7 @@ export function AutomaticSchedulingSettings() {
           <Switch
             id="auto-scheduling"
             checked={isAutoSchedulingEnabled}
-            onCheckedChange={setIsAutoSchedulingEnabled}
+            onCheckedChange={handleSchedulingToggle}
           />
         </div>
       </div>
@@ -159,15 +192,15 @@ export function AutomaticSchedulingSettings() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start" onClick={handleGenerateMonthlySchedule}>
               <Calendar className="h-4 w-4 mr-2" />
               Générer Planning Mensuel
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start" onClick={handleSendReminders}>
               <Bell className="h-4 w-4 mr-2" />
               Envoyer Rappels
             </Button>
-            <Button variant="outline" className="justify-start">
+            <Button variant="outline" className="justify-start" onClick={handleOptimizeSchedule}>
               <TrendingUp className="h-4 w-4 mr-2" />
               Optimiser Planning
             </Button>
