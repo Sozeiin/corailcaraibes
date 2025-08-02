@@ -247,27 +247,34 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
   const handleComplete = async () => {
     try {
+      console.log('🚀 Début de la finalisation du check-in/check-out');
       let technicianSignatureUrl = '';
       let customerSignatureUrl = '';
 
       // Upload signatures
+      console.log('📸 Upload des signatures...');
       if (technicianSignature) {
+        console.log('📸 Upload signature technicien...');
         const techSignatureData = await uploadSignatureMutation.mutateAsync({
           signature: technicianSignature,
           fileName: `technician-${Date.now()}.png`
         });
         technicianSignatureUrl = techSignatureData.path;
+        console.log('✅ Signature technicien uploadée:', technicianSignatureUrl);
       }
 
       if (customerSignature) {
+        console.log('📸 Upload signature client...');
         const custSignatureData = await uploadSignatureMutation.mutateAsync({
           signature: customerSignature,
           fileName: `customer-${Date.now()}.png`
         });
         customerSignatureUrl = custSignatureData.path;
+        console.log('✅ Signature client uploadée:', customerSignatureUrl);
       }
 
       // Create checklist
+      console.log('📋 Création de la checklist...');
       const checklistData = {
         boat_id: boat.id,
         technician_id: user?.id,
@@ -278,36 +285,49 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         customer_signature_url: customerSignatureUrl || null,
         customer_signature_date: customerSignature ? new Date().toISOString() : null
       };
+      console.log('📋 Données checklist:', checklistData);
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
+      console.log('✅ Checklist créée:', checklist);
 
       if (type === 'checkin') {
+        console.log('🚢 Création de la location...');
         // Create rental first, then update boat status
         const rentalDataWithSignature = {
           ...rentalData,
           signature_url: customerSignatureUrl || null,
           signature_date: customerSignature ? new Date().toISOString() : null
         };
+        console.log('🚢 Données location:', rentalDataWithSignature);
         await createRentalMutation.mutateAsync(rentalDataWithSignature);
+        console.log('✅ Location créée');
+        
+        console.log('🚢 Mise à jour statut bateau...');
         await updateBoatStatusMutation.mutateAsync({ 
           boatId: boat.id, 
           status: 'rented' 
         });
+        console.log('✅ Statut bateau mis à jour');
         
         toast({
           title: "Check-in terminé",
           description: `Check-in réalisé pour ${boat.name}. Le bateau est maintenant en location.`,
         });
       } else {
+        console.log('🚢 Finalisation de la location...');
         // Update rental and boat status for checkout
         await updateRentalMutation.mutateAsync({ 
           rentalId: rentalData.id, 
           status: 'completed' 
         });
+        console.log('✅ Location finalisée');
+        
+        console.log('🚢 Mise à jour statut bateau...');
         await updateBoatStatusMutation.mutateAsync({ 
           boatId: boat.id, 
           status: (overallStatus === 'ok' ? 'available' : 'maintenance') as 'available' | 'rented' | 'maintenance' | 'out_of_service'
         });
+        console.log('✅ Statut bateau mis à jour');
         
         toast({
           title: "Check-out terminé",
@@ -317,17 +337,19 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
       // Send email report if requested
       if (sendEmailReport && customerEmail) {
+        console.log('📧 Envoi du rapport par email...');
         try {
           await sendEmailMutation.mutateAsync({
             checklistId: checklist.id,
             email: customerEmail
           });
+          console.log('✅ Email envoyé avec succès');
           toast({
             title: "Email envoyé",
             description: "Le rapport a été envoyé par email au client.",
           });
         } catch (emailError) {
-          console.error('Email sending failed:', emailError);
+          console.error('❌ Erreur envoi email:', emailError);
           toast({
             title: "Erreur d'envoi",
             description: "Le rapport n'a pas pu être envoyé par email, mais l'inspection est enregistrée.",
@@ -336,6 +358,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         }
       }
 
+      console.log('🎉 Finalisation réussie !');
       onComplete({
         checklist,
         rental: rentalData,
@@ -345,10 +368,11 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       });
 
     } catch (error) {
-      console.error('Error completing checklist:', error);
+      console.error('❌ Erreur lors de la finalisation:', error);
+      console.error('❌ Détails de l\'erreur:', JSON.stringify(error, null, 2));
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'enregistrement.",
+        description: `Une erreur est survenue lors de l'enregistrement: ${error instanceof Error ? error.message : 'Erreur inconnue'}`,
         variant: "destructive"
       });
     }
