@@ -89,10 +89,10 @@ export function OrderCards({ orders, isLoading, onEdit, onViewDetails, canManage
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
       {orders.map((order) => (
-        <Card 
-          key={order.id} 
+        <Card
+          key={order.id}
           className="hover:shadow-md transition-shadow cursor-pointer"
           onClick={() => onViewDetails(order)}
         >
