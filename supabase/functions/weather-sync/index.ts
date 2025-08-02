@@ -9,30 +9,18 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openWeatherApiKey = Deno.env.get('OPENWEATHER_API_KEY');
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-interface WeatherData {
-  dt: number;
-  main: {
-    temp_min: number;
-    temp_max: number;
-    humidity: number;
-  };
-  wind: {
-    speed: number;
-  };
-  weather: Array<{
-    main: string;
-    description: string;
-    id: number;
-  }>;
-  rain?: {
-    '3h': number;
-  };
-  snow?: {
-    '3h': number;
+interface OpenMeteoResponse {
+  daily: {
+    time: string[];
+    temperature_2m_max: number[];
+    temperature_2m_min: number[];
+    precipitation_sum: number[];
+    windspeed_10m_max: number[];
+    relative_humidity_2m: number[];
+    weathercode: number[];
   };
 }
 
@@ -49,18 +37,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Starting weather sync process...');
-
-    if (!openWeatherApiKey) {
-      console.error('OpenWeather API key not configured');
-      return new Response(
-        JSON.stringify({ error: 'OpenWeather API key not configured' }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
+    console.log('Starting weather sync process with Open-Meteo...');
 
     // Get all bases
     const { data: bases, error: basesError } = await supabase
@@ -80,9 +57,13 @@ serve(async (req) => {
       try {
         console.log(`Fetching weather for base: ${base.name} (${base.location})`);
         
-        // Get coordinates for the location (using geocoding)
-        const geocodeUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(base.location)}&limit=1&appid=${openWeatherApiKey}`;
-        const geocodeResponse = await fetch(geocodeUrl);
+        // Get coordinates for the location using Nominatim (free geocoding service)
+        const geocodeUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(base.location)}&format=json&limit=1`;
+        const geocodeResponse = await fetch(geocodeUrl, {
+          headers: {
+            'User-Agent': 'WeatherSync/1.0 (maintenance-app)'
+          }
+        });
         
         if (!geocodeResponse.ok) {
           console.error(`Geocoding failed for ${base.location}:`, geocodeResponse.statusText);
@@ -98,65 +79,36 @@ serve(async (req) => {
         
         const { lat, lon } = geocodeData[0];
         
-        // Get 5-day weather forecast
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=metric`;
+        // Get 7-day weather forecast from Open-Meteo
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,relative_humidity_2m,weathercode&timezone=auto&forecast_days=7`;
         const weatherResponse = await fetch(weatherUrl);
         
         if (!weatherResponse.ok) {
-          console.error(`Weather API failed for ${base.location}:`, weatherResponse.statusText);
+          console.error(`Open-Meteo API failed for ${base.location}:`, weatherResponse.statusText);
           continue;
         }
         
-        const weatherData = await weatherResponse.json();
+        const weatherData: OpenMeteoResponse = await weatherResponse.json();
         
-        if (!weatherData.list) {
+        if (!weatherData.daily) {
           console.error(`Invalid weather data format for ${base.location}`);
           continue;
         }
 
-        // Process daily forecasts (group by date)
-        const dailyForecasts = new Map();
-        
-        weatherData.list.forEach((item: WeatherData) => {
-          const date = new Date(item.dt * 1000).toISOString().split('T')[0];
-          
-          if (!dailyForecasts.has(date)) {
-            dailyForecasts.set(date, {
-              date,
-              temp_min: item.main.temp_min,
-              temp_max: item.main.temp_max,
-              humidity: item.main.humidity,
-              wind_speed: item.wind.speed,
-              precipitation: (item.rain?.['3h'] || 0) + (item.snow?.['3h'] || 0),
-              weather_condition: item.weather[0].main,
-              weather_description: item.weather[0].description,
-              weather_code: item.weather[0].id.toString(),
-              count: 1
-            });
-          } else {
-            const existing = dailyForecasts.get(date);
-            existing.temp_min = Math.min(existing.temp_min, item.main.temp_min);
-            existing.temp_max = Math.max(existing.temp_max, item.main.temp_max);
-            existing.humidity = (existing.humidity * existing.count + item.main.humidity) / (existing.count + 1);
-            existing.wind_speed = Math.max(existing.wind_speed, item.wind.speed);
-            existing.precipitation += (item.rain?.['3h'] || 0) + (item.snow?.['3h'] || 0);
-            existing.count++;
-          }
-        });
-
-        // Insert/update weather forecasts
-        const forecastsToInsert = Array.from(dailyForecasts.values()).map(forecast => ({
+        // Process daily forecasts
+        const forecastsToInsert = weatherData.daily.time.map((date, index) => ({
           base_id: base.id,
-          forecast_date: forecast.date,
-          temperature_min: forecast.temp_min,
-          temperature_max: forecast.temp_max,
-          humidity: forecast.humidity,
-          wind_speed: forecast.wind_speed,
-          precipitation: forecast.precipitation,
-          weather_condition: forecast.weather_description,
-          weather_code: forecast.weather_code
+          forecast_date: date,
+          temperature_min: weatherData.daily.temperature_2m_min[index],
+          temperature_max: weatherData.daily.temperature_2m_max[index],
+          humidity: weatherData.daily.relative_humidity_2m[index],
+          wind_speed: weatherData.daily.windspeed_10m_max[index],
+          precipitation: weatherData.daily.precipitation_sum[index],
+          weather_condition: getWeatherDescription(weatherData.daily.weathercode[index]),
+          weather_code: weatherData.daily.weathercode[index].toString()
         }));
 
+        // Insert/update weather forecasts
         const { error: insertError } = await supabase
           .from('weather_forecasts')
           .upsert(forecastsToInsert, { 
@@ -196,7 +148,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: 'Weather sync completed',
+        message: 'Weather sync completed using Open-Meteo',
         results 
       }),
       { 
@@ -267,8 +219,15 @@ async function checkWeatherBasedAdjustments(baseId: string, forecasts: any[]) {
         let shouldAdjust = false;
         let adjustmentReason = '';
 
-        // Check weather condition match
-        if (forecast.weather_condition.toLowerCase().includes(rule.weather_condition.toLowerCase())) {
+        // Check weather condition match (using Open-Meteo weather descriptions)
+        const condition = forecast.weather_condition.toLowerCase();
+        const ruleCondition = rule.weather_condition.toLowerCase();
+        
+        if (condition.includes(ruleCondition) || 
+            (ruleCondition.includes('rain') && (condition.includes('rain') || condition.includes('drizzle'))) ||
+            (ruleCondition.includes('snow') && condition.includes('snow')) ||
+            (ruleCondition.includes('clear') && condition.includes('clear')) ||
+            (ruleCondition.includes('cloud') && condition.includes('cloud'))) {
           shouldAdjust = true;
           adjustmentReason = `Weather condition: ${forecast.weather_condition}`;
         }
@@ -319,4 +278,40 @@ async function checkWeatherBasedAdjustments(baseId: string, forecasts: any[]) {
   } catch (error) {
     console.error('Error checking weather-based adjustments:', error);
   }
+}
+
+// Function to convert Open-Meteo weather codes to descriptions
+function getWeatherDescription(code: number): string {
+  const weatherCodes: { [key: number]: string } = {
+    0: 'Clear sky',
+    1: 'Mainly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Fog',
+    48: 'Depositing rime fog',
+    51: 'Light drizzle',
+    53: 'Moderate drizzle',
+    55: 'Dense drizzle',
+    56: 'Light freezing drizzle',
+    57: 'Dense freezing drizzle',
+    61: 'Slight rain',
+    63: 'Moderate rain',
+    65: 'Heavy rain',
+    66: 'Light freezing rain',
+    67: 'Heavy freezing rain',
+    71: 'Slight snow fall',
+    73: 'Moderate snow fall',
+    75: 'Heavy snow fall',
+    77: 'Snow grains',
+    80: 'Slight rain showers',
+    81: 'Moderate rain showers',
+    82: 'Violent rain showers',
+    85: 'Slight snow showers',
+    86: 'Heavy snow showers',
+    95: 'Thunderstorm',
+    96: 'Thunderstorm with slight hail',
+    99: 'Thunderstorm with heavy hail'
+  };
+  
+  return weatherCodes[code] || 'Unknown';
 }
