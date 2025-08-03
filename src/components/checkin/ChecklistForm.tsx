@@ -255,64 +255,17 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       console.log('🚀 [DEBUG] Items checklist:', checklistItems);
       console.log('🚀 [DEBUG] Status général:', overallStatus);
       
-      let technicianSignatureUrl = '';
-      let customerSignatureUrl = '';
-
-      // Upload signatures
-      console.log('📸 [DEBUG] Upload des signatures...');
-      if (technicianSignature) {
-        console.log('📸 [DEBUG] Upload signature technicien...');
-        try {
-          const techSignatureData = await uploadSignatureMutation.mutateAsync({
-            signature: technicianSignature,
-            fileName: `technician-${Date.now()}.png`
-          });
-          technicianSignatureUrl = techSignatureData.path;
-          console.log('✅ [DEBUG] Signature technicien uploadée:', technicianSignatureUrl);
-        } catch (sigError) {
-          console.error('❌ [DEBUG] Erreur upload signature technicien:', sigError);
-          console.error('❌ [DEBUG] Détails erreur signature:', JSON.stringify(sigError, null, 2));
-          toast({
-            title: "Erreur upload signature",
-            description: `Impossible d'uploader la signature du technicien: ${sigError instanceof Error ? sigError.message : 'Erreur inconnue'}`,
-            variant: "destructive"
-          });
-          throw sigError;
-        }
-      }
-
-      if (customerSignature) {
-        console.log('📸 [DEBUG] Upload signature client...');
-        try {
-          const custSignatureData = await uploadSignatureMutation.mutateAsync({
-            signature: customerSignature,
-            fileName: `customer-${Date.now()}.png`
-          });
-          customerSignatureUrl = custSignatureData.path;
-          console.log('✅ [DEBUG] Signature client uploadée:', customerSignatureUrl);
-        } catch (sigError) {
-          console.error('❌ [DEBUG] Erreur upload signature client:', sigError);
-          console.error('❌ [DEBUG] Détails erreur signature:', JSON.stringify(sigError, null, 2));
-          toast({
-            title: "Erreur upload signature",
-            description: `Impossible d'uploader la signature du client: ${sigError instanceof Error ? sigError.message : 'Erreur inconnue'}`,
-            variant: "destructive"
-          });
-          throw sigError;
-        }
-      }
-
-      // Create checklist
+      // Test simple : créer seulement la checklist sans signatures
       console.log('📋 [DEBUG] Création de la checklist...');
       const checklistData = {
         boat_id: boat.id,
         technician_id: user?.id,
         checklist_date: new Date().toISOString().split('T')[0],
         overall_status: overallStatus,
-        signature_url: technicianSignatureUrl,
-        signature_date: technicianSignature ? new Date().toISOString() : null,
-        customer_signature_url: customerSignatureUrl || null,
-        customer_signature_date: customerSignature ? new Date().toISOString() : null
+        signature_url: null,
+        signature_date: null,
+        customer_signature_url: null,
+        customer_signature_date: null
       };
       console.log('📋 [DEBUG] Données checklist:', checklistData);
 
@@ -322,6 +275,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('✅ [DEBUG] Checklist créée:', checklist);
       } catch (checklistError) {
         console.error('❌ [DEBUG] Erreur création checklist:', checklistError);
+        console.error('❌ [DEBUG] Détails erreur checklist:', JSON.stringify(checklistError, null, 2));
         throw checklistError;
       }
 
@@ -351,20 +305,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('🚢 [DEBUG] Création de la location...');
         try {
           // Create rental first, then update boat status
-          const rentalDataWithSignature = {
+          const rentalDataWithoutSignature = {
             ...rentalData,
             // Convertir les dates datetime-local en format date
             start_date: rentalData.start_date ? new Date(rentalData.start_date).toISOString().split('T')[0] : null,
             end_date: rentalData.end_date ? new Date(rentalData.end_date).toISOString().split('T')[0] : null,
-            signature_url: customerSignatureUrl || null,
-            signature_date: customerSignature ? new Date().toISOString() : null,
+            signature_url: null,
+            signature_date: null,
             status: 'confirmed'
           };
-          console.log('🚢 [DEBUG] Données location:', rentalDataWithSignature);
-          await createRentalMutation.mutateAsync(rentalDataWithSignature);
+          console.log('🚢 [DEBUG] Données location:', rentalDataWithoutSignature);
+          await createRentalMutation.mutateAsync(rentalDataWithoutSignature);
           console.log('✅ [DEBUG] Location créée');
         } catch (rentalError) {
           console.error('❌ [DEBUG] Erreur création location:', rentalError);
+          console.error('❌ [DEBUG] Détails erreur location:', JSON.stringify(rentalError, null, 2));
           throw rentalError;
         }
         
@@ -377,6 +332,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           console.log('✅ [DEBUG] Statut bateau mis à jour');
         } catch (boatError) {
           console.error('❌ [DEBUG] Erreur mise à jour bateau:', boatError);
+          console.error('❌ [DEBUG] Détails erreur bateau:', JSON.stringify(boatError, null, 2));
           throw boatError;
         }
         
@@ -395,6 +351,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           console.log('✅ [DEBUG] Location finalisée');
         } catch (rentalError) {
           console.error('❌ [DEBUG] Erreur finalisation location:', rentalError);
+          console.error('❌ [DEBUG] Détails erreur location:', JSON.stringify(rentalError, null, 2));
           throw rentalError;
         }
         
@@ -407,6 +364,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           console.log('✅ [DEBUG] Statut bateau mis à jour');
         } catch (boatError) {
           console.error('❌ [DEBUG] Erreur mise à jour bateau:', boatError);
+          console.error('❌ [DEBUG] Détails erreur bateau:', JSON.stringify(boatError, null, 2));
           throw boatError;
         }
         
@@ -414,29 +372,6 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           title: "Check-out terminé",
           description: `Check-out réalisé pour ${boat.name}. ${overallStatus === 'ok' ? 'Le bateau est de nouveau disponible.' : 'Le bateau nécessite une maintenance.'}`,
         });
-      }
-
-      // Send email report if requested
-      if (sendEmailReport && customerEmail) {
-        console.log('📧 Envoi du rapport par email...');
-        try {
-          await sendEmailMutation.mutateAsync({
-            checklistId: checklist.id,
-            email: customerEmail
-          });
-          console.log('✅ Email envoyé avec succès');
-          toast({
-            title: "Email envoyé",
-            description: "Le rapport a été envoyé par email au client.",
-          });
-        } catch (emailError) {
-          console.error('❌ Erreur envoi email:', emailError);
-          toast({
-            title: "Erreur d'envoi",
-            description: "Le rapport n'a pas pu être envoyé par email, mais l'inspection est enregistrée.",
-            variant: "destructive"
-          });
-        }
       }
 
       console.log('🎉 Finalisation réussie !');
