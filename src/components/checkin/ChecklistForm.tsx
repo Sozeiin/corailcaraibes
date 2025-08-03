@@ -313,44 +313,86 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         throw checklistError;
       }
 
-      if (type === 'checkin') {
-        console.log('🚢 Création de la location...');
-        // Create rental first, then update boat status
-        const rentalDataWithSignature = {
-          ...rentalData,
-          signature_url: customerSignatureUrl || null,
-          signature_date: customerSignature ? new Date().toISOString() : null
-        };
-        console.log('🚢 Données location:', rentalDataWithSignature);
-        await createRentalMutation.mutateAsync(rentalDataWithSignature);
-        console.log('✅ Location créée');
+      // Créer une alerte pour notifier la création de la checklist
+      console.log('🔔 [DEBUG] Création d\'alerte...');
+      try {
+        const { error: alertError } = await supabase
+          .from('alerts')
+          .insert([{
+            type: 'maintenance',
+            severity: 'info',
+            title: `Checklist ${type === 'checkin' ? 'check-in' : 'check-out'} créée`,
+            message: `La checklist ${type === 'checkin' ? 'check-in' : 'check-out'} pour le bateau ${boat.name} a été finalisée avec succès.`,
+            base_id: boat.base_id
+          }]);
         
-        console.log('🚢 Mise à jour statut bateau...');
-        await updateBoatStatusMutation.mutateAsync({ 
-          boatId: boat.id, 
-          status: 'rented' 
-        });
-        console.log('✅ Statut bateau mis à jour');
+        if (alertError) {
+          console.error('❌ [DEBUG] Erreur création alerte:', alertError);
+        } else {
+          console.log('✅ [DEBUG] Alerte créée avec succès');
+        }
+      } catch (alertErr) {
+        console.error('❌ [DEBUG] Exception création alerte:', alertErr);
+      }
+
+      if (type === 'checkin') {
+        console.log('🚢 [DEBUG] Création de la location...');
+        try {
+          // Create rental first, then update boat status
+          const rentalDataWithSignature = {
+            ...rentalData,
+            signature_url: customerSignatureUrl || null,
+            signature_date: customerSignature ? new Date().toISOString() : null
+          };
+          console.log('🚢 [DEBUG] Données location:', rentalDataWithSignature);
+          await createRentalMutation.mutateAsync(rentalDataWithSignature);
+          console.log('✅ [DEBUG] Location créée');
+        } catch (rentalError) {
+          console.error('❌ [DEBUG] Erreur création location:', rentalError);
+          throw rentalError;
+        }
+        
+        console.log('🚢 [DEBUG] Mise à jour statut bateau...');
+        try {
+          await updateBoatStatusMutation.mutateAsync({ 
+            boatId: boat.id, 
+            status: 'rented' 
+          });
+          console.log('✅ [DEBUG] Statut bateau mis à jour');
+        } catch (boatError) {
+          console.error('❌ [DEBUG] Erreur mise à jour bateau:', boatError);
+          throw boatError;
+        }
         
         toast({
           title: "Check-in terminé",
           description: `Check-in réalisé pour ${boat.name}. Le bateau est maintenant en location.`,
         });
       } else {
-        console.log('🚢 Finalisation de la location...');
-        // Update rental and boat status for checkout
-        await updateRentalMutation.mutateAsync({ 
-          rentalId: rentalData.id, 
-          status: 'completed' 
-        });
-        console.log('✅ Location finalisée');
+        console.log('🚢 [DEBUG] Finalisation de la location...');
+        try {
+          // Update rental and boat status for checkout
+          await updateRentalMutation.mutateAsync({ 
+            rentalId: rentalData.id, 
+            status: 'completed' 
+          });
+          console.log('✅ [DEBUG] Location finalisée');
+        } catch (rentalError) {
+          console.error('❌ [DEBUG] Erreur finalisation location:', rentalError);
+          throw rentalError;
+        }
         
-        console.log('🚢 Mise à jour statut bateau...');
-        await updateBoatStatusMutation.mutateAsync({ 
-          boatId: boat.id, 
-          status: (overallStatus === 'ok' ? 'available' : 'maintenance') as 'available' | 'rented' | 'maintenance' | 'out_of_service'
-        });
-        console.log('✅ Statut bateau mis à jour');
+        console.log('🚢 [DEBUG] Mise à jour statut bateau...');
+        try {
+          await updateBoatStatusMutation.mutateAsync({ 
+            boatId: boat.id, 
+            status: (overallStatus === 'ok' ? 'available' : 'maintenance') as 'available' | 'rented' | 'maintenance' | 'out_of_service'
+          });
+          console.log('✅ [DEBUG] Statut bateau mis à jour');
+        } catch (boatError) {
+          console.error('❌ [DEBUG] Erreur mise à jour bateau:', boatError);
+          throw boatError;
+        }
         
         toast({
           title: "Check-out terminé",
