@@ -115,7 +115,7 @@ export function SchedulingRulesManager({ isEnabled }: SchedulingRulesManagerProp
 
     return (
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="name">Nom de la règle</Label>
             <Input
@@ -137,7 +137,7 @@ export function SchedulingRulesManager({ isEnabled }: SchedulingRulesManagerProp
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="taskType">Type de tâche</Label>
             <Select
@@ -175,7 +175,7 @@ export function SchedulingRulesManager({ isEnabled }: SchedulingRulesManagerProp
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="intervalValue">Intervalle</Label>
             <Input
