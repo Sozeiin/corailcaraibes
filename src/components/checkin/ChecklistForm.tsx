@@ -95,11 +95,38 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   // Create rental mutation
   const createRentalMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase
-        .from('boat_rentals')
-        .insert([data]);
+      console.log('🏗️ [DEBUG] Création rental avec données:', data);
       
-      if (error) throw error;
+      // Validation des données requises
+      if (!data.boat_id || !data.customer_name) {
+        throw new Error('Données obligatoires manquantes pour la location');
+      }
+
+      const { data: rental, error } = await supabase
+        .from('boat_rentals')
+        .insert([{
+          boat_id: data.boat_id,
+          customer_name: data.customer_name,
+          customer_email: data.customer_email || null,
+          customer_phone: data.customer_phone || null,
+          start_date: data.start_date || new Date().toISOString().split('T')[0],
+          end_date: data.end_date || null,
+          total_amount: data.total_amount || 0,
+          status: data.status || 'active',
+          notes: data.notes || null,
+          base_id: boat.base_id,
+          signature_url: data.signature_url || null,
+          signature_date: data.signature_date || null
+        }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ [DEBUG] Erreur création rental:', error);
+        throw error;
+      }
+      console.log('✅ [DEBUG] Rental créé:', rental);
+      return rental;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
@@ -110,12 +137,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   // Update boat status mutation
   const updateBoatStatusMutation = useMutation({
     mutationFn: async ({ boatId, status }: { boatId: string, status: 'available' | 'rented' | 'maintenance' | 'out_of_service' }) => {
+      console.log('🚢 [DEBUG] Mise à jour statut bateau:', boatId, status);
+      
       const { error } = await supabase
         .from('boats')
-        .update({ status })
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', boatId);
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [DEBUG] Erreur mise à jour bateau:', error);
+        throw error;
+      }
+      console.log('✅ [DEBUG] Statut bateau mis à jour');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
@@ -126,12 +162,28 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   // Update rental status mutation
   const updateRentalMutation = useMutation({
     mutationFn: async ({ rentalId, status }: { rentalId: string, status: string }) => {
-      const { error } = await supabase
-        .from('boat_rentals')
-        .update({ status })
-        .eq('id', rentalId);
+      console.log('📋 [DEBUG] Mise à jour statut rental:', rentalId, status);
       
-      if (error) throw error;
+      if (!rentalId) {
+        throw new Error('ID de location manquant');
+      }
+
+      const { data, error } = await supabase
+        .from('boat_rentals')
+        .update({ 
+          status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', rentalId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ [DEBUG] Erreur mise à jour rental:', error);
+        throw error;
+      }
+      console.log('✅ [DEBUG] Rental mis à jour:', data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['active-rentals'] });
@@ -464,6 +516,25 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           title: "Check-out terminé",
           description: `Check-out réalisé pour ${boat.name}. ${overallStatus === 'ok' ? 'Le bateau est de nouveau disponible.' : 'Le bateau nécessite une maintenance.'}`,
         });
+      }
+
+      // Envoi email (optionnel, ne doit pas bloquer)
+      if (sendEmailReport && customerEmail && checklist?.id) {
+        console.log('📧 [DEBUG] Envoi email rapport...');
+        try {
+          await sendEmailMutation.mutateAsync({
+            checklistId: checklist.id,
+            email: customerEmail
+          });
+          console.log('✅ [DEBUG] Email envoyé avec succès');
+        } catch (emailError) {
+          console.error('❌ [DEBUG] Erreur envoi email (non bloquant):', emailError);
+          toast({
+            title: "Avertissement",
+            description: "Le rapport n'a pas pu être envoyé par email, mais l'enregistrement est terminé.",
+            variant: "destructive"
+          });
+        }
       }
 
       console.log('🎉 Finalisation réussie !');
