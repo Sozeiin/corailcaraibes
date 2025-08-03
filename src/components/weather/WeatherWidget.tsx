@@ -31,7 +31,8 @@ const WeatherWidget: React.FC = () => {
   const baseLocations = {
     '550e8400-e29b-41d4-a716-446655440001': 'Le Marin, Martinique',
     '550e8400-e29b-41d4-a716-446655440002': 'Pointe-à-Pitre, Guadeloupe',
-    // Default for Metropolitan base and others
+    '1491c828-a935-491b-87bd-c402fc4cebc1': 'Paris, France (Métropole)',
+    // Default for unknown bases
     default: 'Paris, France'
   };
 
@@ -54,10 +55,14 @@ const WeatherWidget: React.FC = () => {
     try {
       // Use base-specific location based on user's base
       const baseId = user?.baseId;
+      console.log('WeatherWidget: Current user baseId:', baseId);
+      console.log('WeatherWidget: Available base locations:', baseLocations);
+      
       const expectedLocation = baseId && baseLocations[baseId] 
         ? baseLocations[baseId] 
         : baseLocations.default;
       
+      console.log('WeatherWidget: Expected location:', expectedLocation);
       setLocation(expectedLocation);
       await fetchWeatherByBaseId(baseId);
     } catch (error) {

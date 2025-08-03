@@ -16,6 +16,8 @@ serve(async (req) => {
 
   try {
     const { lat, lon, baseId } = await req.json();
+    
+    console.log('get-weather function: Received baseId:', baseId);
 
     // Base-specific location configurations
     const baseLocations = {
@@ -29,7 +31,12 @@ serve(async (req) => {
         lon: -61.5320,
         displayName: 'Pointe-à-Pitre, Guadeloupe'
       },
-      // Default for Metropolitan base and others
+      '1491c828-a935-491b-87bd-c402fc4cebc1': {
+        lat: 48.8566,
+        lon: 2.3522,
+        displayName: 'Paris, France (Métropole)'
+      },
+      // Default for unknown bases
       default: {
         lat: 48.8566,
         lon: 2.3522,
@@ -42,15 +49,15 @@ serve(async (req) => {
     let finalLon = lon;
     let locationDisplayName = null;
 
-    if (baseId && baseLocations[baseId]) {
-      finalLat = baseLocations[baseId].lat;
-      finalLon = baseLocations[baseId].lon;
-      locationDisplayName = baseLocations[baseId].displayName;
-    } else if (baseId) {
-      // Use default location for unknown baseIds
-      finalLat = baseLocations.default.lat;
-      finalLon = baseLocations.default.lon;
-      locationDisplayName = baseLocations.default.displayName;
+    if (baseId) {
+      console.log('get-weather function: Looking up location for baseId:', baseId);
+      const locationConfig = baseLocations[baseId] || baseLocations.default;
+      finalLat = locationConfig.lat;
+      finalLon = locationConfig.lon;
+      locationDisplayName = locationConfig.displayName;
+      console.log('get-weather function: Selected location:', locationDisplayName, 'at coordinates:', finalLat, finalLon);
+    } else {
+      console.log('get-weather function: No baseId provided, using coordinates:', lat, lon);
     }
 
     if (!openWeatherApiKey) {
