@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface WeatherData {
+interface WeatherWidgetData {
   location: string;
   temperature: number;
   condition: string;
@@ -21,7 +21,7 @@ interface WeatherData {
 }
 
 const WeatherWidget: React.FC = () => {
-  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [weather, setWeather] = useState<WeatherWidgetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<string>('');
   const { toast } = useToast();
