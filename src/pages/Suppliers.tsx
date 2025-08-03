@@ -12,6 +12,8 @@ import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
 import { SupplierTable } from '@/components/suppliers/SupplierTable';
 import { SupplierFilters } from '@/components/suppliers/SupplierFilters';
 import { Supplier } from '@/types';
+import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Suppliers() {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ export default function Suppliers() {
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const isMobile = useIsMobile();
 
   const { data: suppliers = [], isLoading, error } = useQuery({
     queryKey: ['suppliers', user?.id, user?.baseId],
@@ -119,6 +122,22 @@ export default function Suppliers() {
   // Get unique categories for filter
   const categories = Array.from(new Set(suppliers.map(s => s.category).filter(Boolean)));
 
+  const mobileColumns = [
+    { key: 'name', label: 'Nom' },
+    {
+      key: 'category',
+      label: 'Catégorie',
+      render: (value: string) =>
+        value ? (
+          <ResponsiveBadge variant="secondary">{value}</ResponsiveBadge>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+    },
+    { key: 'email', label: 'Email', render: (value: string) => value || '-' },
+    { key: 'phone', label: 'Téléphone', render: (value: string) => value || '-' },
+  ];
+
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
 
   if (isLoading) {
@@ -194,12 +213,22 @@ export default function Suppliers() {
           />
         </CardHeader>
 
-        <SupplierTable
-          suppliers={filteredSuppliers}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          canManage={canManage}
-        />
+        <div className="p-4">
+          {isMobile ? (
+            <MobileTable
+              data={filteredSuppliers}
+              columns={mobileColumns}
+              onRowClick={canManage ? handleEdit : undefined}
+            />
+          ) : (
+            <SupplierTable
+              suppliers={filteredSuppliers}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              canManage={canManage}
+            />
+          )}
+        </div>
       </Card>
 
       <SupplierDialog
