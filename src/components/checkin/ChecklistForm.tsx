@@ -341,8 +341,12 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           // Create rental first, then update boat status
           const rentalDataWithSignature = {
             ...rentalData,
+            // Convertir les dates datetime-local en format date
+            start_date: rentalData.start_date ? new Date(rentalData.start_date).toISOString().split('T')[0] : null,
+            end_date: rentalData.end_date ? new Date(rentalData.end_date).toISOString().split('T')[0] : null,
             signature_url: customerSignatureUrl || null,
-            signature_date: customerSignature ? new Date().toISOString() : null
+            signature_date: customerSignature ? new Date().toISOString() : null,
+            status: 'confirmed'
           };
           console.log('🚢 [DEBUG] Données location:', rentalDataWithSignature);
           await createRentalMutation.mutateAsync(rentalDataWithSignature);
