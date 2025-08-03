@@ -140,8 +140,10 @@ const WeatherWidget: React.FC = () => {
   };
 
   useEffect(() => {
+    console.log('WeatherWidget: useEffect triggered');
+    console.log('WeatherWidget: Current user object:', user);
     getLocationAndWeather();
-  }, []);
+  }, [user]);
 
   if (loading) {
     return (
