@@ -255,17 +255,67 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       console.log('🚀 [DEBUG] Items checklist:', checklistItems);
       console.log('🚀 [DEBUG] Status général:', overallStatus);
       
-      // Test simple : créer seulement la checklist sans signatures
+      let technicianSignatureUrl = '';
+      let customerSignatureUrl = '';
+
+      // Upload signatures - technicien obligatoire, client optionnel
+      console.log('📸 [DEBUG] Upload des signatures...');
+      
+      // Signature technicien (obligatoire)
+      if (technicianSignature) {
+        console.log('📸 [DEBUG] Upload signature technicien...');
+        try {
+          const techSignatureData = await uploadSignatureMutation.mutateAsync({
+            signature: technicianSignature,
+            fileName: `technician-${Date.now()}.png`
+          });
+          technicianSignatureUrl = techSignatureData.path;
+          console.log('✅ [DEBUG] Signature technicien uploadée:', technicianSignatureUrl);
+        } catch (sigError) {
+          console.error('❌ [DEBUG] Erreur upload signature technicien:', sigError);
+          toast({
+            title: "Erreur upload signature",
+            description: `Impossible d'uploader la signature du technicien: ${sigError instanceof Error ? sigError.message : 'Erreur inconnue'}`,
+            variant: "destructive"
+          });
+          throw sigError;
+        }
+      }
+
+      // Signature client (optionnelle)
+      if (customerSignature) {
+        console.log('📸 [DEBUG] Upload signature client...');
+        try {
+          const custSignatureData = await uploadSignatureMutation.mutateAsync({
+            signature: customerSignature,
+            fileName: `customer-${Date.now()}.png`
+          });
+          customerSignatureUrl = custSignatureData.path;
+          console.log('✅ [DEBUG] Signature client uploadée:', customerSignatureUrl);
+        } catch (sigError) {
+          console.error('❌ [DEBUG] Erreur upload signature client:', sigError);
+          // Pour la signature client, on continue même si ça échoue
+          console.log('⚠️ [DEBUG] Continuation sans signature client');
+          toast({
+            title: "Avertissement",
+            description: "La signature du client n'a pas pu être sauvegardée, mais l'enregistrement continue.",
+            variant: "destructive"
+          });
+          customerSignatureUrl = '';
+        }
+      }
+
+      // Create checklist
       console.log('📋 [DEBUG] Création de la checklist...');
       const checklistData = {
         boat_id: boat.id,
         technician_id: user?.id,
         checklist_date: new Date().toISOString().split('T')[0],
         overall_status: overallStatus,
-        signature_url: null,
-        signature_date: null,
-        customer_signature_url: null,
-        customer_signature_date: null
+        signature_url: technicianSignatureUrl || null,
+        signature_date: technicianSignature ? new Date().toISOString() : null,
+        customer_signature_url: customerSignatureUrl || null,
+        customer_signature_date: customerSignature && customerSignatureUrl ? new Date().toISOString() : null
       };
       console.log('📋 [DEBUG] Données checklist:', checklistData);
 
@@ -305,17 +355,17 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('🚢 [DEBUG] Création de la location...');
         try {
           // Create rental first, then update boat status
-          const rentalDataWithoutSignature = {
+          const rentalDataWithSignature = {
             ...rentalData,
             // Convertir les dates datetime-local en format date
             start_date: rentalData.start_date ? new Date(rentalData.start_date).toISOString().split('T')[0] : null,
             end_date: rentalData.end_date ? new Date(rentalData.end_date).toISOString().split('T')[0] : null,
-            signature_url: null,
-            signature_date: null,
+            signature_url: customerSignatureUrl || null,
+            signature_date: customerSignature && customerSignatureUrl ? new Date().toISOString() : null,
             status: 'confirmed'
           };
-          console.log('🚢 [DEBUG] Données location:', rentalDataWithoutSignature);
-          await createRentalMutation.mutateAsync(rentalDataWithoutSignature);
+          console.log('🚢 [DEBUG] Données location:', rentalDataWithSignature);
+          await createRentalMutation.mutateAsync(rentalDataWithSignature);
           console.log('✅ [DEBUG] Location créée');
         } catch (rentalError) {
           console.error('❌ [DEBUG] Erreur création location:', rentalError);
