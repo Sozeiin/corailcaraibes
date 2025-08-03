@@ -160,28 +160,57 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   // Create checklist mutation
   const createChecklistMutation = useMutation({
     mutationFn: async (checklistData: any) => {
+      console.log('📋 [DEBUG] Début création checklist mutation:', checklistData);
+      
+      // Validation des données obligatoires
+      if (!checklistData.boat_id || !checklistData.technician_id) {
+        throw new Error('Données manquantes: boat_id ou technician_id');
+      }
+
       // Create the checklist
+      console.log('📋 [DEBUG] Insertion checklist...');
       const { data: checklist, error: checklistError } = await supabase
         .from('boat_checklists')
         .insert([checklistData])
         .select()
         .single();
 
-      if (checklistError) throw checklistError;
+      if (checklistError) {
+        console.error('❌ [DEBUG] Erreur création checklist:', checklistError);
+        throw checklistError;
+      }
+
+      console.log('✅ [DEBUG] Checklist créée:', checklist);
+
+      // Validation des items avant insertion
+      if (!checklistItems || checklistItems.length === 0) {
+        console.log('⚠️ [DEBUG] Aucun item de checklist à insérer');
+        return checklist;
+      }
 
       // Create checklist items
-      const itemsToInsert = checklistItems.map(item => ({
-        checklist_id: checklist.id,
-        item_id: item.id,
-        status: item.status,
-        notes: item.notes
-      }));
+      const itemsToInsert = checklistItems
+        .filter(item => item.id && item.status) // Filtrer les items valides
+        .map(item => ({
+          checklist_id: checklist.id,
+          item_id: item.id,
+          status: item.status,
+          notes: item.notes || ''
+        }));
 
-      const { error: itemsError } = await supabase
-        .from('boat_checklist_items')
-        .insert(itemsToInsert);
+      console.log('📋 [DEBUG] Items à insérer:', itemsToInsert.length, itemsToInsert);
 
-      if (itemsError) throw itemsError;
+      if (itemsToInsert.length > 0) {
+        const { error: itemsError } = await supabase
+          .from('boat_checklist_items')
+          .insert(itemsToInsert);
+
+        if (itemsError) {
+          console.error('❌ [DEBUG] Erreur insertion items checklist:', itemsError);
+          throw itemsError;
+        }
+        console.log('✅ [DEBUG] Items checklist insérés');
+      }
 
       return checklist;
     }
