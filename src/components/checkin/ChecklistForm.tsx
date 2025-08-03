@@ -164,30 +164,40 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     try {
       setIsProcessing(true);
       console.log('🚀 [DEBUG] Début de la finalisation');
+      console.log('🚀 [DEBUG] Données utilisateur:', user);
+      console.log('🚀 [DEBUG] Données bateau:', boat);
+      console.log('🚀 [DEBUG] Données rental:', rentalData);
 
       // Upload signatures
       let technicianSignatureUrl = '';
       let customerSignatureUrl = '';
 
+      console.log('📷 [DEBUG] Upload signatures - début');
       if (technicianSignature) {
+        console.log('📷 [DEBUG] Upload signature technicien...');
         const techResult = await uploadSignatureMutation.mutateAsync({
           dataURL: technicianSignature,
           fileName: `signature-tech-${Date.now()}.png`,
         });
         technicianSignatureUrl = techResult.publicUrl;
+        console.log('✅ [DEBUG] Signature technicien uploadée:', technicianSignatureUrl);
       }
 
       if (customerSignature) {
+        console.log('📷 [DEBUG] Upload signature client...');
         const custResult = await uploadSignatureMutation.mutateAsync({
           dataURL: customerSignature,
           fileName: `signature-client-${Date.now()}.png`,
         });
         customerSignatureUrl = custResult.publicUrl;
+        console.log('✅ [DEBUG] Signature client uploadée:', customerSignatureUrl);
       }
 
       // Create or update rental
+      console.log('🏠 [DEBUG] Création/mise à jour rental - début');
       let rental = rentalData;
       if (type === 'checkin' && !rentalData.id) {
+        console.log('🏠 [DEBUG] Création nouvelle location...');
         rental = await createRentalMutation.mutateAsync({
           boat_id: rentalData.boatId || boat.id,
           customer_name: rentalData.customerName,
@@ -200,6 +210,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           notes: rentalData.notes,
           base_id: boat.base_id,
         });
+        console.log('✅ [DEBUG] Location créée:', rental);
       }
 
       // Update boat status
