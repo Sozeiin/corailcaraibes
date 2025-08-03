@@ -83,16 +83,16 @@ export default function Purchasing() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2 sm:space-y-6">
-        <div className="overflow-x-auto">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 min-w-max">
+        <div className="overflow-x-auto pb-1">
+          <TabsList className="grid w-full grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1 min-w-max">
             {tabs.map((tab) => (
               <TabsTrigger 
                 key={tab.id} 
                 value={tab.id} 
-                className="flex flex-col items-center gap-1 p-2 sm:p-3 text-xs min-h-[50px] sm:min-h-auto whitespace-nowrap"
+                className="flex flex-col items-center justify-center gap-0.5 sm:gap-1 p-1.5 xs:p-2 sm:p-3 text-xs min-h-[60px] xs:min-h-[65px] sm:min-h-auto whitespace-nowrap transition-all duration-200 hover:scale-105"
               >
-                <tab.icon className="h-3 w-3 sm:h-5 sm:w-5 flex-shrink-0" />
-                <span className="text-[8px] xs:text-[9px] sm:text-xs text-center leading-tight">{tab.label}</span>
+                <tab.icon className="h-4 w-4 xs:h-3.5 xs:w-3.5 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="text-[9px] xs:text-[10px] sm:text-xs text-center leading-tight font-medium">{tab.label}</span>
               </TabsTrigger>
             ))}
           </TabsList>
