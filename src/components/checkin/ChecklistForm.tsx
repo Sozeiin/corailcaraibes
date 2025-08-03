@@ -690,8 +690,13 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         <div className="ml-auto">
           {currentStep === 'email' ? (
             <Button
-              onClick={handleComplete}
-              disabled={sendEmailReport && !customerEmail}
+              onClick={() => {
+                console.log('🔥 [DEBUG] Bouton Finaliser cliqué!');
+                console.log('🔥 [DEBUG] sendEmailReport:', sendEmailReport);
+                console.log('🔥 [DEBUG] customerEmail:', customerEmail);
+                handleComplete();
+              }}
+              disabled={false}
               className="bg-marine-500 hover:bg-marine-600"
             >
               <Save className="h-4 w-4 mr-2" />
