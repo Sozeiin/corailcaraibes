@@ -9,9 +9,9 @@ import { ChevronDown, CheckCircle, X, AlertTriangle, Star } from 'lucide-react';
 interface ChecklistItem {
   id: string;
   name: string;
-  is_required: boolean;
+  isRequired: boolean;
   status: 'ok' | 'needs_repair' | 'not_checked';
-  notes: string;
+  notes?: string;
 }
 
 interface ChecklistCategoryProps {
@@ -105,11 +105,11 @@ export function ChecklistCategory({
               <div key={item.id} className="border rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 flex-1">
-                    {item.is_required && (
+                    {item.isRequired && (
                       <Star className="h-3 w-3 text-orange-500" />
                     )}
                     <span className="font-medium text-sm">{item.name}</span>
-                    {item.is_required && (
+                    {item.isRequired && (
                       <Badge variant="outline" className="text-xs">
                         Obligatoire
                       </Badge>
@@ -146,7 +146,7 @@ export function ChecklistCategory({
                 {expandedItems.has(item.id) && (
                   <div className="mt-2">
                     <Textarea
-                      value={item.notes}
+                      value={item.notes || ''}
                       onChange={(e) => onItemNotesChange(item.id, e.target.value)}
                       placeholder="Notes sur cet élément..."
                       rows={2}
