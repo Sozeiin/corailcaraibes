@@ -798,6 +798,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          intervention_type: string | null
           scheduled_date: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
           technician_id: string | null
@@ -810,6 +811,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          intervention_type?: string | null
           scheduled_date?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null
@@ -822,6 +824,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          intervention_type?: string | null
           scheduled_date?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null

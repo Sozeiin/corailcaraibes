@@ -146,6 +146,7 @@ export interface Intervention {
   tasks: MaintenanceTask[];
   baseId: string;
   createdAt: string;
+  intervention_type?: string;
   boat?: {
     name: string;
     model: string;

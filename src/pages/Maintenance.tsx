@@ -37,7 +37,7 @@ export default function Maintenance() {
           </TabsTrigger>
           <TabsTrigger value="schedule" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Planning techniciens</span>
+            <span className="hidden sm:inline">Planning avec météo</span>
             <span className="sm:hidden">Planning</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">

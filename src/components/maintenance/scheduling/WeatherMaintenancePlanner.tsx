@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { Calendar, User, Clock, CloudRain, AlertTriangle, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { CalendarDays, User, CloudRain, RefreshCw, AlertTriangle } from 'lucide-react';
+import { format, startOfWeek, addDays, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import WeatherWidget from '@/components/weather/WeatherWidget';
+import { DroppableDay } from './DroppableDay';
+import { DraggableIntervention } from './DraggableIntervention';
+import { InterventionTypeLegend } from './InterventionTypeLegend';
+import { useToast } from '@/hooks/use-toast';
 import type { WeatherData } from '@/types/weather';
 
 interface WeatherEvaluation {
@@ -30,10 +34,30 @@ interface WeatherEvaluation {
   reason?: string;
 }
 
+interface Intervention {
+  id: string;
+  title: string;
+  description?: string;
+  scheduled_date: string;
+  status: string;
+  intervention_type: string;
+  boat: {
+    name: string;
+    base_id: string;
+  };
+  technician?: {
+    name: string;
+  };
+}
+
 export function WeatherMaintenancePlanner() {
   const { user } = useAuth();
-  const [selectedIntervention, setSelectedIntervention] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedIntervention, setDraggedIntervention] = useState<Intervention | null>(null);
 
+  // Fetch weekly schedule
   const { data: weeklySchedule = [], isLoading, refetch } = useQuery({
     queryKey: ['weather-enhanced-schedule', user?.role, user?.baseId],
     queryFn: async () => {
@@ -44,7 +68,7 @@ export function WeatherMaintenancePlanner() {
         .from('interventions')
         .select(`
           *,
-          boats(name, model, base_id),
+          boats!inner(name, model, base_id),
           profiles(name)
         `)
         .gte('scheduled_date', startDate.toISOString().split('T')[0])
@@ -56,11 +80,16 @@ export function WeatherMaintenancePlanner() {
         throw error;
       }
       
-      return data;
+      return data.map(intervention => ({
+        ...intervention,
+        boat: intervention.boats,
+        technician: intervention.profiles
+      }));
     },
     enabled: !!user
   });
 
+  // Fetch technician statistics
   const { data: technicianStats = [], isLoading: statsLoading } = useQuery({
     queryKey: ['technician-stats', user?.role, user?.baseId],
     queryFn: async () => {
@@ -87,17 +116,18 @@ export function WeatherMaintenancePlanner() {
     enabled: !!user
   });
 
+  // Fetch weather evaluations
   const { data: weatherEvaluations = {}, isLoading: weatherLoading } = useQuery({
     queryKey: ['weather-evaluations', weeklySchedule],
     queryFn: async () => {
       const evaluations: Record<string, WeatherEvaluation> = {};
       
       for (const intervention of weeklySchedule) {
-        if (intervention.scheduled_date && intervention.boats?.base_id) {
+        if (intervention.scheduled_date && intervention.boat?.base_id) {
           try {
             const { data, error } = await supabase.rpc('evaluate_weather_for_maintenance', {
               maintenance_date: intervention.scheduled_date,
-              base_id_param: intervention.boats.base_id
+              base_id_param: intervention.boat.base_id
             });
 
             if (!error && data) {
@@ -114,60 +144,85 @@ export function WeatherMaintenancePlanner() {
     enabled: weeklySchedule.length > 0
   });
 
-  const rescheduleIntervention = async (interventionId: string, newDate: string) => {
-    try {
+  // Mutation to update intervention date
+  const updateInterventionMutation = useMutation({
+    mutationFn: async ({ interventionId, newDate }: { interventionId: string; newDate: string }) => {
       const { error } = await supabase
         .from('interventions')
         .update({ scheduled_date: newDate })
         .eq('id', interventionId);
 
       if (error) throw error;
-      
-      refetch();
-      setSelectedIntervention(null);
-    } catch (error) {
-      console.error('Error rescheduling intervention:', error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weather-enhanced-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['weather-evaluations'] });
+      toast({
+        title: "Intervention reprogrammée",
+        description: "L'intervention a été déplacée avec succès.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating intervention:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de déplacer l'intervention.",
+        variant: "destructive",
+      });
     }
-  };
+  });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-800';
-      case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
+  // Real-time synchronization
+  useEffect(() => {
+    const channel = supabase
+      .channel('interventions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'interventions'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['weather-enhanced-schedule'] });
+        }
+      )
+      .subscribe();
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'scheduled':
-        return 'Programmée';
-      case 'in_progress':
-        return 'En cours';
-      case 'completed':
-        return 'Terminée';
-      case 'cancelled':
-        return 'Annulée';
-      default:
-        return status;
-    }
-  };
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
-  const getWeatherAlertLevel = (evaluation: WeatherEvaluation) => {
-    if (!evaluation || evaluation.suitable) return null;
+  // Drag and drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    setActiveId(active.id as string);
     
-    const hasHighRisk = evaluation.violated_rules?.some(rule => 
-      rule.reason.includes('wind') || rule.reason.includes('precipitation')
-    );
+    const intervention = weeklySchedule.find(i => i.id === active.id);
+    setDraggedIntervention(intervention || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     
-    return hasHighRisk ? 'critical' : 'warning';
+    if (!over || !active.id) {
+      setActiveId(null);
+      setDraggedIntervention(null);
+      return;
+    }
+
+    const interventionId = active.id as string;
+    const newDate = over.id as string;
+    
+    // Check if the date is different
+    const intervention = weeklySchedule.find(i => i.id === interventionId);
+    if (intervention && intervention.scheduled_date !== newDate) {
+      updateInterventionMutation.mutate({ interventionId, newDate });
+    }
+    
+    setActiveId(null);
+    setDraggedIntervention(null);
   };
 
   // Group interventions by date
@@ -178,7 +233,7 @@ export function WeatherMaintenancePlanner() {
     }
     acc[date].push(intervention);
     return acc;
-  }, {} as Record<string, any[]>);
+  }, {} as Record<string, Intervention[]>);
 
   // Generate week days
   const weekDays = Array.from({ length: 7 }, (_, i) => {
@@ -186,15 +241,28 @@ export function WeatherMaintenancePlanner() {
     return {
       date,
       dateString: date.toISOString().split('T')[0],
-      dayName: format(date, 'EEEE', { locale: fr }),
-      dayNumber: format(date, 'd', { locale: fr })
     };
   });
+
+  // Get day weather evaluation (aggregate from interventions)
+  const getDayWeatherEvaluation = (dateString: string) => {
+    const dayInterventions = groupedByDate[dateString] || [];
+    if (dayInterventions.length === 0) return undefined;
+    
+    // Return the most severe weather evaluation for the day
+    const evaluations = dayInterventions
+      .map(intervention => weatherEvaluations[intervention.id])
+      .filter(Boolean);
+    
+    if (evaluations.length === 0) return undefined;
+    
+    return evaluations.find(evaluation => !evaluation.suitable) || evaluations[0];
+  };
 
   if (isLoading || statsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -202,9 +270,9 @@ export function WeatherMaintenancePlanner() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Planning avec météo</h2>
-        <p className="text-gray-600 mt-1">
-          Planification des interventions intégrée aux conditions météorologiques
+        <h2 className="text-2xl font-bold">Planning avec météo</h2>
+        <p className="text-muted-foreground mt-1">
+          Planification intelligente des interventions avec intégration météorologique et glisser-déposer
         </p>
       </div>
 
@@ -221,152 +289,139 @@ export function WeatherMaintenancePlanner() {
         </CardContent>
       </Card>
 
-      {/* Statistiques des techniciens */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {technicianStats.map((tech) => {
-          const activeInterventions = tech.interventions?.filter(
-            (i: any) => i.status === 'in_progress'
-          ).length || 0;
-          const scheduledInterventions = tech.interventions?.filter(
-            (i: any) => i.status === 'scheduled'
-          ).length || 0;
+      {/* Legend and Stats Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Intervention Type Legend */}
+        <div className="lg:col-span-1">
+          <InterventionTypeLegend />
+        </div>
 
-          return (
-            <Card key={tech.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  {tech.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">En cours:</span>
-                    <Badge variant={activeInterventions > 0 ? "default" : "secondary"}>
-                      {activeInterventions}
-                    </Badge>
+        {/* Technician Statistics */}
+        <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {technicianStats.map((tech) => {
+            const activeInterventions = tech.interventions?.filter(
+              (i: any) => i.status === 'in_progress'
+            ).length || 0;
+            const scheduledInterventions = tech.interventions?.filter(
+              (i: any) => i.status === 'scheduled'
+            ).length || 0;
+
+            return (
+              <Card key={tech.id}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    {tech.name}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">En cours:</span>
+                      <Badge variant={activeInterventions > 0 ? "default" : "secondary"}>
+                        {activeInterventions}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Programmées:</span>
+                      <Badge variant="outline">
+                        {scheduledInterventions}
+                      </Badge>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Programmées:</span>
-                    <Badge variant="outline">
-                      {scheduledInterventions}
-                    </Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Planning hebdomadaire avec météo */}
+      {/* Weekly Schedule with Drag & Drop */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Planning de la semaine avec alertes météo
+            <CalendarDays className="h-5 w-5" />
+            Planning de la semaine avec glisser-déposer
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-            {weekDays.map((day) => {
-              const dayInterventions = groupedByDate[day.dateString] || [];
-              
-              return (
-                <div key={day.dateString} className="border rounded-lg p-3">
-                  <div className="text-center mb-3">
-                    <div className="font-medium text-sm text-gray-900">
-                      {day.dayName}
-                    </div>
-                    <div className="text-2xl font-bold text-marine-600">
-                      {day.dayNumber}
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    {dayInterventions.length === 0 ? (
-                      <div className="text-xs text-gray-400 text-center py-2">
-                        Aucune intervention
-                      </div>
-                    ) : (
-                      dayInterventions.map((intervention) => {
-                        const evaluation = weatherEvaluations[intervention.id];
-                        const alertLevel = getWeatherAlertLevel(evaluation);
-                        
-                        return (
-                          <div
-                            key={intervention.id}
-                            className={`relative rounded p-2 text-xs border-l-4 ${
-                              alertLevel === 'critical' 
-                                ? 'bg-red-50 border-l-red-500' 
-                                : alertLevel === 'warning'
-                                ? 'bg-yellow-50 border-l-yellow-500'
-                                : 'bg-gray-50 border-l-gray-300'
-                            }`}
-                          >
-                            <div className="font-medium truncate">
-                              {intervention.title}
-                            </div>
-                            <div className="text-gray-600 truncate">
-                              {intervention.boats?.name}
-                            </div>
-                            
-                            <div className="mt-1 flex justify-between items-center">
-                              <Badge 
-                                className={`text-xs ${getStatusColor(intervention.status)}`}
-                              >
-                                {getStatusLabel(intervention.status)}
-                              </Badge>
-                              
-                              {alertLevel && (
-                                <AlertTriangle 
-                                  className={`h-3 w-3 ${
-                                    alertLevel === 'critical' ? 'text-red-500' : 'text-yellow-500'
-                                  }`}
-                                />
-                              )}
-                            </div>
-
-                            {evaluation && !evaluation.suitable && (
-                              <div className="mt-2">
-                                <Alert className="py-1 px-2">
-                                  <AlertDescription className="text-xs">
-                                    {evaluation.violated_rules?.[0]?.reason === 'wind_too_strong' && 'Vent fort prévu'}
-                                    {evaluation.violated_rules?.[0]?.reason === 'precipitation_too_high' && 'Fortes précipitations'}
-                                    {evaluation.violated_rules?.[0]?.reason === 'temperature_too_low' && 'Température trop basse'}
-                                    {evaluation.violated_rules?.[0]?.reason === 'temperature_too_high' && 'Température trop élevée'}
-                                  </AlertDescription>
-                                </Alert>
-                                
-                                {evaluation.violated_rules?.map((rule) => (
-                                  <Button
-                                    key={rule.rule_name}
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full mt-1 text-xs h-6"
-                                    onClick={() => {
-                                      const newDate = addDays(new Date(intervention.scheduled_date), rule.adjustment_days);
-                                      rescheduleIntervention(intervention.id, newDate.toISOString().split('T')[0]);
-                                    }}
-                                  >
-                                    <RefreshCw className="h-3 w-3 mr-1" />
-                                    Reporter de {rule.adjustment_days}j
-                                  </Button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+              {weekDays.map((day) => {
+                const dayInterventions = groupedByDate[day.dateString] || [];
+                const weatherEvaluation = getDayWeatherEvaluation(day.dateString);
+                
+                return (
+                  <DroppableDay
+                    key={day.dateString}
+                    date={day.date}
+                    interventions={dayInterventions}
+                    weatherEvaluation={weatherEvaluation}
+                  />
+                );
+              })}
+            </div>
+            
+            <DragOverlay>
+              {draggedIntervention ? (
+                <DraggableIntervention intervention={draggedIntervention} />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </CardContent>
       </Card>
+
+      {/* Weather Alerts Summary */}
+      {Object.entries(weatherEvaluations).some(([_, evaluation]) => !evaluation.suitable) && (
+        <Card className="border-orange-200 bg-orange-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-800">
+              <AlertTriangle className="h-5 w-5" />
+              Alertes météorologiques
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {Object.entries(weatherEvaluations)
+                .filter(([_, evaluation]) => !evaluation.suitable)
+                .map(([interventionId, evaluation]) => {
+                  const intervention = weeklySchedule.find(i => i.id === interventionId);
+                  if (!intervention) return null;
+                  
+                  return (
+                    <div key={interventionId} className="flex items-center justify-between p-3 bg-white rounded border">
+                      <div>
+                        <div className="font-medium">{intervention.title}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {intervention.boat.name} - {format(new Date(intervention.scheduled_date), 'EEEE d MMMM', { locale: fr })}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {evaluation.violated_rules?.map((rule) => (
+                          <Button
+                            key={rule.rule_name}
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const newDate = addDays(new Date(intervention.scheduled_date), rule.adjustment_days);
+                              updateInterventionMutation.mutate({
+                                interventionId: intervention.id,
+                                newDate: newDate.toISOString().split('T')[0]
+                              });
+                            }}
+                          >
+                            <RefreshCw className="h-4 w-4 mr-1" />
+                            Reporter de {rule.adjustment_days}j
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

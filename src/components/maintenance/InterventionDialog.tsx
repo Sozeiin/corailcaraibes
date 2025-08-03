@@ -46,6 +46,7 @@ interface InterventionFormData {
   status: string;
   scheduledDate: string;
   baseId: string;
+  interventionType: string;
 }
 
 export function InterventionDialog({ isOpen, onClose, intervention }: InterventionDialogProps) {
@@ -64,6 +65,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       status: 'scheduled',
       scheduledDate: '',
       baseId: '',
+      interventionType: 'maintenance',
     },
   });
 
@@ -152,6 +154,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         status: intervention.status,
         scheduledDate: intervention.scheduledDate.split('T')[0],
         baseId: intervention.baseId,
+        interventionType: (intervention as any).intervention_type || 'maintenance',
       });
       setInterventionParts(existingParts);
     } else {
@@ -163,6 +166,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         status: 'scheduled',
         scheduledDate: new Date().toISOString().split('T')[0],
         baseId: user?.baseId || '',
+        interventionType: 'maintenance',
       });
       setInterventionParts([]);
     }
@@ -188,6 +192,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         scheduled_date: data.scheduledDate,
         completed_date: data.status === 'completed' ? new Date().toISOString().split('T')[0] : null,
         base_id: data.baseId || null,
+        intervention_type: data.interventionType,
       };
 
       let interventionId: string;
@@ -384,7 +389,33 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="interventionType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type d'intervention</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Type d'intervention" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="preventive">Préventive</SelectItem>
+                        <SelectItem value="corrective">Corrective</SelectItem>
+                        <SelectItem value="emergency">Urgence</SelectItem>
+                        <SelectItem value="inspection">Inspection</SelectItem>
+                        <SelectItem value="repair">Réparation</SelectItem>
+                        <SelectItem value="maintenance">Maintenance</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="status"
