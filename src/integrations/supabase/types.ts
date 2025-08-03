@@ -165,8 +165,10 @@ export type Database = {
           boat_id: string | null
           checklist_date: string | null
           created_at: string | null
+          customer_signature: string | null
           customer_signature_date: string | null
           customer_signature_url: string | null
+          general_notes: string | null
           id: string
           overall_status:
             | Database["public"]["Enums"]["checklist_overall_status"]
@@ -174,13 +176,16 @@ export type Database = {
           signature_date: string | null
           signature_url: string | null
           technician_id: string | null
+          technician_signature: string | null
         }
         Insert: {
           boat_id?: string | null
           checklist_date?: string | null
           created_at?: string | null
+          customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
+          general_notes?: string | null
           id?: string
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
@@ -188,13 +193,16 @@ export type Database = {
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
+          technician_signature?: string | null
         }
         Update: {
           boat_id?: string | null
           checklist_date?: string | null
           created_at?: string | null
+          customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
+          general_notes?: string | null
           id?: string
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
@@ -202,6 +210,7 @@ export type Database = {
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
+          technician_signature?: string | null
         }
         Relationships: [
           {
