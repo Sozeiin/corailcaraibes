@@ -304,7 +304,7 @@ export default function Boats() {
       </Card>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardContent className="p-3 sm:p-4 text-center">
             <div className="text-xl sm:text-2xl font-bold text-green-600">{stats.available}</div>
