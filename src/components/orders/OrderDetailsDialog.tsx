@@ -252,7 +252,7 @@ export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialo
 
             <div className="space-y-6">
           {/* Informations générales */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
