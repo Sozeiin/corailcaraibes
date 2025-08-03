@@ -123,14 +123,14 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
 
   useEffect(() => {
     const rentalData = type === 'checkin' ? {
-      boat_id: selectedBoatId,
-      customer_name: customerName.sanitizedValue,
-      customer_email: customerEmail.sanitizedValue,
-      customer_phone: customerPhone.sanitizedValue,
-      start_date: startDate,
-      end_date: endDate,
+      boatId: selectedBoatId,
+      customerName: customerName.sanitizedValue,
+      customerEmail: customerEmail.sanitizedValue,
+      customerPhone: customerPhone.sanitizedValue,
+      startDate: startDate,
+      endDate: endDate,
       notes: notes,
-      base_id: user?.baseId
+      baseId: user?.baseId
     } : selectedRental;
 
     // Pour le check-in, on vérifie juste qu'on a les données de base

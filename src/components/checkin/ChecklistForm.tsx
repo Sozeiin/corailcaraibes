@@ -205,7 +205,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           customer_phone: rentalData.customerPhone,
           start_date: rentalData.startDate,
           end_date: rentalData.endDate,
-          total_amount: rentalData.totalAmount,
+          total_amount: rentalData.totalAmount || 0,
           status: 'confirmed',
           notes: rentalData.notes,
           base_id: boat.base_id,
