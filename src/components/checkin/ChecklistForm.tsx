@@ -247,34 +247,51 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
   const handleComplete = async () => {
     try {
-      console.log('🚀 Début de la finalisation du check-in/check-out');
+      console.log('🚀 [DEBUG] Début de la finalisation du check-in/check-out');
+      console.log('🚀 [DEBUG] Données du bateau:', boat);
+      console.log('🚀 [DEBUG] Données de location:', rentalData);
+      console.log('🚀 [DEBUG] Type:', type);
+      console.log('🚀 [DEBUG] User:', user);
+      console.log('🚀 [DEBUG] Items checklist:', checklistItems);
+      console.log('🚀 [DEBUG] Status général:', overallStatus);
+      
       let technicianSignatureUrl = '';
       let customerSignatureUrl = '';
 
       // Upload signatures
-      console.log('📸 Upload des signatures...');
+      console.log('📸 [DEBUG] Upload des signatures...');
       if (technicianSignature) {
-        console.log('📸 Upload signature technicien...');
-        const techSignatureData = await uploadSignatureMutation.mutateAsync({
-          signature: technicianSignature,
-          fileName: `technician-${Date.now()}.png`
-        });
-        technicianSignatureUrl = techSignatureData.path;
-        console.log('✅ Signature technicien uploadée:', technicianSignatureUrl);
+        console.log('📸 [DEBUG] Upload signature technicien...');
+        try {
+          const techSignatureData = await uploadSignatureMutation.mutateAsync({
+            signature: technicianSignature,
+            fileName: `technician-${Date.now()}.png`
+          });
+          technicianSignatureUrl = techSignatureData.path;
+          console.log('✅ [DEBUG] Signature technicien uploadée:', technicianSignatureUrl);
+        } catch (sigError) {
+          console.error('❌ [DEBUG] Erreur upload signature technicien:', sigError);
+          throw sigError;
+        }
       }
 
       if (customerSignature) {
-        console.log('📸 Upload signature client...');
-        const custSignatureData = await uploadSignatureMutation.mutateAsync({
-          signature: customerSignature,
-          fileName: `customer-${Date.now()}.png`
-        });
-        customerSignatureUrl = custSignatureData.path;
-        console.log('✅ Signature client uploadée:', customerSignatureUrl);
+        console.log('📸 [DEBUG] Upload signature client...');
+        try {
+          const custSignatureData = await uploadSignatureMutation.mutateAsync({
+            signature: customerSignature,
+            fileName: `customer-${Date.now()}.png`
+          });
+          customerSignatureUrl = custSignatureData.path;
+          console.log('✅ [DEBUG] Signature client uploadée:', customerSignatureUrl);
+        } catch (sigError) {
+          console.error('❌ [DEBUG] Erreur upload signature client:', sigError);
+          throw sigError;
+        }
       }
 
       // Create checklist
-      console.log('📋 Création de la checklist...');
+      console.log('📋 [DEBUG] Création de la checklist...');
       const checklistData = {
         boat_id: boat.id,
         technician_id: user?.id,
@@ -285,10 +302,16 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         customer_signature_url: customerSignatureUrl || null,
         customer_signature_date: customerSignature ? new Date().toISOString() : null
       };
-      console.log('📋 Données checklist:', checklistData);
+      console.log('📋 [DEBUG] Données checklist:', checklistData);
 
-      const checklist = await createChecklistMutation.mutateAsync(checklistData);
-      console.log('✅ Checklist créée:', checklist);
+      let checklist;
+      try {
+        checklist = await createChecklistMutation.mutateAsync(checklistData);
+        console.log('✅ [DEBUG] Checklist créée:', checklist);
+      } catch (checklistError) {
+        console.error('❌ [DEBUG] Erreur création checklist:', checklistError);
+        throw checklistError;
+      }
 
       if (type === 'checkin') {
         console.log('🚢 Création de la location...');
