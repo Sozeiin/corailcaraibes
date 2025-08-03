@@ -73,21 +73,27 @@ const WeatherWidget: React.FC = () => {
   };
 
   const fetchWeatherByCoords = async (lat: number, lon: number) => {
+    console.log('WeatherWidget: fetchWeatherByCoords called with', lat, lon);
     try {
+      console.log('WeatherWidget: Trying WeatherAPI...');
       // Utiliser WeatherAPI.com (gratuit, sans clé requise pour certaines fonctionnalités)
       const weatherResponse = await fetch(
         `https://api.weatherapi.com/v1/current.json?key=demo&q=${lat},${lon}&aqi=no&lang=fr`
       );
 
+      console.log('WeatherWidget: WeatherAPI response status:', weatherResponse.status);
       if (!weatherResponse.ok) {
+        console.log('WeatherWidget: WeatherAPI failed, trying OpenWeatherMap...');
         // Fallback vers OpenWeatherMap One Call API (version gratuite)
         const owmResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=demo&units=metric&lang=fr`
         );
         
+        console.log('WeatherWidget: OpenWeatherMap response status:', owmResponse.status);
         if (!owmResponse.ok) {
+          console.log('WeatherWidget: All APIs failed, using static data...');
           // Dernier fallback : données météo statiques pour la démonstration
-          setWeather({
+          const staticWeather = {
             location: `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
             temperature: Math.round(15 + Math.random() * 10), // Température aléatoire 15-25°C
             condition: 'Partiellement nuageux',
@@ -113,12 +119,16 @@ const WeatherWidget: React.FC = () => {
                 condition: 'Pluie'
               }
             ]
-          });
+          };
+          console.log('WeatherWidget: Setting static weather data:', staticWeather);
+          setWeather(staticWeather);
           setLocation('Données de démonstration');
           return;
         }
 
+        console.log('WeatherWidget: OpenWeatherMap success, parsing data...');
         const owmData = await owmResponse.json();
+        console.log('WeatherWidget: OpenWeatherMap data:', owmData);
         setWeather({
           location: owmData.name || `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
           temperature: Math.round(owmData.main.temp),
@@ -150,7 +160,9 @@ const WeatherWidget: React.FC = () => {
         return;
       }
 
+      console.log('WeatherWidget: WeatherAPI success, parsing data...');
       const weatherData = await weatherResponse.json();
+      console.log('WeatherWidget: WeatherAPI data:', weatherData);
       setWeather({
         location: weatherData.location.name + ', ' + weatherData.location.country,
         temperature: Math.round(weatherData.current.temp_c),
@@ -180,7 +192,38 @@ const WeatherWidget: React.FC = () => {
       });
       setLocation(weatherData.location.name + ', ' + weatherData.location.country);
     } catch (error) {
-      throw error;
+      console.error('WeatherWidget: Error in fetchWeatherByCoords:', error);
+      // En cas d'erreur, utiliser des données statiques
+      console.log('WeatherWidget: Error occurred, falling back to static data');
+      const staticWeather = {
+        location: 'Paris, France',
+        temperature: 18,
+        condition: 'Partiellement nuageux',
+        humidity: 65,
+        windSpeed: 12,
+        forecast: [
+          {
+            date: 'Auj',
+            temp_max: 22,
+            temp_min: 14,
+            condition: 'Nuageux'
+          },
+          {
+            date: 'Dem',
+            temp_max: 25,
+            temp_min: 16,
+            condition: 'Ensoleillé'
+          },
+          {
+            date: 'Mer',
+            temp_max: 19,
+            temp_min: 13,
+            condition: 'Pluie'
+          }
+        ]
+      };
+      setWeather(staticWeather);
+      setLocation('Données de démonstration');
     }
   };
 
