@@ -421,8 +421,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         });
       } else {
         console.log('🚢 [DEBUG] Finalisation de la location...');
+        console.log('🚢 [DEBUG] RentalData:', rentalData);
+        
+        // Vérifier que rentalData.id existe pour le checkout
+        if (!rentalData || !rentalData.id) {
+          console.error('❌ [DEBUG] Pas de rental ID pour le checkout');
+          toast({
+            title: "Erreur",
+            description: "Impossible de finaliser : aucune location active trouvée.",
+            variant: "destructive"
+          });
+          throw new Error('Aucune location active trouvée pour ce bateau');
+        }
+        
         try {
-          // Update rental and boat status for checkout
+          // Update rental status for checkout
           await updateRentalMutation.mutateAsync({ 
             rentalId: rentalData.id, 
             status: 'completed' 
