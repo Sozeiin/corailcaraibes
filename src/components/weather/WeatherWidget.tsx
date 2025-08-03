@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WeatherData {
   location: string;
@@ -75,122 +76,24 @@ const WeatherWidget: React.FC = () => {
   const fetchWeatherByCoords = async (lat: number, lon: number) => {
     console.log('WeatherWidget: fetchWeatherByCoords called with', lat, lon);
     try {
-      console.log('WeatherWidget: Trying WeatherAPI...');
-      // Utiliser WeatherAPI.com (gratuit, sans clé requise pour certaines fonctionnalités)
-      const weatherResponse = await fetch(
-        `https://api.weatherapi.com/v1/current.json?key=demo&q=${lat},${lon}&aqi=no&lang=fr`
-      );
+      console.log('WeatherWidget: Calling Supabase edge function...');
+      
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { lat, lon }
+      });
 
-      console.log('WeatherWidget: WeatherAPI response status:', weatherResponse.status);
-      if (!weatherResponse.ok) {
-        console.log('WeatherWidget: WeatherAPI failed, trying OpenWeatherMap...');
-        // Fallback vers OpenWeatherMap One Call API (version gratuite)
-        const owmResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=demo&units=metric&lang=fr`
-        );
-        
-        console.log('WeatherWidget: OpenWeatherMap response status:', owmResponse.status);
-        if (!owmResponse.ok) {
-          console.log('WeatherWidget: All APIs failed, using static data...');
-          // Dernier fallback : données météo statiques pour la démonstration
-          const staticWeather = {
-            location: `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
-            temperature: Math.round(15 + Math.random() * 10), // Température aléatoire 15-25°C
-            condition: 'Partiellement nuageux',
-            humidity: Math.round(40 + Math.random() * 40), // Humidité 40-80%
-            windSpeed: Math.round(5 + Math.random() * 15), // Vent 5-20 km/h
-            forecast: [
-              {
-                date: 'Auj',
-                temp_max: 22,
-                temp_min: 16,
-                condition: 'Nuageux'
-              },
-              {
-                date: 'Dem',
-                temp_max: 24,
-                temp_min: 18,
-                condition: 'Ensoleillé'
-              },
-              {
-                date: 'Mer',
-                temp_max: 20,
-                temp_min: 14,
-                condition: 'Pluie'
-              }
-            ]
-          };
-          console.log('WeatherWidget: Setting static weather data:', staticWeather);
-          setWeather(staticWeather);
-          setLocation('Données de démonstration');
-          return;
-        }
-
-        console.log('WeatherWidget: OpenWeatherMap success, parsing data...');
-        const owmData = await owmResponse.json();
-        console.log('WeatherWidget: OpenWeatherMap data:', owmData);
-        setWeather({
-          location: owmData.name || `${lat.toFixed(2)}, ${lon.toFixed(2)}`,
-          temperature: Math.round(owmData.main.temp),
-          condition: owmData.weather[0].description,
-          humidity: owmData.main.humidity,
-          windSpeed: Math.round(owmData.wind.speed * 3.6), // m/s vers km/h
-          forecast: [
-            {
-              date: 'Auj',
-              temp_max: Math.round(owmData.main.temp_max),
-              temp_min: Math.round(owmData.main.temp_min),
-              condition: owmData.weather[0].description
-            },
-            {
-              date: 'Dem',
-              temp_max: Math.round(owmData.main.temp_max + Math.random() * 4 - 2),
-              temp_min: Math.round(owmData.main.temp_min + Math.random() * 4 - 2),
-              condition: 'Partiellement nuageux'
-            },
-            {
-              date: 'Mer',
-              temp_max: Math.round(owmData.main.temp_max + Math.random() * 6 - 3),
-              temp_min: Math.round(owmData.main.temp_min + Math.random() * 6 - 3),
-              condition: 'Variable'
-            }
-          ]
-        });
-        setLocation(owmData.name || 'Localisation détectée');
-        return;
+      if (error) {
+        console.error('WeatherWidget: Supabase function error:', error);
+        throw error;
       }
 
-      console.log('WeatherWidget: WeatherAPI success, parsing data...');
-      const weatherData = await weatherResponse.json();
-      console.log('WeatherWidget: WeatherAPI data:', weatherData);
-      setWeather({
-        location: weatherData.location.name + ', ' + weatherData.location.country,
-        temperature: Math.round(weatherData.current.temp_c),
-        condition: weatherData.current.condition.text,
-        humidity: weatherData.current.humidity,
-        windSpeed: Math.round(weatherData.current.wind_kph),
-        forecast: [
-          {
-            date: 'Auj',
-            temp_max: Math.round(weatherData.current.temp_c + 3),
-            temp_min: Math.round(weatherData.current.temp_c - 3),
-            condition: weatherData.current.condition.text
-          },
-          {
-            date: 'Dem',
-            temp_max: Math.round(weatherData.current.temp_c + Math.random() * 4 - 2),
-            temp_min: Math.round(weatherData.current.temp_c - Math.random() * 4 - 2),
-            condition: 'Partiellement nuageux'
-          },
-          {
-            date: 'Mer',
-            temp_max: Math.round(weatherData.current.temp_c + Math.random() * 6 - 3),
-            temp_min: Math.round(weatherData.current.temp_c - Math.random() * 6 - 3),
-            condition: 'Variable'
-          }
-        ]
-      });
-      setLocation(weatherData.location.name + ', ' + weatherData.location.country);
+      if (data) {
+        console.log('WeatherWidget: Weather data received:', data);
+        setWeather(data);
+        setLocation(data.location);
+      } else {
+        throw new Error('No data received from weather function');
+      }
     } catch (error) {
       console.error('WeatherWidget: Error in fetchWeatherByCoords:', error);
       // En cas d'erreur, utiliser des données statiques
