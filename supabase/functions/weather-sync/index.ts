@@ -18,9 +18,9 @@ interface OpenMeteoResponse {
     temperature_2m_max: number[];
     temperature_2m_min: number[];
     precipitation_sum: number[];
-    windspeed_10m_max: number[];
+    wind_speed_10m_max: number[];
     relative_humidity_2m: number[];
-    weathercode: number[];
+    weather_code: number[];
   };
 }
 
@@ -95,7 +95,7 @@ serve(async (req) => {
         }
         
         // Get 7-day weather forecast from Open-Meteo
-        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,windspeed_10m_max,relative_humidity_2m,weathercode&timezone=auto&forecast_days=7`;
+        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max,relative_humidity_2m,weather_code&timezone=auto&forecast_days=7`;
         console.log(`Weather API URL: ${weatherUrl}`);
         
         const weatherResponse = await fetch(weatherUrl);
@@ -119,10 +119,10 @@ serve(async (req) => {
           temperature_min: weatherData.daily.temperature_2m_min[index],
           temperature_max: weatherData.daily.temperature_2m_max[index],
           humidity: weatherData.daily.relative_humidity_2m[index],
-          wind_speed: weatherData.daily.windspeed_10m_max[index],
+          wind_speed: weatherData.daily.wind_speed_10m_max[index],
           precipitation: weatherData.daily.precipitation_sum[index],
-          weather_condition: getWeatherDescription(weatherData.daily.weathercode[index]),
-          weather_code: weatherData.daily.weathercode[index].toString()
+          weather_condition: getWeatherDescription(weatherData.daily.weather_code[index]),
+          weather_code: weatherData.daily.weather_code[index].toString()
         }));
 
         // Insert/update weather forecasts

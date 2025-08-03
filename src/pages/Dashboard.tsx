@@ -20,6 +20,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
+import WeatherWidget from '@/components/weather/WeatherWidget';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
@@ -256,7 +257,10 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Weather Widget */}
+        <WeatherWidget />
+
         {/* Alerts Panel */}
         <Card>
           <CardHeader>
