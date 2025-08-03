@@ -4,7 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ChecklistCategory } from './ChecklistCategory';
-import { ChecklistItem } from '@/hooks/useChecklistData';
+import type { ChecklistItem } from '@/hooks/useChecklistData';
 import { MessageSquare, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 interface ChecklistInspectionProps {
