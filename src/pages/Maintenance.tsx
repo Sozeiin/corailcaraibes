@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MaintenanceInterventions } from '@/components/maintenance/MaintenanceInterventions';
 import { TechnicianInterventions } from '@/components/maintenance/TechnicianInterventions';
 import { PreventiveMaintenance } from '@/components/maintenance/PreventiveMaintenance';
-import { MaintenanceSchedule } from '@/components/maintenance/MaintenanceSchedule';
+import { WeatherMaintenancePlanner } from '@/components/maintenance/scheduling/WeatherMaintenancePlanner';
 import { MaintenanceHistory } from '@/components/maintenance/MaintenanceHistory';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -60,7 +60,7 @@ export default function Maintenance() {
         </TabsContent>
 
         <TabsContent value="schedule">
-          <MaintenanceSchedule />
+          <WeatherMaintenancePlanner />
         </TabsContent>
 
         <TabsContent value="history">
