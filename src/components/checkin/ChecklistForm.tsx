@@ -271,6 +271,12 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           console.log('✅ [DEBUG] Signature technicien uploadée:', technicianSignatureUrl);
         } catch (sigError) {
           console.error('❌ [DEBUG] Erreur upload signature technicien:', sigError);
+          console.error('❌ [DEBUG] Détails erreur signature:', JSON.stringify(sigError, null, 2));
+          toast({
+            title: "Erreur upload signature",
+            description: `Impossible d'uploader la signature du technicien: ${sigError instanceof Error ? sigError.message : 'Erreur inconnue'}`,
+            variant: "destructive"
+          });
           throw sigError;
         }
       }
@@ -286,6 +292,12 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           console.log('✅ [DEBUG] Signature client uploadée:', customerSignatureUrl);
         } catch (sigError) {
           console.error('❌ [DEBUG] Erreur upload signature client:', sigError);
+          console.error('❌ [DEBUG] Détails erreur signature:', JSON.stringify(sigError, null, 2));
+          toast({
+            title: "Erreur upload signature",
+            description: `Impossible d'uploader la signature du client: ${sigError instanceof Error ? sigError.message : 'Erreur inconnue'}`,
+            variant: "destructive"
+          });
           throw sigError;
         }
       }
