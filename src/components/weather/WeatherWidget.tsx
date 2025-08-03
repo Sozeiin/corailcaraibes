@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WeatherData {
   location: string;
@@ -24,6 +25,15 @@ const WeatherWidget: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<string>('');
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Base-specific location configurations
+  const baseLocations = {
+    '550e8400-e29b-41d4-a716-446655440001': 'Le Marin, Martinique',
+    '550e8400-e29b-41d4-a716-446655440002': 'Pointe-à-Pitre, Guadeloupe',
+    // Default for Metropolitan base and others
+    default: 'Paris, France'
+  };
 
   const getWeatherIcon = (condition: string) => {
     const lowerCondition = condition.toLowerCase();
@@ -42,25 +52,14 @@ const WeatherWidget: React.FC = () => {
   const getLocationAndWeather = async () => {
     setLoading(true);
     try {
-      // Essayer d'obtenir la géolocalisation
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          async (position) => {
-            const { latitude, longitude } = position.coords;
-            await fetchWeatherByCoords(latitude, longitude);
-          },
-          async (error) => {
-            console.log('Geolocation error:', error);
-            // Fallback vers une localisation par défaut (Paris)
-            await fetchWeatherByCoords(48.8566, 2.3522);
-            setLocation('Paris, France (par défaut)');
-          }
-        );
-      } else {
-        // Fallback vers une localisation par défaut
-        await fetchWeatherByCoords(48.8566, 2.3522);
-        setLocation('Paris, France (par défaut)');
-      }
+      // Use base-specific location based on user's base
+      const baseId = user?.baseId;
+      const expectedLocation = baseId && baseLocations[baseId] 
+        ? baseLocations[baseId] 
+        : baseLocations.default;
+      
+      setLocation(expectedLocation);
+      await fetchWeatherByBaseId(baseId);
     } catch (error) {
       console.error('Error fetching weather:', error);
       toast({
@@ -73,13 +72,13 @@ const WeatherWidget: React.FC = () => {
     }
   };
 
-  const fetchWeatherByCoords = async (lat: number, lon: number) => {
-    console.log('WeatherWidget: fetchWeatherByCoords called with', lat, lon);
+  const fetchWeatherByBaseId = async (baseId?: string) => {
+    console.log('WeatherWidget: fetchWeatherByBaseId called with baseId', baseId);
     try {
-      console.log('WeatherWidget: Calling Supabase edge function...');
+      console.log('WeatherWidget: Calling Supabase edge function with baseId...');
       
       const { data, error } = await supabase.functions.invoke('get-weather', {
-        body: { lat, lon }
+        body: { baseId }
       });
 
       if (error) {
@@ -95,11 +94,16 @@ const WeatherWidget: React.FC = () => {
         throw new Error('No data received from weather function');
       }
     } catch (error) {
-      console.error('WeatherWidget: Error in fetchWeatherByCoords:', error);
-      // En cas d'erreur, utiliser des données statiques
+      console.error('WeatherWidget: Error in fetchWeatherByBaseId:', error);
+      // En cas d'erreur, utiliser des données statiques adaptées à la base
       console.log('WeatherWidget: Error occurred, falling back to static data');
+      const baseId = user?.baseId;
+      const fallbackLocation = baseId && baseLocations[baseId] 
+        ? baseLocations[baseId] 
+        : baseLocations.default;
+      
       const staticWeather = {
-        location: 'Paris, France',
+        location: fallbackLocation,
         temperature: 18,
         condition: 'Partiellement nuageux',
         humidity: 65,
@@ -126,7 +130,7 @@ const WeatherWidget: React.FC = () => {
         ]
       };
       setWeather(staticWeather);
-      setLocation('Données de démonstration');
+      setLocation('Données de démonstration - ' + fallbackLocation);
     }
   };
 

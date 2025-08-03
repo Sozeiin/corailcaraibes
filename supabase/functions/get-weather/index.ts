@@ -15,7 +15,43 @@ serve(async (req) => {
   }
 
   try {
-    const { lat, lon } = await req.json();
+    const { lat, lon, baseId } = await req.json();
+
+    // Base-specific location configurations
+    const baseLocations = {
+      '550e8400-e29b-41d4-a716-446655440001': {
+        lat: 14.4698,
+        lon: -60.8725,
+        displayName: 'Le Marin, Martinique'
+      },
+      '550e8400-e29b-41d4-a716-446655440002': {
+        lat: 16.2304,
+        lon: -61.5320,
+        displayName: 'Pointe-à-Pitre, Guadeloupe'
+      },
+      // Default for Metropolitan base and others
+      default: {
+        lat: 48.8566,
+        lon: 2.3522,
+        displayName: 'Paris, France'
+      }
+    };
+
+    // Determine location based on baseId if provided
+    let finalLat = lat;
+    let finalLon = lon;
+    let locationDisplayName = null;
+
+    if (baseId && baseLocations[baseId]) {
+      finalLat = baseLocations[baseId].lat;
+      finalLon = baseLocations[baseId].lon;
+      locationDisplayName = baseLocations[baseId].displayName;
+    } else if (baseId) {
+      // Use default location for unknown baseIds
+      finalLat = baseLocations.default.lat;
+      finalLon = baseLocations.default.lon;
+      locationDisplayName = baseLocations.default.displayName;
+    }
 
     if (!openWeatherApiKey) {
       console.error('OpenWeatherMap API key not configured');
@@ -28,11 +64,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Fetching weather for coordinates: ${lat}, ${lon}`);
+    console.log(`Fetching weather for coordinates: ${finalLat}, ${finalLon}${locationDisplayName ? ` (${locationDisplayName})` : ''}`);
 
     // Get current weather
     const currentWeatherResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=metric&lang=fr`
+      `https://api.openweathermap.org/data/2.5/weather?lat=${finalLat}&lon=${finalLon}&appid=${openWeatherApiKey}&units=metric&lang=fr`
     );
 
     if (!currentWeatherResponse.ok) {
@@ -44,7 +80,7 @@ serve(async (req) => {
 
     // Get 5-day forecast
     const forecastResponse = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${openWeatherApiKey}&units=metric&lang=fr`
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${finalLat}&lon=${finalLon}&appid=${openWeatherApiKey}&units=metric&lang=fr`
     );
 
     let forecast = [];
@@ -84,7 +120,7 @@ serve(async (req) => {
     }
 
     const weatherData = {
-      location: `${currentWeather.name}, ${currentWeather.sys.country}`,
+      location: locationDisplayName || `${currentWeather.name}, ${currentWeather.sys.country}`,
       temperature: Math.round(currentWeather.main.temp),
       condition: currentWeather.weather[0].description,
       humidity: currentWeather.main.humidity,
