@@ -77,11 +77,16 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   }, [checklistItems]);
 
   const handleItemStatusChange = (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => {
-    setChecklistItems(prev => prev.map(item => 
-      item.id === itemId 
-        ? { ...item, status, notes: notes || item.notes }
-        : item
-    ));
+    console.log('🔄 [DEBUG] Changement statut item:', itemId, status, notes);
+    setChecklistItems(prev => {
+      const updated = prev.map(item => 
+        item.id === itemId 
+          ? { ...item, status, notes: notes || item.notes }
+          : item
+      );
+      console.log('🔄 [DEBUG] Items mis à jour:', updated.filter(item => item.id === itemId));
+      return updated;
+    });
   };
 
   const handleItemNotesChange = (itemId: string, notes: string) => {
@@ -240,9 +245,16 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         return checklist;
       }
 
-      // Create checklist items
+      // Create checklist items - INCLURE TOUS LES ITEMS AVEC UN STATUT VALIDE
+      const validStatuses = ['ok', 'needs_repair', 'not_checked'];
       const itemsToInsert = checklistItems
-        .filter(item => item.id && item.status) // Filtrer les items valides
+        .filter(item => {
+          const isValid = item.id && validStatuses.includes(item.status);
+          if (!isValid) {
+            console.warn('⚠️ [DEBUG] Item invalide filtré:', item);
+          }
+          return isValid;
+        })
         .map(item => ({
           checklist_id: checklist.id,
           item_id: item.id,
