@@ -10,16 +10,26 @@ export function useSignatureUpload() {
       console.log('🚀 [DEBUG] Upload signature:', fileName);
 
       try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('Utilisateur non authentifié');
+        }
+
         // Convert dataURL to blob
         const response = await fetch(dataURL);
         const blob = await response.blob();
 
         console.log('📦 [DEBUG] Blob créé:', blob.type, blob.size);
 
+        // Create file path with user ID folder structure required by RLS policy
+        const filePath = `${user.id}/${fileName}`;
+        console.log('📁 [DEBUG] Chemin fichier:', filePath);
+
         // Upload to Supabase storage
         const { data, error } = await supabase.storage
           .from('signatures')
-          .upload(fileName, blob, {
+          .upload(filePath, blob, {
             contentType: 'image/png',
             upsert: true,
           });
@@ -31,10 +41,10 @@ export function useSignatureUpload() {
 
         console.log('✅ [DEBUG] Signature uploadée:', data);
 
-        // Get public URL
+        // Get public URL using the full file path
         const { data: urlData } = supabase.storage
           .from('signatures')
-          .getPublicUrl(fileName);
+          .getPublicUrl(filePath);
 
         console.log('🔗 [DEBUG] URL publique:', urlData.publicUrl);
 
