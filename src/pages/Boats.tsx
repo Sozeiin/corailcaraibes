@@ -83,7 +83,7 @@ const BoatCard = ({
       </div>
       
       <div className="flex flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <Button variant="outline" size="sm" className="text-xs" onClick={() => onHistory(boat)}>
             <History className="h-3 w-3 mr-1" />
             <span className="hidden xs:inline">Historique</span>
@@ -95,7 +95,7 @@ const BoatCard = ({
             <span className="xs:hidden">Maint.</span>
           </Button>
         </div>
-        {canManage && <div className="grid grid-cols-2 gap-2">
+        {canManage && <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <Button variant="outline" size="sm" className="text-xs" onClick={() => onEdit(boat)}>
               <Edit className="h-3 w-3 mr-1" />
               <span className="hidden xs:inline">Modifier</span>
