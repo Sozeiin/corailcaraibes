@@ -78,7 +78,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         activity_type: activity.activity_type,
         priority: activity.priority,
         estimated_duration: activity.estimated_duration,
-        technician_id: activity.technician_id || '',
+        technician_id: activity.technician_id || 'unassigned',
         boat_id: activity.boat_id || '',
         notes: activity.notes || ''
       });
@@ -89,7 +89,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         activity_type: 'maintenance',
         priority: 'medium',
         estimated_duration: 60,
-        technician_id: '',
+        technician_id: 'unassigned',
         boat_id: '',
         notes: ''
       });
@@ -165,7 +165,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
       scheduled_end: endTime.toISOString(),
       base_id: user.baseId,
       color_code: getActivityColor(formData.activity_type),
-      technician_id: formData.technician_id || null,
+      technician_id: formData.technician_id === 'unassigned' ? null : formData.technician_id,
       boat_id: formData.boat_id || null
     };
 
@@ -279,7 +279,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
                 <SelectValue placeholder="Sélectionner un technicien" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucun (non assigné)</SelectItem>
+                <SelectItem value="unassigned">Aucun (non assigné)</SelectItem>
                 {technicians.map(tech => (
                   <SelectItem key={tech.id} value={tech.id}>
                     {tech.name}
