@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Wrench, Calendar } from 'lucide-react';
+import { Plus, Edit, Trash2, Wrench, Calendar, ChevronDown, ChevronRight, Settings, Package, DollarSign } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,11 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { BoatComponent } from '@/types';
+import { SubComponentManager } from './SubComponentManager';
+import { ComponentStockLinkManager } from './ComponentStockLinkManager';
+import { ComponentPurchaseHistory } from './ComponentPurchaseHistory';
 
 interface BoatComponentsManagerProps {
   boatId: string;
@@ -403,13 +408,29 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
           <div className="grid gap-4">
             {components.map((component) => {
               const statusBadge = getStatusBadge(component.status);
+              const [isExpanded, setIsExpanded] = useState(false);
+              
               return (
                 <Card key={component.id} className="border-l-4 border-l-primary">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4 className="font-medium text-lg">{component.componentName}</h4>
-                        <p className="text-sm text-muted-foreground">{component.componentType}</p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsExpanded(!isExpanded)}
+                          className="h-6 w-6 p-0"
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <div>
+                          <h4 className="font-medium text-lg">{component.componentName}</h4>
+                          <p className="text-sm text-muted-foreground">{component.componentType}</p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge className={statusBadge.color}>
@@ -475,6 +496,59 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
                         <span className="font-medium">Notes:</span> {component.notes}
                       </div>
                     )}
+
+                    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+                      <CollapsibleContent className="mt-4">
+                        <Tabs defaultValue="sub-components" className="w-full">
+                          <TabsList className="grid w-full grid-cols-4">
+                            <TabsTrigger value="sub-components" className="flex items-center gap-2">
+                              <Settings className="h-4 w-4" />
+                              Sous-composants
+                            </TabsTrigger>
+                            <TabsTrigger value="stock-links" className="flex items-center gap-2">
+                              <Package className="h-4 w-4" />
+                              Stock lié
+                            </TabsTrigger>
+                            <TabsTrigger value="purchase-history" className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4" />
+                              Historique
+                            </TabsTrigger>
+                            <TabsTrigger value="suppliers" className="flex items-center gap-2">
+                              <Package className="h-4 w-4" />
+                              Fournisseurs
+                            </TabsTrigger>
+                          </TabsList>
+                          
+                          <TabsContent value="sub-components" className="space-y-4">
+                            <SubComponentManager 
+                              parentComponentId={component.id}
+                              parentComponentName={component.componentName}
+                            />
+                          </TabsContent>
+                          
+                          <TabsContent value="stock-links" className="space-y-4">
+                            <ComponentStockLinkManager 
+                              componentId={component.id}
+                              componentName={component.componentName}
+                            />
+                          </TabsContent>
+                          
+                          <TabsContent value="purchase-history" className="space-y-4">
+                            <ComponentPurchaseHistory 
+                              componentId={component.id}
+                              componentName={component.componentName}
+                            />
+                          </TabsContent>
+                          
+                          <TabsContent value="suppliers" className="space-y-4">
+                            <div className="text-center py-8 text-muted-foreground">
+                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                              <p>Gestion des fournisseurs - À venir</p>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </CardContent>
                 </Card>
               );

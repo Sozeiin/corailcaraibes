@@ -352,6 +352,71 @@ export type Database = {
           },
         ]
       }
+      boat_sub_components: {
+        Row: {
+          created_at: string
+          id: string
+          installation_date: string | null
+          last_maintenance_date: string | null
+          maintenance_interval_days: number | null
+          manufacturer: string | null
+          model: string | null
+          next_maintenance_date: string | null
+          notes: string | null
+          parent_component_id: string
+          position_in_component: string | null
+          serial_number: string | null
+          status: string | null
+          sub_component_name: string
+          sub_component_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          last_maintenance_date?: string | null
+          maintenance_interval_days?: number | null
+          manufacturer?: string | null
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          parent_component_id: string
+          position_in_component?: string | null
+          serial_number?: string | null
+          status?: string | null
+          sub_component_name: string
+          sub_component_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          last_maintenance_date?: string | null
+          maintenance_interval_days?: number | null
+          manufacturer?: string | null
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          parent_component_id?: string
+          position_in_component?: string | null
+          serial_number?: string | null
+          status?: string | null
+          sub_component_name?: string
+          sub_component_type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_sub_components_parent_component_id_fkey"
+            columns: ["parent_component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boats: {
         Row: {
           base_id: string | null
@@ -762,6 +827,227 @@ export type Database = {
           status?: Database["public"]["Enums"]["checklist_status"] | null
         }
         Relationships: []
+      }
+      component_purchase_history: {
+        Row: {
+          component_id: string | null
+          created_at: string
+          id: string
+          installation_date: string | null
+          invoice_reference: string | null
+          notes: string | null
+          order_id: string | null
+          purchase_date: string
+          quantity: number
+          stock_item_id: string | null
+          sub_component_id: string | null
+          supplier_id: string | null
+          total_cost: number | null
+          unit_cost: number
+          warranty_months: number | null
+        }
+        Insert: {
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          invoice_reference?: string | null
+          notes?: string | null
+          order_id?: string | null
+          purchase_date: string
+          quantity?: number
+          stock_item_id?: string | null
+          sub_component_id?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number
+          warranty_months?: number | null
+        }
+        Update: {
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          invoice_reference?: string | null
+          notes?: string | null
+          order_id?: string | null
+          purchase_date?: string
+          quantity?: number
+          stock_item_id?: string | null
+          sub_component_id?: string | null
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number
+          warranty_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_purchase_history_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_purchase_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_purchase_history_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_purchase_history_sub_component_id_fkey"
+            columns: ["sub_component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_sub_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_purchase_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_stock_links: {
+        Row: {
+          component_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          quantity_required: number | null
+          replacement_priority: string | null
+          stock_item_id: string
+          sub_component_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity_required?: number | null
+          replacement_priority?: string | null
+          stock_item_id: string
+          sub_component_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity_required?: number | null
+          replacement_priority?: string | null
+          stock_item_id?: string
+          sub_component_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_stock_links_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_stock_links_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_stock_links_sub_component_id_fkey"
+            columns: ["sub_component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_sub_components"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      component_supplier_references: {
+        Row: {
+          catalog_reference: string | null
+          component_id: string | null
+          created_at: string
+          id: string
+          last_quote_date: string | null
+          last_quoted_price: number | null
+          lead_time_days: number | null
+          minimum_order_quantity: number | null
+          notes: string | null
+          preferred_supplier: boolean | null
+          sub_component_id: string | null
+          supplier_id: string
+          supplier_part_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          catalog_reference?: string | null
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          last_quote_date?: string | null
+          last_quoted_price?: number | null
+          lead_time_days?: number | null
+          minimum_order_quantity?: number | null
+          notes?: string | null
+          preferred_supplier?: boolean | null
+          sub_component_id?: string | null
+          supplier_id: string
+          supplier_part_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          catalog_reference?: string | null
+          component_id?: string | null
+          created_at?: string
+          id?: string
+          last_quote_date?: string | null
+          last_quoted_price?: number | null
+          lead_time_days?: number | null
+          minimum_order_quantity?: number | null
+          notes?: string | null
+          preferred_supplier?: boolean | null
+          sub_component_id?: string | null
+          supplier_id?: string
+          supplier_part_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "component_supplier_references_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_supplier_references_sub_component_id_fkey"
+            columns: ["sub_component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_sub_components"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_supplier_references_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intervention_parts: {
         Row: {
