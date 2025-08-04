@@ -111,19 +111,19 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
       {...listeners}
       {...attributes}
       className={`
-        cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md border-l-4
+        cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border-l-2 text-xs
         ${isCurrentlyDragging ? 'opacity-50 scale-105 shadow-lg' : ''}
       `}
       onClick={onClick}
     >
-      <CardContent className="p-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
+      <CardContent className="p-1 space-y-1">
+        <div className="flex items-start justify-between gap-1">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <ActivityIcon className="w-3 h-3" style={{ color: activity.color_code }} />
+            <div className="flex items-center gap-1 mb-0.5">
+              <ActivityIcon className="w-2 h-2" style={{ color: activity.color_code }} />
               <Badge 
                 variant="outline" 
-                className="text-xs"
+                className="text-[10px] px-1 py-0"
                 style={{ 
                   backgroundColor: `${activity.color_code}20`,
                   borderColor: activity.color_code,
@@ -133,7 +133,7 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
                 {getActivityLabel(activity.activity_type)}
               </Badge>
             </div>
-            <h4 className="font-medium text-sm truncate">{activity.title}</h4>
+            <h4 className="font-medium text-[10px] truncate leading-tight">{activity.title}</h4>
             {activity.boat && (
               <p className="text-xs text-muted-foreground">
                 {activity.boat.name}
