@@ -1,4 +1,5 @@
 import React from 'react';
+import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, User, AlertTriangle, CheckCircle2, Play, Pause, Ship } from 'lucide-react';
@@ -84,16 +85,35 @@ const getActivityLabel = (type: string) => {
 export function PlanningActivityCard({ activity, isDragging = false, onClick }: PlanningActivityCardProps) {
   const ActivityIcon = getActivityIcon(activity.activity_type);
   
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    isDragging: dndIsDragging,
+  } = useDraggable({
+    id: activity.id,
+    data: { activity }
+  });
+
+  const isCurrentlyDragging = isDragging || dndIsDragging;
+
+  const cardStyle = {
+    borderLeftColor: activity.color_code,
+    backgroundColor: isCurrentlyDragging ? '#f8fafc' : 'white',
+    ...(transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : {})
+  };
+  
   return (
     <Card
+      ref={setNodeRef}
+      style={cardStyle}
+      {...listeners}
+      {...attributes}
       className={`
-        cursor-pointer transition-all duration-200 hover:shadow-md border-l-4
-        ${isDragging ? 'opacity-50 scale-105 shadow-lg' : ''}
+        cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-md border-l-4
+        ${isCurrentlyDragging ? 'opacity-50 scale-105 shadow-lg' : ''}
       `}
-      style={{ 
-        borderLeftColor: activity.color_code,
-        backgroundColor: isDragging ? '#f8fafc' : 'white'
-      }}
       onClick={onClick}
     >
       <CardContent className="p-3 space-y-2">

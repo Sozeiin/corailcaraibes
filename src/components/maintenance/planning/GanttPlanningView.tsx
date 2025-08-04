@@ -163,24 +163,84 @@ export function GanttPlanningView() {
       const start = startOfWeek(currentWeek, { weekStartsOn: 1 });
       const end = endOfWeek(addWeeks(currentWeek, 1), { weekStartsOn: 1 });
       
-      const { data, error } = await supabase
-        .from('planning_activities')
-        .select('*')
-        .gte('scheduled_start', start.toISOString())
-        .lte('scheduled_end', end.toISOString())
-        .neq('activity_type', 'maintenance')
-        .order('scheduled_start');
+      // Fetch both planning activities and interventions
+      const [activitiesResponse, interventionsResponse] = await Promise.all([
+        supabase
+          .from('planning_activities')
+          .select('*')
+          .gte('scheduled_start', start.toISOString())
+          .lte('scheduled_end', end.toISOString())
+          .neq('activity_type', 'maintenance')
+          .order('scheduled_start'),
+        
+        supabase
+          .from('interventions')
+          .select(`
+            *,
+            boats(id, name),
+            profiles!interventions_technician_id_fkey(id, name)
+          `)
+          .gte('scheduled_date', start.toISOString().split('T')[0])
+          .lte('scheduled_date', end.toISOString().split('T')[0])
+          .order('scheduled_date')
+      ]);
       
-      if (error) throw error;
-      return (data || []).map(item => ({
-        ...item,
-        technician: null,
-        boat: null,
-        base_id: item.base_id,
-        priority: item.priority || 'medium',
-        checklist_completed: item.checklist_completed || false,
-        delay_minutes: item.delay_minutes || 0
-      })) as PlanningActivity[];
+      if (activitiesResponse.error) throw activitiesResponse.error;
+      if (interventionsResponse.error) throw interventionsResponse.error;
+      
+      // Convert interventions to planning activities format
+      const interventionActivities = (interventionsResponse.data || []).map(intervention => {
+        const scheduledDate = new Date(intervention.scheduled_date);
+        scheduledDate.setHours(9, 0, 0, 0); // Default start time for interventions
+        
+        const endDate = new Date(scheduledDate);
+        endDate.setHours(17, 0, 0, 0); // Default end time for interventions
+        
+        return {
+          id: `intervention-${intervention.id}`,
+          activity_type: 'emergency' as const, // Show interventions as emergency type for visual distinction
+          status: intervention.status === 'scheduled' ? 'planned' as const : 
+                  intervention.status === 'in_progress' ? 'in_progress' as const :
+                  intervention.status === 'completed' ? 'completed' as const : 'cancelled' as const,
+          title: `🔧 ${intervention.title}`,
+          description: intervention.description,
+          scheduled_start: scheduledDate.toISOString(),
+          scheduled_end: endDate.toISOString(),
+          estimated_duration: 480, // 8 hours default
+          technician_id: intervention.technician_id,
+          boat_id: intervention.boat_id,
+          base_id: intervention.base_id,
+          priority: intervention.intervention_type === 'emergency' ? 'high' : 'medium',
+          color_code: '#dc2626', // Red for maintenance interventions
+          checklist_completed: false,
+          delay_minutes: 0,
+          notes: intervention.description,
+          technician: intervention.profiles ? {
+            id: intervention.profiles.id,
+            name: intervention.profiles.name
+          } : null,
+          boat: intervention.boats ? {
+            id: intervention.boats.id,
+            name: intervention.boats.name
+          } : null
+        };
+      });
+      
+      // Combine activities and interventions
+      const allActivities = [
+        ...(activitiesResponse.data || []).map(item => ({
+          ...item,
+          technician: null,
+          boat: null,
+          base_id: item.base_id,
+          priority: item.priority || 'medium',
+          checklist_completed: item.checklist_completed || false,
+          delay_minutes: item.delay_minutes || 0
+        })),
+        ...interventionActivities
+      ];
+      
+      return allActivities as PlanningActivity[];
     }
   });
 
@@ -212,12 +272,36 @@ export function GanttPlanningView() {
   // Update activity mutation
   const updateActivityMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<PlanningActivity> }) => {
-      const { error } = await supabase
-        .from('planning_activities')
-        .update(updates)
-        .eq('id', id);
-      
-      if (error) throw error;
+      // Check if this is an intervention (ID starts with 'intervention-')
+      if (id.startsWith('intervention-')) {
+        const interventionId = id.replace('intervention-', '');
+        
+        // Update intervention instead of planning activity
+        const interventionUpdates: any = {};
+        
+        if (updates.technician_id !== undefined) {
+          interventionUpdates.technician_id = updates.technician_id;
+        }
+        
+        if (updates.scheduled_start) {
+          interventionUpdates.scheduled_date = updates.scheduled_start.split('T')[0];
+        }
+        
+        const { error } = await supabase
+          .from('interventions')
+          .update(interventionUpdates)
+          .eq('id', interventionId);
+        
+        if (error) throw error;
+      } else {
+        // Update regular planning activity
+        const { error } = await supabase
+          .from('planning_activities')
+          .update(updates)
+          .eq('id', id);
+        
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
@@ -228,6 +312,7 @@ export function GanttPlanningView() {
       });
     },
     onError: (error) => {
+      console.error('Update error:', error);
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour l'activité.",
@@ -237,6 +322,7 @@ export function GanttPlanningView() {
   });
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('Drag start:', event.active.id);
     const activity = activities.find(a => a.id === event.active.id) || 
                     unassignedActivities.find(a => a.id === event.active.id);
     setDraggedActivity(activity || null);
@@ -244,6 +330,7 @@ export function GanttPlanningView() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    console.log('Drag end:', { activeId: active.id, overId: over?.id });
     setDraggedActivity(null);
 
     if (!over) return;

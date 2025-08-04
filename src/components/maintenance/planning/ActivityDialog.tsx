@@ -45,16 +45,31 @@ interface ActivityDialogProps {
   technicians: Technician[];
 }
 
+interface ActivityFormData {
+  title: string;
+  description: string;
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  priority: string;
+  estimated_duration: number;
+  technician_id: string;
+  boat_id: string;
+  notes: string;
+  scheduled_date: string;
+  scheduled_time: string;
+}
+
 export function ActivityDialog({ open, onOpenChange, activity, technicians }: ActivityDialogProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ActivityFormData>({
     title: '',
     description: '',
-    activity_type: 'checkin' as 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency',
+    activity_type: 'checkin',
     priority: 'medium',
     estimated_duration: 60,
-    technician_id: '',
+    technician_id: 'unassigned',
     boat_id: '',
-    notes: ''
+    notes: '',
+    scheduled_date: new Date().toISOString().split('T')[0],
+    scheduled_time: '09:00'
   });
 
   const { toast } = useToast();
@@ -72,6 +87,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
 
   useEffect(() => {
     if (activity) {
+      const activityDate = new Date(activity.scheduled_start);
       setFormData({
         title: activity.title,
         description: activity.description || '',
@@ -80,7 +96,9 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         estimated_duration: activity.estimated_duration,
         technician_id: activity.technician_id || 'unassigned',
         boat_id: activity.boat_id || '',
-        notes: activity.notes || ''
+        notes: activity.notes || '',
+        scheduled_date: activityDate.toISOString().split('T')[0],
+        scheduled_time: activityDate.toTimeString().substring(0, 5)
       });
     } else {
       setFormData({
@@ -91,7 +109,9 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         estimated_duration: 60,
         technician_id: 'unassigned',
         boat_id: '',
-        notes: ''
+        notes: '',
+        scheduled_date: new Date().toISOString().split('T')[0],
+        scheduled_time: '09:00'
       });
     }
   }, [activity]);
@@ -152,21 +172,27 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const now = new Date();
-    const startTime = new Date(now);
-    startTime.setHours(8, 0, 0, 0); // Default to 8 AM
+    // Calculate start and end times using the form data
+    const [hours, minutes] = formData.scheduled_time.split(':').map(Number);
+    const startTime = new Date(formData.scheduled_date);
+    startTime.setHours(hours, minutes, 0, 0);
     
     const endTime = new Date(startTime);
     endTime.setMinutes(endTime.getMinutes() + formData.estimated_duration);
 
     const activityData = {
-      ...formData,
+      title: formData.title,
+      description: formData.description,
+      activity_type: formData.activity_type,
+      priority: formData.priority,
+      estimated_duration: formData.estimated_duration,
       scheduled_start: startTime.toISOString(),
       scheduled_end: endTime.toISOString(),
       base_id: user.baseId,
       color_code: getActivityColor(formData.activity_type),
       technician_id: formData.technician_id === 'unassigned' ? null : formData.technician_id,
-      boat_id: formData.boat_id || null
+      boat_id: formData.boat_id || null,
+      notes: formData.notes || null
     };
 
     if (activity) {
@@ -227,13 +253,13 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="checkin">Check-in</SelectItem>
-                          <SelectItem value="checkout">Check-out</SelectItem>
-                          <SelectItem value="travel">Déplacement</SelectItem>
-                          <SelectItem value="break">Pause</SelectItem>
-                          <SelectItem value="emergency">Urgence</SelectItem>
-                        </SelectContent>
+                <SelectContent>
+                  <SelectItem value="checkin">Check-in</SelectItem>
+                  <SelectItem value="checkout">Check-out</SelectItem>
+                  <SelectItem value="travel">Déplacement</SelectItem>
+                  <SelectItem value="break">Pause</SelectItem>
+                  <SelectItem value="emergency">Urgence</SelectItem>
+                </SelectContent>
               </Select>
             </div>
 
@@ -255,6 +281,30 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="scheduled_date">Date</Label>
+              <Input
+                id="scheduled_date"
+                type="date"
+                value={formData.scheduled_date}
+                onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                required
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="scheduled_time">Heure de début</Label>
+              <Input
+                id="scheduled_time"
+                type="time"
+                value={formData.scheduled_time}
+                onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                required
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="duration">Durée estimée (minutes)</Label>
             <Input
@@ -264,6 +314,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
               max="480"
               value={formData.estimated_duration}
               onChange={(e) => setFormData({ ...formData, estimated_duration: parseInt(e.target.value) })}
+              required
             />
           </div>
 
