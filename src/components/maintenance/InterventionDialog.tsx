@@ -229,6 +229,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         const partsData = interventionParts.map(part => ({
           intervention_id: interventionId,
           stock_item_id: part.stockItemId || null,
+          component_id: part.componentId || null,
           part_name: part.partName,
           quantity: part.quantity,
           unit_cost: part.unitCost,
@@ -460,6 +461,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
               parts={interventionParts}
               onPartsChange={setInterventionParts}
               disabled={isSubmitting}
+              boatId={form.watch('boatId')}
             />
 
             <div className="flex justify-end space-x-3 pt-4">

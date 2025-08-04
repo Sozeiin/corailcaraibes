@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface InterventionPart {
   id?: string;
   stockItemId?: string;
+  componentId?: string;
   partName: string;
   quantity: number;
   unitCost: number;
@@ -25,11 +26,13 @@ interface InterventionPartsManagerProps {
   parts: InterventionPart[];
   onPartsChange: (parts: InterventionPart[]) => void;
   disabled?: boolean;
+  boatId?: string;
 }
 
-export function InterventionPartsManager({ parts, onPartsChange, disabled = false }: InterventionPartsManagerProps) {
+export function InterventionPartsManager({ parts, onPartsChange, disabled = false, boatId }: InterventionPartsManagerProps) {
   const { user } = useAuth();
   const [selectedStockItem, setSelectedStockItem] = useState<string>('');
+  const [selectedComponent, setSelectedComponent] = useState<string>('');
 
   // Fetch available stock items
   const { data: stockItems = [] } = useQuery({
@@ -45,6 +48,24 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       if (error) throw error;
       return data;
     }
+  });
+
+  // Fetch boat components if boatId is provided
+  const { data: boatComponents = [] } = useQuery({
+    queryKey: ['boat-components', boatId],
+    queryFn: async () => {
+      if (!boatId) return [];
+      
+      const { data, error } = await supabase
+        .from('boat_components')
+        .select('*')
+        .eq('boat_id', boatId)
+        .order('component_name');
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!boatId
   });
 
   const addStockItem = () => {
@@ -169,61 +190,84 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                    {!part.stockItemId && (
-                      <div>
-                        <Label>Nom de la pièce</Label>
-                        <Input
-                          value={part.partName}
-                          onChange={(e) => updatePart(index, 'partName', e.target.value)}
-                          placeholder="Nom de la pièce"
-                          disabled={disabled}
-                        />
-                      </div>
-                    )}
-                    
-                    <div>
-                      <Label>Quantité</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max={part.availableQuantity || undefined}
-                        value={part.quantity}
-                        onChange={(e) => updatePart(index, 'quantity', parseInt(e.target.value) || 1)}
-                        disabled={disabled}
-                      />
-                    </div>
+                   <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                     {!part.stockItemId && (
+                       <div>
+                         <Label>Nom de la pièce</Label>
+                         <Input
+                           value={part.partName}
+                           onChange={(e) => updatePart(index, 'partName', e.target.value)}
+                           placeholder="Nom de la pièce"
+                           disabled={disabled}
+                         />
+                       </div>
+                     )}
+                     
+                     {boatId && boatComponents.length > 0 && (
+                       <div>
+                         <Label>Composant</Label>
+                         <Select 
+                           value={part.componentId || ''} 
+                           onValueChange={(value) => updatePart(index, 'componentId', value || undefined)}
+                           disabled={disabled}
+                         >
+                           <SelectTrigger>
+                             <SelectValue placeholder="Sélectionner un composant" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value="">Aucun composant</SelectItem>
+                             {boatComponents.map((component) => (
+                               <SelectItem key={component.id} value={component.id}>
+                                 {component.component_name} ({component.component_type})
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+                     )}
+                     
+                     <div>
+                       <Label>Quantité</Label>
+                       <Input
+                         type="number"
+                         min="1"
+                         max={part.availableQuantity || undefined}
+                         value={part.quantity}
+                         onChange={(e) => updatePart(index, 'quantity', parseInt(e.target.value) || 1)}
+                         disabled={disabled}
+                       />
+                     </div>
 
-                    <div>
-                      <Label>Prix unitaire (€)</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={part.unitCost}
-                        onChange={(e) => updatePart(index, 'unitCost', parseFloat(e.target.value) || 0)}
-                        disabled={disabled}
-                      />
-                    </div>
+                     <div>
+                       <Label>Prix unitaire (€)</Label>
+                       <Input
+                         type="number"
+                         min="0"
+                         step="0.01"
+                         value={part.unitCost}
+                         onChange={(e) => updatePart(index, 'unitCost', parseFloat(e.target.value) || 0)}
+                         disabled={disabled}
+                       />
+                     </div>
 
-                    <div>
-                      <Label>Coût total (€)</Label>
-                      <Input
-                        value={part.totalCost.toFixed(2)}
-                        disabled
-                      />
-                    </div>
-                  </div>
+                     <div>
+                       <Label>Coût total (€)</Label>
+                       <Input
+                         value={part.totalCost.toFixed(2)}
+                         disabled
+                       />
+                     </div>
+                   </div>
 
-                  <div>
-                    <Label>Notes</Label>
-                    <Input
-                      value={part.notes || ''}
-                      onChange={(e) => updatePart(index, 'notes', e.target.value)}
-                      placeholder="Notes sur cette pièce..."
-                      disabled={disabled}
-                    />
-                  </div>
+                   <div>
+                     <Label>Notes</Label>
+                     <Input
+                       value={part.notes || ''}
+                       onChange={(e) => updatePart(index, 'notes', e.target.value)}
+                       placeholder="Notes sur cette pièce..."
+                       disabled={disabled}
+                     />
+                   </div>
 
                   {part.stockItemId && part.quantity > (part.availableQuantity || 0) && (
                     <div className="text-sm text-red-600 bg-red-50 p-2 rounded">

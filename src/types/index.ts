@@ -199,10 +199,29 @@ export interface BoatRental {
   updatedAt: string;
 }
 
+export interface BoatComponent {
+  id: string;
+  boatId: string;
+  componentName: string;
+  componentType: string;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+  installationDate?: string;
+  lastMaintenanceDate?: string;
+  nextMaintenanceDate?: string;
+  maintenanceIntervalDays: number;
+  status: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InterventionPart {
   id: string;
   interventionId: string;
   stockItemId?: string;
+  componentId?: string;
   partName: string;
   quantity: number;
   unitCost: number;

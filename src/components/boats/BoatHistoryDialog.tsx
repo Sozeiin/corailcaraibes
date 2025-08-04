@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Boat, Intervention, BoatRental, InterventionPart } from '@/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { BoatComponentsManager } from './BoatComponentsManager';
 
 interface BoatHistoryDialogProps {
   isOpen: boolean;
@@ -177,7 +178,7 @@ export function BoatHistoryDialog({ isOpen, onClose, boat }: BoatHistoryDialogPr
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="general" className="flex items-center gap-1">
               <History className="h-4 w-4" />
               Général
@@ -193,6 +194,10 @@ export function BoatHistoryDialog({ isOpen, onClose, boat }: BoatHistoryDialogPr
             <TabsTrigger value="parts" className="flex items-center gap-1">
               <Package className="h-4 w-4" />
               Pièces
+            </TabsTrigger>
+            <TabsTrigger value="components" className="flex items-center gap-1">
+              <Wrench className="h-4 w-4" />
+              Composants
             </TabsTrigger>
           </TabsList>
 
@@ -415,6 +420,10 @@ export function BoatHistoryDialog({ isOpen, onClose, boat }: BoatHistoryDialogPr
                 ))
               )}
             </div>
+          </TabsContent>
+
+          <TabsContent value="components">
+            <BoatComponentsManager boatId={boat.id} boatName={boat.name} />
           </TabsContent>
         </Tabs>
       </DialogContent>
