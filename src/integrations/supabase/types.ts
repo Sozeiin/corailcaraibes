@@ -229,6 +229,60 @@ export type Database = {
           },
         ]
       }
+      boat_components: {
+        Row: {
+          boat_id: string
+          component_name: string
+          component_type: string
+          created_at: string
+          id: string
+          installation_date: string | null
+          last_maintenance_date: string | null
+          maintenance_interval_days: number | null
+          manufacturer: string | null
+          model: string | null
+          next_maintenance_date: string | null
+          notes: string | null
+          serial_number: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          boat_id: string
+          component_name: string
+          component_type: string
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          last_maintenance_date?: string | null
+          maintenance_interval_days?: number | null
+          manufacturer?: string | null
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          serial_number?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          boat_id?: string
+          component_name?: string
+          component_type?: string
+          created_at?: string
+          id?: string
+          installation_date?: string | null
+          last_maintenance_date?: string | null
+          maintenance_interval_days?: number | null
+          manufacturer?: string | null
+          model?: string | null
+          next_maintenance_date?: string | null
+          notes?: string | null
+          serial_number?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       boat_rentals: {
         Row: {
           base_id: string | null
@@ -711,6 +765,7 @@ export type Database = {
       }
       intervention_parts: {
         Row: {
+          component_id: string | null
           id: string
           intervention_id: string
           notes: string | null
@@ -722,6 +777,7 @@ export type Database = {
           used_at: string | null
         }
         Insert: {
+          component_id?: string | null
           id?: string
           intervention_id: string
           notes?: string | null
@@ -733,6 +789,7 @@ export type Database = {
           used_at?: string | null
         }
         Update: {
+          component_id?: string | null
           id?: string
           intervention_id?: string
           notes?: string | null
