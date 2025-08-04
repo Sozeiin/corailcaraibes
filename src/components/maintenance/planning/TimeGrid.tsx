@@ -75,17 +75,19 @@ function DroppableTimeSlot({ technicianId, date, timeSlot, activities, onActivit
     <div
       ref={setNodeRef}
       className={`
-        min-h-[60px] border-r border-b border-border p-1 transition-colors
+        min-h-[40px] max-h-[40px] h-[40px] w-[200px] min-w-[200px] max-w-[200px] border-r border-b border-border p-1 transition-colors overflow-hidden
         ${isOver ? 'bg-primary/10' : 'bg-background hover:bg-muted/50'}
       `}
     >
-      {slotActivities.map(activity => (
-        <PlanningActivityCard
-          key={activity.id}
-          activity={activity}
-          onClick={() => onActivityClick(activity)}
-        />
-      ))}
+      <div className="space-y-0.5 h-full overflow-hidden">
+        {slotActivities.map(activity => (
+          <PlanningActivityCard
+            key={activity.id}
+            activity={activity}
+            onClick={() => onActivityClick(activity)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -113,7 +115,7 @@ export function TimeGrid({
               <div 
                 key={dayIndex} 
                 className={`
-                  min-w-[200px] p-2 text-center border-r border-border font-medium
+                  min-w-[200px] max-w-[200px] w-[200px] p-2 text-center border-r border-border font-medium
                   ${isToday(day) ? 'bg-primary/10' : 'bg-muted'}
                 `}
               >
@@ -131,7 +133,7 @@ export function TimeGrid({
             {timeSlots.map((timeSlot, index) => (
               <div 
                 key={index}
-                className="min-h-[60px] border-b border-border p-2 text-sm text-muted-foreground bg-muted/50 flex items-center"
+                className="min-h-[40px] max-h-[40px] h-[40px] border-b border-border p-1 text-xs text-muted-foreground bg-muted/50 flex items-center"
               >
                 {timeSlot.label}
               </div>
