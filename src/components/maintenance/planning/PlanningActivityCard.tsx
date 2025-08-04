@@ -1,7 +1,6 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Clock, User, AlertTriangle, CheckCircle2, Play, Pause, Ship } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -49,39 +48,6 @@ const getActivityIcon = (type: string) => {
   }
 };
 
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'planned': return 'bg-blue-50 text-blue-700 border-blue-200';
-    case 'in_progress': return 'bg-yellow-50 text-yellow-700 border-yellow-200';
-    case 'completed': return 'bg-green-50 text-green-700 border-green-200';
-    case 'cancelled': return 'bg-red-50 text-red-700 border-red-200';
-    case 'overdue': return 'bg-red-100 text-red-800 border-red-300';
-    default: return 'bg-gray-50 text-gray-700 border-gray-200';
-  }
-};
-
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case 'planned': return 'Planifiée';
-    case 'in_progress': return 'En cours';
-    case 'completed': return 'Terminée';
-    case 'cancelled': return 'Annulée';
-    case 'overdue': return 'En retard';
-    default: return status;
-  }
-};
-
-const getActivityLabel = (type: string) => {
-  switch (type) {
-    case 'checkin': return 'Check-in';
-    case 'checkout': return 'Check-out';
-    case 'travel': return 'Déplacement';
-    case 'break': return 'Pause';
-    case 'emergency': return 'Urgence';
-    default: return type;
-  }
-};
-
 export function PlanningActivityCard({ activity, isDragging = false, onClick }: PlanningActivityCardProps) {
   const ActivityIcon = getActivityIcon(activity.activity_type);
   
@@ -111,66 +77,34 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
       {...listeners}
       {...attributes}
       className={`
-        cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border-l-2 text-xs
-        ${isCurrentlyDragging ? 'opacity-50 scale-105 shadow-lg' : ''}
+        cursor-grab active:cursor-grabbing transition-all duration-200 hover:shadow-sm border-l-2 
+        ${isCurrentlyDragging ? "opacity-50 scale-105 shadow-lg" : ""}
       `}
       onClick={onClick}
     >
-      <CardContent className="p-1.5 space-y-1">
-        <div className="flex items-start justify-between gap-1">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 mb-1">
-              <ActivityIcon className="w-3 h-3 flex-shrink-0" style={{ color: activity.color_code }} />
-              <Badge 
-                variant="outline" 
-                className="text-[10px] px-1 py-0 leading-none"
-                style={{ 
-                  backgroundColor: `${activity.color_code}20`,
-                  borderColor: activity.color_code,
-                  color: activity.color_code
-                }}
-              >
-                {getActivityLabel(activity.activity_type)}
-              </Badge>
-            </div>
-            <h4 className="font-medium text-xs truncate leading-tight">{activity.title}</h4>
-            {activity.boat && (
-              <p className="text-[10px] text-muted-foreground truncate">
-                {activity.boat.name}
-              </p>
-            )}
-          </div>
-          <Badge variant="outline" className={`text-xs ${getStatusColor(activity.status)}`}>
-            {getStatusLabel(activity.status)}
-          </Badge>
+      <CardContent className="p-1">
+        {/* Titre avec icône - très petit */}
+        <div className="flex items-center gap-1 mb-0.5">
+          <ActivityIcon className="w-2 h-2 flex-shrink-0" style={{ color: activity.color_code }} />
+          <span className="text-[8px] font-medium truncate leading-none">{activity.title}</span>
         </div>
-
-        {activity.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {activity.description}
-          </p>
+        
+        {/* Bateau si présent */}
+        {activity.boat && (
+          <div className="text-[7px] text-muted-foreground truncate leading-none mb-0.5">
+            🚤 {activity.boat.name}
+          </div>
         )}
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="w-3 h-3" />
-            <span>
-              {format(new Date(activity.scheduled_start), 'HH:mm', { locale: fr })} - 
-              {format(new Date(activity.scheduled_end), 'HH:mm', { locale: fr })}
-            </span>
-          </div>
-          {activity.technician && (
-            <div className="flex items-center gap-1">
-              <User className="w-3 h-3" />
-              <span className="truncate">{activity.technician.name}</span>
-            </div>
-          )}
+        
+        {/* Heures */}
+        <div className="text-[7px] text-muted-foreground leading-none mb-0.5">
+          ⏰ {format(new Date(activity.scheduled_start), "HH:mm", { locale: fr })} - {format(new Date(activity.scheduled_end), "HH:mm", { locale: fr })}
         </div>
-
-        {activity.priority === 'high' && (
-          <div className="flex items-center gap-1 text-xs text-orange-600">
-            <AlertTriangle className="w-3 h-3" />
-            <span>Priorité élevée</span>
+        
+        {/* Technicien si présent */}
+        {activity.technician && (
+          <div className="text-[7px] text-muted-foreground truncate leading-none">
+            👤 {activity.technician.name}
           </div>
         )}
       </CardContent>
