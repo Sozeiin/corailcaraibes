@@ -75,7 +75,7 @@ function DroppableTimeSlot({ technicianId, date, timeSlot, activities, onActivit
     <div
       ref={setNodeRef}
       className={`
-        min-h-[40px] max-h-[40px] h-[40px] w-[200px] min-w-[200px] max-w-[200px] border-r border-b border-border p-1 transition-colors overflow-hidden
+        min-h-[60px] max-h-[60px] h-[60px] w-[200px] min-w-[200px] max-w-[200px] border-r border-b border-border p-1 transition-colors overflow-hidden
         ${isOver ? 'bg-primary/10' : 'bg-background hover:bg-muted/50'}
       `}
     >
@@ -133,7 +133,7 @@ export function TimeGrid({
             {timeSlots.map((timeSlot, index) => (
               <div 
                 key={index}
-                className="min-h-[40px] max-h-[40px] h-[40px] border-b border-border p-1 text-xs text-muted-foreground bg-muted/50 flex items-center"
+                className="min-h-[60px] max-h-[60px] h-[60px] border-b border-border p-1 text-xs text-muted-foreground bg-muted/50 flex items-center"
               >
                 {timeSlot.label}
               </div>

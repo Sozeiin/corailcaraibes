@@ -116,14 +116,14 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
       `}
       onClick={onClick}
     >
-      <CardContent className="p-1 space-y-1">
+      <CardContent className="p-1.5 space-y-1">
         <div className="flex items-start justify-between gap-1">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1 mb-0.5">
-              <ActivityIcon className="w-2 h-2" style={{ color: activity.color_code }} />
+            <div className="flex items-center gap-1 mb-1">
+              <ActivityIcon className="w-3 h-3 flex-shrink-0" style={{ color: activity.color_code }} />
               <Badge 
                 variant="outline" 
-                className="text-[10px] px-1 py-0"
+                className="text-[10px] px-1 py-0 leading-none"
                 style={{ 
                   backgroundColor: `${activity.color_code}20`,
                   borderColor: activity.color_code,
@@ -133,9 +133,9 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
                 {getActivityLabel(activity.activity_type)}
               </Badge>
             </div>
-            <h4 className="font-medium text-[10px] truncate leading-tight">{activity.title}</h4>
+            <h4 className="font-medium text-xs truncate leading-tight">{activity.title}</h4>
             {activity.boat && (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-[10px] text-muted-foreground truncate">
                 {activity.boat.name}
               </p>
             )}
