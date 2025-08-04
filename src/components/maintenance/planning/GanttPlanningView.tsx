@@ -20,7 +20,9 @@ import {
   AlertTriangle,
   CheckCircle2,
   Play,
-  Pause
+  Pause,
+  Sparkles,
+  TrendingUp
 } from 'lucide-react';
 import { PlanningActivityCard } from './PlanningActivityCard';
 import { TimeGrid } from './TimeGrid';
@@ -32,6 +34,9 @@ import { ActivityTemplateManager } from './ActivityTemplateManager';
 import { ResourceView } from './ResourceView';
 import { ChronologicalView } from './ChronologicalView';
 import { MonthlyView } from './MonthlyView';
+import { AISuggestions } from './AISuggestions';
+import { ConflictManager } from './ConflictManager';
+import { ResourceOptimizer } from './ResourceOptimizer';
 
 interface PlanningActivity {
   id: string;
@@ -80,6 +85,9 @@ export function GanttPlanningView() {
   const [showSidebar, setShowSidebar] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('gantt');
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [showConflictManager, setShowConflictManager] = useState(false);
+  const [showResourceOptimizer, setShowResourceOptimizer] = useState(false);
   const [filters, setFilters] = useState<FilterType>({
     search: '',
     technician: '',
@@ -310,7 +318,36 @@ export function GanttPlanningView() {
                     <CalendarDays className="w-5 h-5" />
                     Planning Intelligent
                   </CardTitle>
-                  <ViewModeSelector viewMode={viewMode} onViewModeChange={setViewMode} />
+                  <div className="flex items-center gap-2">
+                    <ViewModeSelector viewMode={viewMode} onViewModeChange={setViewMode} />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAISuggestions(!showAISuggestions)}
+                      className="flex items-center gap-1"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      IA
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowConflictManager(!showConflictManager)}
+                      className="flex items-center gap-1"
+                    >
+                      <AlertTriangle className="w-4 h-4" />
+                      Conflits
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowResourceOptimizer(!showResourceOptimizer)}
+                      className="flex items-center gap-1"
+                    >
+                      <TrendingUp className="w-4 h-4" />
+                      Ressources
+                    </Button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -377,6 +414,40 @@ export function GanttPlanningView() {
             />
           )}
         </div>
+
+        {/* Side panels for advanced features */}
+        {showAISuggestions && (
+          <div className="w-96 border-l bg-background overflow-hidden">
+            <AISuggestions
+              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+              onApplySuggestion={(suggestion) => {
+                // Handle AI suggestion application
+                console.log('Applying suggestion:', suggestion);
+                // This would integrate with the planning system
+              }}
+              onDismissSuggestion={(suggestionId) => {
+                console.log('Dismissing suggestion:', suggestionId);
+              }}
+            />
+          </div>
+        )}
+
+        {showConflictManager && (
+          <div className="w-96 border-l bg-background overflow-hidden">
+            <ConflictManager
+              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+            />
+          </div>
+        )}
+
+        {showResourceOptimizer && (
+          <div className="w-96 border-l bg-background overflow-hidden">
+            <ResourceOptimizer
+              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+              weekStart={currentWeek}
+            />
+          </div>
+        )}
 
         {/* Drag overlay */}
         <DragOverlay>
