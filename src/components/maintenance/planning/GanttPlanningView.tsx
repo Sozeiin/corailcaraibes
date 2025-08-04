@@ -308,7 +308,10 @@ export function GanttPlanningView() {
           <UnassignedTasksSidebar 
             activities={unassignedActivities}
             onClose={() => setShowSidebar(false)}
-            onCreateActivity={() => setShowActivityDialog(true)}
+            onCreateActivity={() => {
+              console.log('Creating new activity, setting dialog to true');
+              setShowActivityDialog(true);
+            }}
           />
         )}
 
@@ -471,14 +474,17 @@ export function GanttPlanningView() {
         </DragOverlay>
 
         {/* Activity dialog */}
-        {showActivityDialog && (
-          <ActivityDialog 
-            open={showActivityDialog}
-            onOpenChange={setShowActivityDialog}
-            activity={selectedActivity}
-            technicians={technicians}
-          />
-        )}
+        {(() => {
+          console.log('Rendering dialog section:', { showActivityDialog, technicianCount: technicians.length, userBaseId: user?.baseId });
+          return showActivityDialog && (
+            <ActivityDialog 
+              open={showActivityDialog}
+              onOpenChange={setShowActivityDialog}
+              activity={selectedActivity}
+              technicians={technicians}
+            />
+          );
+        })()}
       </div>
     </DndContext>
   );
