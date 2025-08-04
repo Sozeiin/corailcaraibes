@@ -82,28 +82,28 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
       `}
       onClick={onClick}
     >
-      <CardContent className="p-1">
-        {/* Titre avec icône - très petit */}
+      <CardContent className="p-0.5 px-1">
+        {/* Titre avec icône - lisible */}
         <div className="flex items-center gap-1 mb-0.5">
-          <ActivityIcon className="w-2 h-2 flex-shrink-0" style={{ color: activity.color_code }} />
-          <span className="text-[8px] font-medium truncate leading-none">{activity.title}</span>
+          <ActivityIcon className="w-2.5 h-2.5 flex-shrink-0" style={{ color: activity.color_code }} />
+          <span className="text-[10px] font-medium truncate leading-tight">{activity.title}</span>
         </div>
         
         {/* Bateau si présent */}
         {activity.boat && (
-          <div className="text-[7px] text-muted-foreground truncate leading-none mb-0.5">
+          <div className="text-[9px] text-muted-foreground truncate leading-tight mb-0.5">
             🚤 {activity.boat.name}
           </div>
         )}
         
         {/* Heures */}
-        <div className="text-[7px] text-muted-foreground leading-none mb-0.5">
+        <div className="text-[9px] text-muted-foreground leading-tight mb-0.5">
           ⏰ {format(new Date(activity.scheduled_start), "HH:mm", { locale: fr })} - {format(new Date(activity.scheduled_end), "HH:mm", { locale: fr })}
         </div>
         
         {/* Technicien si présent */}
         {activity.technician && (
-          <div className="text-[7px] text-muted-foreground truncate leading-none">
+          <div className="text-[9px] text-muted-foreground truncate leading-tight">
             👤 {activity.technician.name}
           </div>
         )}
