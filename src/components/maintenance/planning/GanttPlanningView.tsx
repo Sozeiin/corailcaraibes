@@ -26,6 +26,12 @@ import { PlanningActivityCard } from './PlanningActivityCard';
 import { TimeGrid } from './TimeGrid';
 import { UnassignedTasksSidebar } from './UnassignedTasksSidebar';
 import { ActivityDialog } from './ActivityDialog';
+import { ViewModeSelector, ViewMode } from './ViewModeSelector';
+import { PlanningFilters, PlanningFilters as FilterType } from './PlanningFilters';
+import { ActivityTemplateManager } from './ActivityTemplateManager';
+import { ResourceView } from './ResourceView';
+import { ChronologicalView } from './ChronologicalView';
+import { MonthlyView } from './MonthlyView';
 
 interface PlanningActivity {
   id: string;
@@ -72,6 +78,17 @@ export function GanttPlanningView() {
   const [draggedActivity, setDraggedActivity] = useState<PlanningActivity | null>(null);
   const [showActivityDialog, setShowActivityDialog] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('gantt');
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [filters, setFilters] = useState<FilterType>({
+    search: '',
+    technician: '',
+    activityType: '',
+    status: '',
+    priority: '',
+    dateRange: { from: undefined, to: undefined },
+    boat: ''
+  });
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -291,8 +308,9 @@ export function GanttPlanningView() {
                   )}
                   <CardTitle className="flex items-center gap-2">
                     <CalendarDays className="w-5 h-5" />
-                    Planning Gantt
+                    Planning Intelligent
                   </CardTitle>
+                  <ViewModeSelector viewMode={viewMode} onViewModeChange={setViewMode} />
                 </div>
                 
                 <div className="flex items-center gap-2">
@@ -313,15 +331,51 @@ export function GanttPlanningView() {
             </CardHeader>
           </Card>
 
-          {/* Time grid header */}
-          <TimeGrid 
-            weekDays={weekDays} 
-            timeSlots={timeSlots} 
+          {/* Filters */}
+          <PlanningFilters 
+            filters={filters}
+            onFiltersChange={setFilters}
             technicians={technicians}
-            activities={activities}
-            onActivityClick={(activity) => setSelectedActivity(activity)}
-            getActivitiesForTechnicianAndDay={getActivitiesForTechnicianAndDay}
+            boats={[]}
+            onReset={() => setFilters({
+              search: '', technician: '', activityType: '', status: '', priority: '',
+              dateRange: { from: undefined, to: undefined }, boat: ''
+            })}
           />
+
+          {/* View content based on selected mode */}
+          {viewMode === 'gantt' && (
+            <TimeGrid 
+              weekDays={weekDays} 
+              timeSlots={timeSlots} 
+              technicians={technicians}
+              activities={activities}
+              onActivityClick={(activity) => setSelectedActivity(activity)}
+              getActivitiesForTechnicianAndDay={getActivitiesForTechnicianAndDay}
+            />
+          )}
+          
+          {viewMode === 'resource' && (
+            <ResourceView 
+              technicians={technicians}
+              activities={activities}
+              onActivityClick={(activity) => setSelectedActivity(activity)}
+            />
+          )}
+          
+          {viewMode === 'chronological' && (
+            <ChronologicalView 
+              activities={activities}
+              onActivityClick={(activity) => setSelectedActivity(activity)}
+            />
+          )}
+          
+          {viewMode === 'monthly' && (
+            <MonthlyView 
+              activities={activities}
+              onActivityClick={(activity) => setSelectedActivity(activity)}
+            />
+          )}
         </div>
 
         {/* Drag overlay */}
