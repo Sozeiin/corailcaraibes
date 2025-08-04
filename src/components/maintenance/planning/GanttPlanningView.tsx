@@ -103,8 +103,17 @@ export function GanttPlanningView() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Add debug logging
-  console.log('GanttPlanningView user:', user);
+  // Early return if no user or baseId
+  if (!user || !user.baseId) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground mt-2">Chargement des données utilisateur...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Generate time slots (30-minute intervals)
   const timeSlots = useMemo(() => {
