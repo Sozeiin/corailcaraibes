@@ -5,6 +5,7 @@ import { MaintenanceInterventions } from '@/components/maintenance/MaintenanceIn
 import { TechnicianInterventions } from '@/components/maintenance/TechnicianInterventions';
 import { PreventiveMaintenance } from '@/components/maintenance/PreventiveMaintenance';
 import { WeatherMaintenancePlanner } from '@/components/maintenance/scheduling/WeatherMaintenancePlanner';
+import { GanttPlanningView } from '@/components/maintenance/planning/GanttPlanningView';
 import { MaintenanceHistory } from '@/components/maintenance/MaintenanceHistory';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -24,7 +25,7 @@ export default function Maintenance() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
           <TabsTrigger value="interventions" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
             <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
             <span className="hidden xs:inline">Interventions</span>
@@ -37,8 +38,13 @@ export default function Maintenance() {
           </TabsTrigger>
           <TabsTrigger value="schedule" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">Planning avec météo</span>
-            <span className="sm:hidden">Planning</span>
+            <span className="hidden sm:inline">Planning météo</span>
+            <span className="sm:hidden">Météo</span>
+          </TabsTrigger>
+          <TabsTrigger value="gantt" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">Planning Gantt</span>
+            <span className="sm:hidden">Gantt</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 text-xs sm:text-sm">
             <History className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -65,6 +71,10 @@ export default function Maintenance() {
 
         <TabsContent value="history">
           <MaintenanceHistory />
+        </TabsContent>
+
+        <TabsContent value="gantt">
+          <GanttPlanningView />
         </TabsContent>
       </Tabs>
     </div>

@@ -1555,6 +1555,219 @@ export type Database = {
           },
         ]
       }
+      planning_activities: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          actual_duration: number | null
+          actual_end: string | null
+          actual_start: string | null
+          base_id: string
+          boat_id: string | null
+          checklist_completed: boolean | null
+          color_code: string | null
+          created_at: string
+          delay_minutes: number | null
+          description: string | null
+          estimated_duration: number | null
+          id: string
+          notes: string | null
+          original_intervention_id: string | null
+          performance_rating: number | null
+          planned_by: string | null
+          priority: string | null
+          rental_id: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status: Database["public"]["Enums"]["activity_status"]
+          technician_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          actual_duration?: number | null
+          actual_end?: string | null
+          actual_start?: string | null
+          base_id: string
+          boat_id?: string | null
+          checklist_completed?: boolean | null
+          color_code?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          description?: string | null
+          estimated_duration?: number | null
+          id?: string
+          notes?: string | null
+          original_intervention_id?: string | null
+          performance_rating?: number | null
+          planned_by?: string | null
+          priority?: string | null
+          rental_id?: string | null
+          scheduled_end: string
+          scheduled_start: string
+          status?: Database["public"]["Enums"]["activity_status"]
+          technician_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          actual_duration?: number | null
+          actual_end?: string | null
+          actual_start?: string | null
+          base_id?: string
+          boat_id?: string | null
+          checklist_completed?: boolean | null
+          color_code?: string | null
+          created_at?: string
+          delay_minutes?: number | null
+          description?: string | null
+          estimated_duration?: number | null
+          id?: string
+          notes?: string | null
+          original_intervention_id?: string | null
+          performance_rating?: number | null
+          planned_by?: string | null
+          priority?: string | null
+          rental_id?: string | null
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: Database["public"]["Enums"]["activity_status"]
+          technician_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_activities_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_activities_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_activities_original_intervention_id_fkey"
+            columns: ["original_intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_conflicts: {
+        Row: {
+          activity_id_1: string
+          activity_id_2: string
+          auto_detected: boolean | null
+          conflict_type: string
+          created_at: string
+          id: string
+          resolution_notes: string | null
+          resolved: boolean | null
+          severity: string
+        }
+        Insert: {
+          activity_id_1: string
+          activity_id_2: string
+          auto_detected?: boolean | null
+          conflict_type: string
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          severity?: string
+        }
+        Update: {
+          activity_id_1?: string
+          activity_id_2?: string
+          auto_detected?: boolean | null
+          conflict_type?: string
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_conflicts_activity_id_1_fkey"
+            columns: ["activity_id_1"]
+            isOneToOne: false
+            referencedRelation: "planning_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_conflicts_activity_id_2_fkey"
+            columns: ["activity_id_2"]
+            isOneToOne: false
+            referencedRelation: "planning_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planning_templates: {
+        Row: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          base_id: string | null
+          checklist_items: Json | null
+          color_code: string | null
+          created_at: string
+          created_by: string | null
+          default_priority: string | null
+          description: string | null
+          estimated_duration: number
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          activity_type: Database["public"]["Enums"]["activity_type"]
+          base_id?: string | null
+          checklist_items?: Json | null
+          color_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_priority?: string | null
+          description?: string | null
+          estimated_duration: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          activity_type?: Database["public"]["Enums"]["activity_type"]
+          base_id?: string | null
+          checklist_items?: Json | null
+          color_code?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_priority?: string | null
+          description?: string | null
+          estimated_duration?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planning_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_audit_log: {
         Row: {
           action: string
@@ -2238,6 +2451,19 @@ export type Database = {
       }
     }
     Enums: {
+      activity_status:
+        | "planned"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "overdue"
+      activity_type:
+        | "maintenance"
+        | "checkin"
+        | "checkout"
+        | "travel"
+        | "break"
+        | "emergency"
       alert_severity: "info" | "warning" | "error"
       alert_type: "stock" | "maintenance" | "document" | "system"
       boat_status: "available" | "rented" | "maintenance" | "out_of_service"
@@ -2387,6 +2613,21 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_status: [
+        "planned",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "overdue",
+      ],
+      activity_type: [
+        "maintenance",
+        "checkin",
+        "checkout",
+        "travel",
+        "break",
+        "emergency",
+      ],
       alert_severity: ["info", "warning", "error"],
       alert_type: ["stock", "maintenance", "document", "system"],
       boat_status: ["available", "rented", "maintenance", "out_of_service"],
