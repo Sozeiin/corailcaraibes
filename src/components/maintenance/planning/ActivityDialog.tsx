@@ -10,6 +10,7 @@ import { Clock, User, Ship, Calendar } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PlanningActivity {
   id: string;
@@ -58,6 +59,12 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
 
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Early return if no user or baseId
+  if (!user || !user.baseId) {
+    return null;
+  }
 
   useEffect(() => {
     if (activity) {
@@ -152,7 +159,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
       ...formData,
       scheduled_start: startTime.toISOString(),
       scheduled_end: endTime.toISOString(),
-      base_id: '550e8400-e29b-41d4-a716-446655440001', // Default base ID
+      base_id: user.baseId,
       color_code: getActivityColor(formData.activity_type),
       technician_id: formData.technician_id || null,
       boat_id: formData.boat_id || null
