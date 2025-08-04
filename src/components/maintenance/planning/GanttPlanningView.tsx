@@ -163,11 +163,7 @@ export function GanttPlanningView() {
       
       const { data, error } = await supabase
         .from('planning_activities')
-        .select(`
-          *,
-          technician:profiles(id, name),
-          boat:boats(id, name)
-        `)
+        .select('*')
         .gte('scheduled_start', start.toISOString())
         .lte('scheduled_end', end.toISOString())
         .order('scheduled_start');
@@ -175,8 +171,12 @@ export function GanttPlanningView() {
       if (error) throw error;
       return (data || []).map(item => ({
         ...item,
-        technician: Array.isArray(item.technician) ? item.technician[0] || null : item.technician || null,
-        boat: Array.isArray(item.boat) ? item.boat[0] || null : item.boat || null
+        technician: null,
+        boat: null,
+        base_id: item.base_id,
+        priority: item.priority || 'medium',
+        checklist_completed: item.checklist_completed || false,
+        delay_minutes: item.delay_minutes || 0
       })) as PlanningActivity[];
     }
   });
@@ -187,10 +187,7 @@ export function GanttPlanningView() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('planning_activities')
-        .select(`
-          *,
-          boat:boats(id, name)
-        `)
+        .select('*')
         .is('technician_id', null)
         .eq('status', 'planned')
         .order('scheduled_start');
@@ -199,7 +196,7 @@ export function GanttPlanningView() {
       return (data || []).map(item => ({
         ...item,
         technician: null,
-        boat: item.boat || null,
+        boat: null,
         base_id: item.base_id,
         priority: item.priority || 'medium',
         checklist_completed: item.checklist_completed || false,
