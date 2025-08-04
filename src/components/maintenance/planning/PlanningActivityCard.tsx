@@ -7,7 +7,7 @@ import { fr } from 'date-fns/locale';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -72,7 +72,6 @@ const getStatusLabel = (status: string) => {
 
 const getActivityLabel = (type: string) => {
   switch (type) {
-    case 'maintenance': return 'Maintenance';
     case 'checkin': return 'Check-in';
     case 'checkout': return 'Check-out';
     case 'travel': return 'Déplacement';

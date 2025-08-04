@@ -8,7 +8,7 @@ import { PlanningActivityCard } from './PlanningActivityCard';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -62,12 +62,14 @@ interface UnassignedTasksSidebarProps {
   activities: PlanningActivity[];
   onClose: () => void;
   onCreateActivity: () => void;
+  onCreateMaintenance: () => void;
 }
 
 export function UnassignedTasksSidebar({ 
   activities, 
   onClose, 
-  onCreateActivity 
+  onCreateActivity,
+  onCreateMaintenance 
 }: UnassignedTasksSidebarProps) {
   const urgentActivities = activities.filter(a => a.priority === 'high' || a.activity_type === 'emergency');
   const regularActivities = activities.filter(a => a.priority !== 'high' && a.activity_type !== 'emergency');
@@ -81,10 +83,16 @@ export function UnassignedTasksSidebar({
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <Button onClick={onCreateActivity} className="w-full">
-          <Plus className="w-4 h-4 mr-2" />
-          Nouvelle activité
-        </Button>
+        <div className="space-y-2">
+          <Button onClick={onCreateActivity} className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle activité
+          </Button>
+          <Button onClick={onCreateMaintenance} variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Nouvelle maintenance
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="p-0">

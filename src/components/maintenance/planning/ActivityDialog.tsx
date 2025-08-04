@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -49,7 +49,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    activity_type: 'maintenance' as 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency',
+    activity_type: 'checkin' as 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency',
     priority: 'medium',
     estimated_duration: 60,
     technician_id: '',
@@ -86,7 +86,7 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
       setFormData({
         title: '',
         description: '',
-        activity_type: 'maintenance',
+        activity_type: 'checkin',
         priority: 'medium',
         estimated_duration: 60,
         technician_id: 'unassigned',
@@ -178,7 +178,6 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'maintenance': return '#3b82f6';
       case 'checkin': return '#10b981';
       case 'checkout': return '#f59e0b';
       case 'emergency': return '#ef4444';
@@ -228,14 +227,13 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
-                  <SelectItem value="checkin">Check-in</SelectItem>
-                  <SelectItem value="checkout">Check-out</SelectItem>
-                  <SelectItem value="travel">Déplacement</SelectItem>
-                  <SelectItem value="break">Pause</SelectItem>
-                  <SelectItem value="emergency">Urgence</SelectItem>
-                </SelectContent>
+                        <SelectContent>
+                          <SelectItem value="checkin">Check-in</SelectItem>
+                          <SelectItem value="checkout">Check-out</SelectItem>
+                          <SelectItem value="travel">Déplacement</SelectItem>
+                          <SelectItem value="break">Pause</SelectItem>
+                          <SelectItem value="emergency">Urgence</SelectItem>
+                        </SelectContent>
               </Select>
             </div>
 

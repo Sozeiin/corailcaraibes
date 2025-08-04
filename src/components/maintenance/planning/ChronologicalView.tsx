@@ -9,7 +9,7 @@ import { fr } from 'date-fns/locale';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   scheduled_start: string;
@@ -65,7 +65,6 @@ export function ChronologicalView({ activities, onActivityClick }: Chronological
 
   const getActivityTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
-      maintenance: 'Maintenance',
       checkin: 'Check-in',
       checkout: 'Check-out',
       travel: 'Déplacement',

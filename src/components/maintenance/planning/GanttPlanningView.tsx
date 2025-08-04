@@ -29,6 +29,7 @@ import { PlanningActivityCard } from './PlanningActivityCard';
 import { TimeGrid } from './TimeGrid';
 import { UnassignedTasksSidebar } from './UnassignedTasksSidebar';
 import { ActivityDialog } from './ActivityDialog';
+import { InterventionDialog } from '../InterventionDialog';
 import { ViewModeSelector, ViewMode } from './ViewModeSelector';
 import { PlanningFilters, PlanningFilters as FilterType } from './PlanningFilters';
 import { ActivityTemplateManager } from './ActivityTemplateManager';
@@ -41,7 +42,7 @@ import { ResourceOptimizer } from './ResourceOptimizer';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'maintenance' | 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -83,6 +84,7 @@ export function GanttPlanningView() {
   const [selectedActivity, setSelectedActivity] = useState<PlanningActivity | null>(null);
   const [draggedActivity, setDraggedActivity] = useState<PlanningActivity | null>(null);
   const [showActivityDialog, setShowActivityDialog] = useState(false);
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('gantt');
   const [showTemplates, setShowTemplates] = useState(false);
@@ -166,6 +168,7 @@ export function GanttPlanningView() {
         .select('*')
         .gte('scheduled_start', start.toISOString())
         .lte('scheduled_end', end.toISOString())
+        .neq('activity_type', 'maintenance')
         .order('scheduled_start');
       
       if (error) throw error;
@@ -190,6 +193,7 @@ export function GanttPlanningView() {
         .select('*')
         .is('technician_id', null)
         .eq('status', 'planned')
+        .neq('activity_type', 'maintenance')
         .order('scheduled_start');
       
       if (error) throw error;
@@ -308,6 +312,10 @@ export function GanttPlanningView() {
             onCreateActivity={() => {
               console.log('Creating new activity, setting dialog to true');
               setShowActivityDialog(true);
+            }}
+            onCreateMaintenance={() => {
+              console.log('Creating new maintenance, setting dialog to true');
+              setShowMaintenanceDialog(true);
             }}
           />
         )}
@@ -482,6 +490,18 @@ export function GanttPlanningView() {
             />
           );
         })()}
+
+        {/* Maintenance dialog */}
+        <InterventionDialog
+          isOpen={showMaintenanceDialog}
+          onClose={() => {
+            setShowMaintenanceDialog(false);
+            // Invalidate queries to refresh data when a new maintenance is created
+            queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
+            queryClient.invalidateQueries({ queryKey: ['unassigned-activities'] });
+          }}
+          intervention={null}
+        />
       </div>
     </DndContext>
   );
