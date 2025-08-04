@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { format, addDays, startOfWeek, endOfWeek, addWeeks, subWeeks, isToday, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
@@ -100,6 +101,10 @@ export function GanttPlanningView() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  // Add debug logging
+  console.log('GanttPlanningView user:', user);
 
   // Generate time slots (30-minute intervals)
   const timeSlots = useMemo(() => {
@@ -416,10 +421,10 @@ export function GanttPlanningView() {
         </div>
 
         {/* Side panels for advanced features */}
-        {showAISuggestions && (
+        {showAISuggestions && user?.baseId && (
           <div className="w-96 border-l bg-background overflow-hidden">
             <AISuggestions
-              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+              baseId={user.baseId}
               onApplySuggestion={(suggestion) => {
                 // Handle AI suggestion application
                 console.log('Applying suggestion:', suggestion);
@@ -432,18 +437,18 @@ export function GanttPlanningView() {
           </div>
         )}
 
-        {showConflictManager && (
+        {showConflictManager && user?.baseId && (
           <div className="w-96 border-l bg-background overflow-hidden">
             <ConflictManager
-              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+              baseId={user.baseId}
             />
           </div>
         )}
 
-        {showResourceOptimizer && (
+        {showResourceOptimizer && user?.baseId && (
           <div className="w-96 border-l bg-background overflow-hidden">
             <ResourceOptimizer
-              baseId={technicians[0]?.id || ''} // Use first technician's base or get from context
+              baseId={user.baseId}
               weekStart={currentWeek}
             />
           </div>
