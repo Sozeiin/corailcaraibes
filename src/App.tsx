@@ -8,7 +8,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
-import Boats from "./pages/Boats";
+import { Boats } from "./pages/Boats";
+import { BoatDetails } from "./pages/BoatDetails";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
@@ -65,6 +66,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Boats />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boats/:boatId"
+        element={
+          <ProtectedRoute>
+            <BoatDetails />
           </ProtectedRoute>
         }
       />
