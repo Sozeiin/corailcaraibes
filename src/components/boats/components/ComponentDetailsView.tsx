@@ -260,22 +260,14 @@ function MaintenanceHistoryTab({ component }: { component: BoatComponent }) {
   const { data: maintenanceHistory = [], isLoading } = useQuery({
     queryKey: ['maintenance-history', component.id],
     queryFn: async () => {
-      // Improved query - first try to find interventions linked to component via boat_components
-      const { data: componentData, error: componentError } = await supabase
-        .from('boat_components')
-        .select('boat_id')
-        .eq('id', component.id)
-        .single();
-
-      if (componentError) throw componentError;
-
+      // Improved query - use the new component_id column for direct linking
       const { data, error } = await supabase
         .from('interventions')
         .select(`
           *,
           profiles(name)
         `)
-        .eq('boat_id', componentData.boat_id)
+        .or(`component_id.eq.${component.id},boat_id.eq.${component.boatId}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

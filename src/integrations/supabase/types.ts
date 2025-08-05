@@ -1138,6 +1138,7 @@ export type Database = {
           base_id: string | null
           boat_id: string | null
           completed_date: string | null
+          component_id: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -1151,6 +1152,7 @@ export type Database = {
           base_id?: string | null
           boat_id?: string | null
           completed_date?: string | null
+          component_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -1164,6 +1166,7 @@ export type Database = {
           base_id?: string | null
           boat_id?: string | null
           completed_date?: string | null
+          component_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -1186,6 +1189,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interventions_component_id_fkey"
+            columns: ["component_id"]
+            isOneToOne: false
+            referencedRelation: "boat_components"
             referencedColumns: ["id"]
           },
           {
