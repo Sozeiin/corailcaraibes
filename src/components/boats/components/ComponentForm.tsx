@@ -1,11 +1,16 @@
 import React, { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { AlertCircle, CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useBoatComponents } from './BoatComponentsContext';
 
@@ -47,6 +52,9 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
   } = useBoatComponents();
   
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [installationDate, setInstallationDate] = useState<Date | undefined>(
+    formData.installationDate ? new Date(formData.installationDate) : undefined
+  );
 
   const validateForm = (): string[] => {
     const errors: string[] = [];
@@ -114,6 +122,11 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setInstallationDate(date);
+    updateFormField('installationDate', date ? format(date, 'yyyy-MM-dd') : '');
   };
 
   return (
@@ -195,15 +208,39 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
             placeholder="ex: VP123456789"
           />
         </div>
-        <div>
-          <Label htmlFor="installationDate">Date d'installation</Label>
-          <Input
-            id="installationDate"
-            type="date"
-            value={formData.installationDate}
-            onChange={(e) => updateFormField('installationDate', e.target.value)}
-          />
-        </div>
+          <div>
+            <Label htmlFor="installationDate">Date d'installation</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !installationDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {installationDate ? (
+                    format(installationDate, "dd/MM/yyyy", { locale: fr })
+                  ) : (
+                    <span>Sélectionner une date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={installationDate}
+                  onSelect={handleDateChange}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date("1990-01-01")
+                  }
+                  initialFocus
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
