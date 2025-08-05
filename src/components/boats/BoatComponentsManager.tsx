@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,11 +12,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { BoatComponent } from '@/types';
-import { BoatSchematicView } from './BoatSchematicView';
-import { BoatTreeView } from './BoatTreeView';
-import { ComponentFilters, type FilterState } from './ComponentFilters';
-import { ComponentViewSelector, type ViewMode } from './ComponentViewSelector';
-import { ComponentDetailsModal } from './ComponentDetailsModal';
 
 interface BoatComponentsManagerProps {
   boatId: string;
@@ -60,20 +55,11 @@ const statusOptions = [
 ];
 
 export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManagerProps) {
-  console.log('BoatComponentsManager rendered', { boatId, boatName });
+  console.log('BoatComponentsManager rendered with:', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [selectedComponent, setSelectedComponent] = useState<BoatComponent | null>(null);
   const [editingComponent, setEditingComponent] = useState<BoatComponent | null>(null);
-  const [filters, setFilters] = useState<FilterState>({
-    search: '',
-    status: '',
-    componentType: '',
-    maintenanceStatus: ''
-  });
   const [formData, setFormData] = useState<ComponentFormData>({
     componentName: '',
     componentType: '',
@@ -87,9 +73,10 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   });
 
   // Fetch boat components
-  const { data: allComponents = [], isLoading } = useQuery({
+  const { data: components = [], isLoading } = useQuery({
     queryKey: ['boat-components', boatId],
     queryFn: async () => {
+      console.log('Fetching components for boat:', boatId);
       const { data, error } = await supabase
         .from('boat_components')
         .select('*')
@@ -97,7 +84,6 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
         .order('component_name');
 
       if (error) throw error;
-      // Map database column names to TypeScript interface
       return data.map(item => ({
         id: item.id,
         boatId: item.boat_id,
@@ -117,62 +103,6 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
       })) as BoatComponent[];
     }
   });
-
-  // Filter components based on active filters
-  const filteredComponents = useMemo(() => {
-    return allComponents.filter(component => {
-      // Search filter
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesSearch = 
-          component.componentName.toLowerCase().includes(searchLower) ||
-          component.componentType.toLowerCase().includes(searchLower) ||
-          (component.manufacturer && component.manufacturer.toLowerCase().includes(searchLower)) ||
-          (component.model && component.model.toLowerCase().includes(searchLower));
-        if (!matchesSearch) return false;
-      }
-
-      // Status filter
-      if (filters.status && component.status !== filters.status) {
-        return false;
-      }
-
-      // Component type filter
-      if (filters.componentType && component.componentType !== filters.componentType) {
-        return false;
-      }
-
-      // Maintenance status filter
-      if (filters.maintenanceStatus) {
-        const today = new Date();
-        const thirtyDaysFromNow = new Date();
-        thirtyDaysFromNow.setDate(today.getDate() + 30);
-
-        if (filters.maintenanceStatus === 'overdue') {
-          if (!component.nextMaintenanceDate || new Date(component.nextMaintenanceDate) >= today) {
-            return false;
-          }
-        } else if (filters.maintenanceStatus === 'due_soon') {
-          if (!component.nextMaintenanceDate || 
-              new Date(component.nextMaintenanceDate) < today || 
-              new Date(component.nextMaintenanceDate) > thirtyDaysFromNow) {
-            return false;
-          }
-        } else if (filters.maintenanceStatus === 'up_to_date') {
-          if (!component.nextMaintenanceDate || new Date(component.nextMaintenanceDate) < thirtyDaysFromNow) {
-            return false;
-          }
-        }
-      }
-
-      return true;
-    });
-  }, [allComponents, filters]);
-
-  // Get unique component types for filter dropdown
-  const uniqueComponentTypes = useMemo(() => {
-    return Array.from(new Set(allComponents.map(c => c.componentType))).sort();
-  }, [allComponents]);
 
   // Create/Update component mutation
   const saveComponentMutation = useMutation({
@@ -303,167 +233,9 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
     saveComponentMutation.mutate(formData);
   };
 
-  const handleComponentClick = (component: BoatComponent) => {
-    setSelectedComponent(component);
-    setIsDetailsModalOpen(true);
-  };
-
-  const handleComponentEdit = (component: BoatComponent) => {
-    setEditingComponent(component);
-    setFormData({
-      componentName: component.componentName,
-      componentType: component.componentType,
-      manufacturer: component.manufacturer || '',
-      model: component.model || '',
-      serialNumber: component.serialNumber || '',
-      installationDate: component.installationDate || '',
-      maintenanceIntervalDays: component.maintenanceIntervalDays,
-      status: component.status,
-      notes: component.notes || ''
-    });
-    setIsDialogOpen(true);
-  };
-
-  const renderComponentsView = () => {
-    console.log('renderComponentsView called', { viewMode, isLoading, allComponentsLength: allComponents.length, filteredComponentsLength: filteredComponents.length });
-    
-    if (isLoading) {
-      console.log('Rendering loading state');
-      return (
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center text-muted-foreground">
-              Chargement des composants...
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (allComponents.length === 0) {
-      console.log('Rendering empty state');
-      return (
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center text-muted-foreground space-y-2">
-              <Wrench className="h-12 w-12 mx-auto opacity-50" />
-              <p>Aucun composant configuré pour ce bateau</p>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    console.log('Rendering view mode:', viewMode);
-    switch (viewMode) {
-      case 'grid':
-        return renderGridView();
-      case 'list':
-        return renderListView();
-      default:
-        return renderGridView();
-    }
-  };
-
-  // Keep the existing grid view for backward compatibility
-  const renderGridView = () => {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="grid gap-4">
-            {filteredComponents.map((component) => {
-              const statusBadge = statusOptions.find(opt => opt.value === component.status) || statusOptions[0];
-              
-              return (
-                <Card key={component.id} className="border-l-4 border-l-primary cursor-pointer hover:shadow-md transition-shadow">
-                  <CardContent className="p-4" onClick={() => handleComponentClick(component)}>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div>
-                          <h4 className="font-medium text-lg">{component.componentName}</h4>
-                          <p className="text-sm text-muted-foreground">{component.componentType}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={statusBadge.color}>
-                          {statusBadge.label}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleComponentEdit(component);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteComponentMutation.mutate(component.id);
-                          }}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Simple list view
-  const renderListView = () => {
-    return (
-      <Card>
-        <CardContent className="p-6">
-          <div className="space-y-2">
-            {filteredComponents.map((component) => {
-              const statusBadge = statusOptions.find(opt => opt.value === component.status) || statusOptions[0];
-              
-              return (
-                <div
-                  key={component.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => handleComponentClick(component)}
-                >
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <h4 className="font-medium">{component.componentName}</h4>
-                      <p className="text-sm text-muted-foreground">{component.componentType}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={statusBadge.color} variant="outline">
-                      {statusBadge.label}
-                    </Badge>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleComponentEdit(component);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-    );
+  const getStatusBadge = (status: string) => {
+    const statusOption = statusOptions.find(opt => opt.value === status);
+    return statusOption ? statusOption : statusOptions[0];
   };
 
   return (
@@ -619,66 +391,83 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
           </Dialog>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-lg">Composants de {boatName}</h3>
-              <Badge variant="outline" className="text-xs">
-                {filteredComponents.length} sur {allComponents.length} composant{allComponents.length > 1 ? 's' : ''}
-              </Badge>
-            </div>
-            
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-              <Button
-                variant={viewMode === 'grid' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode('grid')}
-                className="h-8 px-3 text-xs"
-              >
-                Grille
-              </Button>
-              <Button
-                variant={viewMode === 'list' ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="h-8 px-3 text-xs"
-              >
-                Liste
-              </Button>
-            </div>
+      <CardContent>
+        {isLoading ? (
+          <div className="text-center py-8">Chargement des composants...</div>
+        ) : components.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Aucun composant configuré pour ce bateau</p>
           </div>
-
-          {/* Filtres basiques */}
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex gap-4 items-center">
-                <div className="flex-1">
-                  <Input
-                    placeholder="Rechercher un composant..."
-                    value={filters.search}
-                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                  />
-                </div>
-                <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Tous les statuts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Tous les statuts</SelectItem>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {renderComponentsView()}
+        ) : (
+          <div className="grid gap-4">
+            {components.map((component) => {
+              const statusBadge = getStatusBadge(component.status);
+              
+              return (
+                <Card key={component.id} className="border-l-4 border-l-primary">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <h4 className="font-medium text-lg">{component.componentName}</h4>
+                          <p className="text-sm text-muted-foreground">{component.componentType}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusBadge.color}>
+                          {statusBadge.label}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(component)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteComponentMutation.mutate(component.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {component.manufacturer && (
+                        <div>
+                          <span className="font-medium">Fabricant:</span> {component.manufacturer}
+                        </div>
+                      )}
+                      {component.model && (
+                        <div>
+                          <span className="font-medium">Modèle:</span> {component.model}
+                        </div>
+                      )}
+                      {component.serialNumber && (
+                        <div>
+                          <span className="font-medium">N° série:</span> {component.serialNumber}
+                        </div>
+                      )}
+                      <div>
+                        <span className="font-medium">Maintenance:</span> tous les {component.maintenanceIntervalDays} jours
+                      </div>
+                    </div>
+                    
+                    {component.notes && (
+                      <div className="mt-3 text-sm">
+                        <span className="font-medium">Notes:</span> {component.notes}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
