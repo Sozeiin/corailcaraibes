@@ -74,10 +74,10 @@ export function GanttMaintenanceSchedule() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Generate time slots (7 AM to 7 PM)
+  // Generate time slots (6 AM to 7 PM)
   const timeSlots = useMemo(() => {
     const slots = [];
-    for (let hour = 7; hour <= 19; hour++) {
+    for (let hour = 6; hour <= 19; hour++) {
       slots.push({
         hour,
         label: `${hour.toString().padStart(2, '0')}:00`
@@ -174,6 +174,7 @@ export function GanttMaintenanceSchedule() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
+      queryClient.invalidateQueries({ queryKey: ['technicians'] });
       toast({ title: "Intervention mise à jour avec succès" });
     },
     onError: (error) => {
@@ -265,18 +266,31 @@ export function GanttMaintenanceSchedule() {
   };
 
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    return interventions.filter(intervention => {
+    const tasks = interventions.filter(intervention => {
       const taskHour = intervention.scheduled_time ? 
         parseInt(intervention.scheduled_time.split(':')[0]) : 9;
       
+      console.log('Filtering task:', intervention.id, {
+        intervention_technician: intervention.technician_id,
+        slot_technician: technicianId,
+        intervention_date: intervention.scheduled_date,
+        slot_date: dateString,
+        intervention_hour: taskHour,
+        slot_hour: hour
+      });
+      
       return intervention.technician_id === technicianId &&
              intervention.scheduled_date === dateString &&
-             Math.abs(taskHour - hour) < 1; // Allow some flexibility
+             taskHour === hour;
     });
+    console.log(`Tasks for slot ${technicianId}-${dateString}-${hour}:`, tasks);
+    return tasks;
   };
 
   const getUnassignedTasks = () => {
-    return interventions.filter(intervention => !intervention.technician_id);
+    const unassigned = interventions.filter(intervention => !intervention.technician_id);
+    console.log('Unassigned tasks:', unassigned);
+    return unassigned;
   };
 
   const navigateWeek = (direction: 'prev' | 'next') => {
