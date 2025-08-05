@@ -147,14 +147,29 @@ export function GanttMaintenanceSchedule() {
   // Update intervention mutation
   const updateInterventionMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Intervention> }) => {
+      // Clean the updates object to only include valid database fields
+      const cleanUpdates = {
+        ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
+        ...(updates.scheduled_date && { scheduled_date: updates.scheduled_date }),
+        ...(updates.scheduled_time && { scheduled_time: updates.scheduled_time }),
+        ...(updates.status && { status: updates.status }),
+        ...(updates.title && { title: updates.title }),
+        ...(updates.description && { description: updates.description })
+      };
+
+      console.log('Updating intervention:', id, 'with:', cleanUpdates);
+
       const { data, error } = await supabase
         .from('interventions')
-        .update(updates)
+        .update(cleanUpdates)
         .eq('id', id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {
@@ -184,18 +199,42 @@ export function GanttMaintenanceSchedule() {
       return;
     }
 
-    const [technicianId, dateString, hourString] = over.id.toString().split('-');
-    const newHour = parseInt(hourString);
-    
-    // Update the intervention
-    updateInterventionMutation.mutate({
-      id: draggedTask.id,
-      updates: {
+    try {
+      const [technicianId, dateString, hourString] = over.id.toString().split('-');
+      const newHour = parseInt(hourString);
+      
+      if (isNaN(newHour) || !dateString) {
+        console.error('Invalid drop target format:', over.id);
+        setDraggedTask(null);
+        return;
+      }
+      
+      // Format the time correctly for database
+      const scheduledTime = `${newHour.toString().padStart(2, '0')}:00:00`;
+      
+      console.log('Dropping task:', draggedTask.id, 'to:', {
         technician_id: technicianId === 'unassigned' ? null : technicianId,
         scheduled_date: dateString,
-        scheduled_time: `${newHour.toString().padStart(2, '0')}:00:00`
-      }
-    });
+        scheduled_time: scheduledTime
+      });
+      
+      // Update the intervention
+      updateInterventionMutation.mutate({
+        id: draggedTask.id,
+        updates: {
+          technician_id: technicianId === 'unassigned' ? null : technicianId,
+          scheduled_date: dateString,
+          scheduled_time: scheduledTime
+        }
+      });
+    } catch (error) {
+      console.error('Error in handleDragEnd:', error);
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible de déplacer la tâche",
+        variant: "destructive" 
+      });
+    }
 
     setDraggedTask(null);
   };
