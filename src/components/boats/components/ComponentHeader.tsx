@@ -37,12 +37,10 @@ export function ComponentHeader() {
           Composants de {boatName}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleAddNew}>
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter un composant
-            </Button>
-          </DialogTrigger>
+          <Button onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Ajouter un composant
+          </Button>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>

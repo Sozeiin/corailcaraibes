@@ -12,6 +12,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
+import { ComponentPurchaseDialog } from './ComponentPurchaseDialog';
 import type { BoatComponent } from '@/types';
 
 interface ComponentDetailsViewProps {
@@ -49,7 +51,7 @@ export function ComponentDetailsView({ component, onClose }: ComponentDetailsVie
         </TabsContent>
         
         <TabsContent value="maintenance" className="space-y-4">
-          <MaintenanceHistoryTab componentId={component.id} />
+          <MaintenanceHistoryTab component={component} />
         </TabsContent>
         
         <TabsContent value="purchases" className="space-y-4">
@@ -202,7 +204,12 @@ function SubComponentsTab({ componentId }: { componentId: string }) {
           <p className="text-muted-foreground mb-4">
             Ce composant n'a pas encore de sous-composants configurés.
           </p>
-          <Button>Ajouter un sous-composant</Button>
+          <Button onClick={() => {
+            // TODO: Implement sub-component dialog
+            console.log('Add sub-component for:', componentId);
+          }}>
+            Ajouter un sous-composant
+          </Button>
         </CardContent>
       </Card>
     );
@@ -247,18 +254,28 @@ function SubComponentsTab({ componentId }: { componentId: string }) {
   );
 }
 
-function MaintenanceHistoryTab({ componentId }: { componentId: string }) {
+function MaintenanceHistoryTab({ component }: { component: BoatComponent }) {
+  const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
+  
   const { data: maintenanceHistory = [], isLoading } = useQuery({
-    queryKey: ['maintenance-history', componentId],
+    queryKey: ['maintenance-history', component.id],
     queryFn: async () => {
-      // Note: Cette requête devrait être adaptée selon la structure réelle de votre base
+      // Improved query - first try to find interventions linked to component via boat_components
+      const { data: componentData, error: componentError } = await supabase
+        .from('boat_components')
+        .select('boat_id')
+        .eq('id', component.id)
+        .single();
+
+      if (componentError) throw componentError;
+
       const { data, error } = await supabase
         .from('interventions')
         .select(`
           *,
           profiles(name)
         `)
-        .contains('metadata', { component_id: componentId })
+        .eq('boat_id', componentData.boat_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -279,37 +296,60 @@ function MaintenanceHistoryTab({ componentId }: { componentId: string }) {
           <p className="text-muted-foreground mb-4">
             Aucune intervention n'a encore été enregistrée pour ce composant.
           </p>
-          <Button>Créer une intervention</Button>
+          <Button onClick={() => setIsInterventionDialogOpen(true)}>
+            Créer une intervention
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {maintenanceHistory.map((intervention) => (
-        <Card key={intervention.id}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h4 className="font-medium">{intervention.title}</h4>
-                <p className="text-sm text-muted-foreground">
-                  {format(new Date(intervention.created_at), 'dd/MM/yyyy', { locale: fr })}
-                </p>
+    <>
+      <div className="space-y-4">
+        {maintenanceHistory.map((intervention) => (
+          <Card key={intervention.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-medium">{intervention.title}</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(intervention.created_at), 'dd/MM/yyyy', { locale: fr })}
+                  </p>
+                </div>
+                <Badge variant="secondary">{intervention.status}</Badge>
               </div>
-              <Badge variant="secondary">{intervention.status}</Badge>
-            </div>
-            {intervention.description && (
-              <p className="text-sm text-muted-foreground">{intervention.description}</p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+              {intervention.description && (
+                <p className="text-sm text-muted-foreground">{intervention.description}</p>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <InterventionDialog
+        isOpen={isInterventionDialogOpen}
+        onClose={() => setIsInterventionDialogOpen(false)}
+        intervention={{
+          id: '',
+          boatId: component.boatId || '',
+          technicianId: '',
+          title: `Maintenance ${component.componentName}`,
+          description: `Intervention de maintenance pour le composant ${component.componentName}`,
+          status: 'scheduled',
+          scheduledDate: new Date().toISOString(),
+          tasks: [],
+          baseId: '',
+          createdAt: new Date().toISOString(),
+          intervention_type: 'maintenance'
+        }}
+      />
+    </>
   );
 }
 
 function PurchaseHistoryTab({ componentId }: { componentId: string }) {
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const { data: purchaseHistory = [], isLoading } = useQuery({
     queryKey: ['purchase-history', componentId],
     queryFn: async () => {
@@ -341,43 +381,53 @@ function PurchaseHistoryTab({ componentId }: { componentId: string }) {
           <p className="text-muted-foreground mb-4">
             Aucun achat n'a encore été enregistré pour ce composant.
           </p>
-          <Button>Enregistrer un achat</Button>
+          <Button onClick={() => setIsPurchaseDialogOpen(true)}>
+            Enregistrer un achat
+          </Button>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {purchaseHistory.map((purchase) => (
-        <Card key={purchase.id}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h4 className="font-medium">
-                  {purchase.stock_item?.name || 'Article non spécifié'}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {purchase.supplier?.name} - {format(new Date(purchase.purchase_date), 'dd/MM/yyyy', { locale: fr })}
-                </p>
+    <>
+      <div className="space-y-4">
+        {purchaseHistory.map((purchase) => (
+          <Card key={purchase.id}>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <h4 className="font-medium">
+                    {purchase.stock_item?.name || 'Article non spécifié'}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {purchase.supplier?.name} - {format(new Date(purchase.purchase_date), 'dd/MM/yyyy', { locale: fr })}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">{purchase.total_cost} €</p>
+                  <p className="text-sm text-muted-foreground">
+                    {purchase.quantity} × {purchase.unit_cost} €
+                  </p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-medium">{purchase.total_cost} €</p>
-                <p className="text-sm text-muted-foreground">
-                  {purchase.quantity} × {purchase.unit_cost} €
-                </p>
-              </div>
-            </div>
-            {purchase.warranty_months > 0 && (
-              <div className="text-sm">
-                <Badge variant="outline">
-                  Garantie: {purchase.warranty_months} mois
-                </Badge>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+              {purchase.warranty_months > 0 && (
+                <div className="text-sm">
+                  <Badge variant="outline">
+                    Garantie: {purchase.warranty_months} mois
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <ComponentPurchaseDialog
+        isOpen={isPurchaseDialogOpen}
+        onClose={() => setIsPurchaseDialogOpen(false)}
+        componentId={componentId}
+      />
+    </>
   );
 }

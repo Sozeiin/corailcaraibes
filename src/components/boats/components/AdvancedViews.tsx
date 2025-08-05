@@ -75,11 +75,25 @@ export function AdvancedViews({ onAddNew }: AdvancedViewsProps) {
           <ViewModeSelector currentView={viewMode} onViewChange={setViewMode} />
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // TODO: Implement history view navigation
+              console.log('Navigating to history view');
+            }}
+          >
             <History className="h-4 w-4 mr-2" />
             Historique
           </Button>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              // TODO: Implement planning view navigation  
+              console.log('Navigating to planning view');
+            }}
+          >
             <Calendar className="h-4 w-4 mr-2" />
             Planification
           </Button>
