@@ -1144,6 +1144,7 @@ export type Database = {
           id: string
           intervention_type: string | null
           scheduled_date: string | null
+          scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
           technician_id: string | null
           title: string
@@ -1158,6 +1159,7 @@ export type Database = {
           id?: string
           intervention_type?: string | null
           scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null
           title: string
@@ -1172,6 +1174,7 @@ export type Database = {
           id?: string
           intervention_type?: string | null
           scheduled_date?: string | null
+          scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null
           title?: string
