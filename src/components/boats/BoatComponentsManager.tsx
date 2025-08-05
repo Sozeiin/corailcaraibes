@@ -60,6 +60,7 @@ const statusOptions = [
 ];
 
 export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManagerProps) {
+  console.log('BoatComponentsManager rendered', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<ViewMode>('schematic');
@@ -324,7 +325,10 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   };
 
   const renderComponentsView = () => {
+    console.log('renderComponentsView called', { viewMode, isLoading, allComponentsLength: allComponents.length, filteredComponentsLength: filteredComponents.length });
+    
     if (isLoading) {
+      console.log('Rendering loading state');
       return (
         <Card>
           <CardContent className="p-8">
@@ -337,6 +341,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
     }
 
     if (allComponents.length === 0) {
+      console.log('Rendering empty state');
       return (
         <Card>
           <CardContent className="p-8">
@@ -349,6 +354,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
       );
     }
 
+    console.log('Rendering view mode:', viewMode);
     switch (viewMode) {
       case 'schematic':
         return (
@@ -629,33 +635,20 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-4">
-          <ComponentViewSelector
-            currentView={viewMode}
-            onViewChange={setViewMode}
-            componentCount={allComponents.length}
-          />
-          
-          <ComponentFilters
-            filters={filters}
-            onFiltersChange={setFilters}
-            componentTypes={uniqueComponentTypes}
-            totalCount={allComponents.length}
-            filteredCount={filteredComponents.length}
-          />
+        <div className="p-4 border border-dashed border-gray-300 rounded-lg">
+          <p className="text-center text-muted-foreground">
+            Composants Manager - Test de rendu
+          </p>
+          <p className="text-sm text-center mt-2">
+            Boat ID: {boatId} | Boat Name: {boatName}
+          </p>
+          <p className="text-sm text-center mt-1">
+            View Mode: {viewMode} | Loading: {isLoading ? 'Yes' : 'No'}
+          </p>
+          <p className="text-sm text-center mt-1">
+            Components Count: {allComponents.length}
+          </p>
         </div>
-
-        {renderComponentsView()}
-
-        <ComponentDetailsModal
-          component={selectedComponent}
-          isOpen={isDetailsModalOpen}
-          onClose={() => {
-            setIsDetailsModalOpen(false);
-            setSelectedComponent(null);
-          }}
-          onEdit={handleComponentEdit}
-        />
       </CardContent>
     </Card>
   );
