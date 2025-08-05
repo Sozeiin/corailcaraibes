@@ -49,6 +49,12 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
+    /* Gantt schedule specific colors */
+    --gantt-grid: 200 20% 90%;
+    --gantt-header: 200 20% 96%;
+    --gantt-today: 200 100% 96%;
+    --gantt-hover: 200 50% 95%;
+
     --border: 200 20% 90%;
     --input: 200 20% 90%;
     --ring: 200 100% 28%;
@@ -207,5 +213,54 @@
 
   .status-scheduled-maintenance {
     @apply bg-primary/10 text-primary border-primary/20;
+  }
+
+  /* Gantt-specific styles */
+  .gantt-timeline {
+    @apply border-r min-w-[600px] md:min-w-[800px];
+  }
+  
+  .gantt-time-slot {
+    @apply flex-1 border-r p-1 min-w-[45px] md:min-w-[60px] transition-colors;
+  }
+  
+  .gantt-time-slot:hover {
+    @apply bg-[hsl(var(--gantt-hover))];
+  }
+  
+  .gantt-today {
+    @apply bg-[hsl(var(--gantt-today))] border-primary/30;
+  }
+  
+  .gantt-header {
+    @apply bg-[hsl(var(--gantt-header))] border-b;
+  }
+  
+  .gantt-grid-line {
+    @apply border-[hsl(var(--gantt-grid))];
+  }
+
+  /* Task card animations */
+  .task-card-enter {
+    @apply animate-scale-in;
+  }
+  
+  .task-card-drag {
+    @apply animate-pulse scale-105 shadow-lg z-50 rotate-2;
+  }
+
+  /* Mobile-specific gantt styles */
+  @media (max-width: 768px) {
+    .gantt-mobile-collapse {
+      @apply flex-col space-y-2;
+    }
+    
+    .gantt-timeline {
+      @apply min-w-[400px];
+    }
+    
+    .gantt-time-slot {
+      @apply min-w-[35px];
+    }
   }
 }

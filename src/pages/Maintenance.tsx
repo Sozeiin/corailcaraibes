@@ -5,7 +5,7 @@ import { MaintenanceInterventions } from '@/components/maintenance/MaintenanceIn
 import { TechnicianInterventions } from '@/components/maintenance/TechnicianInterventions';
 import { PreventiveMaintenance } from '@/components/maintenance/PreventiveMaintenance';
 import { WeatherMaintenancePlanner } from '@/components/maintenance/scheduling/WeatherMaintenancePlanner';
-import { GanttPlanningView } from '@/components/maintenance/planning/GanttPlanningView';
+import { GanttMaintenanceSchedule } from '@/components/maintenance/GanttMaintenanceSchedule';
 import { MaintenanceHistory } from '@/components/maintenance/MaintenanceHistory';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -74,7 +74,7 @@ export default function Maintenance() {
         </TabsContent>
 
         <TabsContent value="gantt">
-          <GanttPlanningView />
+          <GanttMaintenanceSchedule />
         </TabsContent>
       </Tabs>
     </div>

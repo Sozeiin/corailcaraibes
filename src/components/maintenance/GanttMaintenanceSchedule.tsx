@@ -1,0 +1,388 @@
+import React, { useState, useMemo } from 'react';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { format, addDays, startOfWeek, addHours, isToday, isSameDay, parseISO } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { 
+  Plus,
+  Clock,
+  User,
+  Ship,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  Wrench,
+  Zap,
+  Droplets,
+  Cog,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp
+} from 'lucide-react';
+import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
+import { DraggableTaskCard } from './gantt/DraggableTaskCard';
+import { UnassignedTasksPanel } from './gantt/UnassignedTasksPanel';
+import { TaskDialog } from './gantt/TaskDialog';
+
+interface Intervention {
+  id: string;
+  title: string;
+  description?: string;
+  scheduled_date: string;
+  scheduled_time?: string;
+  estimated_duration?: number;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  intervention_type?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  technician_id?: string;
+  boat_id?: string;
+  base_id: string;
+  color_code?: string;
+  technician?: { id: string; name: string };
+  boats?: { id: string; name: string; model: string };
+}
+
+interface Technician {
+  id: string;
+  name: string;
+  role: string;
+}
+
+const TASK_TYPE_COLORS = {
+  oil: { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-700', icon: Droplets },
+  engine: { bg: 'bg-blue-100', border: 'border-blue-300', text: 'text-blue-700', icon: Cog },
+  electrical: { bg: 'bg-purple-100', border: 'border-purple-300', text: 'text-purple-700', icon: Zap },
+  mechanical: { bg: 'bg-green-100', border: 'border-green-300', text: 'text-green-700', icon: Wrench },
+  emergency: { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-700', icon: AlertTriangle },
+  default: { bg: 'bg-gray-100', border: 'border-gray-300', text: 'text-gray-700', icon: Wrench }
+};
+
+export function GanttMaintenanceSchedule() {
+  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [draggedTask, setDraggedTask] = useState<Intervention | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Intervention | null>(null);
+  const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Generate time slots (7 AM to 7 PM)
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = 7; hour <= 19; hour++) {
+      slots.push({
+        hour,
+        label: `${hour.toString().padStart(2, '0')}:00`
+      });
+    }
+    return slots;
+  }, []);
+
+  // Generate week days
+  const weekDays = useMemo(() => {
+    const startDate = startOfWeek(currentWeek, { weekStartsOn: 1 });
+    return Array.from({ length: 7 }, (_, i) => {
+      const date = addDays(startDate, i);
+      return {
+        date,
+        dateString: date.toISOString().split('T')[0],
+        dayName: format(date, 'EEE', { locale: fr }),
+        dayNumber: format(date, 'd'),
+        isToday: isToday(date)
+      };
+    });
+  }, [currentWeek]);
+
+  // Fetch technicians
+  const { data: technicians = [] } = useQuery({
+    queryKey: ['technicians', user?.baseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, role')
+        .eq('role', 'technicien')
+        .eq('base_id', user?.baseId);
+
+      if (error) throw error;
+      return data as Technician[];
+    },
+    enabled: !!user?.baseId
+  });
+
+  // Fetch interventions
+  const { data: interventions = [] } = useQuery({
+    queryKey: ['gantt-interventions', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('interventions')
+        .select(`
+          *,
+          technician:profiles!technician_id(id, name),
+          boats(id, name, model)
+        `)
+        .gte('scheduled_date', weekDays[0]?.dateString)
+        .lte('scheduled_date', weekDays[6]?.dateString)
+        .eq('base_id', user?.baseId)
+        .order('scheduled_date');
+
+      if (error) throw error;
+      return data.map(item => ({
+        ...item,
+        estimated_duration: 60, // Default duration
+        intervention_type: item.intervention_type || 'maintenance',
+        priority: 'medium' as const // Default priority
+      })) as Intervention[];
+    },
+    enabled: !!user?.baseId && weekDays.length > 0
+  });
+
+  // Update intervention mutation
+  const updateInterventionMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Intervention> }) => {
+      const { data, error } = await supabase
+        .from('interventions')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
+      toast({ title: "Intervention mise à jour avec succès" });
+    },
+    onError: (error) => {
+      console.error('Error updating intervention:', error);
+      toast({ 
+        title: "Erreur lors de la mise à jour", 
+        description: "Impossible de mettre à jour l'intervention",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = interventions.find(i => i.id === event.active.id);
+    setDraggedTask(task || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over || !draggedTask) {
+      setDraggedTask(null);
+      return;
+    }
+
+    const [technicianId, dateString, hourString] = over.id.toString().split('-');
+    const newHour = parseInt(hourString);
+    
+    // Update the intervention
+    updateInterventionMutation.mutate({
+      id: draggedTask.id,
+      updates: {
+        technician_id: technicianId === 'unassigned' ? null : technicianId,
+        scheduled_date: dateString,
+        scheduled_time: `${newHour.toString().padStart(2, '0')}:00:00`
+      }
+    });
+
+    setDraggedTask(null);
+  };
+
+  const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
+    return interventions.filter(intervention => {
+      const taskHour = intervention.scheduled_time ? 
+        parseInt(intervention.scheduled_time.split(':')[0]) : 9;
+      
+      return intervention.technician_id === technicianId &&
+             intervention.scheduled_date === dateString &&
+             taskHour === hour;
+    });
+  };
+
+  const getUnassignedTasks = () => {
+    return interventions.filter(intervention => !intervention.technician_id);
+  };
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
+  };
+
+  const getTaskTypeConfig = (type: string) => {
+    return TASK_TYPE_COLORS[type as keyof typeof TASK_TYPE_COLORS] || TASK_TYPE_COLORS.default;
+  };
+
+  return (
+    <div className="h-screen flex flex-col bg-background">
+      {/* Header */}
+      <div className="flex-none border-b bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h1 className="text-2xl font-semibold">Planning Maintenance</h1>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateWeek('prev')}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="font-medium px-3">
+                {format(weekDays[0]?.date || new Date(), 'd MMM', { locale: fr })} - {format(weekDays[6]?.date || new Date(), 'd MMM yyyy', { locale: fr })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigateWeek('next')}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {/* Mobile panel toggle */}
+            <Button
+              variant="outline"
+              size="sm"
+              className="md:hidden"
+              onClick={() => setShowUnassignedPanel(!showUnassignedPanel)}
+            >
+              {showUnassignedPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+            
+            {/* Add task button */}
+            <Button
+              size="sm"
+              onClick={() => setShowTaskDialog(true)}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Nouvelle tâche
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Unassigned tasks panel */}
+          <UnassignedTasksPanel
+            tasks={getUnassignedTasks()}
+            isVisible={showUnassignedPanel}
+            onTaskClick={(task) => setSelectedTask(task as Intervention)}
+            getTaskTypeConfig={getTaskTypeConfig}
+          />
+
+          {/* Main Gantt area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Time header */}
+            <div className="flex-none border-b bg-muted/30">
+              <div className="flex">
+                <div className="w-48 flex-none border-r bg-muted/50 p-3 font-medium">
+                  Techniciens
+                </div>
+                <ScrollArea className="flex-1">
+                  <div className="flex min-w-max">
+                    {weekDays.map(day => (
+                      <div key={day.dateString} className="gantt-timeline">
+                        <div className={`text-center p-2 gantt-header font-medium ${day.isToday ? 'gantt-today' : ''}`}>
+                          <div className="text-sm text-muted-foreground">{day.dayName}</div>
+                          <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : ''}`}>
+                            {day.dayNumber}
+                          </div>
+                        </div>
+                        <div className="flex">
+                          {timeSlots.map(slot => (
+                            <div key={slot.hour} className="gantt-time-slot">
+                              <div className="text-xs text-center text-muted-foreground">
+                                {slot.label.split(':')[0]}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </div>
+
+            {/* Technician rows */}
+            <ScrollArea className="flex-1">
+              <div className="min-h-full">
+                {technicians.map(technician => (
+                  <div key={technician.id} className="border-b">
+                    <div className="flex">
+                      {/* Technician name */}
+                      <div className="w-48 flex-none border-r bg-muted/30 p-4 flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <span className="font-medium truncate">{technician.name}</span>
+                      </div>
+                      
+                      {/* Timeline */}
+                      <div className="flex-1">
+                        <div className="flex min-w-max">
+                          {weekDays.map(day => (
+                            <div key={day.dateString} className="gantt-timeline">
+                              <div className="flex h-20">
+                                {timeSlots.map(slot => (
+                                  <DroppableTimeSlot
+                                    key={`${technician.id}-${day.dateString}-${slot.hour}`}
+                                    id={`${technician.id}-${day.dateString}-${slot.hour}`}
+                                    tasks={getTasksForSlot(technician.id, day.dateString, slot.hour)}
+                                    onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                                    getTaskTypeConfig={getTaskTypeConfig}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+
+        {/* Drag overlay */}
+        <DragOverlay>
+          {draggedTask && (
+            <DraggableTaskCard
+              task={draggedTask}
+              isDragging={true}
+              getTaskTypeConfig={getTaskTypeConfig}
+            />
+          )}
+        </DragOverlay>
+      </DndContext>
+
+      {/* Task Dialog */}
+      {(showTaskDialog || selectedTask) && (
+        <TaskDialog
+          task={selectedTask}
+          isOpen={showTaskDialog || !!selectedTask}
+          onClose={() => {
+            setShowTaskDialog(false);
+            setSelectedTask(null);
+          }}
+          technicians={technicians}
+        />
+      )}
+    </div>
+  );
+}
