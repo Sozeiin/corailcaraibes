@@ -15,6 +15,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 export const BoatDetails = () => {
   const { boatId } = useParams<{ boatId: string }>();
   const navigate = useNavigate();
+  console.log('BoatDetails rendered with boatId:', boatId);
 
   const { data: boat, isLoading } = useQuery({
     queryKey: ['boat', boatId],

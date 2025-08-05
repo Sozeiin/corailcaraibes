@@ -62,6 +62,7 @@ const statusOptions = [
 ];
 
 export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManagerProps) {
+  console.log('BoatComponentsManager mounted with:', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -82,6 +83,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   const { data: components = [], isLoading } = useQuery({
     queryKey: ['boat-components', boatId],
     queryFn: async () => {
+      console.log('Fetching components for boat:', boatId);
       const { data, error } = await supabase
         .from('boat_components')
         .select('*')
