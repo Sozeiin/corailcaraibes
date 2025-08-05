@@ -222,7 +222,7 @@ export function GanttMaintenanceSchedule() {
       
       console.log('Parsed drop target:', { technicianId, day, hour });
       
-      if (isNaN(hour) || !day || day.length !== 2) {
+      if (isNaN(hour) || !day || isNaN(parseInt(day))) {
         console.error('Invalid drop target data:', { technicianId, day, hour });
         setDraggedTask(null);
         return;
