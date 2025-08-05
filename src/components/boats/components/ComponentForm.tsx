@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
 import { useBoatComponents } from './BoatComponentsContext';
 
 const componentTypesOptions = [
@@ -35,19 +38,68 @@ interface ComponentFormProps {
 }
 
 export function ComponentForm({ onCancel }: ComponentFormProps) {
+  const { toast } = useToast();
   const { 
     editingComponent, 
     formData, 
     setFormData, 
     saveComponentMutation 
   } = useBoatComponents();
+  
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  const validateForm = (): string[] => {
+    const errors: string[] = [];
+    
+    if (!formData.componentName.trim()) {
+      errors.push('Le nom du composant est obligatoire');
+    } else if (formData.componentName.trim().length < 2) {
+      errors.push('Le nom du composant doit contenir au moins 2 caractères');
+    } else if (formData.componentName.trim().length > 100) {
+      errors.push('Le nom du composant ne peut pas dépasser 100 caractères');
+    }
+    
+    if (!formData.componentType.trim()) {
+      errors.push('Le type de composant est obligatoire');
+    }
+    
+    if (formData.maintenanceIntervalDays < 1) {
+      errors.push('L\'intervalle de maintenance doit être d\'au moins 1 jour');
+    } else if (formData.maintenanceIntervalDays > 3650) {
+      errors.push('L\'intervalle de maintenance ne peut pas dépasser 10 ans (3650 jours)');
+    }
+    
+    if (formData.installationDate) {
+      const installDate = new Date(formData.installationDate);
+      const today = new Date();
+      const futureLimit = new Date();
+      futureLimit.setFullYear(futureLimit.getFullYear() + 1);
+      
+      if (installDate > futureLimit) {
+        errors.push('La date d\'installation ne peut pas être trop loin dans le futur');
+      }
+    }
+    
+    return errors;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Submitting form with data:', formData);
     
-    if (!formData.componentName.trim() || !formData.componentType.trim()) {
-      console.error('Missing required fields');
+    // Clear previous validation errors
+    setValidationErrors([]);
+    
+    // Validate form
+    const errors = validateForm();
+    if (errors.length > 0) {
+      console.error('Validation errors:', errors);
+      setValidationErrors(errors);
+      toast({
+        title: 'Erreurs de validation',
+        description: 'Veuillez corriger les erreurs avant de continuer.',
+        variant: 'destructive'
+      });
       return;
     }
     
@@ -55,11 +107,32 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
   };
 
   const updateFormField = (field: string, value: string | number) => {
+    console.log(`Updating form field ${field} to:`, value);
     setFormData(prev => ({ ...prev, [field]: value }));
+    
+    // Clear validation errors when user starts typing
+    if (validationErrors.length > 0) {
+      setValidationErrors([]);
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
+      {/* Validation Errors */}
+      {validationErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            <ul className="list-disc list-inside space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="componentName">Nom du composant *</Label>
@@ -175,14 +248,18 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
         />
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Annuler
-        </Button>
-        <Button type="submit" disabled={saveComponentMutation.isPending}>
-          {saveComponentMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={saveComponentMutation.isPending || validationErrors.length > 0}
+          >
+            {saveComponentMutation.isPending ? 'Sauvegarde...' : 'Sauvegarder'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

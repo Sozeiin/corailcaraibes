@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,10 +16,18 @@ interface ComponentFormData {
   notes: string;
 }
 
+interface FilterState {
+  search: string;
+  status: string;
+  componentType: string;
+  sortBy: string;
+}
+
 interface BoatComponentsContextType {
   boatId: string;
   boatName: string;
   components: BoatComponent[];
+  filteredComponents: BoatComponent[];
   isLoading: boolean;
   queryError: Error | null;
   isDialogOpen: boolean;
@@ -28,6 +36,8 @@ interface BoatComponentsContextType {
   setEditingComponent: (component: BoatComponent | null) => void;
   formData: ComponentFormData;
   setFormData: React.Dispatch<React.SetStateAction<ComponentFormData>>;
+  filters: FilterState;
+  setFilters: (filters: FilterState) => void;
   resetForm: () => void;
   handleEdit: (component: BoatComponent) => void;
   saveComponentMutation: any;
@@ -56,6 +66,13 @@ const initialFormData: ComponentFormData = {
   notes: ''
 };
 
+const initialFilters: FilterState = {
+  search: '',
+  status: '',
+  componentType: '',
+  sortBy: 'name'
+};
+
 interface BoatComponentsProviderProps {
   children: React.ReactNode;
   boatId: string;
@@ -69,6 +86,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingComponent, setEditingComponent] = useState<BoatComponent | null>(null);
   const [formData, setFormData] = useState<ComponentFormData>(initialFormData);
+  const [filters, setFilters] = useState<FilterState>(initialFilters);
 
   // Fetch boat components
   const { data: components = [], isLoading, error: queryError } = useQuery({
@@ -112,6 +130,58 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     },
     enabled: !!boatId
   });
+
+  // Filter and sort components based on current filters
+  const filteredComponents = useMemo(() => {
+    console.log('Filtering components with filters:', filters);
+    let filtered = [...components];
+
+    // Apply search filter
+    if (filters.search.trim()) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(component =>
+        component.componentName.toLowerCase().includes(searchLower) ||
+        component.componentType.toLowerCase().includes(searchLower) ||
+        (component.manufacturer && component.manufacturer.toLowerCase().includes(searchLower)) ||
+        (component.model && component.model.toLowerCase().includes(searchLower)) ||
+        (component.serialNumber && component.serialNumber.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Apply status filter
+    if (filters.status) {
+      filtered = filtered.filter(component => component.status === filters.status);
+    }
+
+    // Apply component type filter
+    if (filters.componentType) {
+      filtered = filtered.filter(component => component.componentType === filters.componentType);
+    }
+
+    // Apply sorting
+    switch (filters.sortBy) {
+      case 'name':
+        filtered.sort((a, b) => a.componentName.localeCompare(b.componentName));
+        break;
+      case 'name_desc':
+        filtered.sort((a, b) => b.componentName.localeCompare(a.componentName));
+        break;
+      case 'type':
+        filtered.sort((a, b) => a.componentType.localeCompare(b.componentType));
+        break;
+      case 'status':
+        filtered.sort((a, b) => a.status.localeCompare(b.status));
+        break;
+      case 'maintenance':
+        filtered.sort((a, b) => a.maintenanceIntervalDays - b.maintenanceIntervalDays);
+        break;
+      default:
+        filtered.sort((a, b) => a.componentName.localeCompare(b.componentName));
+    }
+
+    console.log(`Filtered ${filtered.length} components from ${components.length} total`);
+    return filtered;
+  }, [components, filters]);
 
   // Create/Update component mutation
   const saveComponentMutation = useMutation({
@@ -229,6 +299,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     boatId,
     boatName,
     components,
+    filteredComponents,
     isLoading,
     queryError,
     isDialogOpen,
@@ -237,6 +308,8 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     setEditingComponent,
     formData,
     setFormData,
+    filters,
+    setFilters,
     resetForm,
     handleEdit,
     saveComponentMutation,
