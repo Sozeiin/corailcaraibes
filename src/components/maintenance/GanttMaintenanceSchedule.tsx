@@ -89,11 +89,14 @@ export function GanttMaintenanceSchedule() {
   // Generate week days
   const weekDays = useMemo(() => {
     const startDate = startOfWeek(currentWeek, { weekStartsOn: 1 });
+    console.log('Week start date:', startDate);
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(startDate, i);
+      const dateString = date.toISOString().split('T')[0];
+      console.log(`Day ${i}:`, date, 'dateString:', dateString);
       return {
         date,
-        dateString: date.toISOString().split('T')[0],
+        dateString,
         dayName: format(date, 'EEE', { locale: fr }),
         dayNumber: format(date, 'd'),
         isToday: isToday(date)
@@ -118,9 +121,13 @@ export function GanttMaintenanceSchedule() {
   });
 
   // Fetch interventions
-  const { data: interventions = [] } = useQuery({
+  const { data: interventions = [], isLoading: interventionsLoading } = useQuery({
     queryKey: ['gantt-interventions', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
     queryFn: async () => {
+      if (!weekDays.length) return [];
+      
+      console.log('Fetching interventions for date range:', weekDays[0]?.dateString, 'to', weekDays[6]?.dateString);
+      
       const { data, error } = await supabase
         .from('interventions')
         .select(`
@@ -133,7 +140,13 @@ export function GanttMaintenanceSchedule() {
         .eq('base_id', user?.baseId)
         .order('scheduled_date');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching interventions:', error);
+        throw error;
+      }
+      
+      console.log('Fetched interventions:', data);
+      
       return data.map(item => ({
         ...item,
         estimated_duration: 60, // Default duration
