@@ -200,19 +200,44 @@ export function GanttMaintenanceSchedule() {
     }
 
     try {
-      const [technicianId, dateString, hourString] = over.id.toString().split('-');
-      const newHour = parseInt(hourString);
+      const dropId = over.id.toString();
+      console.log('Drop target ID:', dropId);
       
-      if (isNaN(newHour) || !dateString) {
-        console.error('Invalid drop target format:', over.id);
+      // Parse the drop target ID: technicianId-dateString-hour
+      // The technicianId can be a UUID (with dashes) so we need to be careful
+      const parts = dropId.split('-');
+      
+      if (parts.length < 3) {
+        console.error('Invalid drop target format:', dropId);
         setDraggedTask(null);
         return;
       }
       
-      // Format the time correctly for database
-      const scheduledTime = `${newHour.toString().padStart(2, '0')}:00:00`;
+      // The last part is the hour, the second to last should be the day
+      const hour = parseInt(parts[parts.length - 1]);
+      const day = parts[parts.length - 2];
       
-      console.log('Dropping task:', draggedTask.id, 'to:', {
+      // Everything except the last two parts is the technician ID
+      const technicianId = parts.slice(0, -2).join('-');
+      
+      console.log('Parsed drop target:', { technicianId, day, hour });
+      
+      if (isNaN(hour) || !day || day.length !== 2) {
+        console.error('Invalid drop target data:', { technicianId, day, hour });
+        setDraggedTask(null);
+        return;
+      }
+      
+      // Reconstruct the full date from the current week and day
+      const currentWeekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
+      const dayIndex = parseInt(day) - 1; // day is 1-7, we need 0-6
+      const fullDate = addDays(currentWeekStart, dayIndex);
+      const dateString = fullDate.toISOString().split('T')[0];
+      
+      // Format the time correctly for database
+      const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
+      
+      console.log('Final update data:', {
         technician_id: technicianId === 'unassigned' ? null : technicianId,
         scheduled_date: dateString,
         scheduled_time: scheduledTime
@@ -378,8 +403,8 @@ export function GanttMaintenanceSchedule() {
                               <div className="flex h-20">
                                 {timeSlots.map(slot => (
                                   <DroppableTimeSlot
-                                    key={`${technician.id}-${day.dateString}-${slot.hour}`}
-                                    id={`${technician.id}-${day.dateString}-${slot.hour}`}
+                                    key={`${technician.id}-${day.dayNumber}-${slot.hour}`}
+                                    id={`${technician.id}-${day.dayNumber}-${slot.hour}`}
                                     tasks={getTasksForSlot(technician.id, day.dateString, slot.hour)}
                                     onTaskClick={(task) => setSelectedTask(task as Intervention)}
                                     getTaskTypeConfig={getTaskTypeConfig}
