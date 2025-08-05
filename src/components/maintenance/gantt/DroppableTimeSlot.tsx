@@ -48,6 +48,7 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
             task={task}
             onClick={() => onTaskClick(task)}
             getTaskTypeConfig={getTaskTypeConfig}
+            isDragging={false}
           />
         ))}
       </div>

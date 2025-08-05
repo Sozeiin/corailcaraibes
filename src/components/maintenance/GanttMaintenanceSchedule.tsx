@@ -207,7 +207,7 @@ export function GanttMaintenanceSchedule() {
       
       return intervention.technician_id === technicianId &&
              intervention.scheduled_date === dateString &&
-             taskHour === hour;
+             Math.abs(taskHour - hour) < 1; // Allow some flexibility
     });
   };
 

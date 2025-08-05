@@ -65,6 +65,7 @@ export function UnassignedTasksPanel({ tasks, isVisible, onTaskClick, getTaskTyp
                     task={task}
                     onClick={() => onTaskClick(task)}
                     getTaskTypeConfig={getTaskTypeConfig}
+                    isDragging={false}
                   />
                 ))
               )}
