@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Wrench, Calendar, ChevronDown, ChevronRight, Settings, Package, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, Wrench } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,16 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import type { BoatComponent } from '@/types';
-import { SubComponentManager } from './SubComponentManager';
-import { ComponentStockLinkManager } from './ComponentStockLinkManager';
-import { ComponentPurchaseHistory } from './ComponentPurchaseHistory';
+import { BoatSchematicView } from './BoatSchematicView';
+import { BoatTreeView } from './BoatTreeView';
+import { ComponentFilters, type FilterState } from './ComponentFilters';
+import { ComponentViewSelector, type ViewMode } from './ComponentViewSelector';
+import { ComponentDetailsModal } from './ComponentDetailsModal';
 
 interface BoatComponentsManagerProps {
   boatId: string;
@@ -37,7 +35,7 @@ interface ComponentFormData {
   notes: string;
 }
 
-const componentTypes = [
+const componentTypesOptions = [
   'Moteur bâbord',
   'Moteur tribord',
   'Générateur',
@@ -62,11 +60,19 @@ const statusOptions = [
 ];
 
 export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManagerProps) {
-  console.log('BoatComponentsManager mounted with:', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [viewMode, setViewMode] = useState<ViewMode>('schematic');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedComponent, setSelectedComponent] = useState<BoatComponent | null>(null);
   const [editingComponent, setEditingComponent] = useState<BoatComponent | null>(null);
+  const [filters, setFilters] = useState<FilterState>({
+    search: '',
+    status: '',
+    componentType: '',
+    maintenanceStatus: ''
+  });
   const [formData, setFormData] = useState<ComponentFormData>({
     componentName: '',
     componentType: '',
@@ -80,10 +86,9 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   });
 
   // Fetch boat components
-  const { data: components = [], isLoading } = useQuery({
+  const { data: allComponents = [], isLoading } = useQuery({
     queryKey: ['boat-components', boatId],
     queryFn: async () => {
-      console.log('Fetching components for boat:', boatId);
       const { data, error } = await supabase
         .from('boat_components')
         .select('*')
@@ -111,6 +116,62 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
       })) as BoatComponent[];
     }
   });
+
+  // Filter components based on active filters
+  const filteredComponents = useMemo(() => {
+    return allComponents.filter(component => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          component.componentName.toLowerCase().includes(searchLower) ||
+          component.componentType.toLowerCase().includes(searchLower) ||
+          (component.manufacturer && component.manufacturer.toLowerCase().includes(searchLower)) ||
+          (component.model && component.model.toLowerCase().includes(searchLower));
+        if (!matchesSearch) return false;
+      }
+
+      // Status filter
+      if (filters.status && component.status !== filters.status) {
+        return false;
+      }
+
+      // Component type filter
+      if (filters.componentType && component.componentType !== filters.componentType) {
+        return false;
+      }
+
+      // Maintenance status filter
+      if (filters.maintenanceStatus) {
+        const today = new Date();
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+        if (filters.maintenanceStatus === 'overdue') {
+          if (!component.nextMaintenanceDate || new Date(component.nextMaintenanceDate) >= today) {
+            return false;
+          }
+        } else if (filters.maintenanceStatus === 'due_soon') {
+          if (!component.nextMaintenanceDate || 
+              new Date(component.nextMaintenanceDate) < today || 
+              new Date(component.nextMaintenanceDate) > thirtyDaysFromNow) {
+            return false;
+          }
+        } else if (filters.maintenanceStatus === 'up_to_date') {
+          if (!component.nextMaintenanceDate || new Date(component.nextMaintenanceDate) < thirtyDaysFromNow) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    });
+  }, [allComponents, filters]);
+
+  // Get unique component types for filter dropdown
+  const uniqueComponentTypes = useMemo(() => {
+    return Array.from(new Set(allComponents.map(c => c.componentType))).sort();
+  }, [allComponents]);
 
   // Create/Update component mutation
   const saveComponentMutation = useMutation({
@@ -241,9 +302,177 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
     saveComponentMutation.mutate(formData);
   };
 
-  const getStatusBadge = (status: string) => {
-    const statusOption = statusOptions.find(opt => opt.value === status);
-    return statusOption ? statusOption : statusOptions[0];
+  const handleComponentClick = (component: BoatComponent) => {
+    setSelectedComponent(component);
+    setIsDetailsModalOpen(true);
+  };
+
+  const handleComponentEdit = (component: BoatComponent) => {
+    setEditingComponent(component);
+    setFormData({
+      componentName: component.componentName,
+      componentType: component.componentType,
+      manufacturer: component.manufacturer || '',
+      model: component.model || '',
+      serialNumber: component.serialNumber || '',
+      installationDate: component.installationDate || '',
+      maintenanceIntervalDays: component.maintenanceIntervalDays,
+      status: component.status,
+      notes: component.notes || ''
+    });
+    setIsDialogOpen(true);
+  };
+
+  const renderComponentsView = () => {
+    if (isLoading) {
+      return (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-muted-foreground">
+              Chargement des composants...
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    if (allComponents.length === 0) {
+      return (
+        <Card>
+          <CardContent className="p-8">
+            <div className="text-center text-muted-foreground space-y-2">
+              <Wrench className="h-12 w-12 mx-auto opacity-50" />
+              <p>Aucun composant configuré pour ce bateau</p>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    switch (viewMode) {
+      case 'schematic':
+        return (
+          <BoatSchematicView
+            components={filteredComponents}
+            onComponentClick={handleComponentClick}
+          />
+        );
+      case 'tree':
+        return (
+          <BoatTreeView
+            components={filteredComponents}
+            onComponentEdit={handleComponentEdit}
+            onComponentDetails={handleComponentClick}
+          />
+        );
+      case 'grid':
+        return renderGridView();
+      case 'list':
+        return renderListView();
+      default:
+        return null;
+    }
+  };
+
+  // Keep the existing grid view for backward compatibility
+  const renderGridView = () => {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="grid gap-4">
+            {filteredComponents.map((component) => {
+              const statusBadge = statusOptions.find(opt => opt.value === component.status) || statusOptions[0];
+              
+              return (
+                <Card key={component.id} className="border-l-4 border-l-primary cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-4" onClick={() => handleComponentClick(component)}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div>
+                          <h4 className="font-medium text-lg">{component.componentName}</h4>
+                          <p className="text-sm text-muted-foreground">{component.componentType}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusBadge.color}>
+                          {statusBadge.label}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleComponentEdit(component);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteComponentMutation.mutate(component.id);
+                          }}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Simple list view
+  const renderListView = () => {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="space-y-2">
+            {filteredComponents.map((component) => {
+              const statusBadge = statusOptions.find(opt => opt.value === component.status) || statusOptions[0];
+              
+              return (
+                <div
+                  key={component.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-muted/50 cursor-pointer transition-colors"
+                  onClick={() => handleComponentClick(component)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div>
+                      <h4 className="font-medium">{component.componentName}</h4>
+                      <p className="text-sm text-muted-foreground">{component.componentType}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={statusBadge.color} variant="outline">
+                      {statusBadge.label}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleComponentEdit(component);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
@@ -291,13 +520,13 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
                       <SelectTrigger>
                         <SelectValue placeholder="Sélectionner un type" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {componentTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
+                       <SelectContent>
+                         {componentTypesOptions.map((type) => (
+                           <SelectItem key={type} value={type}>
+                             {type}
+                           </SelectItem>
+                         ))}
+                       </SelectContent>
                     </Select>
                   </div>
                 </div>
@@ -399,164 +628,34 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
           </Dialog>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="text-center py-8">Chargement des composants...</div>
-        ) : components.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            Aucun composant configuré pour ce bateau
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {components.map((component) => {
-              const statusBadge = getStatusBadge(component.status);
-              const [isExpanded, setIsExpanded] = useState(false);
-              
-              return (
-                <Card key={component.id} className="border-l-4 border-l-primary">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsExpanded(!isExpanded)}
-                          className="h-6 w-6 p-0"
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </Button>
-                        <div>
-                          <h4 className="font-medium text-lg">{component.componentName}</h4>
-                          <p className="text-sm text-muted-foreground">{component.componentType}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={statusBadge.color}>
-                          {statusBadge.label}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(component)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteComponentMutation.mutate(component.id)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      {component.manufacturer && (
-                        <div>
-                          <span className="font-medium">Fabricant:</span> {component.manufacturer}
-                        </div>
-                      )}
-                      {component.model && (
-                        <div>
-                          <span className="font-medium">Modèle:</span> {component.model}
-                        </div>
-                      )}
-                      {component.serialNumber && (
-                        <div>
-                          <span className="font-medium">N° série:</span> {component.serialNumber}
-                        </div>
-                      )}
-                      {component.installationDate && (
-                        <div>
-                          <span className="font-medium">Installation:</span> {format(new Date(component.installationDate), 'dd/MM/yyyy', { locale: fr })}
-                        </div>
-                      )}
-                      <div>
-                        <span className="font-medium">Maintenance:</span> tous les {component.maintenanceIntervalDays} jours
-                      </div>
-                      {component.lastMaintenanceDate && (
-                        <div>
-                          <span className="font-medium">Dernière maintenance:</span> {format(new Date(component.lastMaintenanceDate), 'dd/MM/yyyy', { locale: fr })}
-                        </div>
-                      )}
-                      {component.nextMaintenanceDate && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span className="font-medium">Prochaine:</span> {format(new Date(component.nextMaintenanceDate), 'dd/MM/yyyy', { locale: fr })}
-                        </div>
-                      )}
-                    </div>
-                    
-                    {component.notes && (
-                      <div className="mt-3 text-sm">
-                        <span className="font-medium">Notes:</span> {component.notes}
-                      </div>
-                    )}
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <ComponentViewSelector
+            currentView={viewMode}
+            onViewChange={setViewMode}
+            componentCount={allComponents.length}
+          />
+          
+          <ComponentFilters
+            filters={filters}
+            onFiltersChange={setFilters}
+            componentTypes={uniqueComponentTypes}
+            totalCount={allComponents.length}
+            filteredCount={filteredComponents.length}
+          />
+        </div>
 
-                    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-                      <CollapsibleContent className="mt-4">
-                        <Tabs defaultValue="sub-components" className="w-full">
-                          <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="sub-components" className="flex items-center gap-2">
-                              <Settings className="h-4 w-4" />
-                              Sous-composants
-                            </TabsTrigger>
-                            <TabsTrigger value="stock-links" className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
-                              Stock lié
-                            </TabsTrigger>
-                            <TabsTrigger value="purchase-history" className="flex items-center gap-2">
-                              <DollarSign className="h-4 w-4" />
-                              Historique
-                            </TabsTrigger>
-                            <TabsTrigger value="suppliers" className="flex items-center gap-2">
-                              <Package className="h-4 w-4" />
-                              Fournisseurs
-                            </TabsTrigger>
-                          </TabsList>
-                          
-                          <TabsContent value="sub-components" className="space-y-4">
-                            <SubComponentManager 
-                              parentComponentId={component.id}
-                              parentComponentName={component.componentName}
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="stock-links" className="space-y-4">
-                            <ComponentStockLinkManager 
-                              componentId={component.id}
-                              componentName={component.componentName}
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="purchase-history" className="space-y-4">
-                            <ComponentPurchaseHistory 
-                              componentId={component.id}
-                              componentName={component.componentName}
-                            />
-                          </TabsContent>
-                          
-                          <TabsContent value="suppliers" className="space-y-4">
-                            <div className="text-center py-8 text-muted-foreground">
-                              <Package className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p>Gestion des fournisseurs - À venir</p>
-                            </div>
-                          </TabsContent>
-                        </Tabs>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        {renderComponentsView()}
+
+        <ComponentDetailsModal
+          component={selectedComponent}
+          isOpen={isDetailsModalOpen}
+          onClose={() => {
+            setIsDetailsModalOpen(false);
+            setSelectedComponent(null);
+          }}
+          onEdit={handleComponentEdit}
+        />
       </CardContent>
     </Card>
   );
