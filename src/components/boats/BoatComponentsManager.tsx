@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 import type { BoatComponent } from '@/types';
 
 interface BoatComponentsManagerProps {
@@ -54,7 +56,7 @@ const statusOptions = [
   { value: 'scheduled_maintenance', label: 'Maintenance planifiée', color: 'bg-blue-100 text-blue-800' }
 ];
 
-export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManagerProps) {
+function BoatComponentsManagerInner({ boatId, boatName }: BoatComponentsManagerProps) {
   console.log('BoatComponentsManager rendered with:', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -73,35 +75,46 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   });
 
   // Fetch boat components
-  const { data: components = [], isLoading } = useQuery({
+  const { data: components = [], isLoading, error: queryError } = useQuery({
     queryKey: ['boat-components', boatId],
     queryFn: async () => {
       console.log('Fetching components for boat:', boatId);
-      const { data, error } = await supabase
-        .from('boat_components')
-        .select('*')
-        .eq('boat_id', boatId)
-        .order('component_name');
+      try {
+        const { data, error } = await supabase
+          .from('boat_components')
+          .select('*')
+          .eq('boat_id', boatId)
+          .order('component_name');
 
-      if (error) throw error;
-      return data.map(item => ({
-        id: item.id,
-        boatId: item.boat_id,
-        componentName: item.component_name,
-        componentType: item.component_type,
-        manufacturer: item.manufacturer,
-        model: item.model,
-        serialNumber: item.serial_number,
-        installationDate: item.installation_date,
-        lastMaintenanceDate: item.last_maintenance_date,
-        nextMaintenanceDate: item.next_maintenance_date,
-        maintenanceIntervalDays: item.maintenance_interval_days,
-        status: item.status,
-        notes: item.notes,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
-      })) as BoatComponent[];
-    }
+        if (error) {
+          console.error('Database error fetching components:', error);
+          throw error;
+        }
+        
+        console.log('Successfully fetched components:', data?.length || 0);
+        return data.map(item => ({
+          id: item.id,
+          boatId: item.boat_id,
+          componentName: item.component_name,
+          componentType: item.component_type,
+          manufacturer: item.manufacturer,
+          model: item.model,
+          serialNumber: item.serial_number,
+          installationDate: item.installation_date,
+          lastMaintenanceDate: item.last_maintenance_date,
+          nextMaintenanceDate: item.next_maintenance_date,
+          maintenanceIntervalDays: item.maintenance_interval_days,
+          status: item.status,
+          notes: item.notes,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at
+        })) as BoatComponent[];
+      } catch (error) {
+        console.error('Error in components query:', error);
+        throw error;
+      }
+    },
+    enabled: !!boatId
   });
 
   // Create/Update component mutation
@@ -237,6 +250,31 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
     const statusOption = statusOptions.find(opt => opt.value === status);
     return statusOption ? statusOption : statusOptions[0];
   };
+
+  // Show error state if query failed
+  if (queryError) {
+    console.error('Query error in BoatComponentsManager:', queryError);
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center text-red-600">
+            <p>Erreur lors du chargement des composants</p>
+            <Button 
+              variant="outline" 
+              className="mt-2" 
+              onClick={() => window.location.reload()}
+            >
+              Recharger la page
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isLoading) {
+    return <LoadingSpinner text="Chargement des composants..." />;
+  }
 
   return (
     <Card>
@@ -392,9 +430,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="text-center py-8">Chargement des composants...</div>
-        ) : components.length === 0 ? (
+        {components.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Wrench className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>Aucun composant configuré pour ce bateau</p>
@@ -470,5 +506,36 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// Error fallback component
+const ComponentsErrorFallback = ({ error, resetError }: { error?: Error; resetError: () => void }) => (
+  <Card>
+    <CardContent className="p-6">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-red-600 mb-2">Erreur dans les composants</h3>
+        <p className="text-gray-600 mb-4">
+          {error?.message || 'Une erreur inattendue s\'est produite'}
+        </p>
+        <div className="space-x-2">
+          <Button variant="outline" onClick={resetError}>
+            Réessayer
+          </Button>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Recharger la page
+          </Button>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
+// Main exported component with ErrorBoundary
+export function BoatComponentsManager(props: BoatComponentsManagerProps) {
+  return (
+    <ErrorBoundary fallback={ComponentsErrorFallback}>
+      <BoatComponentsManagerInner {...props} />
+    </ErrorBoundary>
   );
 }
