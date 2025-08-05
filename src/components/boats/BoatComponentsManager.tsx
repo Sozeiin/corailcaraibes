@@ -63,7 +63,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
   console.log('BoatComponentsManager rendered', { boatId, boatName });
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [viewMode, setViewMode] = useState<ViewMode>('schematic');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [selectedComponent, setSelectedComponent] = useState<BoatComponent | null>(null);
@@ -356,27 +356,12 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
 
     console.log('Rendering view mode:', viewMode);
     switch (viewMode) {
-      case 'schematic':
-        return (
-          <BoatSchematicView
-            components={filteredComponents}
-            onComponentClick={handleComponentClick}
-          />
-        );
-      case 'tree':
-        return (
-          <BoatTreeView
-            components={filteredComponents}
-            onComponentEdit={handleComponentEdit}
-            onComponentDetails={handleComponentClick}
-          />
-        );
       case 'grid':
         return renderGridView();
       case 'list':
         return renderListView();
       default:
-        return null;
+        return renderGridView();
     }
   };
 
@@ -635,20 +620,37 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="p-4 border border-dashed border-gray-300 rounded-lg">
-          <p className="text-center text-muted-foreground">
-            Composants Manager - Test de rendu
-          </p>
-          <p className="text-sm text-center mt-2">
-            Boat ID: {boatId} | Boat Name: {boatName}
-          </p>
-          <p className="text-sm text-center mt-1">
-            View Mode: {viewMode} | Loading: {isLoading ? 'Yes' : 'No'}
-          </p>
-          <p className="text-sm text-center mt-1">
-            Components Count: {allComponents.length}
-          </p>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-card rounded-lg border border-border">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg">Composants de {boatName}</h3>
+              <Badge variant="outline" className="text-xs">
+                {allComponents.length} composant{allComponents.length > 1 ? 's' : ''}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="h-8 px-3 text-xs"
+              >
+                Grille
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-8 px-3 text-xs"
+              >
+                Liste
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {renderComponentsView()}
       </CardContent>
     </Card>
   );
