@@ -58,7 +58,7 @@ export function ComponentsList({ onAddNew }: ComponentsListProps) {
           <Button 
             variant="outline" 
             className="mt-2" 
-            onClick={() => setFilters({ search: '', status: '', componentType: '', sortBy: 'name' })}
+            onClick={() => setFilters({ search: '', status: 'all', componentType: 'all', sortBy: 'name' })}
           >
             Réinitialiser les filtres
           </Button>

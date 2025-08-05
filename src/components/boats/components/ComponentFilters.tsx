@@ -21,7 +21,7 @@ interface ComponentFiltersProps {
 }
 
 const statusOptions = [
-  { value: '', label: 'Tous les statuts' },
+  { value: 'all', label: 'Tous les statuts' },
   { value: 'operational', label: 'Opérationnel' },
   { value: 'maintenance_needed', label: 'Maintenance requise' },
   { value: 'out_of_service', label: 'Hors service' },
@@ -29,7 +29,7 @@ const statusOptions = [
 ];
 
 const componentTypeOptions = [
-  { value: '', label: 'Tous les types' },
+  { value: 'all', label: 'Tous les types' },
   { value: 'Moteur bâbord', label: 'Moteur bâbord' },
   { value: 'Moteur tribord', label: 'Moteur tribord' },
   { value: 'Générateur', label: 'Générateur' },
@@ -67,14 +67,14 @@ export function ComponentFilters({ filters, onFiltersChange, totalCount, filtere
     console.log('Resetting all filters');
     const defaultFilters: FilterState = {
       search: '',
-      status: '',
-      componentType: '',
+      status: 'all',
+      componentType: 'all',
       sortBy: 'name'
     };
     onFiltersChange(defaultFilters);
   };
 
-  const hasActiveFilters = filters.search || filters.status || filters.componentType;
+  const hasActiveFilters = filters.search || (filters.status && filters.status !== 'all') || (filters.componentType && filters.componentType !== 'all');
 
   return (
     <Card className="mb-4">
@@ -172,12 +172,12 @@ export function ComponentFilters({ filters, onFiltersChange, totalCount, filtere
                     Recherche: "{filters.search}"
                   </Badge>
                 )}
-                {filters.status && (
+                {filters.status && filters.status !== 'all' && (
                   <Badge variant="outline">
                     Statut: {statusOptions.find(s => s.value === filters.status)?.label}
                   </Badge>
                 )}
-                {filters.componentType && (
+                {filters.componentType && filters.componentType !== 'all' && (
                   <Badge variant="outline">
                     Type: {componentTypeOptions.find(t => t.value === filters.componentType)?.label}
                   </Badge>

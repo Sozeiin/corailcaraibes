@@ -68,8 +68,8 @@ const initialFormData: ComponentFormData = {
 
 const initialFilters: FilterState = {
   search: '',
-  status: '',
-  componentType: '',
+  status: 'all',
+  componentType: 'all',
   sortBy: 'name'
 };
 
@@ -149,12 +149,12 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     }
 
     // Apply status filter
-    if (filters.status) {
+    if (filters.status && filters.status !== 'all') {
       filtered = filtered.filter(component => component.status === filters.status);
     }
 
     // Apply component type filter
-    if (filters.componentType) {
+    if (filters.componentType && filters.componentType !== 'all') {
       filtered = filtered.filter(component => component.componentType === filters.componentType);
     }
 
