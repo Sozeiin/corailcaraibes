@@ -625,7 +625,7 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
             <div className="flex items-center gap-2">
               <h3 className="font-semibold text-lg">Composants de {boatName}</h3>
               <Badge variant="outline" className="text-xs">
-                {allComponents.length} composant{allComponents.length > 1 ? 's' : ''}
+                {filteredComponents.length} sur {allComponents.length} composant{allComponents.length > 1 ? 's' : ''}
               </Badge>
             </div>
             
@@ -648,6 +648,34 @@ export function BoatComponentsManager({ boatId, boatName }: BoatComponentsManage
               </Button>
             </div>
           </div>
+
+          {/* Filtres basiques */}
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1">
+                  <Input
+                    placeholder="Rechercher un composant..."
+                    value={filters.search}
+                    onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                  />
+                </div>
+                <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Tous les statuts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Tous les statuts</SelectItem>
+                    {statusOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {renderComponentsView()}
