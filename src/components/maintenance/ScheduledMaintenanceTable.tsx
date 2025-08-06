@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Clock, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, AlertTriangle, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -101,6 +101,31 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, 
       });
     }
   };
+
+  const handleDeleteScheduled = async (maintenance: ScheduledMaintenance) => {
+    try {
+      const { error } = await supabase
+        .from('scheduled_maintenance')
+        .delete()
+        .eq('id', maintenance.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Maintenance supprimée",
+        description: "La maintenance programmée a été supprimée."
+      });
+
+      onInterventionCreated?.();
+    } catch (error) {
+      console.error('Error deleting scheduled maintenance:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la maintenance programmée.",
+        variant: "destructive"
+      });
+    }
+  };
   if (isLoading) {
     return (
       <div className="p-8">
@@ -163,14 +188,25 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, 
               </TableCell>
               {canManage && (
                 <TableCell className="text-right">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-marine-600 text-white hover:bg-marine-700"
-                    onClick={() => createInterventionFromSchedule(maintenance)}
-                  >
-                    Créer intervention
-                  </Button>
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-marine-600 text-white hover:bg-marine-700"
+                      onClick={() => createInterventionFromSchedule(maintenance)}
+                    >
+                      Créer intervention
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteScheduled(maintenance)}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      title="Supprimer la maintenance programmée"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               )}
             </TableRow>

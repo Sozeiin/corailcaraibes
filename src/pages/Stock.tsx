@@ -242,7 +242,7 @@ export default function Stock() {
     }
   };
 
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
+  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
 
   return (
     <div className="space-y-4 sm:space-y-6">
