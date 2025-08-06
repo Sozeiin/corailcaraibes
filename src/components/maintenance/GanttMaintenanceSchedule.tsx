@@ -468,7 +468,7 @@ export function GanttMaintenanceSchedule() {
                 </div>
                 {/* Day columns headers */}
                 {weekDays.map(day => (
-                  <div key={day.dateString} className="w-32 flex-none border-r bg-muted/50">
+                  <div key={day.dateString} className="w-48 flex-none border-r bg-muted/50">
                     <div className={`text-center p-3 font-medium ${day.isToday ? 'bg-primary/10 text-primary' : 'text-foreground/80'} transition-colors`}>
                       <div className="text-xs text-muted-foreground uppercase tracking-wider">{day.dayName}</div>
                       <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
@@ -508,7 +508,7 @@ export function GanttMaintenanceSchedule() {
                         {weekDays.map(day => {
                           const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
                           return (
-                            <div key={day.dateString} className="w-32 flex-none border-r last:border-r-0">
+                            <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
                               <DroppableTimeSlot
                                 id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
                                 tasks={tasks}
