@@ -64,8 +64,8 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
         Math.pow(e.clientX - dragStartPos.x, 2) + Math.pow(e.clientY - dragStartPos.y, 2)
       );
       
-      // If it was a quick click with minimal movement, treat as click
-      if (timeDiff < 200 && distance < 5) {
+      // More lenient thresholds: quick click with very minimal movement
+      if (timeDiff < 150 && distance < 3) {
         e.stopPropagation();
         onClick?.();
       }
