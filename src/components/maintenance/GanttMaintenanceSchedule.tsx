@@ -92,13 +92,14 @@ export function GanttMaintenanceSchedule() {
     console.log('Week start date:', startDate);
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(startDate, i);
-      const dateString = date.toISOString().split('T')[0];
+      const dateString = format(date, 'yyyy-MM-dd'); // Use consistent date formatting
       console.log(`Day ${i}:`, date, 'dateString:', dateString);
       return {
         date,
         dateString,
         dayName: format(date, 'EEE', { locale: fr }),
         dayNumber: format(date, 'd'),
+        dayIndex: i, // Add day index for easier drop target parsing
         isToday: isToday(date)
       };
     });
@@ -234,36 +235,37 @@ export function GanttMaintenanceSchedule() {
       const dropId = over.id.toString();
       console.log('Drop target ID:', dropId);
       
-      // Parse the drop target ID: technicianId-dateString-hour
-      // The technicianId can be a UUID (with dashes) so we need to be careful
-      const parts = dropId.split('-');
+      // New drop target format: technicianId|dayIndex|hour
+      // Using pipe separator to avoid UUID parsing issues
+      const parts = dropId.split('|');
       
-      if (parts.length < 3) {
-        console.error('Invalid drop target format:', dropId);
+      if (parts.length !== 3) {
+        console.error('Invalid drop target format:', dropId, 'expected format: technicianId|dayIndex|hour');
         setDraggedTask(null);
         return;
       }
       
-      // The last part is the hour, the second to last should be the day
-      const hour = parseInt(parts[parts.length - 1]);
-      const day = parts[parts.length - 2];
+      const [technicianId, dayIndexStr, hourStr] = parts;
+      const dayIndex = parseInt(dayIndexStr);
+      const hour = parseInt(hourStr);
       
-      // Everything except the last two parts is the technician ID
-      const technicianId = parts.slice(0, -2).join('-');
+      console.log('Parsed drop target:', { technicianId, dayIndex, hour });
       
-      console.log('Parsed drop target:', { technicianId, day, hour });
-      
-      if (isNaN(hour) || !day || isNaN(parseInt(day))) {
-        console.error('Invalid drop target data:', { technicianId, day, hour });
+      if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
+        console.error('Invalid drop target data:', { technicianId, dayIndex, hour });
         setDraggedTask(null);
         return;
       }
       
-      // Reconstruct the full date from the current week and day
-      const currentWeekStart = startOfWeek(currentWeek, { weekStartsOn: 1 });
-      const dayIndex = parseInt(day) - 1; // day is 1-7, we need 0-6
-      const fullDate = addDays(currentWeekStart, dayIndex);
-      const dateString = fullDate.toISOString().split('T')[0];
+      // Get the date string directly from weekDays array
+      const targetDay = weekDays[dayIndex];
+      if (!targetDay) {
+        console.error('Invalid day index:', dayIndex);
+        setDraggedTask(null);
+        return;
+      }
+      
+      const dateString = targetDay.dateString;
       
       // Format the time correctly for database
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
@@ -296,24 +298,40 @@ export function GanttMaintenanceSchedule() {
   };
 
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
+    console.log('Getting tasks for slot:', { technicianId, dateString, hour });
+    console.log('Available interventions:', interventions.length);
+    
     const tasks = interventions.filter(intervention => {
+      // Parse the scheduled time correctly
       const taskHour = intervention.scheduled_time ? 
         parseInt(intervention.scheduled_time.split(':')[0]) : 9;
+      
+      // Compare technician IDs (handle null cases)
+      const technicianMatch = intervention.technician_id === technicianId;
+      
+      // Compare dates using consistent format
+      const dateMatch = intervention.scheduled_date === dateString;
+      
+      // Compare hours
+      const hourMatch = taskHour === hour;
       
       console.log('Filtering task:', intervention.id, {
         intervention_technician: intervention.technician_id,
         slot_technician: technicianId,
+        technicianMatch,
         intervention_date: intervention.scheduled_date,
         slot_date: dateString,
+        dateMatch,
         intervention_hour: taskHour,
-        slot_hour: hour
+        slot_hour: hour,
+        hourMatch,
+        included: technicianMatch && dateMatch && hourMatch
       });
       
-      return intervention.technician_id === technicianId &&
-             intervention.scheduled_date === dateString &&
-             taskHour === hour;
+      return technicianMatch && dateMatch && hourMatch;
     });
-    console.log(`Tasks for slot ${technicianId}-${dateString}-${hour}:`, tasks);
+    
+    console.log(`Tasks for slot ${technicianId}|${dateString}|${hour}:`, tasks.map(t => ({ id: t.id, title: t.title })));
     return tasks;
   };
 
@@ -464,8 +482,8 @@ export function GanttMaintenanceSchedule() {
                               <div className="flex h-20">
                                 {timeSlots.map(slot => (
                                   <DroppableTimeSlot
-                                    key={`${technician.id}-${day.dayNumber}-${slot.hour}`}
-                                    id={`${technician.id}-${day.dayNumber}-${slot.hour}`}
+                                    key={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                                    id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
                                     tasks={getTasksForSlot(technician.id, day.dateString, slot.hour)}
                                     onTaskClick={(task) => setSelectedTask(task as Intervention)}
                                     getTaskTypeConfig={getTaskTypeConfig}
