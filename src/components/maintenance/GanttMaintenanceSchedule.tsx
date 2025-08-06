@@ -121,12 +121,21 @@ export function GanttMaintenanceSchedule() {
   });
 
   // Fetch interventions
-  const { data: interventions = [], isLoading: interventionsLoading } = useQuery({
+  const { data: interventions = [], isLoading: interventionsLoading, error: interventionsError } = useQuery({
     queryKey: ['gantt-interventions', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
     queryFn: async () => {
-      if (!weekDays.length) return [];
+      if (!weekDays.length) {
+        console.log('No week days available');
+        return [];
+      }
+      
+      if (!user) {
+        console.log('No user available');
+        return [];
+      }
       
       console.log('Fetching interventions for date range:', weekDays[0]?.dateString, 'to', weekDays[6]?.dateString);
+      console.log('User:', { id: user.id, baseId: user.baseId, role: user.role });
       
       const { data, error } = await supabase
         .from('interventions')
@@ -145,14 +154,17 @@ export function GanttMaintenanceSchedule() {
         throw error;
       }
       
-      console.log('Fetched interventions:', data);
+      console.log('Fetched interventions raw:', data);
       
-      return data.map(item => ({
+      const processedData = data.map(item => ({
         ...item,
         estimated_duration: 60, // Default duration
         intervention_type: item.intervention_type || 'maintenance',
         priority: 'medium' as const // Default priority
       })) as Intervention[];
+      
+      console.log('Processed interventions:', processedData);
+      return processedData;
     },
     enabled: !!user?.baseId && weekDays.length > 0
   });
@@ -318,6 +330,11 @@ export function GanttMaintenanceSchedule() {
   const getTaskTypeConfig = (type: string) => {
     return TASK_TYPE_COLORS[type as keyof typeof TASK_TYPE_COLORS] || TASK_TYPE_COLORS.default;
   };
+
+  console.log('Render - Interventions:', interventions);
+  console.log('Render - User:', user);
+  console.log('Render - Loading:', interventionsLoading);
+  console.log('Render - Error:', interventionsError);
 
   return (
     <div className="h-screen flex flex-col bg-background">
