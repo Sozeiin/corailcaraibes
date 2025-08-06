@@ -51,7 +51,7 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
 
   const handleClick = (e: React.MouseEvent) => {
     // Only handle click if we're not currently being dragged
-    if (!isBeingDragged) {
+    if (!isBeingDragged && !isDragging) {
       e.stopPropagation();
       onClick?.();
     }
@@ -93,29 +93,20 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
       `}
     >
       <div className="p-1 space-y-0.5">
-        {/* Click zone - separate from drag listeners */}
-        <div 
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-          className="absolute inset-0 z-10 cursor-pointer"
-        />
-        
         {/* Header with status and icon */}
-        <div className="flex items-center justify-between relative z-20 pointer-events-none">
+        <div className="flex items-center justify-between">
           <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
           <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
         </div>
         
         {/* Task title - simplified */}
-        <div className={`text-[10px] font-medium line-clamp-1 ${typeConfig.text} relative z-20 pointer-events-none`}>
+        <div className={`text-[10px] font-medium line-clamp-1 ${typeConfig.text}`}>
           {task.title}
         </div>
         
         {/* Boat name - only if available, more compact */}
         {task.boats && (
-          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground relative z-20 pointer-events-none">
+          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
             <Ship className="h-2 w-2" />
             <span className="truncate">{task.boats.name}</span>
           </div>
@@ -123,14 +114,14 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
         
         {/* Time - compact display */}
         {task.scheduled_time && (
-          <div className="text-[9px] text-muted-foreground relative z-20 pointer-events-none">
+          <div className="text-[9px] text-muted-foreground">
             {task.scheduled_time.split(':').slice(0, 2).join(':')}
           </div>
         )}
         
         {/* Priority indicator - only for high/urgent */}
         {task.priority && (task.priority === 'urgent' || task.priority === 'high') && (
-          <div className={`w-full h-0.5 rounded relative z-20 pointer-events-none ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-500'}`} />
+          <div className={`w-full h-0.5 rounded ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-500'}`} />
         )}
       </div>
     </Card>
