@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { InterventionCards } from '@/components/maintenance/InterventionCards';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 import { Intervention } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 export function MaintenanceInterventions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedBoat, setSelectedBoat] = useState('all');
@@ -99,6 +101,32 @@ export function MaintenanceInterventions() {
     queryClient.invalidateQueries({ queryKey: ['interventions'] });
   };
 
+  const handleDelete = async (intervention: Intervention) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('interventions')
+      .delete()
+      .eq('id', intervention.id);
+
+    if (error) {
+      console.error('Error deleting intervention:', error);
+      toast({
+        title: 'Erreur',
+        description: "Impossible de supprimer l'intervention.",
+        variant: 'destructive',
+      });
+    } else {
+      toast({
+        title: 'Intervention supprimée',
+        description: "L'intervention a été supprimée avec succès.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['interventions'] });
+    }
+  };
+
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
 
   return (
@@ -169,6 +197,7 @@ export function MaintenanceInterventions() {
             isLoading={isLoading}
             onEdit={handleEdit}
             canManage={canManage}
+            onDelete={handleDelete}
           />
         </div>
       </div>
