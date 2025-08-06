@@ -32,6 +32,9 @@ interface DraggableTaskCardProps {
 }
 
 export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTypeConfig }: DraggableTaskCardProps) {
+  const [dragStartTime, setDragStartTime] = React.useState<number | null>(null);
+  const [dragStartPos, setDragStartPos] = React.useState<{ x: number; y: number } | null>(null);
+  
   const {
     attributes,
     listeners,
@@ -48,6 +51,28 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setDragStartTime(Date.now());
+    setDragStartPos({ x: e.clientX, y: e.clientY });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (dragStartTime && dragStartPos) {
+      const timeDiff = Date.now() - dragStartTime;
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - dragStartPos.x, 2) + Math.pow(e.clientY - dragStartPos.y, 2)
+      );
+      
+      // If it was a quick click with minimal movement, treat as click
+      if (timeDiff < 200 && distance < 5) {
+        e.stopPropagation();
+        onClick?.();
+      }
+    }
+    setDragStartTime(null);
+    setDragStartPos(null);
+  };
 
   const getStatusColor = () => {
     switch (task.status) {
@@ -77,15 +102,13 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
       style={style}
       {...listeners}
       {...attributes}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
         ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation
       `}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick?.();
-      }}
     >
       <div className="p-1 space-y-0.5">
         {/* Header with status and icon */}
