@@ -87,42 +87,36 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
         onClick?.();
       }}
     >
-      <div className="p-2 space-y-1">
-        {/* Status indicator */}
+      <div className="p-1 space-y-0.5">
+        {/* Header with status and icon */}
         <div className="flex items-center justify-between">
-          <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-          <IconComponent className={`h-3 w-3 ${typeConfig.text}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
+          <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
         </div>
         
-        {/* Task title */}
-        <div className={`text-xs font-medium line-clamp-2 ${typeConfig.text}`}>
+        {/* Task title - simplified */}
+        <div className={`text-[10px] font-medium line-clamp-1 ${typeConfig.text}`}>
           {task.title}
         </div>
         
-        {/* Boat name */}
+        {/* Boat name - only if available, more compact */}
         {task.boats && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Ship className="h-3 w-3" />
+          <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+            <Ship className="h-2 w-2" />
             <span className="truncate">{task.boats.name}</span>
           </div>
         )}
         
-        {/* Time and duration */}
-        {formatTime() && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{formatTime()}</span>
+        {/* Time - compact display */}
+        {task.scheduled_time && (
+          <div className="text-[9px] text-muted-foreground">
+            {task.scheduled_time.split(':').slice(0, 2).join(':')}
           </div>
         )}
         
-        {/* Priority badge */}
-        {task.priority && task.priority !== 'medium' && (
-          <Badge
-            variant={task.priority === 'urgent' || task.priority === 'high' ? 'destructive' : 'secondary'}
-            className="text-xs px-1 py-0"
-          >
-            {task.priority}
-          </Badge>
+        {/* Priority indicator - only for high/urgent */}
+        {task.priority && (task.priority === 'urgent' || task.priority === 'high') && (
+          <div className={`w-full h-0.5 rounded ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-500'}`} />
         )}
       </div>
     </Card>

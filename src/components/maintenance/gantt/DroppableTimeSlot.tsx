@@ -37,16 +37,19 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[60px] p-1 relative transition-all duration-200 ${
+      className={`min-h-[40px] p-0.5 relative transition-all duration-200 ${
         isOver ? 'bg-primary/10 border-primary/30 shadow-inner border-2 border-dashed' : 'hover:bg-muted/20 border-2 border-transparent'
       }`}
     >
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {tasks.map(task => (
           <DraggableTaskCard
             key={task.id}
             task={task}
-            onClick={() => onTaskClick(task)}
+            onClick={() => {
+              console.log('Task clicked:', task);
+              onTaskClick(task);
+            }}
             getTaskTypeConfig={getTaskTypeConfig}
             isDragging={false}
           />

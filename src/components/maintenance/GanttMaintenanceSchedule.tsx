@@ -108,13 +108,18 @@ export function GanttMaintenanceSchedule() {
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians', user?.baseId],
     queryFn: async () => {
+      console.log('Fetching technicians for base_id:', user?.baseId);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, role')
+        .select('id, name, role, base_id')
         .eq('role', 'technicien')
         .eq('base_id', user?.baseId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching technicians:', error);
+        throw error;
+      }
+      console.log('Fetched technicians:', data);
       return data as Technician[];
     },
     enabled: !!user?.baseId
@@ -507,7 +512,10 @@ export function GanttMaintenanceSchedule() {
                               <DroppableTimeSlot
                                 id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
                                 tasks={tasks}
-                                onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                                 onTaskClick={(task) => {
+                                   console.log('Setting selected task:', task);
+                                   setSelectedTask(task as Intervention);
+                                 }}
                                 getTaskTypeConfig={getTaskTypeConfig}
                               />
                             </div>
