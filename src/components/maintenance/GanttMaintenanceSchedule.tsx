@@ -104,11 +104,22 @@ export function GanttMaintenanceSchedule() {
     });
   }, [currentWeek]);
 
-  // Fetch technicians
+  // Fetch technicians - temporarily fetch all to debug
   const { data: technicians = [] } = useQuery({
     queryKey: ['technicians', user?.baseId],
     queryFn: async () => {
       console.log('Fetching technicians for base_id:', user?.baseId);
+      console.log('Current user data:', user);
+      
+      // First, let's see all technicians in the database
+      const { data: allTechnicians, error: allError } = await supabase
+        .from('profiles')
+        .select('id, name, role, base_id')
+        .eq('role', 'technicien');
+      
+      console.log('All technicians in database:', allTechnicians);
+      
+      // Then fetch for current base_id
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, role, base_id')
@@ -119,8 +130,10 @@ export function GanttMaintenanceSchedule() {
         console.error('Error fetching technicians:', error);
         throw error;
       }
-      console.log('Fetched technicians:', data);
-      return data as Technician[];
+      console.log('Technicians for current base_id:', data);
+      
+      // For now, return all technicians to see them all
+      return allTechnicians as Technician[];
     },
     enabled: !!user?.baseId
   });
@@ -420,29 +433,30 @@ export function GanttMaintenanceSchedule() {
       </div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        <div className="flex-1 flex overflow-hidden">
-          {/* Unassigned tasks panel - reduced width */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Unassigned tasks panel - moved to top */}
           {showUnassignedPanel && (
-            <div className="w-64 flex-none border-r bg-muted/30 flex flex-col">
+            <div className="flex-none border-b bg-muted/30 max-h-40">
               <div className="p-3 border-b bg-muted/50">
                 <h3 className="font-medium text-foreground flex items-center gap-2">
                   <Clock className="h-4 w-4" />
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="flex-1 p-2">
-                <div className="space-y-2">
+              <ScrollArea className="max-h-32 p-2">
+                <div className="flex flex-wrap gap-2">
                   {getUnassignedTasks().map(task => (
-                    <DraggableTaskCard
-                      key={task.id}
-                      task={task}
-                      onClick={() => setSelectedTask(task)}
-                      getTaskTypeConfig={getTaskTypeConfig}
-                      isDragging={false}
-                    />
+                    <div key={task.id} className="w-48">
+                      <DraggableTaskCard
+                        task={task}
+                        onClick={() => setSelectedTask(task)}
+                        getTaskTypeConfig={getTaskTypeConfig}
+                        isDragging={false}
+                      />
+                    </div>
                   ))}
                   {getUnassignedTasks().length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-8">
+                    <p className="text-sm text-muted-foreground text-center py-4 w-full">
                       Aucune tâche non assignée
                     </p>
                   )}
