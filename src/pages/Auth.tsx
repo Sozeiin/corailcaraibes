@@ -191,46 +191,6 @@ export default function Auth() {
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </form>
-              
-              <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-                <h3 className="font-medium text-sm mb-2">Comptes de démonstration :</h3>
-                <div className="space-y-2 text-xs">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setLoginForm({ email: 'direction@fleetcat.com', password: 'password' });
-                      setTimeout(() => handleLogin(), 100);
-                    }}
-                    className="w-full text-left justify-start"
-                  >
-                    Direction: direction@fleetcat.com
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setLoginForm({ email: 'chef.martinique@fleetcat.com', password: 'password' });
-                      setTimeout(() => handleLogin(), 100);
-                    }}
-                    className="w-full text-left justify-start"
-                  >
-                    Chef de base: chef.martinique@fleetcat.com
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setLoginForm({ email: 'tech.martinique@fleetcat.com', password: 'password' });
-                      setTimeout(() => handleLogin(), 100);
-                    }}
-                    className="w-full text-left justify-start"
-                  >
-                    Technicien: tech.martinique@fleetcat.com
-                  </Button>
-                  <p className="text-gray-500 mt-2">Mot de passe: password</p>
-                </div>
-              </div>
             </TabsContent>
             
             <TabsContent value="signup">
