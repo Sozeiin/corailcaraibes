@@ -32,9 +32,6 @@ interface DraggableTaskCardProps {
 }
 
 export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTypeConfig }: DraggableTaskCardProps) {
-  const [dragStartTime, setDragStartTime] = React.useState<number | null>(null);
-  const [dragStartPos, setDragStartPos] = React.useState<{ x: number; y: number } | null>(null);
-  
   const {
     attributes,
     listeners,
@@ -52,26 +49,12 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
   } : undefined;
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    setDragStartTime(Date.now());
-    setDragStartPos({ x: e.clientX, y: e.clientY });
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (dragStartTime && dragStartPos) {
-      const timeDiff = Date.now() - dragStartTime;
-      const distance = Math.sqrt(
-        Math.pow(e.clientX - dragStartPos.x, 2) + Math.pow(e.clientY - dragStartPos.y, 2)
-      );
-      
-      // More lenient thresholds: quick click with very minimal movement
-      if (timeDiff < 150 && distance < 3) {
-        e.stopPropagation();
-        onClick?.();
-      }
+  const handleClick = (e: React.MouseEvent) => {
+    // Only handle click if we're not currently being dragged
+    if (!isBeingDragged) {
+      e.stopPropagation();
+      onClick?.();
     }
-    setDragStartTime(null);
-    setDragStartPos(null);
   };
 
   const getStatusColor = () => {
@@ -102,8 +85,7 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
       style={style}
       {...listeners}
       {...attributes}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+      onClick={handleClick}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
