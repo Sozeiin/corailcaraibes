@@ -37,24 +37,27 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[40px] p-1 relative transition-all duration-200 ${
+      className={`min-h-[60px] p-1 relative transition-all duration-200 ${
         isOver ? 'bg-primary/10 border-primary/30 shadow-inner' : 'hover:bg-muted/20'
       }`}
     >
       <div className="space-y-1">
-        {tasks.map(task => (
-          <div
-            key={task.id}
-            className="text-xs p-1 bg-primary/20 rounded cursor-pointer hover:bg-primary/30 transition-colors border-l-2 border-primary"
-            onClick={() => onTaskClick(task)}
-            title={`${task.title} - ${task.boats?.name || 'N/A'}`}
-          >
-            <div className="font-medium truncate">{task.title}</div>
-            {task.boats?.name && (
-              <div className="text-muted-foreground truncate">{task.boats.name}</div>
-            )}
-          </div>
-        ))}
+        {tasks.map(task => {
+          const config = getTaskTypeConfig(task.intervention_type || 'default');
+          return (
+            <div
+              key={task.id}
+              className={`text-xs p-2 rounded cursor-pointer transition-colors border-l-2 ${config.bg} ${config.border} ${config.text} hover:opacity-80`}
+              onClick={() => onTaskClick(task)}
+              title={`${task.title} - ${task.boats?.name || 'N/A'}`}
+            >
+              <div className="font-medium truncate">{task.title}</div>
+              {task.boats?.name && (
+                <div className="text-muted-foreground/70 truncate text-[10px]">{task.boats.name}</div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

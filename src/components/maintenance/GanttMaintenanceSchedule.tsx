@@ -479,37 +479,43 @@ export function GanttMaintenanceSchedule() {
             <ScrollArea className="flex-1">
               <div className="min-h-full">
                 {technicians.map(technician => (
-                  timeSlots.map(slot => (
-                    <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 hover:bg-muted/10 transition-colors">
-                      {/* Technician name */}
-                      <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
-                        <div className="p-1 bg-primary/10 rounded-sm">
-                          <User className="h-3 w-3 text-primary" />
+                  <div key={technician.id} className="border-b last:border-b-0">
+                    {timeSlots.map(slot => (
+                      <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 last:border-b-0 hover:bg-muted/10 transition-colors">
+                        {/* Technician name - only show on first hour */}
+                        <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
+                          {slot.hour === timeSlots[0].hour && (
+                            <>
+                              <div className="p-1 bg-primary/10 rounded-sm">
+                                <User className="h-3 w-3 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium truncate">{technician.name}</span>
+                            </>
+                          )}
                         </div>
-                        <span className="text-sm font-medium truncate">{technician.name}</span>
+                        
+                        {/* Hour */}
+                        <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                          <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
+                        </div>
+                        
+                        {/* Day cells */}
+                        {weekDays.map(day => {
+                          const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
+                          return (
+                            <div key={day.dateString} className="w-32 flex-none border-r last:border-r-0">
+                              <DroppableTimeSlot
+                                id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                                tasks={tasks}
+                                onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                                getTaskTypeConfig={getTaskTypeConfig}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                      
-                      {/* Hour */}
-                      <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
-                        <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
-                      </div>
-                      
-                      {/* Day cells */}
-                      {weekDays.map(day => {
-                        const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
-                        return (
-                          <div key={day.dateString} className="w-32 flex-none border-r">
-                            <DroppableTimeSlot
-                              id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                              tasks={tasks}
-                              onTaskClick={(task) => setSelectedTask(task as Intervention)}
-                              getTaskTypeConfig={getTaskTypeConfig}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))
+                    ))}
+                  </div>
                 ))}
               </div>
             </ScrollArea>
