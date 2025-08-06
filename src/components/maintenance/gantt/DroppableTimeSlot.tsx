@@ -37,19 +37,23 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
   return (
     <div
       ref={setNodeRef}
-      className={`gantt-time-slot min-h-[80px] border-r border-border/20 relative transition-all duration-200 ${
+      className={`min-h-[40px] p-1 relative transition-all duration-200 ${
         isOver ? 'bg-primary/10 border-primary/30 shadow-inner' : 'hover:bg-muted/20'
       }`}
     >
       <div className="space-y-1">
         {tasks.map(task => (
-          <DraggableTaskCard
+          <div
             key={task.id}
-            task={task}
+            className="text-xs p-1 bg-primary/20 rounded cursor-pointer hover:bg-primary/30 transition-colors border-l-2 border-primary"
             onClick={() => onTaskClick(task)}
-            getTaskTypeConfig={getTaskTypeConfig}
-            isDragging={false}
-          />
+            title={`${task.title} - ${task.boats?.name || 'N/A'}`}
+          >
+            <div className="font-medium truncate">{task.title}</div>
+            {task.boats?.name && (
+              <div className="text-muted-foreground truncate">{task.boats.name}</div>
+            )}
+          </div>
         ))}
       </div>
     </div>

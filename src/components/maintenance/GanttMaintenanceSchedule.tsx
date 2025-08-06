@@ -28,7 +28,6 @@ import {
 } from 'lucide-react';
 import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
 import { DraggableTaskCard } from './gantt/DraggableTaskCard';
-import { UnassignedTasksPanel } from './gantt/UnassignedTasksPanel';
 import { TaskDialog } from './gantt/TaskDialog';
 
 interface Intervention {
@@ -417,85 +416,100 @@ export function GanttMaintenanceSchedule() {
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex overflow-hidden">
-          {/* Unassigned tasks panel */}
-          <UnassignedTasksPanel
-            tasks={getUnassignedTasks()}
-            isVisible={showUnassignedPanel}
-            onTaskClick={(task) => setSelectedTask(task as Intervention)}
-            getTaskTypeConfig={getTaskTypeConfig}
-          />
+          {/* Unassigned tasks panel - reduced width */}
+          {showUnassignedPanel && (
+            <div className="w-64 flex-none border-r bg-muted/30 flex flex-col">
+              <div className="p-3 border-b bg-muted/50">
+                <h3 className="font-medium text-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Tâches non assignées ({getUnassignedTasks().length})
+                </h3>
+              </div>
+              <ScrollArea className="flex-1 p-2">
+                <div className="space-y-2">
+                  {getUnassignedTasks().map(task => (
+                    <DraggableTaskCard
+                      key={task.id}
+                      task={task}
+                      onClick={() => setSelectedTask(task)}
+                      getTaskTypeConfig={getTaskTypeConfig}
+                      isDragging={false}
+                    />
+                  ))}
+                  {getUnassignedTasks().length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucune tâche non assignée
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
 
-          {/* Main Gantt area */}
+          {/* Main table */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Time header */}
+            {/* Table header */}
             <div className="flex-none border-b bg-gradient-to-r from-muted/40 to-muted/20 shadow-sm">
               <div className="flex">
-                <div className="w-48 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
+                {/* Technician column header */}
+                <div className="w-40 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Techniciens
+                  Technicien
                 </div>
-                <ScrollArea className="flex-1">
-                  <div className="flex min-w-max">
-                    {weekDays.map(day => (
-                      <div key={day.dateString} className="gantt-timeline">
-                        <div className={`text-center p-3 gantt-header font-medium border-r border-border/30 ${day.isToday ? 'gantt-today bg-primary/5' : 'hover:bg-muted/30'} transition-colors`}>
-                          <div className="text-xs text-muted-foreground uppercase tracking-wider">{day.dayName}</div>
-                          <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
-                            {day.dayNumber}
-                          </div>
-                        </div>
-                        <div className="flex">
-                          {timeSlots.map(slot => (
-                            <div key={slot.hour} className="gantt-time-slot border-r border-border/30">
-                              <div className="text-xs text-center text-muted-foreground font-medium px-1">
-                                {slot.label}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </div>
-            </div>
-
-            {/* Technician rows */}
-            <ScrollArea className="flex-1">
-              <div className="min-h-full">
-                {technicians.map(technician => (
-                  <div key={technician.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
-                    <div className="flex">
-                      {/* Technician name */}
-                      <div className="w-48 flex-none border-r bg-gradient-to-r from-muted/40 to-muted/20 p-4 flex items-center gap-3">
-                        <div className="p-1.5 bg-primary/10 rounded-md">
-                          <User className="h-4 w-4 text-primary" />
-                        </div>
-                        <span className="font-medium truncate text-foreground">{technician.name}</span>
-                      </div>
-                      
-                      {/* Timeline */}
-                      <div className="flex-1">
-                        <div className="flex min-w-max">
-                          {weekDays.map(day => (
-                            <div key={day.dateString} className="gantt-timeline">
-                              <div className="flex h-20">
-                                {timeSlots.map(slot => (
-                                  <DroppableTimeSlot
-                                    key={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                                    id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                                    tasks={getTasksForSlot(technician.id, day.dateString, slot.hour)}
-                                    onTaskClick={(task) => setSelectedTask(task as Intervention)}
-                                    getTaskTypeConfig={getTaskTypeConfig}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                {/* Hour column header */}
+                <div className="w-20 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Heure
+                </div>
+                {/* Day columns headers */}
+                {weekDays.map(day => (
+                  <div key={day.dateString} className="w-32 flex-none border-r bg-muted/50">
+                    <div className={`text-center p-3 font-medium ${day.isToday ? 'bg-primary/10 text-primary' : 'text-foreground/80'} transition-colors`}>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wider">{day.dayName}</div>
+                      <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
+                        {day.dayNumber}
                       </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Table content */}
+            <ScrollArea className="flex-1">
+              <div className="min-h-full">
+                {technicians.map(technician => (
+                  timeSlots.map(slot => (
+                    <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 hover:bg-muted/10 transition-colors">
+                      {/* Technician name */}
+                      <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
+                        <div className="p-1 bg-primary/10 rounded-sm">
+                          <User className="h-3 w-3 text-primary" />
+                        </div>
+                        <span className="text-sm font-medium truncate">{technician.name}</span>
+                      </div>
+                      
+                      {/* Hour */}
+                      <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                        <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
+                      </div>
+                      
+                      {/* Day cells */}
+                      {weekDays.map(day => {
+                        const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
+                        return (
+                          <div key={day.dateString} className="w-32 flex-none border-r">
+                            <DroppableTimeSlot
+                              id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                              tasks={tasks}
+                              onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                              getTaskTypeConfig={getTaskTypeConfig}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))
                 ))}
               </div>
             </ScrollArea>
