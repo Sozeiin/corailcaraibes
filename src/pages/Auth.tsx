@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import authLogo from '@/assets/Capture d’écran 2025-08-06 172029.png';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -146,9 +147,7 @@ export default function Auth() {
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-2xl">CC</span>
-          </div>
+          <img src={authLogo} alt="Corail Caraibes logo" className="w-16 h-16 rounded-lg mx-auto mb-4" />
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
