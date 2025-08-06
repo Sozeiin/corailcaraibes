@@ -201,14 +201,19 @@ export function GanttMaintenanceSchedule() {
   });
 
   const handleDragStart = (event: DragStartEvent) => {
+    console.log('Drag started with task ID:', event.active.id);
     const task = interventions.find(i => i.id === event.active.id);
+    console.log('Found task:', task);
     setDraggedTask(task || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
+    console.log('Drag ended:', { activeId: active.id, overId: over?.id });
+    
     if (!over || !draggedTask) {
+      console.log('No valid drop target or dragged task');
       setDraggedTask(null);
       return;
     }
