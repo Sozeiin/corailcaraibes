@@ -147,7 +147,7 @@ export default function Auth() {
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <img src={authLogo} alt="Corail Caraibes logo" className="w-16 h-16 rounded-lg mx-auto mb-4" />
+          <img src={authLogo} alt="Corail Caraibes logo" className="w-24 h-24 rounded-lg mx-auto mb-4" />
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
