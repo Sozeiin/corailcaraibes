@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Plus, Search, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +13,8 @@ import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { StockScanner } from '@/components/stock/StockScanner';
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
@@ -32,6 +34,9 @@ export default function Stock() {
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
   const [detailsItem, setDetailsItem] = useState<StockItem | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const { data: stockItems = [], isLoading } = useQuery({
@@ -197,6 +202,46 @@ export default function Stock() {
     setDetailsItem(null);
   };
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      const { error } = await supabase
+        .from('stock_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      toast({
+        title: "Article supprimé",
+        description: "L'article a été supprimé avec succès.",
+      });
+      setIsDeleteDialogOpen(false);
+      setDeleteItem(null);
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer l'article.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (item: StockItem) => {
+    setDeleteItem(item);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteItem) {
+      deleteMutation.mutate(deleteItem.id);
+    }
+  };
+
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
 
   return (
@@ -305,6 +350,7 @@ export default function Stock() {
                   onEdit={handleEdit}
                   onDuplicate={handleDuplicate}
                   onUpdateQuantity={handleUpdateQuantity}
+                  onDelete={handleDelete}
                   canManage={canManageStock}
                 />
               )}
@@ -341,6 +387,28 @@ export default function Stock() {
         isOpen={isDetailsDialogOpen}
         onClose={handleDetailsDialogClose}
       />
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'article <strong>{deleteItem?.name}</strong> ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

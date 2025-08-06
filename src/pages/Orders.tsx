@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { Plus, Search, ShoppingCart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +11,8 @@ import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,6 +30,9 @@ export default function Orders() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [detailsOrder, setDetailsOrder] = useState<Order | null>(null);
+  const [deleteOrder, setDeleteOrder] = useState<Order | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const { data: orders = [], isLoading } = useQuery({
@@ -184,6 +189,55 @@ export default function Orders() {
     setDetailsOrder(null);
   };
 
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // Delete order items first
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+
+      // Delete the order
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      toast({
+        title: "Commande supprimée",
+        description: "La commande a été supprimée avec succès.",
+      });
+      setIsDeleteDialogOpen(false);
+      setDeleteOrder(null);
+    },
+    onError: (error) => {
+      console.error('Erreur lors de la suppression:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la commande.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (order: Order) => {
+    setDeleteOrder(order);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (deleteOrder) {
+      deleteMutation.mutate(deleteOrder.id);
+    }
+  };
+
   const canManageOrders = user?.role === 'direction' || user?.role === 'chef_base';
 
   return (
@@ -260,6 +314,7 @@ export default function Orders() {
                 orders={filteredOrders}
                 isLoading={isLoading}
                 onEdit={handleEdit}
+                onDelete={handleDelete}
                 canManage={canManageOrders}
               />
             )}
@@ -289,6 +344,28 @@ export default function Orders() {
             onClose={handleDetailsDialogClose}
           />
         </ErrorBoundary>
+
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous sûr de vouloir supprimer la commande <strong>{deleteOrder?.orderNumber}</strong> ? 
+                Cette action est irréversible et supprimera également tous les articles associés.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmDelete}
+                disabled={deleteMutation.isPending}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ErrorBoundary>
   );

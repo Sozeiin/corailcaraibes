@@ -17,6 +17,7 @@ interface OrderTableProps {
   orders: Order[];
   isLoading: boolean;
   onEdit: (order: Order) => void;
+  onDelete: (order: Order) => void;
   canManage: boolean;
 }
 
@@ -34,7 +35,7 @@ const statusLabels = {
   cancelled: 'Annulée'
 };
 
-export function OrderTable({ orders, isLoading, onEdit, canManage }: OrderTableProps) {
+export function OrderTable({ orders, isLoading, onEdit, onDelete, canManage }: OrderTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -95,26 +96,37 @@ export function OrderTable({ orders, isLoading, onEdit, canManage }: OrderTableP
                   : '-'
                 }
               </TableCell>
-              {canManage && (
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(order)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(order)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              )}
+                {canManage && (
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(order)}
+                        title="Voir les détails"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onEdit(order)}
+                        title="Modifier"
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(order)}
+                        title="Supprimer"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
             </TableRow>
           ))}
         </TableBody>

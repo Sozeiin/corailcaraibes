@@ -18,10 +18,11 @@ interface StockTableProps {
   onEdit: (item: StockItem) => void;
   onDuplicate?: (item: StockItem) => void;
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onDelete: (item: StockItem) => void;
   canManage: boolean;
 }
 
-export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, canManage }: StockTableProps) {
+export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onDelete, canManage }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -191,6 +192,15 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                         className="h-8 w-8 p-0"
                       >
                         <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDelete(item)}
+                        title="Supprimer"
+                        className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   </TableCell>
