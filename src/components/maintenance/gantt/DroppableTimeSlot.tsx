@@ -37,8 +37,8 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
   return (
     <div
       ref={setNodeRef}
-      className={`gantt-time-slot min-h-[80px] ${
-        isOver ? 'bg-primary/10 border-primary/30' : ''
+      className={`gantt-time-slot min-h-[80px] border-r border-border/20 relative transition-all duration-200 ${
+        isOver ? 'bg-primary/10 border-primary/30 shadow-inner' : 'hover:bg-muted/20'
       }`}
     >
       <div className="space-y-1">

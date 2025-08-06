@@ -317,25 +317,34 @@ export function GanttMaintenanceSchedule() {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="flex-none border-b bg-card p-4">
+      <div className="flex-none border-b bg-gradient-to-r from-card to-muted/10 p-4 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-semibold">Planning Maintenance</h1>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Calendar className="h-5 w-5 text-primary" />
+              </div>
+              <h1 className="text-2xl font-semibold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Planning Maintenance
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 bg-background rounded-lg border p-1">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => navigateWeek('prev')}
+                className="hover:bg-muted"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="font-medium px-3">
+              <span className="font-medium px-4 py-1 min-w-[200px] text-center">
                 {format(weekDays[0]?.date || new Date(), 'd MMM', { locale: fr })} - {format(weekDays[6]?.date || new Date(), 'd MMM yyyy', { locale: fr })}
               </span>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={() => navigateWeek('next')}
+                className="hover:bg-muted"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -379,26 +388,27 @@ export function GanttMaintenanceSchedule() {
           {/* Main Gantt area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Time header */}
-            <div className="flex-none border-b bg-muted/30">
+            <div className="flex-none border-b bg-gradient-to-r from-muted/40 to-muted/20 shadow-sm">
               <div className="flex">
-                <div className="w-48 flex-none border-r bg-muted/50 p-3 font-medium">
+                <div className="w-48 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
+                  <User className="h-4 w-4" />
                   Techniciens
                 </div>
                 <ScrollArea className="flex-1">
                   <div className="flex min-w-max">
                     {weekDays.map(day => (
                       <div key={day.dateString} className="gantt-timeline">
-                        <div className={`text-center p-2 gantt-header font-medium ${day.isToday ? 'gantt-today' : ''}`}>
-                          <div className="text-sm text-muted-foreground">{day.dayName}</div>
-                          <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : ''}`}>
+                        <div className={`text-center p-3 gantt-header font-medium border-r border-border/30 ${day.isToday ? 'gantt-today bg-primary/5' : 'hover:bg-muted/30'} transition-colors`}>
+                          <div className="text-xs text-muted-foreground uppercase tracking-wider">{day.dayName}</div>
+                          <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
                             {day.dayNumber}
                           </div>
                         </div>
                         <div className="flex">
                           {timeSlots.map(slot => (
-                            <div key={slot.hour} className="gantt-time-slot">
-                              <div className="text-xs text-center text-muted-foreground">
-                                {slot.label.split(':')[0]}
+                            <div key={slot.hour} className="gantt-time-slot border-r border-border/30">
+                              <div className="text-xs text-center text-muted-foreground font-medium px-1">
+                                {slot.label}
                               </div>
                             </div>
                           ))}
@@ -414,12 +424,14 @@ export function GanttMaintenanceSchedule() {
             <ScrollArea className="flex-1">
               <div className="min-h-full">
                 {technicians.map(technician => (
-                  <div key={technician.id} className="border-b">
+                  <div key={technician.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
                     <div className="flex">
                       {/* Technician name */}
-                      <div className="w-48 flex-none border-r bg-muted/30 p-4 flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium truncate">{technician.name}</span>
+                      <div className="w-48 flex-none border-r bg-gradient-to-r from-muted/40 to-muted/20 p-4 flex items-center gap-3">
+                        <div className="p-1.5 bg-primary/10 rounded-md">
+                          <User className="h-4 w-4 text-primary" />
+                        </div>
+                        <span className="font-medium truncate text-foreground">{technician.name}</span>
                       </div>
                       
                       {/* Timeline */}
