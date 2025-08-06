@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Eye, Clock, User, Calendar, Wrench } from 'lucide-react';
+import { Edit, Eye, Clock, User, Calendar, Wrench, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,7 @@ interface InterventionCardsProps {
   onEdit: (intervention: Intervention) => void;
   canManage: boolean;
   showHistory?: boolean;
+  onDelete?: (intervention: Intervention) => void;
 }
 
 const statusColors = {
@@ -34,12 +35,13 @@ const statusIcons = {
   cancelled: Clock
 };
 
-export function InterventionCards({ 
-  interventions, 
-  isLoading, 
-  onEdit, 
-  canManage, 
-  showHistory = false 
+export function InterventionCards({
+  interventions,
+  isLoading,
+  onEdit,
+  canManage,
+  showHistory = false,
+  onDelete
 }: InterventionCardsProps) {
   if (isLoading) {
     return (
@@ -165,6 +167,22 @@ export function InterventionCards({
                     <Edit className="h-4 w-4 mr-1" />
                     Modifier
                   </Button>
+                  {onDelete && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) {
+                          onDelete(intervention);
+                        }
+                      }}
+                      className="hover:bg-background text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Supprimer
+                    </Button>
+                  )}
                 </div>
               </CardFooter>
             )}
