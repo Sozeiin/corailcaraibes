@@ -78,11 +78,14 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
       {...listeners}
       {...attributes}
       className={`
-        relative cursor-pointer select-none transition-all duration-200
+        relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
-        ${typeConfig.bg} ${typeConfig.border} border-l-4
+        ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation
       `}
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
     >
       <div className="p-2 space-y-1">
         {/* Status indicator */}
