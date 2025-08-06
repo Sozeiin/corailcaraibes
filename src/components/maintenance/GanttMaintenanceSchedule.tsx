@@ -69,6 +69,7 @@ export function GanttMaintenanceSchedule() {
   const [selectedTask, setSelectedTask] = useState<Intervention | null>(null);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
+  const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -362,8 +363,24 @@ export function GanttMaintenanceSchedule() {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
 
+  const toggleTechnicianCollapse = (technicianId: string) => {
+    setCollapsedTechnicians(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(technicianId)) {
+        newSet.delete(technicianId);
+      } else {
+        newSet.add(technicianId);
+      }
+      return newSet;
+    });
+  };
+
   const getTaskTypeConfig = (type: string) => {
     return TASK_TYPE_COLORS[type as keyof typeof TASK_TYPE_COLORS] || TASK_TYPE_COLORS.default;
+  };
+
+  const getTechnicianTaskCount = (technicianId: string) => {
+    return interventions.filter(intervention => intervention.technician_id === technicianId).length;
   };
 
   console.log('Render - Interventions:', interventions);
@@ -497,48 +514,103 @@ export function GanttMaintenanceSchedule() {
             {/* Table content */}
             <ScrollArea className="flex-1">
               <div className="min-h-full">
-                {technicians.map(technician => (
-                  <div key={technician.id} className="border-b last:border-b-0">
-                    {timeSlots.map(slot => (
-                      <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 last:border-b-0 hover:bg-muted/10 transition-colors">
-                        {/* Technician name - only show on first hour */}
-                        <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
-                          {slot.hour === timeSlots[0].hour && (
-                            <>
-                              <div className="p-1 bg-primary/10 rounded-sm">
-                                <User className="h-3 w-3 text-primary" />
-                              </div>
-                              <span className="text-sm font-medium truncate">{technician.name}</span>
-                            </>
-                          )}
-                        </div>
-                        
-                        {/* Hour */}
-                        <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
-                          <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
-                        </div>
-                        
-                        {/* Day cells */}
-                        {weekDays.map(day => {
-                          const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
-                          return (
-                            <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
-                              <DroppableTimeSlot
-                                id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                                tasks={tasks}
-                                 onTaskClick={(task) => {
-                                   console.log('Setting selected task:', task);
-                                   setSelectedTask(task as Intervention);
-                                 }}
-                                getTaskTypeConfig={getTaskTypeConfig}
-                              />
+                {technicians.map(technician => {
+                  const isCollapsed = collapsedTechnicians.has(technician.id);
+                  const taskCount = getTechnicianTaskCount(technician.id);
+                  
+                  return (
+                    <div key={technician.id} className="border-b last:border-b-0">
+                      {isCollapsed ? (
+                        // Collapsed view - single row with technician info and expand button
+                        <div className="flex border-b border-border/20 hover:bg-muted/10 transition-colors bg-muted/5">
+                          <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleTechnicianCollapse(technician.id)}
+                              className="h-6 w-6 p-0 hover:bg-primary/10"
+                            >
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                            <div className="p-1 bg-primary/10 rounded-sm">
+                              <User className="h-3 w-3 text-primary" />
                             </div>
-                          );
-                        })}
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                            <span className="text-sm font-medium truncate">{technician.name}</span>
+                            {taskCount > 0 && (
+                              <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                                {taskCount}
+                              </Badge>
+                            )}
+                          </div>
+                          
+                          <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">Réduit</span>
+                          </div>
+                          
+                          {/* Day cells - collapsed placeholder */}
+                          {weekDays.map(day => (
+                            <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0 p-2 flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">···</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // Expanded view - original time slots
+                        timeSlots.map(slot => (
+                          <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 last:border-b-0 hover:bg-muted/10 transition-colors">
+                            {/* Technician name - only show on first hour */}
+                            <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
+                              {slot.hour === timeSlots[0].hour && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => toggleTechnicianCollapse(technician.id)}
+                                    className="h-6 w-6 p-0 hover:bg-primary/10"
+                                  >
+                                    <ChevronUp className="h-3 w-3" />
+                                  </Button>
+                                  <div className="p-1 bg-primary/10 rounded-sm">
+                                    <User className="h-3 w-3 text-primary" />
+                                  </div>
+                                  <span className="text-sm font-medium truncate">{technician.name}</span>
+                                  {taskCount > 0 && (
+                                    <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
+                                      {taskCount}
+                                    </Badge>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                            
+                            {/* Hour */}
+                            <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                              <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
+                            </div>
+                            
+                            {/* Day cells */}
+                            {weekDays.map(day => {
+                              const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
+                              return (
+                                <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
+                                  <DroppableTimeSlot
+                                    id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                                    tasks={tasks}
+                                     onTaskClick={(task) => {
+                                       console.log('Setting selected task:', task);
+                                       setSelectedTask(task as Intervention);
+                                     }}
+                                    getTaskTypeConfig={getTaskTypeConfig}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </ScrollArea>
           </div>
