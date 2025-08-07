@@ -10,6 +10,7 @@ interface ComponentFormData {
   manufacturer: string;
   model: string;
   serialNumber: string;
+  reference: string;
   installationDate: string;
   maintenanceIntervalDays: number;
   status: string;
@@ -60,6 +61,7 @@ const initialFormData: ComponentFormData = {
   manufacturer: '',
   model: '',
   serialNumber: '',
+  reference: '',
   installationDate: '',
   maintenanceIntervalDays: 365,
   status: 'operational',
@@ -114,6 +116,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
           manufacturer: item.manufacturer,
           model: item.model,
           serialNumber: item.serial_number,
+          reference: item.reference,
           installationDate: item.installation_date,
           lastMaintenanceDate: item.last_maintenance_date,
           nextMaintenanceDate: item.next_maintenance_date,
@@ -196,6 +199,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
             manufacturer: data.manufacturer || null,
             model: data.model || null,
             serial_number: data.serialNumber || null,
+            reference: data.reference || null,
             installation_date: data.installationDate || null,
             maintenance_interval_days: data.maintenanceIntervalDays,
             status: data.status,
@@ -214,6 +218,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
             manufacturer: data.manufacturer || null,
             model: data.model || null,
             serial_number: data.serialNumber || null,
+            reference: data.reference || null,
             installation_date: data.installationDate || null,
             maintenance_interval_days: data.maintenanceIntervalDays,
             status: data.status,
@@ -287,6 +292,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
       manufacturer: component.manufacturer || '',
       model: component.model || '',
       serialNumber: component.serialNumber || '',
+      reference: component.reference || '',
       installationDate: component.installationDate || '',
       maintenanceIntervalDays: component.maintenanceIntervalDays,
       status: component.status,

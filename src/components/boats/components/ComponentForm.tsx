@@ -208,6 +208,18 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
             placeholder="ex: VP123456789"
           />
         </div>
+        <div>
+          <Label htmlFor="reference">Référence stock</Label>
+          <Input
+            id="reference"
+            value={formData.reference}
+            onChange={(e) => updateFormField('reference', e.target.value)}
+            placeholder="ex: REF-MOTEUR-001"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
           <div>
             <Label htmlFor="installationDate">Date d'installation</Label>
             <Popover>
