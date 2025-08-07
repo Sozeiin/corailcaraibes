@@ -426,7 +426,8 @@ export type Database = {
           model: string
           name: string
           next_maintenance: string | null
-          serial_number: string
+          hin: string
+          hull_number: string | null
           status: Database["public"]["Enums"]["boat_status"] | null
           updated_at: string | null
           year: number
@@ -439,7 +440,8 @@ export type Database = {
           model: string
           name: string
           next_maintenance?: string | null
-          serial_number: string
+          hin: string
+          hull_number?: string | null
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year: number
@@ -452,7 +454,8 @@ export type Database = {
           model?: string
           name?: string
           next_maintenance?: string | null
-          serial_number?: string
+          hin?: string
+          hull_number?: string | null
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year?: number
