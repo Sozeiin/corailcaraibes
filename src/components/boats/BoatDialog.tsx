@@ -34,7 +34,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
   const [formData, setFormData] = useState({
     name: '',
     model: '',
-    serialNumber: '',
+    hin: '',
+    hullNumber: '',
     year: new Date().getFullYear(),
     status: 'available' as 'available' | 'rented' | 'maintenance' | 'out_of_service',
     baseId: '',
@@ -59,7 +60,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         setFormData({
           name: boat.name,
           model: boat.model,
-          serialNumber: boat.serialNumber,
+          hin: boat.hin,
+          hullNumber: boat.hullNumber || '',
           year: boat.year,
           status: boat.status,
           baseId: boat.baseId,
@@ -69,7 +71,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         setFormData({
           name: '',
           model: '',
-          serialNumber: '',
+          hin: '',
+          hullNumber: '',
           year: new Date().getFullYear(),
           status: 'available',
           baseId: user?.baseId || '',
@@ -87,7 +90,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
       const boatData = {
         name: formData.name,
         model: formData.model,
-        serial_number: formData.serialNumber,
+        hin: formData.hin,
+        hull_number: formData.hullNumber || null,
         year: formData.year,
         status: formData.status,
         base_id: formData.baseId,
@@ -177,13 +181,24 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
           </div>
 
           <div>
-            <Label htmlFor="serialNumber" className="text-sm">Numéro de série *</Label>
+            <Label htmlFor="hin" className="text-sm">N° HIN *</Label>
             <Input
-              id="serialNumber"
-              value={formData.serialNumber}
-              onChange={(e) => setFormData(prev => ({ ...prev, serialNumber: e.target.value }))}
-              placeholder="Ex: LAG380-2020-001"
+              id="hin"
+              value={formData.hin}
+              onChange={(e) => setFormData(prev => ({ ...prev, hin: e.target.value }))}
+              placeholder="Ex: FR-HIN123456789"
               required
+              className="text-sm"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="hullNumber" className="text-sm">N° de coque</Label>
+            <Input
+              id="hullNumber"
+              value={formData.hullNumber}
+              onChange={(e) => setFormData(prev => ({ ...prev, hullNumber: e.target.value }))}
+              placeholder="Ex: LAG380-2020-001"
               className="text-sm"
             />
           </div>
@@ -257,7 +272,7 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
             <Button type="button" variant="outline" onClick={onClose} disabled={loading} size="sm" className="text-sm">
               Annuler
             </Button>
-            <Button type="submit" disabled={loading || !formData.name || !formData.model || !formData.serialNumber || !formData.baseId} size="sm" className="text-sm">
+            <Button type="submit" disabled={loading || !formData.name || !formData.model || !formData.hin || !formData.baseId} size="sm" className="text-sm">
               {loading ? 'Sauvegarde...' : boat ? 'Modifier' : 'Créer'}
             </Button>
           </div>
