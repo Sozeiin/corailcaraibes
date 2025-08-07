@@ -137,10 +137,10 @@ export function ComponentDetailsModal({
                         <p className="font-medium">{component.model}</p>
                       </div>
                     )}
-                    {component.serialNumber && (
+                    {component.hin && (
                       <div>
-                        <span className="text-sm font-medium text-muted-foreground">N° de série:</span>
-                        <p className="font-mono text-sm">{component.serialNumber}</p>
+                        <span className="text-sm font-medium text-muted-foreground">HIN:</span>
+                        <p className="font-mono text-sm">{component.hin}</p>
                       </div>
                     )}
                     <div>

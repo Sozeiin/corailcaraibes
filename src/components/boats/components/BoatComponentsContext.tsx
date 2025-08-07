@@ -9,7 +9,7 @@ interface ComponentFormData {
   componentType: string;
   manufacturer: string;
   model: string;
-  serialNumber: string;
+  hin: string;
   installationDate: string;
   maintenanceIntervalDays: number;
   status: string;
@@ -59,7 +59,7 @@ const initialFormData: ComponentFormData = {
   componentType: '',
   manufacturer: '',
   model: '',
-  serialNumber: '',
+  hin: '',
   installationDate: '',
   maintenanceIntervalDays: 365,
   status: 'operational',
@@ -113,7 +113,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
           componentType: item.component_type,
           manufacturer: item.manufacturer,
           model: item.model,
-          serialNumber: item.serial_number,
+          hin: item.hin,
           installationDate: item.installation_date,
           lastMaintenanceDate: item.last_maintenance_date,
           nextMaintenanceDate: item.next_maintenance_date,
@@ -144,7 +144,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
         component.componentType.toLowerCase().includes(searchLower) ||
         (component.manufacturer && component.manufacturer.toLowerCase().includes(searchLower)) ||
         (component.model && component.model.toLowerCase().includes(searchLower)) ||
-        (component.serialNumber && component.serialNumber.toLowerCase().includes(searchLower))
+        (component.hin && component.hin.toLowerCase().includes(searchLower))
       );
     }
 
@@ -195,7 +195,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
             component_type: data.componentType,
             manufacturer: data.manufacturer || null,
             model: data.model || null,
-            serial_number: data.serialNumber || null,
+            hin: data.hin || null,
             installation_date: data.installationDate || null,
             maintenance_interval_days: data.maintenanceIntervalDays,
             status: data.status,
@@ -213,7 +213,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
             component_type: data.componentType,
             manufacturer: data.manufacturer || null,
             model: data.model || null,
-            serial_number: data.serialNumber || null,
+            hin: data.hin || null,
             installation_date: data.installationDate || null,
             maintenance_interval_days: data.maintenanceIntervalDays,
             status: data.status,
@@ -286,7 +286,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
       componentType: component.componentType,
       manufacturer: component.manufacturer || '',
       model: component.model || '',
-      serialNumber: component.serialNumber || '',
+      hin: component.hin || '',
       installationDate: component.installationDate || '',
       maintenanceIntervalDays: component.maintenanceIntervalDays,
       status: component.status,

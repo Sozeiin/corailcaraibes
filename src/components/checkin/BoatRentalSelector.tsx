@@ -66,7 +66,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
           .select(`
             id,
             boat_id,
-            boats!inner(id, name, model, serial_number, year, status, base_id)
+            boats!inner(id, name, model, hin, year, status, base_id)
           `)
           .eq('status', 'confirmed');
 
@@ -185,7 +185,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
               <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                 <div>Modèle: {selectedBoat.model}</div>
                 <div>Année: {selectedBoat.year}</div>
-                <div>N° Série: {selectedBoat.serial_number}</div>
+                <div>HIN: {selectedBoat.hin}</div>
                 <div>Statut: <Badge variant={selectedBoat.status === 'available' ? 'default' : 'secondary'}>
                   {selectedBoat.status === 'available' ? 'Disponible' : 'En location'}
                 </Badge></div>

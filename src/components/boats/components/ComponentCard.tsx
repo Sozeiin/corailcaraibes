@@ -94,9 +94,9 @@ function ComponentCard({ component }: ComponentCardProps) {
                 <span className="font-medium">Modèle:</span> {component.model}
               </div>
             )}
-            {component.serialNumber && (
+            {component.hin && (
               <div>
-                <span className="font-medium">N° série:</span> {component.serialNumber}
+                <span className="font-medium">HIN:</span> {component.hin}
               </div>
             )}
             <div>

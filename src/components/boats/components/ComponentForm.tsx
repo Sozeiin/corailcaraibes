@@ -200,11 +200,11 @@ export function ComponentForm({ onCancel }: ComponentFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="serialNumber">Numéro de série</Label>
+          <Label htmlFor="hin">HIN</Label>
           <Input
-            id="serialNumber"
-            value={formData.serialNumber}
-            onChange={(e) => updateFormField('serialNumber', e.target.value)}
+            id="hin"
+            value={formData.hin}
+            onChange={(e) => updateFormField('hin', e.target.value)}
             placeholder="ex: VP123456789"
           />
         </div>

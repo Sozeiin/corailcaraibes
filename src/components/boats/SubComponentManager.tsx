@@ -29,7 +29,7 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
     subComponentType: '',
     manufacturer: '',
     model: '',
-    serialNumber: '',
+    hin: '',
     installationDate: '',
     maintenanceIntervalDays: 365,
     status: 'operational',
@@ -61,7 +61,7 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
         sub_component_type: data.subComponentType || null,
         manufacturer: data.manufacturer || null,
         model: data.model || null,
-        serial_number: data.serialNumber || null,
+        hin: data.hin || null,
         installation_date: data.installationDate || null,
         maintenance_interval_days: data.maintenanceIntervalDays,
         status: data.status,
@@ -133,7 +133,7 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
       subComponentType: '',
       manufacturer: '',
       model: '',
-      serialNumber: '',
+      hin: '',
       installationDate: '',
       maintenanceIntervalDays: 365,
       status: 'operational',
@@ -149,7 +149,7 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
       subComponentType: subComponent.sub_component_type || '',
       manufacturer: subComponent.manufacturer || '',
       model: subComponent.model || '',
-      serialNumber: subComponent.serial_number || '',
+      hin: subComponent.hin || '',
       installationDate: subComponent.installation_date || '',
       maintenanceIntervalDays: subComponent.maintenance_interval_days,
       status: subComponent.status,
@@ -265,12 +265,12 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="serialNumber">Numéro de série</Label>
+                  <Label htmlFor="hin">HIN</Label>
                   <Input
-                    id="serialNumber"
-                    value={formData.serialNumber}
-                    onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-                    placeholder="Numéro de série"
+                    id="hin"
+                    value={formData.hin}
+                    onChange={(e) => setFormData({ ...formData, hin: e.target.value })}
+                    placeholder="HIN"
                   />
                 </div>
                 <div>

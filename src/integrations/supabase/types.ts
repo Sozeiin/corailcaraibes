@@ -243,7 +243,7 @@ export type Database = {
           model: string | null
           next_maintenance_date: string | null
           notes: string | null
-          serial_number: string | null
+          hin: string | null
           status: string | null
           updated_at: string
         }
@@ -260,7 +260,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
-          serial_number?: string | null
+          hin?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -277,7 +277,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
-          serial_number?: string | null
+          hin?: string | null
           status?: string | null
           updated_at?: string
         }
@@ -365,7 +365,7 @@ export type Database = {
           notes: string | null
           parent_component_id: string
           position_in_component: string | null
-          serial_number: string | null
+          hin: string | null
           status: string | null
           sub_component_name: string
           sub_component_type: string | null
@@ -383,7 +383,7 @@ export type Database = {
           notes?: string | null
           parent_component_id: string
           position_in_component?: string | null
-          serial_number?: string | null
+          hin?: string | null
           status?: string | null
           sub_component_name: string
           sub_component_type?: string | null
@@ -401,7 +401,7 @@ export type Database = {
           notes?: string | null
           parent_component_id?: string
           position_in_component?: string | null
-          serial_number?: string | null
+          hin?: string | null
           status?: string | null
           sub_component_name?: string
           sub_component_type?: string | null
@@ -426,7 +426,7 @@ export type Database = {
           model: string
           name: string
           next_maintenance: string | null
-          serial_number: string
+          hin: string
           status: Database["public"]["Enums"]["boat_status"] | null
           updated_at: string | null
           year: number
@@ -439,7 +439,7 @@ export type Database = {
           model: string
           name: string
           next_maintenance?: string | null
-          serial_number: string
+          hin: string
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year: number
@@ -452,7 +452,7 @@ export type Database = {
           model?: string
           name?: string
           next_maintenance?: string | null
-          serial_number?: string
+          hin?: string
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year?: number

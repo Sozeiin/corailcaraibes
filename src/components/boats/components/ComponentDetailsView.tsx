@@ -88,8 +88,8 @@ function ComponentDetailsTab({ component }: { component: BoatComponent }) {
               <p className="font-medium">{component.model || 'Non spécifié'}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-muted-foreground">N° de série</label>
-              <p className="font-medium">{component.serialNumber || 'Non spécifié'}</p>
+              <label className="text-sm font-medium text-muted-foreground">HIN</label>
+              <p className="font-medium">{component.hin || 'Non spécifié'}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-muted-foreground">Statut</label>

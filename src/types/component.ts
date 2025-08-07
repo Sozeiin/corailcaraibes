@@ -5,7 +5,7 @@ export interface BoatSubComponent {
   sub_component_type?: string;
   manufacturer?: string;
   model?: string;
-  serial_number?: string;
+  hin?: string;
   installation_date?: string;
   last_maintenance_date?: string;
   next_maintenance_date?: string;
@@ -86,7 +86,7 @@ export interface SubComponentFormData {
   subComponentType: string;
   manufacturer: string;
   model: string;
-  serialNumber: string;
+  hin: string;
   installationDate: string;
   maintenanceIntervalDays: number;
   status: string;
