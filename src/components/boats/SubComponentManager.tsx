@@ -200,7 +200,15 @@ export function SubComponentManager({ parentComponentId, parentComponentName }: 
         </h4>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" onClick={() => resetForm()}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                console.log('Add subcomponent button clicked');
+                resetForm();
+                setIsDialogOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Ajouter un sous-composant
             </Button>

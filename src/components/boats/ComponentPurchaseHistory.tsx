@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, DollarSign, Package, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, DollarSign, Package, User, Plus } from 'lucide-react';
 import { type ComponentPurchaseHistory } from '@/types/component';
+import { ComponentPurchaseDialog } from './components/ComponentPurchaseDialog';
 
 interface ComponentPurchaseHistoryProps {
   componentId?: string;
@@ -13,6 +15,8 @@ interface ComponentPurchaseHistoryProps {
 }
 
 export function ComponentPurchaseHistory({ componentId, subComponentId, componentName }: ComponentPurchaseHistoryProps) {
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+  
   // Fetch purchase history
   const { data: purchaseHistory, isLoading } = useQuery({
     queryKey: ['component-purchase-history', componentId, subComponentId],
@@ -46,10 +50,22 @@ export function ComponentPurchaseHistory({ componentId, subComponentId, componen
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Historique d'achat - {componentName}
-          </CardTitle>
+          </div>
+          {componentId && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsPurchaseDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un achat
+            </Button>
+          )}
+        </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-muted-foreground">
@@ -66,9 +82,21 @@ export function ComponentPurchaseHistory({ componentId, subComponentId, componen
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5" />
-          Historique d'achat - {componentName}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            Historique d'achat - {componentName}
+          </div>
+          {componentId && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsPurchaseDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un achat
+            </Button>
+          )}
         </CardTitle>
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <div>Total: {totalCost.toFixed(2)} €</div>
@@ -147,6 +175,15 @@ export function ComponentPurchaseHistory({ componentId, subComponentId, componen
           ))}
         </div>
       </CardContent>
+      
+      {/* Purchase Dialog */}
+      {componentId && (
+        <ComponentPurchaseDialog
+          isOpen={isPurchaseDialogOpen}
+          onClose={() => setIsPurchaseDialogOpen(false)}
+          componentId={componentId}
+        />
+      )}
     </Card>
   );
 }

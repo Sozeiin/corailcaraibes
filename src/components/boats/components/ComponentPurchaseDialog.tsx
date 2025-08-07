@@ -100,7 +100,7 @@ export function ComponentPurchaseDialog({ isOpen, onClose, componentId }: Compon
         title: "Achat enregistré",
         description: "L'achat a été enregistré avec succès."
       });
-      queryClient.invalidateQueries({ queryKey: ['purchase-history', componentId] });
+      queryClient.invalidateQueries({ queryKey: ['component-purchase-history', componentId] });
       onClose();
       resetForm();
     },
