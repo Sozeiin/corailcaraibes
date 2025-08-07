@@ -14,6 +14,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 import { ComponentPurchaseDialog } from './ComponentPurchaseDialog';
+import { SubComponentManager } from '../SubComponentManager';
 import type { BoatComponent } from '@/types';
 
 interface ComponentDetailsViewProps {
@@ -177,80 +178,11 @@ function ComponentDetailsTab({ component }: { component: BoatComponent }) {
 }
 
 function SubComponentsTab({ componentId }: { componentId: string }) {
-  const { data: subComponents = [], isLoading } = useQuery({
-    queryKey: ['sub-components', componentId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('boat_sub_components')
-        .select('*')
-        .eq('parent_component_id', componentId)
-        .order('sub_component_name');
-
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  if (isLoading) {
-    return <LoadingSpinner text="Chargement des sous-composants..." />;
-  }
-
-  if (subComponents.length === 0) {
-    return (
-      <Card>
-        <CardContent className="p-8 text-center">
-          <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">Aucun sous-composant</h3>
-          <p className="text-muted-foreground mb-4">
-            Ce composant n'a pas encore de sous-composants configurés.
-          </p>
-          <Button onClick={() => {
-            // TODO: Implement sub-component dialog
-            console.log('Add sub-component for:', componentId);
-          }}>
-            Ajouter un sous-composant
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <div className="grid gap-4">
-      {subComponents.map((subComponent) => (
-        <Card key={subComponent.id}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="font-medium">{subComponent.sub_component_name}</h4>
-                <p className="text-sm text-muted-foreground">{subComponent.sub_component_type}</p>
-              </div>
-              <Badge variant="secondary">{subComponent.status}</Badge>
-            </div>
-            <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-              {subComponent.manufacturer && (
-                <div>
-                  <span className="font-medium">Fabricant:</span> {subComponent.manufacturer}
-                </div>
-              )}
-              {subComponent.model && (
-                <div>
-                  <span className="font-medium">Modèle:</span> {subComponent.model}
-                </div>
-              )}
-              {subComponent.serial_number && (
-                <div>
-                  <span className="font-medium">N° série:</span> {subComponent.serial_number}
-                </div>
-              )}
-              <div>
-                <span className="font-medium">Maintenance:</span> tous les {subComponent.maintenance_interval_days} jours
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+    <SubComponentManager 
+      parentComponentId={componentId}
+      parentComponentName="Composant"
+    />
   );
 }
 
