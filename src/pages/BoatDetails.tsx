@@ -104,15 +104,9 @@ export const BoatDetails = () => {
               <p className="text-lg">{boat.year}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">N° HIN</p>
-              <p className="text-lg">{boat.hin}</p>
+              <p className="text-sm font-medium text-muted-foreground">N° de série</p>
+              <p className="text-lg">{boat.serial_number}</p>
             </div>
-            {boat.hull_number && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">N° de coque</p>
-                <p className="text-lg">{boat.hull_number}</p>
-              </div>
-            )}
             {boat.next_maintenance && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Prochaine maintenance</p>

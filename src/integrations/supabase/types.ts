@@ -243,6 +243,7 @@ export type Database = {
           model: string | null
           next_maintenance_date: string | null
           notes: string | null
+          reference: string | null
           serial_number: string | null
           status: string | null
           updated_at: string
@@ -260,6 +261,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
+          reference?: string | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string
@@ -277,6 +279,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
+          reference?: string | null
           serial_number?: string | null
           status?: string | null
           updated_at?: string
@@ -365,6 +368,7 @@ export type Database = {
           notes: string | null
           parent_component_id: string
           position_in_component: string | null
+          reference: string | null
           serial_number: string | null
           status: string | null
           sub_component_name: string
@@ -383,6 +387,7 @@ export type Database = {
           notes?: string | null
           parent_component_id: string
           position_in_component?: string | null
+          reference?: string | null
           serial_number?: string | null
           status?: string | null
           sub_component_name: string
@@ -401,6 +406,7 @@ export type Database = {
           notes?: string | null
           parent_component_id?: string
           position_in_component?: string | null
+          reference?: string | null
           serial_number?: string | null
           status?: string | null
           sub_component_name?: string
@@ -426,8 +432,7 @@ export type Database = {
           model: string
           name: string
           next_maintenance: string | null
-          hin: string
-          hull_number: string | null
+          serial_number: string
           status: Database["public"]["Enums"]["boat_status"] | null
           updated_at: string | null
           year: number
@@ -440,8 +445,7 @@ export type Database = {
           model: string
           name: string
           next_maintenance?: string | null
-          hin: string
-          hull_number?: string | null
+          serial_number: string
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year: number
@@ -454,8 +458,7 @@ export type Database = {
           model?: string
           name?: string
           next_maintenance?: string | null
-          hin?: string
-          hull_number?: string | null
+          serial_number?: string
           status?: Database["public"]["Enums"]["boat_status"] | null
           updated_at?: string | null
           year?: number
@@ -840,6 +843,7 @@ export type Database = {
           invoice_reference: string | null
           notes: string | null
           order_id: string | null
+          order_item_id: string | null
           purchase_date: string
           quantity: number
           stock_item_id: string | null
@@ -857,6 +861,7 @@ export type Database = {
           invoice_reference?: string | null
           notes?: string | null
           order_id?: string | null
+          order_item_id?: string | null
           purchase_date: string
           quantity?: number
           stock_item_id?: string | null
@@ -874,6 +879,7 @@ export type Database = {
           invoice_reference?: string | null
           notes?: string | null
           order_id?: string | null
+          order_item_id?: string | null
           purchase_date?: string
           quantity?: number
           stock_item_id?: string | null
@@ -896,6 +902,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "component_purchase_history_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
             referencedColumns: ["id"]
           },
           {

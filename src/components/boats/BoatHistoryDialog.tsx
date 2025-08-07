@@ -242,13 +242,8 @@ export function BoatHistoryDialog({ isOpen, onClose, boat }: BoatHistoryDialogPr
                     <span className="font-medium">Année:</span> {boat.year}
                   </div>
                   <div>
-                    <span className="font-medium">N° HIN:</span> {boat.hin}
+                    <span className="font-medium">N° de série:</span> {boat.serialNumber}
                   </div>
-                  {boat.hullNumber && (
-                    <div>
-                      <span className="font-medium">N° de coque:</span> {boat.hullNumber}
-                    </div>
-                  )}
                   <div>
                     <span className="font-medium">Statut:</span> {boat.status}
                   </div>

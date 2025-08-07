@@ -60,8 +60,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         setFormData({
           name: boat.name,
           model: boat.model,
-          hin: boat.hin,
-          hullNumber: boat.hullNumber || '',
+          hin: boat.serialNumber,
+          hullNumber: '',
           year: boat.year,
           status: boat.status,
           baseId: boat.baseId,
@@ -90,8 +90,7 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
       const boatData = {
         name: formData.name,
         model: formData.model,
-        hin: formData.hin,
-        hull_number: formData.hullNumber || null,
+        serial_number: formData.hin,
         year: formData.year,
         status: formData.status,
         base_id: formData.baseId,

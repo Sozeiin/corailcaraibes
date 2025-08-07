@@ -22,8 +22,7 @@ export interface Boat {
   id: string;
   name: string;
   model: string;
-  hin: string;
-  hullNumber?: string;
+  serialNumber: string;
   year: number;
   status: 'available' | 'rented' | 'maintenance' | 'out_of_service';
   baseId: string;
@@ -208,6 +207,7 @@ export interface BoatComponent {
   manufacturer?: string;
   model?: string;
   serialNumber?: string;
+  reference?: string;
   installationDate?: string;
   lastMaintenanceDate?: string;
   nextMaintenanceDate?: string;

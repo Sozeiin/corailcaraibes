@@ -54,7 +54,7 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onMaintenance }: BoatCard
         <div>
           <h3 className="text-lg font-semibold">{boat.name}</h3>
           <p className="text-gray-600">{boat.model} ({boat.year})</p>
-          <p className="text-sm text-gray-500">N° HIN: {boat.hin}</p>
+          <p className="text-sm text-gray-500">N° de série: {boat.serial_number}</p>
         </div>
         {getStatusBadge(boat.status)}
       </div>
@@ -183,7 +183,7 @@ export const Boats = () => {
     const matchesSearch = !searchTerm || 
       boat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       boat.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      boat.hin.toLowerCase().includes(searchTerm.toLowerCase());
+      boat.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || boat.status === filterStatus;
     
@@ -195,13 +195,12 @@ export const Boats = () => {
       id: boat.id,
       name: boat.name,
       model: boat.model,
-      hin: boat.hin,
-      hullNumber: boat.hull_number,
+      serialNumber: boat.serial_number,
       year: boat.year,
       status: boat.status,
       baseId: boat.base_id,
-      documents: boat.documents,
-      nextMaintenance: boat.next_maintenance,
+      documents: boat.documents || [],
+      nextMaintenance: boat.next_maintenance || '',
       createdAt: boat.created_at,
       updatedAt: boat.updated_at,
     });
