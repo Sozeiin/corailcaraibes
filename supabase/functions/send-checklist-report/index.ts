@@ -41,7 +41,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('boat_checklists')
       .select(`
         *,
-        boats(name, model, serial_number),
+        boats(name, model, hin, hull_number),
         profiles(name, email),
         boat_checklist_items(
           *,

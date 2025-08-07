@@ -104,8 +104,12 @@ export const BoatDetails = () => {
               <p className="text-lg">{boat.year}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Numéro de série</p>
-              <p className="text-lg">{boat.serial_number}</p>
+              <p className="text-sm font-medium text-muted-foreground">HIN</p>
+              <p className="text-lg">{boat.hin}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">N° de coque</p>
+              <p className="text-lg">{boat.hull_number}</p>
             </div>
             {boat.next_maintenance && (
               <div>

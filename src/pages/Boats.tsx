@@ -54,7 +54,7 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onMaintenance }: BoatCard
         <div>
           <h3 className="text-lg font-semibold">{boat.name}</h3>
           <p className="text-gray-600">{boat.model} ({boat.year})</p>
-          <p className="text-sm text-gray-500">N° série: {boat.serial_number}</p>
+          <p className="text-sm text-gray-500">HIN: {boat.hin}</p>
         </div>
         {getStatusBadge(boat.status)}
       </div>
@@ -180,10 +180,12 @@ export const Boats = () => {
   });
 
   const filteredBoats = boats?.filter(boat => {
-    const matchesSearch = !searchTerm || 
-      boat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      boat.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      boat.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm ||
+      boat.name.toLowerCase().includes(searchLower) ||
+      boat.model.toLowerCase().includes(searchLower) ||
+      (boat.hin || '').toLowerCase().includes(searchLower) ||
+      (boat.hull_number || '').toLowerCase().includes(searchLower);
     
     const matchesStatus = filterStatus === 'all' || boat.status === filterStatus;
     

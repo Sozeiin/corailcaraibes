@@ -318,7 +318,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             {type === 'checkin' ? 'Check-in' : 'Check-out'} - {boat.name}
           </span>
           <div className="text-sm text-muted-foreground">
-            {boat.model} • {boat.serial_number}
+            {boat.model} • {boat.hin}
           </div>
         </CardTitle>
       </CardHeader>
