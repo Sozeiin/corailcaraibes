@@ -7,20 +7,13 @@ import { ComponentForm } from './ComponentForm';
 import { useBoatComponents } from './BoatComponentsContext';
 
 export function ComponentHeader() {
-  const { 
-    boatName, 
-    isDialogOpen, 
-    setIsDialogOpen, 
-    setEditingComponent, 
-    resetForm 
+  const {
+    boatName,
+    isDialogOpen,
+    setIsDialogOpen,
+    setEditingComponent,
+    resetForm
   } = useBoatComponents();
-
-  const handleAddNew = () => {
-    console.log('Adding new component');
-    setEditingComponent(null);
-    resetForm();
-    setIsDialogOpen(true);
-  };
 
   const handleDialogClose = () => {
     console.log('Closing dialog');
@@ -37,15 +30,20 @@ export function ComponentHeader() {
           Composants de {boatName}
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <Button onClick={handleAddNew}>
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un composant
-          </Button>
+          <DialogTrigger asChild>
+            <Button
+              onClick={() => {
+                setEditingComponent(null);
+                resetForm();
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter un composant
+            </Button>
+          </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>
-                Ajouter un composant
-              </DialogTitle>
+              <DialogTitle>Ajouter un composant</DialogTitle>
             </DialogHeader>
             <ComponentForm onCancel={handleDialogClose} />
           </DialogContent>
