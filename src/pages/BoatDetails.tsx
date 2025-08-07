@@ -11,13 +11,14 @@ import { BoatHistoryContent } from '@/components/boats/BoatHistoryContent';
 import { BoatMaintenancePlanner } from '@/components/boats/BoatMaintenancePlanner';
 import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { Boat } from '@/types';
 
 export const BoatDetails = () => {
   const { boatId } = useParams<{ boatId: string }>();
   const navigate = useNavigate();
   console.log('BoatDetails rendered with boatId:', boatId);
 
-  const { data: boat, isLoading } = useQuery({
+  const { data: boat, isLoading } = useQuery<Boat & { base?: { name: string } }>({
     queryKey: ['boat', boatId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -30,7 +31,12 @@ export const BoatDetails = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      const { hull_number, next_maintenance, ...rest } = data;
+      return {
+        ...rest,
+        hullNumber: hull_number,
+        nextMaintenance: next_maintenance,
+      } as Boat & { base?: { name: string } };
     },
     enabled: !!boatId,
   });
@@ -107,16 +113,16 @@ export const BoatDetails = () => {
               <p className="text-sm font-medium text-muted-foreground">N° HIN</p>
               <p className="text-lg">{boat.hin}</p>
             </div>
-            {boat.hull_number && (
+            {boat.hullNumber && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">N° de coque</p>
-                <p className="text-lg">{boat.hull_number}</p>
+                <p className="text-lg">{boat.hullNumber}</p>
               </div>
             )}
-            {boat.next_maintenance && (
+            {boat.nextMaintenance && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Prochaine maintenance</p>
-                <p className="text-lg">{new Date(boat.next_maintenance).toLocaleDateString()}</p>
+                <p className="text-lg">{new Date(boat.nextMaintenance).toLocaleDateString()}</p>
               </div>
             )}
             <div>
