@@ -15,29 +15,51 @@ interface Task {
   technician_id?: string;
   boat_id?: string;
   boats?: { id: string; name: string; model: string };
+  weatherEvaluation?: any;
+  weatherSeverity?: string;
 }
 
 interface DroppableTimeSlotProps {
   id: string;
   tasks: Task[];
-  onTaskClick: (task: Task) => void;
-  getTaskTypeConfig: (type: string) => {
+  onTaskClick?: (task: Task) => void;
+  getTaskTypeConfig?: (type: string) => {
     bg: string;
     border: string;
     text: string;
     icon: React.ComponentType<any>;
   };
+  isOver?: boolean;
+  weatherSeverity?: string;
 }
 
-export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }: DroppableTimeSlotProps) {
-  const { isOver, setNodeRef } = useDroppable({
+export function DroppableTimeSlot({ 
+  id, 
+  tasks, 
+  onTaskClick, 
+  getTaskTypeConfig, 
+  isOver: propIsOver, 
+  weatherSeverity 
+}: DroppableTimeSlotProps) {
+  const { isOver: dropIsOver, setNodeRef } = useDroppable({
     id,
   });
+
+  const isOver = propIsOver || dropIsOver;
+
+  const getWeatherSlotStyle = () => {
+    if (!weatherSeverity) return '';
+    switch (weatherSeverity) {
+      case 'blocked': return 'bg-red-50/30';
+      case 'warning': return 'bg-orange-50/30';
+      default: return '';
+    }
+  };
 
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[40px] p-0.5 relative transition-all duration-200 ${
+      className={`min-h-[40px] p-0.5 relative transition-all duration-200 ${getWeatherSlotStyle()} ${
         isOver ? 'bg-primary/10 border-primary/30 shadow-inner border-2 border-dashed' : 'hover:bg-muted/20 border-2 border-transparent'
       }`}
     >
@@ -48,7 +70,7 @@ export function DroppableTimeSlot({ id, tasks, onTaskClick, getTaskTypeConfig }:
             task={task}
             onClick={() => {
               console.log('Task clicked:', task);
-              onTaskClick(task);
+              onTaskClick?.(task);
             }}
             getTaskTypeConfig={getTaskTypeConfig}
             isDragging={false}

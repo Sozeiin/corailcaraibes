@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,11 +24,35 @@ import {
   Cog,
   AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CloudRain,
+  RefreshCw,
+  Cloud,
+  Sun
 } from 'lucide-react';
 import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
 import { DraggableTaskCard } from './gantt/DraggableTaskCard';
 import { TaskDialog } from './gantt/TaskDialog';
+import WeatherWidget from '@/components/weather/WeatherWidget';
+import type { WeatherData } from '@/types/weather';
+
+interface WeatherEvaluation {
+  suitable: boolean;
+  weather_data?: WeatherData;
+  violated_rules?: Array<{
+    rule_name: string;
+    action: string;
+    adjustment_days: number;
+    reason: string;
+  }>;
+  recommendations?: Array<{
+    rule_name: string;
+    action: string;
+    adjustment_days: number;
+    reason: string;
+  }>;
+  reason?: string;
+}
 
 interface Intervention {
   id: string;
@@ -73,6 +97,7 @@ export function GanttMaintenanceSchedule() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [weatherEvaluations, setWeatherEvaluations] = useState<Record<string, WeatherEvaluation>>({});
 
   // Generate time slots (6 AM to 7 PM)
   const timeSlots = useMemo(() => {
@@ -219,6 +244,35 @@ export function GanttMaintenanceSchedule() {
       return processedData;
     },
     enabled: !!user?.baseId && weekDays.length > 0
+  });
+
+  // Fetch weather evaluations for interventions
+  const { data: weatherData, isLoading: weatherLoading } = useQuery({
+    queryKey: ['weather-evaluations', interventions],
+    queryFn: async () => {
+      const evaluations: Record<string, WeatherEvaluation> = {};
+      
+      for (const intervention of interventions) {
+        if (intervention.scheduled_date && intervention.base_id) {
+          try {
+            const { data, error } = await supabase.rpc('evaluate_weather_for_maintenance', {
+              maintenance_date: intervention.scheduled_date,
+              base_id_param: intervention.base_id
+            });
+
+            if (!error && data) {
+              evaluations[intervention.id] = data as unknown as WeatherEvaluation;
+            }
+          } catch (err) {
+            console.error('Error evaluating weather for intervention', intervention.id, err);
+          }
+        }
+      }
+      
+      setWeatherEvaluations(evaluations);
+      return evaluations;
+    },
+    enabled: interventions.length > 0
   });
 
   // Update intervention mutation
@@ -416,6 +470,83 @@ export function GanttMaintenanceSchedule() {
     return interventions.filter(intervention => intervention.technician_id === technicianId).length;
   };
 
+  const getWeatherIcon = (condition?: string) => {
+    if (!condition) return <Cloud className="h-4 w-4 text-gray-400" />;
+    const lowerCondition = condition.toLowerCase();
+    if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) {
+      return <CloudRain className="h-4 w-4 text-blue-500" />;
+    }
+    if (lowerCondition.includes('cloud')) {
+      return <Cloud className="h-4 w-4 text-gray-500" />;
+    }
+    return <Sun className="h-4 w-4 text-yellow-500" />;
+  };
+
+  const getWeatherSeverity = (evaluation?: WeatherEvaluation) => {
+    if (!evaluation) return 'suitable';
+    if (!evaluation.suitable) return 'blocked';
+    if (evaluation.violated_rules && evaluation.violated_rules.length > 0) return 'warning';
+    return 'suitable';
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'blocked': return 'bg-red-100 border-red-300 text-red-700';
+      case 'warning': return 'bg-orange-100 border-orange-300 text-orange-700';
+      default: return 'bg-green-100 border-green-300 text-green-700';
+    }
+  };
+
+  const getDayWeatherEvaluation = (dateString: string) => {
+    const dayInterventions = interventions.filter(i => i.scheduled_date === dateString);
+    if (dayInterventions.length === 0) return undefined;
+    
+    const evaluations = dayInterventions
+      .map(intervention => weatherEvaluations[intervention.id])
+      .filter(Boolean);
+    
+    if (evaluations.length === 0) return undefined;
+    
+    return evaluations.find(evaluation => !evaluation.suitable) || evaluations[0];
+  };
+
+  // Handle weather-based reschedule suggestions
+  const handleWeatherReschedule = (interventionId: string, adjustmentDays: number) => {
+    const intervention = interventions.find(i => i.id === interventionId);
+    if (!intervention) return;
+
+    const newDate = addDays(new Date(intervention.scheduled_date), adjustmentDays);
+    
+    updateInterventionMutation.mutate({
+      id: interventionId,
+      updates: {
+        scheduled_date: format(newDate, 'yyyy-MM-dd')
+      }
+    });
+  };
+
+  // Real-time updates for weather data
+  useEffect(() => {
+    const channel = supabase
+      .channel('weather-interventions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'interventions'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['weather-evaluations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   console.log('Render - Interventions:', interventions);
   console.log('Render - User:', user);
   console.log('Render - Loading:', interventionsLoading);
@@ -423,16 +554,16 @@ export function GanttMaintenanceSchedule() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Header */}
+      {/* Header with Weather Widget */}
       <div className="flex-none border-b bg-gradient-to-r from-card to-muted/10 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
               <h1 className="text-2xl font-semibold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Planning Maintenance
+                Planning Maintenance avec Météo
               </h1>
             </div>
             <div className="flex items-center gap-2 bg-background rounded-lg border p-1">
@@ -479,6 +610,11 @@ export function GanttMaintenanceSchedule() {
               Nouvelle tâche
             </Button>
           </div>
+        </div>
+        
+        {/* Weather Widget */}
+        <div className="max-w-md">
+          <WeatherWidget />
         </div>
       </div>
 
@@ -621,23 +757,31 @@ export function GanttMaintenanceSchedule() {
                               <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
                             </div>
                             
-                            {/* Day cells */}
-                            {weekDays.map(day => {
-                              const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
-                              return (
-                                <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
-                                  <DroppableTimeSlot
-                                    id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                                    tasks={tasks}
+                             {/* Day cells */}
+                             {weekDays.map(day => {
+                               const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
+                               const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
+                               const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
+                               
+                               return (
+                                 <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
+                                   <DroppableTimeSlot
+                                     id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                                     tasks={tasks.map(task => ({
+                                       ...task,
+                                       weatherEvaluation: weatherEvaluations[task.id],
+                                       weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
+                                     }))}
                                      onTaskClick={(task) => {
                                        console.log('Setting selected task:', task);
                                        setSelectedTask(task as Intervention);
                                      }}
-                                    getTaskTypeConfig={getTaskTypeConfig}
-                                  />
-                                </div>
-                              );
-                            })}
+                                     getTaskTypeConfig={getTaskTypeConfig}
+                                     weatherSeverity={weatherSeverity}
+                                   />
+                                 </div>
+                               );
+                             })}
                           </div>
                         ))
                       )}
@@ -660,6 +804,48 @@ export function GanttMaintenanceSchedule() {
           )}
         </DragOverlay>
       </DndContext>
+
+      {/* Weather Alerts */}
+      {Object.entries(weatherEvaluations).some(([_, evaluation]) => !evaluation.suitable) && (
+        <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-orange-800 font-medium mb-3">
+            <AlertTriangle className="h-5 w-5" />
+            Alertes météorologiques
+          </div>
+          <div className="space-y-2">
+            {Object.entries(weatherEvaluations)
+              .filter(([_, evaluation]) => !evaluation.suitable)
+              .map(([interventionId, evaluation]) => {
+                const intervention = interventions.find(i => i.id === interventionId);
+                if (!intervention) return null;
+                
+                return (
+                  <div key={interventionId} className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div>
+                      <div className="font-medium">{intervention.title}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {intervention.boats?.name} - {format(new Date(intervention.scheduled_date), 'EEEE d MMMM', { locale: fr })}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {evaluation.violated_rules?.map((rule) => (
+                        <Button
+                          key={rule.rule_name}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleWeatherReschedule(intervention.id, rule.adjustment_days)}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-1" />
+                          Reporter de {rule.adjustment_days}j
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
+      )}
 
       {/* Task Dialog */}
       {(showTaskDialog || selectedTask) && (
