@@ -78,12 +78,15 @@ export function LogisticsDashboard() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full h-auto p-1" style={{ gridTemplateColumns: `repeat(${tabs.length}, minmax(0, 1fr))` }}>
+        <TabsList
+          className="flex w-full h-auto overflow-x-auto p-1 sm:grid sm:[gridTemplateColumns:repeat(var(--cols),minmax(0,1fr))]"
+          style={{ ['--cols' as any]: tabs.length }}
+        >
           {tabs.map((tab) => (
-            <TabsTrigger 
-              key={tab.id} 
-              value={tab.id} 
-              className="flex flex-col items-center gap-1 p-2 sm:p-3 text-xs"
+            <TabsTrigger
+              key={tab.id}
+              value={tab.id}
+              className="flex flex-col items-center gap-2 p-2 sm:p-3 text-xs flex-shrink-0 min-w-[80px]"
             >
               <tab.icon className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden xs:inline text-[10px] sm:text-xs">{tab.label}</span>
