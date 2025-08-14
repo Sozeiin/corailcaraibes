@@ -143,11 +143,6 @@ export function GanttMaintenanceSchedule() {
   const { data: interventions = [], isLoading: interventionsLoading, error: interventionsError } = useQuery({
     queryKey: ['gantt-interventions', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
     queryFn: async () => {
-      if (!weekDays.length) {
-        console.log('No week days available');
-        return [];
-      }
-      
       if (!user) {
         console.log('No user available');
         return [];
@@ -156,7 +151,8 @@ export function GanttMaintenanceSchedule() {
       console.log('Fetching interventions for date range:', weekDays[0]?.dateString, 'to', weekDays[6]?.dateString);
       console.log('User:', { id: user.id, baseId: user.baseId, role: user.role });
       
-      const { data, error } = await supabase
+      // Fetch interventions in the current week
+      const weekInterventionsPromise = supabase
         .from('interventions')
         .select(`
           *,
@@ -168,10 +164,47 @@ export function GanttMaintenanceSchedule() {
         .eq('base_id', user?.baseId)
         .order('scheduled_date');
 
-      if (error) {
-        console.error('Error fetching interventions:', error);
-        throw error;
+      // Fetch all unassigned interventions (for tasks panel)
+      const unassignedInterventionsPromise = supabase
+        .from('interventions')
+        .select(`
+          *,
+          technician:profiles!technician_id(id, name),
+          boats(id, name, model)
+        `)
+        .is('technician_id', null)
+        .eq('base_id', user?.baseId)
+        .order('scheduled_date');
+
+      const [weekResult, unassignedResult] = await Promise.all([
+        weekInterventionsPromise,
+        unassignedInterventionsPromise
+      ]);
+
+      if (weekResult.error) {
+        console.error('Error fetching week interventions:', weekResult.error);
+        throw weekResult.error;
       }
+
+      if (unassignedResult.error) {
+        console.error('Error fetching unassigned interventions:', unassignedResult.error);
+        throw unassignedResult.error;
+      }
+
+      // Combine results, avoiding duplicates
+      const weekInterventions = weekResult.data || [];
+      const unassignedInterventions = unassignedResult.data || [];
+      
+      const allInterventions = [...weekInterventions];
+      
+      // Add unassigned interventions that are not already in the week view
+      unassignedInterventions.forEach(intervention => {
+        if (!weekInterventions.find(wi => wi.id === intervention.id)) {
+          allInterventions.push(intervention);
+        }
+      });
+
+      const data = allInterventions;
       
       console.log('Fetched interventions raw:', data);
       
