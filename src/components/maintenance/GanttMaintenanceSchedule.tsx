@@ -614,7 +614,7 @@ export function GanttMaintenanceSchedule() {
         
         {/* Weather Widget */}
         <div className="max-w-md">
-          <WeatherWidget />
+          <WeatherWidget compact />
         </div>
       </div>
 

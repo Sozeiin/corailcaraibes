@@ -20,7 +20,11 @@ interface WeatherWidgetData {
   }>;
 }
 
-const WeatherWidget: React.FC = () => {
+interface WeatherWidgetProps {
+  compact?: boolean;
+}
+
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
   const [weather, setWeather] = useState<WeatherWidgetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<string>('');
@@ -146,6 +150,18 @@ const WeatherWidget: React.FC = () => {
   }, [user]);
 
   if (loading) {
+    if (compact) {
+      return (
+        <Card className="h-16">
+          <CardContent className="p-4 flex items-center justify-center">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Chargement météo...</span>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -162,6 +178,18 @@ const WeatherWidget: React.FC = () => {
   }
 
   if (!weather) {
+    if (compact) {
+      return (
+        <Card className="h-16">
+          <CardContent className="p-4 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Données météo non disponibles</span>
+            <Button onClick={getLocationAndWeather} size="sm" variant="ghost">
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card>
         <CardHeader className="pb-2">
@@ -173,6 +201,55 @@ const WeatherWidget: React.FC = () => {
             <Button onClick={getLocationAndWeather} size="sm">
               <RefreshCw className="h-4 w-4 mr-2" />
               Réessayer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (compact) {
+    return (
+      <Card className="h-16">
+        <CardContent className="p-4 flex items-center justify-between w-full">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              {getWeatherIcon(weather.condition)}
+              <span className="text-sm font-medium">{weather.temperature}°C</span>
+              <span className="text-xs text-muted-foreground">{weather.condition}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              {location}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 text-xs">
+              <span>Humidité: {weather.humidity}%</span>
+              <span>Vent: {weather.windSpeed} km/h</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {weather.forecast.map((day, index) => (
+                <div key={index} className="text-center text-xs">
+                  <div className="font-medium text-[10px]">{day.date}</div>
+                  <div className="flex justify-center my-1">
+                    {React.cloneElement(getWeatherIcon(day.condition), { className: 'h-3 w-3' })}
+                  </div>
+                  <div className="text-[10px]">{day.temp_max}°/{day.temp_min}°</div>
+                </div>
+              ))}
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={getLocationAndWeather}
+              disabled={loading}
+              className="h-8 w-8 p-0"
+            >
+              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </CardContent>
