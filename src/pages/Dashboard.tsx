@@ -64,6 +64,17 @@ export default function Dashboard() {
   const [baseName, setBaseName] = useState<string>('');
   const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
+  // Early return if no user to prevent rendering errors
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-gray-500">Chargement du tableau de bord...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Récupération du nom de la base avec useQuery pour optimiser
   const { data: baseData } = useQuery({
     queryKey: ['base-name', user?.baseId],
@@ -154,11 +165,13 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  // Calcul des statistiques
-  const myInterventions = user?.role === 'technicien' ? interventions.filter(i => i.technician_id === user.id) : [];
-  const availableInterventions = user?.role === 'technicien' ? interventions.filter(i => i.technician_id === null && i.base_id === user.baseId) : [];
-  const pendingInterventions = interventions.filter(i => 
-    i.status === 'scheduled' || i.status === 'in_progress'
+  // Calcul des statistiques avec vérifications défensives
+  const myInterventions = user?.role === 'technicien' ? 
+    (interventions || []).filter(i => i?.technician_id === user.id) : [];
+  const availableInterventions = user?.role === 'technicien' ? 
+    (interventions || []).filter(i => i?.technician_id === null && i?.base_id === user.baseId) : [];
+  const pendingInterventions = (interventions || []).filter(i => 
+    i?.status === 'scheduled' || i?.status === 'in_progress'
   );
 
   const stats = user?.role === 'technicien' ? [
@@ -189,40 +202,40 @@ export default function Dashboard() {
   ] : [
     {
       title: 'Interventions Total',
-      value: interventions.length.toString(),
+      value: (interventions || []).length.toString(),
       icon: Wrench,
       color: 'bg-marine-500'
     },
     {
       title: 'En Cours',
-      value: interventions.filter(i => i.status === 'in_progress').length.toString(),
+      value: (interventions || []).filter(i => i?.status === 'in_progress').length.toString(),
       icon: Clock,
       color: 'bg-blue-500'
     },
     {
       title: 'Programmées',
-      value: interventions.filter(i => i.status === 'scheduled').length.toString(),
+      value: (interventions || []).filter(i => i?.status === 'scheduled').length.toString(),
       icon: Calendar,
       color: 'bg-orange-500'
     },
     {
       title: 'Terminées',
-      value: interventions.filter(i => i.status === 'completed').length.toString(),
+      value: (interventions || []).filter(i => i?.status === 'completed').length.toString(),
       icon: Package,
       color: 'bg-green-500'
     }
   ];
 
-  const upcomingMaintenance = interventions
-    .filter(i => i.status === 'scheduled' || i.status === 'in_progress')
+  const upcomingMaintenance = (interventions || [])
+    .filter(i => i?.status === 'scheduled' || i?.status === 'in_progress')
     .slice(0, 5)
     .map(i => ({
-      id: i.id,
-      boat: i.boats?.name || 'Bateau inconnu',
-      date: i.scheduled_date,
-      type: i.title,
-      status: i.status,
-      isAssignedToMe: user?.role === 'technicien' && i.technician_id === user.id
+      id: i?.id || '',
+      boat: i?.boats?.name || 'Bateau inconnu',
+      date: i?.scheduled_date || new Date().toISOString(),
+      type: i?.title || 'Intervention',
+      status: i?.status || 'scheduled',
+      isAssignedToMe: user?.role === 'technicien' && i?.technician_id === user.id
     }));
 
   return (

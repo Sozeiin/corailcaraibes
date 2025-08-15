@@ -17,7 +17,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error };
+    // Handle empty error messages
+    const errorMessage = error.message || 'Unknown React rendering error';
+    console.warn('ErrorBoundary: Caught error with message:', errorMessage);
+    return { hasError: true, error: { ...error, message: errorMessage } };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
