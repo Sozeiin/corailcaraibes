@@ -210,7 +210,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
 
   if (compact) {
     return (
-      <Card className="h-16">
+      <Card className="h-auto min-h-[5rem]">
         <CardContent className="p-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
