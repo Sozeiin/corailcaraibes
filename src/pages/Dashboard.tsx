@@ -271,8 +271,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Weather Widget */}
-        <WeatherWidget />
+        {/* Weather Widget - Temporarily disabled */}
+        {/* <WeatherWidget /> */}
 
         {/* Alerts Panel */}
         <Card>

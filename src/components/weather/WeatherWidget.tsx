@@ -231,15 +231,19 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
             </div>
             
             <div className="flex items-center gap-2">
-              {weather.forecast.map((day, index) => (
-                <div key={index} className="text-center text-xs">
-                  <div className="font-medium text-[10px]">{day.date}</div>
-                  <div className="flex justify-center my-1">
-                    {React.cloneElement(getWeatherIcon(day.condition), { className: 'h-3 w-3' })}
+              {weather?.forecast?.map((day, index) => {
+                if (!day) return null;
+                const icon = getWeatherIcon(day.condition || '');
+                return (
+                  <div key={index} className="text-center text-xs">
+                    <div className="font-medium text-[10px]">{day.date || ''}</div>
+                    <div className="flex justify-center my-1">
+                      <div className="h-3 w-3">{getWeatherIcon(day.condition || '')}</div>
+                    </div>
+                    <div className="text-[10px]">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
                   </div>
-                  <div className="text-[10px]">{day.temp_max}°/{day.temp_min}°</div>
-                </div>
-              ))}
+                );
+              }) || []}
             </div>
             
             <Button 
@@ -295,13 +299,16 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
         <div className="border-t pt-4">
           <div className="text-sm font-medium mb-2">Prévisions 3 jours</div>
           <div className="grid grid-cols-3 gap-2 text-xs">
-            {weather.forecast.map((day, index) => (
-              <div key={index} className="text-center p-2 bg-muted rounded">
-                <div className="font-medium">{day.date}</div>
-                <div className="my-1">{getWeatherIcon(day.condition)}</div>
-                <div>{day.temp_max}°/{day.temp_min}°</div>
-              </div>
-            ))}
+            {weather?.forecast?.map((day, index) => {
+              if (!day) return null;
+              return (
+                <div key={index} className="text-center p-2 bg-muted rounded">
+                  <div className="font-medium">{day.date || ''}</div>
+                  <div className="my-1">{getWeatherIcon(day.condition || '')}</div>
+                  <div>{day.temp_max || 0}°/{day.temp_min || 0}°</div>
+                </div>
+              );
+            }) || []}
           </div>
         </div>
       </CardContent>
