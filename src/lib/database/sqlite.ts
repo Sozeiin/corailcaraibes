@@ -12,7 +12,7 @@ async function initializeWebSQLite(): Promise<void> {
       await customElements.whenDefined('jeep-sqlite');
       
       // Initialize web store
-      const jeepSqliteEl = document.createElement('jeep-sqlite');
+      const jeepSqliteEl = document.createElement('jeep-sqlite') as any;
       document.body.appendChild(jeepSqliteEl);
       
       await jeepSqliteEl.initWebStore();
@@ -358,6 +358,37 @@ class SQLiteService {
       `UPDATE sync_metadata SET last_sync = CURRENT_TIMESTAMP WHERE table_name = ?`,
       [table]
     );
+  }
+
+  // Conflict management methods
+  async createConflict(table: string, recordId: string, localData: any, remoteData: any, conflictType: string): Promise<void> {
+    const db = await this.getDatabase();
+    await db.run(
+      'INSERT INTO sync_conflicts (table_name, record_id, local_data, remote_data, conflict_type) VALUES (?, ?, ?, ?, ?)',
+      [table, recordId, JSON.stringify(localData), JSON.stringify(remoteData), conflictType]
+    );
+  }
+
+  async getConflicts(): Promise<any[]> {
+    const db = await this.getDatabase();
+    const result = await db.query('SELECT * FROM sync_conflicts WHERE resolved = 0');
+    return result.values || [];
+  }
+
+  async resolveConflict(conflictId: number, resolutionStrategy: string, resolvedData?: any): Promise<void> {
+    const db = await this.getDatabase();
+    await db.run(
+      'UPDATE sync_conflicts SET resolved = 1, resolution_strategy = ?, resolved_at = ? WHERE id = ?',
+      [resolutionStrategy, Date.now(), conflictId]
+    );
+  }
+
+  async optimizeDatabase(): Promise<void> {
+    const db = await this.getDatabase();
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    await db.run('DELETE FROM sync_conflicts WHERE resolved = 1 AND resolved_at < ?', [thirtyDaysAgo]);
+    await db.run('DELETE FROM pending_changes WHERE retry_count > 5');
+    await db.run('VACUUM');
   }
 }
 

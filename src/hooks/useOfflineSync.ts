@@ -3,24 +3,25 @@ import { Network } from '@capacitor/network';
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
 import { sqliteService } from '@/lib/database/sqlite';
+import { offlineSyncManager } from '@/lib/offlineSync';
 import { useToast } from '@/hooks/use-toast';
 import { Preferences } from '@capacitor/preferences';
 
 interface SyncStatus {
   isOnline: boolean;
   isSyncing: boolean;
-  lastSyncTime: Date | null;
+  lastSync: number | null;
   pendingChanges: number;
-  syncError: string | null;
+  error: string | null;
 }
 
 export const useOfflineSync = () => {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: true,
     isSyncing: false,
-    lastSyncTime: null,
+    lastSync: null,
     pendingChanges: 0,
-    syncError: null
+    error: null
   });
 
   const { toast } = useToast();
@@ -47,7 +48,7 @@ export const useOfflineSync = () => {
       console.error('Failed to initialize offline database:', error);
       setSyncStatus(prev => ({ 
         ...prev, 
-        syncError: 'Impossible d\'initialiser la base de données hors ligne' 
+        error: 'Impossible d\'initialiser la base de données hors ligne' 
       }));
     }
   }, []);
@@ -162,7 +163,7 @@ export const useOfflineSync = () => {
       return;
     }
 
-    setSyncStatus(prev => ({ ...prev, isSyncing: true, syncError: null }));
+    setSyncStatus(prev => ({ ...prev, isSyncing: true, error: null }));
 
     try {
       // First, upload pending changes
@@ -180,9 +181,9 @@ export const useOfflineSync = () => {
       
       setSyncStatus(prev => ({
         ...prev,
-        lastSyncTime: new Date(),
+        lastSync: Date.now(),
         pendingChanges: pendingChanges.length,
-        syncError: null
+        error: null
       }));
 
       // Save last sync time in preferences
@@ -199,7 +200,7 @@ export const useOfflineSync = () => {
       console.error('Sync failed:', error);
       setSyncStatus(prev => ({
         ...prev,
-        syncError: error.message || 'Erreur de synchronisation'
+        error: error.message || 'Erreur de synchronisation'
       }));
 
       toast({
@@ -273,7 +274,7 @@ export const useOfflineSync = () => {
         
         setSyncStatus(prev => ({
           ...prev,
-          lastSyncTime: lastSyncTime ? new Date(lastSyncTime) : null,
+          lastSync: lastSyncTime ? new Date(lastSyncTime).getTime() : null,
           pendingChanges: pendingChanges.length
         }));
       } catch (error) {
