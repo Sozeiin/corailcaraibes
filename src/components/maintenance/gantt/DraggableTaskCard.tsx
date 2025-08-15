@@ -61,6 +61,7 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('DraggableTaskCard context menu:', task.title);
     if (!isBeingDragged && !isDragging) {
       onContextMenu?.(e);
     }

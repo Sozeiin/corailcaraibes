@@ -83,6 +83,7 @@ export function InterventionContextMenu({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    console.log('Context menu triggered:', intervention.title);
   };
 
   return (
