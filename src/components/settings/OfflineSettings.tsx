@@ -24,11 +24,15 @@ import { offlineSyncManager } from '@/lib/offlineSync';
 import { sqliteService } from '@/lib/database/sqlite';
 import { useToast } from '@/hooks/use-toast';
 import { Preferences } from '@capacitor/preferences';
+import { MobileDataManager } from '@/components/mobile/MobileDataManager';
+import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
+import { backgroundSyncService } from '@/services/backgroundSync';
 
 export function OfflineSettings() {
   const { syncStatus, performSync } = useOfflineSync();
   const { conflicts, resolveConflict, hasConflicts } = useConflictResolution();
   const { toast } = useToast();
+  const { isNative } = useMobileCapacitor();
   
   const [stats, setStats] = useState({
     totalOfflineRecords: 0,
@@ -42,6 +46,7 @@ export function OfflineSettings() {
   const [isOptimizing, setIsOptimizing] = useState(false);
   const [isClearingData, setIsClearingData] = useState(false);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [backgroundSyncEnabled, setBackgroundSyncEnabled] = useState(backgroundSyncService.isEnabled());
 
   useEffect(() => {
     loadStats();
@@ -90,6 +95,22 @@ export function OfflineSettings() {
       description: enabled 
         ? "L'application privilégiera les données locales"
         : "L'application privilégiera les données en ligne"
+    });
+  };
+
+  const handleBackgroundSyncToggle = async (enabled: boolean) => {
+    if (enabled) {
+      await backgroundSyncService.enableBackgroundSync();
+    } else {
+      await backgroundSyncService.disableBackgroundSync();
+    }
+    setBackgroundSyncEnabled(enabled);
+    
+    toast({
+      title: enabled ? "Synchronisation en arrière-plan activée" : "Synchronisation en arrière-plan désactivée",
+      description: enabled 
+        ? "L'application synchronisera automatiquement en arrière-plan"
+        : "La synchronisation en arrière-plan est désactivée"
     });
   };
 
@@ -248,6 +269,9 @@ export function OfflineSettings() {
         </CardContent>
       </Card>
 
+      {/* Mobile Data Manager */}
+      {isNative && <MobileDataManager />}
+
       {/* Settings */}
       <Card>
         <CardHeader>
@@ -286,6 +310,25 @@ export function OfflineSettings() {
               onCheckedChange={handleOfflineModeToggle}
             />
           </div>
+
+          {isNative && (
+            <>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="background-sync">Synchronisation en arrière-plan</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Synchroniser automatiquement quand l'app est en arrière-plan
+                  </p>
+                </div>
+                <Switch
+                  id="background-sync"
+                  checked={backgroundSyncEnabled}
+                  onCheckedChange={handleBackgroundSyncToggle}
+                />
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

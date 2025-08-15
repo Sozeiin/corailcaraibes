@@ -4,6 +4,9 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
+import { MobileOfflineBar } from '@/components/mobile/MobileOfflineBar';
+import { MobileQuickActions } from '@/components/mobile/MobileQuickActions';
+import { backgroundSyncService } from '@/services/backgroundSync';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -17,6 +20,8 @@ export const Layout = ({ children }: LayoutProps) => {
     // Add mobile-specific classes
     if (isNative) {
       document.body.classList.add('mobile-native');
+      // Initialize background sync for mobile
+      backgroundSyncService.initialize();
     }
   }, [isNative]);
 
@@ -29,6 +34,7 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
+        <MobileOfflineBar />
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
@@ -36,6 +42,7 @@ export const Layout = ({ children }: LayoutProps) => {
             {children}
           </main>
         </div>
+        <MobileQuickActions />
       </div>
     </SidebarProvider>
   );
