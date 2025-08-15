@@ -821,22 +821,22 @@ export function GanttMaintenanceSchedule() {
                                          weatherEvaluation: weatherEvaluations[task.id],
                                          weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
                                        }))}
-                                       onTaskClick={(task) => {
-                                         console.log('Setting selected task:', task);
-                                         setSelectedTask(task as Intervention);
-                                       }}
-                                       getTaskTypeConfig={getTaskTypeConfig}
-                                       weatherSeverity={weatherSeverity}
-                                       renderTaskCard={(task) => (
-                                         <InterventionContextMenu
-                                           intervention={task}
-                                           technicians={technicians}
-                                           onViewDetails={() => handleViewDetails(task)}
-                                           onEdit={() => handleEditIntervention(task)}
-                                           onStatusChange={(status) => handleStatusChange(task, status)}
-                                           onReassign={(technicianId) => handleReassign(task, technicianId)}
-                                           onDelete={() => handleDeleteIntervention(task)}
-                                           onWeatherEvaluation={() => handleWeatherEvaluation(task)}
+                                        onTaskClick={(task) => {
+                                          console.log('Setting selected task:', task);
+                                          setSelectedTask(task as Intervention);
+                                        }}
+                                        getTaskTypeConfig={getTaskTypeConfig}
+                                        weatherSeverity={weatherSeverity}
+                                        renderTaskCard={(task) => (
+                                          <InterventionContextMenu
+                                            intervention={task as any}
+                                            technicians={technicians}
+                                            onViewDetails={() => handleViewDetails(task as any)}
+                                            onEdit={() => handleEditIntervention(task as any)}
+                                            onStatusChange={(status) => handleStatusChange(task as any, status)}
+                                            onReassign={(technicianId) => handleReassign(task as any, technicianId)}
+                                            onDelete={() => handleDeleteIntervention(task as any)}
+                                            onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}
                                          >
                                            <DraggableTaskCard
                                              task={task}
@@ -929,7 +929,7 @@ export function GanttMaintenanceSchedule() {
       {/* Intervention Details Modal */}
       <InterventionDetailsModal
         intervention={selectedInterventionForDetails}
-        weatherEvaluation={selectedInterventionForDetails ? weatherEvaluations[selectedInterventionForDetails.id] : undefined}
+        weatherEvaluation={selectedInterventionForDetails ? weatherEvaluations[selectedInterventionForDetails.id] as any : undefined}
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
         onEdit={handleEditIntervention}
