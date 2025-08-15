@@ -25,6 +25,22 @@ const config: CapacitorConfig = {
     Keyboard: {
       resize: 'body',
       style: 'dark'
+    },
+    CapacitorSQLite: {
+      iosDatabaseLocation: 'Library/CapacitorDatabase',
+      iosIsEncryption: true,
+      iosKeychainPrefix: 'corail-caraibes',
+      iosBiometric: {
+        biometricAuth: false,
+        biometricTitle: "Authentification Biométrique",
+        biometricSubTitle: "Utilisez votre empreinte digitale"
+      },
+      androidIsEncryption: true,
+      androidBiometric: {
+        biometricAuth: false,
+        biometricTitle: "Authentification Biométrique", 
+        biometricSubTitle: "Utilisez votre empreinte digitale"
+      }
     }
   },
   android: {

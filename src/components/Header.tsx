@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
+import { SyncStatusIndicator } from '@/components/ui/sync-status-indicator';
 export const Header = () => {
   const {
     user,
@@ -50,6 +51,7 @@ export const Header = () => {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-shrink-0">
+        <SyncStatusIndicator showDetails />
         <NotificationDropdown />
 
         <DropdownMenu>
