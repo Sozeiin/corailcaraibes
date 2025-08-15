@@ -90,6 +90,7 @@ export function InterventionContextMenu({
       <ContextMenuTrigger 
         onContextMenu={handleContextMenu}
         className="block"
+        asChild
       >
         {children}
       </ContextMenuTrigger>
