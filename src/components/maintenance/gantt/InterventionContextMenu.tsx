@@ -89,11 +89,15 @@ export function InterventionContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger 
-        onContextMenu={handleContextMenu}
         className="block"
-        asChild
+        onContextMenu={(e) => {
+          e.preventDefault();
+          console.log('ContextMenuTrigger right-click detected:', intervention.title);
+        }}
       >
-        {children}
+        <div onContextMenu={handleContextMenu}>
+          {children}
+        </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-56">
         <ContextMenuItem onClick={onViewDetails} className="cursor-pointer">
