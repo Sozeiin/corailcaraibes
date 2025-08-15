@@ -85,14 +85,17 @@ export function InterventionContextMenu({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Context menu triggered:', intervention.title);
+    console.log('InterventionContextMenu handleContextMenu called:', intervention.title);
     setPosition({ x: e.clientX, y: e.clientY });
     setIsOpen(true);
   };
 
   // Clone children and add onContextMenu
   const childrenWithContextMenu = React.cloneElement(children as React.ReactElement, {
-    onContextMenu: handleContextMenu,
+    onContextMenu: (e: React.MouseEvent) => {
+      console.log('childrenWithContextMenu onContextMenu:', intervention.title);
+      handleContextMenu(e);
+    },
   });
 
   return (

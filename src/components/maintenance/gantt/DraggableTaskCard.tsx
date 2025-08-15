@@ -96,7 +96,13 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
       {...listeners}
       {...attributes}
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
+      onContextMenu={(e) => {
+        console.log('DraggableTaskCard onContextMenu direct:', task.title);
+        handleContextMenu(e);
+      }}
+      onMouseDown={(e) => {
+        console.log('Mouse down on card:', e.button); // 0=left, 1=middle, 2=right
+      }}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
