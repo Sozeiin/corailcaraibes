@@ -36,27 +36,35 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
     
     try {
       if (syncStatus.isOnline) {
-        // Online: fetch from Supabase
-        const { data: onlineData, error: supabaseError } = await supabase
-          .from(table as any)
-          .select('*')
-          .eq(baseId ? 'base_id' : 'id', baseId || 'dummy');
+        // Online: fetch from Supabase with dynamic query building
+        const queryBuilder = (supabase as any).from(table).select('*');
+        
+        let finalQuery;
+        if (baseId) {
+          finalQuery = queryBuilder.eq('base_id', baseId);
+        } else {
+          finalQuery = queryBuilder;
+        }
+        
+        const { data: onlineData, error: supabaseError } = await finalQuery;
         
         if (supabaseError) throw supabaseError;
         
         // Update local database with fresh data
-        if (onlineData) {
+        if (onlineData && Array.isArray(onlineData)) {
           for (const item of onlineData) {
-            const existing = await sqliteService.findById(table, item.id);
-            if (existing) {
-              await sqliteService.update(table, item.id, { ...item, sync_status: 'synced' });
-            } else {
-              await sqliteService.insert(table, { ...item, sync_status: 'synced' });
+            if (item && typeof item === 'object' && 'id' in item) {
+              const existing = await sqliteService.findById(table, item.id as string);
+              if (existing) {
+                await sqliteService.update(table, item.id as string, { ...item, sync_status: 'synced' });
+              } else {
+                await sqliteService.insert(table, { ...item, sync_status: 'synced' });
+              }
             }
           }
         }
         
-        setData(onlineData as T[] || []);
+        setData((onlineData as any) || []);
       } else {
         // Offline: fetch from SQLite
         const offlineData = await sqliteService.findAll(table, baseId);
@@ -90,17 +98,19 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
 
     if (syncStatus.isOnline) {
       try {
-        const { data: insertedData, error } = await supabase
-          .from(table as any)
+        const { data: insertedData, error } = await (supabase as any)
+          .from(table)
           .insert(newItem)
           .select()
           .single();
         
         if (error) throw error;
         
-        await sqliteService.insert(table, { ...insertedData, sync_status: 'synced' });
-        setData(prev => [insertedData as T, ...prev]);
-        return insertedData.id;
+        if (insertedData && typeof insertedData === 'object' && 'id' in insertedData) {
+          await sqliteService.insert(table, { ...insertedData, sync_status: 'synced' });
+          setData(prev => [insertedData as T, ...prev]);
+          return insertedData.id as string;
+        }
       } catch (error) {
         console.error('Error creating online, falling back to offline:', error);
       }
@@ -119,8 +129,8 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
 
     if (syncStatus.isOnline) {
       try {
-        const { error } = await supabase
-          .from(table as any)
+        const { error } = await (supabase as any)
+          .from(table)
           .update(updateData)
           .eq('id', id);
         
@@ -142,7 +152,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
   const remove = useCallback(async (id: string): Promise<void> => {
     if (syncStatus.isOnline) {
       try {
-        const { error } = await supabase.from(table as any).delete().eq('id', id);
+        const { error } = await (supabase as any).from(table).delete().eq('id', id);
         if (error) throw error;
         await sqliteService.delete(table, id);
       } catch (error) {
