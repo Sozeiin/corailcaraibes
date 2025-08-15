@@ -31,6 +31,7 @@ interface DroppableTimeSlotProps {
   };
   isOver?: boolean;
   weatherSeverity?: string;
+  renderTaskCard?: (task: Task) => React.ReactNode;
 }
 
 export function DroppableTimeSlot({ 
@@ -39,7 +40,8 @@ export function DroppableTimeSlot({
   onTaskClick, 
   getTaskTypeConfig, 
   isOver: propIsOver, 
-  weatherSeverity 
+  weatherSeverity,
+  renderTaskCard
 }: DroppableTimeSlotProps) {
   const { isOver: dropIsOver, setNodeRef } = useDroppable({
     id,
@@ -65,16 +67,19 @@ export function DroppableTimeSlot({
     >
       <div className="space-y-0.5">
         {tasks.map(task => (
-          <DraggableTaskCard
-            key={task.id}
-            task={task}
-            onClick={() => {
-              console.log('Task clicked:', task);
-              onTaskClick?.(task);
-            }}
-            getTaskTypeConfig={getTaskTypeConfig}
-            isDragging={false}
-          />
+          <div key={task.id}>
+            {renderTaskCard ? renderTaskCard(task) : (
+              <DraggableTaskCard
+                task={task}
+                onClick={() => {
+                  console.log('Task clicked:', task);
+                  onTaskClick?.(task);
+                }}
+                getTaskTypeConfig={getTaskTypeConfig}
+                isDragging={false}
+              />
+            )}
+          </div>
         ))}
       </div>
     </div>

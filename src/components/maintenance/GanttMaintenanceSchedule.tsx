@@ -33,6 +33,8 @@ import {
 import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
 import { DraggableTaskCard } from './gantt/DraggableTaskCard';
 import { TaskDialog } from './gantt/TaskDialog';
+import { InterventionContextMenu } from './gantt/InterventionContextMenu';
+import { InterventionDetailsModal } from './gantt/InterventionDetailsModal';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 import type { WeatherData } from '@/types/weather';
 
@@ -92,6 +94,8 @@ export function GanttMaintenanceSchedule() {
   const [draggedTask, setDraggedTask] = useState<Intervention | null>(null);
   const [selectedTask, setSelectedTask] = useState<Intervention | null>(null);
   const [showTaskDialog, setShowTaskDialog] = useState(false);
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedInterventionForDetails, setSelectedInterventionForDetails] = useState<Intervention | null>(null);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
   const { user } = useAuth();
@@ -510,6 +514,51 @@ export function GanttMaintenanceSchedule() {
     return evaluations.find(evaluation => !evaluation.suitable) || evaluations[0];
   };
 
+  // Context menu handlers
+  const handleViewDetails = (intervention: Intervention) => {
+    setSelectedInterventionForDetails(intervention);
+    setDetailsModalOpen(true);
+  };
+
+  const handleEditIntervention = (intervention: Intervention) => {
+    setSelectedTask(intervention);
+    setShowTaskDialog(true);
+  };
+
+  const handleStatusChange = (intervention: Intervention, status: string) => {
+    updateInterventionMutation.mutate({
+      id: intervention.id,
+      updates: { status: status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled' }
+    });
+  };
+
+  const handleReassign = (intervention: Intervention, technicianId: string) => {
+    updateInterventionMutation.mutate({
+      id: intervention.id,
+      updates: { technician_id: technicianId || null }
+    });
+  };
+
+  const handleDeleteIntervention = async (intervention: Intervention) => {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) {
+      try {
+        await supabase.from('interventions').delete().eq('id', intervention.id);
+        queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
+        toast({ title: "Intervention supprimée avec succès" });
+      } catch {
+        toast({ 
+          title: "Erreur", 
+          description: "Impossible de supprimer l'intervention",
+          variant: "destructive" 
+        });
+      }
+    }
+  };
+
+  const handleWeatherEvaluation = (intervention: Intervention) => {
+    handleViewDetails(intervention);
+  };
+
   // Handle weather-based reschedule suggestions
   const handleWeatherReschedule = (interventionId: string, adjustmentDays: number) => {
     const intervention = interventions.find(i => i.id === interventionId);
@@ -765,20 +814,37 @@ export function GanttMaintenanceSchedule() {
                                
                                return (
                                  <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
-                                   <DroppableTimeSlot
-                                     id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
-                                     tasks={tasks.map(task => ({
-                                       ...task,
-                                       weatherEvaluation: weatherEvaluations[task.id],
-                                       weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
-                                     }))}
-                                     onTaskClick={(task) => {
-                                       console.log('Setting selected task:', task);
-                                       setSelectedTask(task as Intervention);
-                                     }}
-                                     getTaskTypeConfig={getTaskTypeConfig}
-                                     weatherSeverity={weatherSeverity}
-                                   />
+                                     <DroppableTimeSlot
+                                       id={`${technician.id}|${day.dayIndex}|${slot.hour}`}
+                                       tasks={tasks.map(task => ({
+                                         ...task,
+                                         weatherEvaluation: weatherEvaluations[task.id],
+                                         weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
+                                       }))}
+                                       onTaskClick={(task) => {
+                                         console.log('Setting selected task:', task);
+                                         setSelectedTask(task as Intervention);
+                                       }}
+                                       getTaskTypeConfig={getTaskTypeConfig}
+                                       weatherSeverity={weatherSeverity}
+                                       renderTaskCard={(task) => (
+                                         <InterventionContextMenu
+                                           intervention={task}
+                                           technicians={technicians}
+                                           onViewDetails={() => handleViewDetails(task)}
+                                           onEdit={() => handleEditIntervention(task)}
+                                           onStatusChange={(status) => handleStatusChange(task, status)}
+                                           onReassign={(technicianId) => handleReassign(task, technicianId)}
+                                           onDelete={() => handleDeleteIntervention(task)}
+                                           onWeatherEvaluation={() => handleWeatherEvaluation(task)}
+                                         >
+                                           <DraggableTaskCard
+                                             task={task}
+                                             getTaskTypeConfig={getTaskTypeConfig}
+                                           />
+                                         </InterventionContextMenu>
+                                       )}
+                                     />
                                  </div>
                                );
                              })}
@@ -859,6 +925,15 @@ export function GanttMaintenanceSchedule() {
           technicians={technicians}
         />
       )}
+
+      {/* Intervention Details Modal */}
+      <InterventionDetailsModal
+        intervention={selectedInterventionForDetails}
+        weatherEvaluation={selectedInterventionForDetails ? weatherEvaluations[selectedInterventionForDetails.id] : undefined}
+        open={detailsModalOpen}
+        onOpenChange={setDetailsModalOpen}
+        onEdit={handleEditIntervention}
+      />
     </div>
   );
 }

@@ -23,6 +23,7 @@ interface DraggableTaskCardProps {
   task: Task;
   onClick?: () => void;
   isDragging?: boolean;
+  onContextMenu?: (e: React.MouseEvent) => void;
   getTaskTypeConfig: (type: string) => {
     bg: string;
     border: string;
@@ -31,7 +32,7 @@ interface DraggableTaskCardProps {
   };
 }
 
-export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTypeConfig }: DraggableTaskCardProps) {
+export function DraggableTaskCard({ task, onClick, isDragging = false, onContextMenu, getTaskTypeConfig }: DraggableTaskCardProps) {
   const {
     attributes,
     listeners,
@@ -54,6 +55,14 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
     if (!isBeingDragged && !isDragging) {
       e.stopPropagation();
       onClick?.();
+    }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isBeingDragged && !isDragging) {
+      onContextMenu?.(e);
     }
   };
 
@@ -86,6 +95,7 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, getTaskTy
       {...listeners}
       {...attributes}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
