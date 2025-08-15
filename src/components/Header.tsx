@@ -10,7 +10,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { SyncStatusIndicator } from '@/components/ui/sync-status-indicator';
 import { OfflineIndicator } from '@/components/ui/offline-indicator';
-import { OfflineIndicator } from '@/components/ui/offline-indicator';
 export const Header = () => {
   const {
     user,

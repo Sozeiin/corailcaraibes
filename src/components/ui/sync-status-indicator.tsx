@@ -22,7 +22,7 @@ export const SyncStatusIndicator = ({ className, showDetails = false }: SyncStat
       return <WifiOff className="h-4 w-4" />;
     }
     
-    if (syncStatus.syncError) {
+    if (syncStatus.error) {
       return <AlertCircle className="h-4 w-4" />;
     }
     
@@ -42,7 +42,7 @@ export const SyncStatusIndicator = ({ className, showDetails = false }: SyncStat
       return "Hors ligne";
     }
     
-    if (syncStatus.syncError) {
+    if (syncStatus.error) {
       return "Erreur de sync";
     }
     
@@ -62,7 +62,7 @@ export const SyncStatusIndicator = ({ className, showDetails = false }: SyncStat
       return "outline";
     }
     
-    if (syncStatus.syncError) {
+    if (syncStatus.error) {
       return "destructive";
     }
     
@@ -76,13 +76,13 @@ export const SyncStatusIndicator = ({ className, showDetails = false }: SyncStat
   const getTooltipText = () => {
     let text = getStatusText();
     
-    if (syncStatus.lastSyncTime) {
-      const lastSync = syncStatus.lastSyncTime.toLocaleString('fr-FR');
+    if (syncStatus.lastSync) {
+      const lastSync = new Date(syncStatus.lastSync).toLocaleString('fr-FR');
       text += `\nDernière sync: ${lastSync}`;
     }
     
-    if (syncStatus.syncError) {
-      text += `\nErreur: ${syncStatus.syncError}`;
+    if (syncStatus.error) {
+      text += `\nErreur: ${syncStatus.error}`;
     }
     
     if (!syncStatus.isOnline) {
