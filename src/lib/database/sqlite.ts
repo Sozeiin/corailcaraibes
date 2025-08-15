@@ -1,6 +1,29 @@
 import { CapacitorSQLite, SQLiteConnection, SQLiteDBConnection } from '@capacitor-community/sqlite';
 import { Capacitor } from '@capacitor/core';
 
+// Web platform initialization
+let isWebInitialized = false;
+
+async function initializeWebSQLite(): Promise<void> {
+  if (!Capacitor.isNativePlatform() && !isWebInitialized) {
+    try {
+      // Import jeep-sqlite web component for web platform
+      const jeepSqlite = await import('jeep-sqlite/dist/components/jeep-sqlite');
+      await customElements.whenDefined('jeep-sqlite');
+      
+      // Initialize web store
+      const jeepSqliteEl = document.createElement('jeep-sqlite');
+      document.body.appendChild(jeepSqliteEl);
+      
+      await jeepSqliteEl.initWebStore();
+      isWebInitialized = true;
+      console.log('Web SQLite initialized successfully');
+    } catch (error) {
+      console.warn('Web SQLite initialization failed, falling back to memory storage:', error);
+    }
+  }
+}
+
 class SQLiteService {
   private sqlite: SQLiteConnection;
   private db: SQLiteDBConnection | null = null;
@@ -13,6 +36,9 @@ class SQLiteService {
 
   async initialize(): Promise<void> {
     try {
+      // Initialize web platform if needed
+      await initializeWebSQLite();
+      
       if (Capacitor.isNativePlatform()) {
         // Check if platform is supported
         const platform = Capacitor.getPlatform();
