@@ -4,41 +4,49 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
 import { BaseSettings } from '@/components/settings/BaseSettings';
 import { UserSettings } from '@/components/settings/UserSettings';
 import { ChecklistSettings } from '@/components/settings/ChecklistSettings';
 import { MaintenanceSettings } from '@/components/settings/MaintenanceSettings';
 import { StockSettings } from '@/components/settings/StockSettings';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
+import { OfflineSettings } from '@/components/settings/OfflineSettings';
+import { MobileSystemDashboard } from '@/components/mobile/MobileSystemDashboard';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { isNative } = useMobileCapacitor();
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab');
 
   const getAvailableTabs = () => {
-    const tabs = [
-      { id: 'profile', label: 'Profil', icon: User, component: ProfileSettings }
+    const baseTabs = [
+      { id: 'profile', label: 'Profil', component: ProfileSettings, icon: User },
+      { id: 'offline', label: 'Hors ligne', component: OfflineSettings, icon: Package },
     ];
 
+    if (isNative) {
+      baseTabs.push({ id: 'mobile', label: 'Mobile', component: MobileSystemDashboard, icon: SettingsIcon });
+    }
+
     if (user?.role === 'direction') {
-      tabs.unshift(
-        { id: 'bases', label: 'Bases', icon: Building, component: BaseSettings },
-        { id: 'users', label: 'Utilisateurs', icon: Users, component: UserSettings }
+      baseTabs.push(
+        { id: 'base', label: 'Bases', component: BaseSettings, icon: Building },
+        { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users }
       );
     }
 
     if (user?.role === 'direction' || user?.role === 'chef_base') {
-      tabs.splice(-1, 0, // Insert before profile
-        { id: 'checklist', label: 'Checklist', icon: CheckSquare, component: ChecklistSettings },
-        { id: 'maintenance', label: 'Maintenance', icon: Wrench, component: MaintenanceSettings },
-        { id: 'stock', label: 'Stock', icon: Package, component: StockSettings }
+      baseTabs.push(
+        { id: 'stock', label: 'Stock', component: StockSettings, icon: Package },
+        { id: 'checklist', label: 'Checklist', component: ChecklistSettings, icon: CheckSquare },
+        { id: 'maintenance', label: 'Maintenance', component: MaintenanceSettings, icon: Wrench }
       );
     }
 
-    return tabs;
+    return baseTabs;
   };
-
   const availableTabs = getAvailableTabs();
   const defaultTab = tabFromUrl && availableTabs.some(tab => tab.id === tabFromUrl) 
     ? tabFromUrl 

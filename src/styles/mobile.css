@@ -1,0 +1,166 @@
+// Mobile-specific CSS for native apps
+.mobile-native {
+  /* iOS safe area support */
+  padding-top: var(--safe-area-inset-top, 0);
+  padding-bottom: var(--safe-area-inset-bottom, 0);
+  padding-left: var(--safe-area-inset-left, 0);
+  padding-right: var(--safe-area-inset-right, 0);
+}
+
+/* Safe area utility classes */
+.pt-safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pl-safe-area-inset-left {
+  padding-left: env(safe-area-inset-left);
+}
+
+.pr-safe-area-inset-right {
+  padding-right: env(safe-area-inset-right);
+}
+
+/* Mobile touch optimizations */
+@media (max-width: 768px) {
+  /* Larger touch targets */
+  .mobile-touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Improved scrolling */
+  .mobile-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+  
+  /* Prevent text selection on UI elements */
+  .mobile-no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Improve tap highlighting */
+  .mobile-tap-highlight {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Offline indicator styles */
+.offline-bar {
+  background: linear-gradient(45deg, #ff6b35, #f7931e);
+  animation: offline-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes offline-pulse {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+/* Sync progress animation */
+.sync-progress {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  animation: sync-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes sync-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Mobile floating action button */
+.mobile-fab {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mobile-fab:hover {
+  transform: scale(1.1);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile quick actions sheet */
+.mobile-quick-actions {
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+@supports (-webkit-backdrop-filter: none) or (backdrop-filter: none) {
+  .mobile-quick-actions {
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
+
+/* Performance optimizations for mobile */
+.mobile-optimized {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Mobile data visualization */
+.mobile-chart {
+  font-size: 12px;
+}
+
+.mobile-chart .recharts-cartesian-axis-tick-value {
+  font-size: 10px;
+}
+
+/* Mobile table responsive */
+@media (max-width: 640px) {
+  .mobile-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .mobile-table th,
+  .mobile-table td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+}
+
+/* Mobile modal optimizations */
+@media (max-width: 768px) {
+  .mobile-modal {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    border-radius: 0;
+  }
+  
+  .mobile-modal-content {
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+}
+
+/* Status indicator colors */
+.status-excellent {
+  color: rgb(34, 197, 94);
+}
+
+.status-good {
+  color: rgb(59, 130, 246);
+}
+
+.status-poor {
+  color: rgb(234, 179, 8);
+}
+
+.status-critical {
+  color: rgb(239, 68, 68);
+}
