@@ -1,14 +1,14 @@
 import React from 'react';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   FileText, 
   Edit, 
@@ -68,6 +68,8 @@ export function InterventionContextMenu({
   onWeatherEvaluation,
 }: InterventionContextMenuProps) {
   const { user } = useAuth();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [position, setPosition] = React.useState({ x: 0, y: 0 });
   
   const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
   const canDelete = user?.role === 'direction' || user?.role === 'chef_base';
@@ -84,117 +86,145 @@ export function InterventionContextMenu({
     e.preventDefault();
     e.stopPropagation();
     console.log('Context menu triggered:', intervention.title);
+    setPosition({ x: e.clientX, y: e.clientY });
+    setIsOpen(true);
   };
 
-  return (
-    <ContextMenu>
-      <ContextMenuTrigger 
-        className="block"
-        onContextMenu={(e) => {
-          e.preventDefault();
-          console.log('ContextMenuTrigger right-click detected:', intervention.title);
-        }}
-      >
-        <div onContextMenu={handleContextMenu}>
-          {children}
-        </div>
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-56">
-        <ContextMenuItem onClick={onViewDetails} className="cursor-pointer">
-          <Eye className="mr-2 h-4 w-4" />
-          Voir les détails
-        </ContextMenuItem>
-        
-        {canEdit && (
-          <>
-            <ContextMenuItem onClick={onEdit} className="cursor-pointer">
-              <Edit className="mr-2 h-4 w-4" />
-              Modifier
-            </ContextMenuItem>
-            
-            <ContextMenuSeparator />
-            
-            <ContextMenuSub>
-              <ContextMenuSubTrigger className="cursor-pointer">
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Changer le statut
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent className="w-48">
-                {statusOptions.map((status) => {
-                  const StatusIcon = status.icon;
-                  return (
-                    <ContextMenuItem
-                      key={status.value}
-                      onClick={() => onStatusChange(status.value)}
-                      disabled={intervention.status === status.value}
-                      className="cursor-pointer"
-                    >
-                      <StatusIcon className={`mr-2 h-4 w-4 ${status.color}`} />
-                      {status.label}
-                      {intervention.status === status.value && (
-                        <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
-                      )}
-                    </ContextMenuItem>
-                  );
-                })}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
+  // Clone children and add onContextMenu
+  const childrenWithContextMenu = React.cloneElement(children as React.ReactElement, {
+    onContextMenu: handleContextMenu,
+  });
 
-            {canReassign && technicians.length > 0 && (
-              <ContextMenuSub>
-                <ContextMenuSubTrigger className="cursor-pointer">
-                  <Users className="mr-2 h-4 w-4" />
-                  Réassigner
-                </ContextMenuSubTrigger>
-                <ContextMenuSubContent className="w-48">
-                  <ContextMenuItem
-                    onClick={() => onReassign('')}
-                    className="cursor-pointer"
-                  >
-                    <XCircle className="mr-2 h-4 w-4 text-gray-500" />
-                    Non assigné
-                  </ContextMenuItem>
-                  <ContextMenuSeparator />
-                  {technicians.map((technician) => (
-                    <ContextMenuItem
-                      key={technician.id}
-                      onClick={() => onReassign(technician.id)}
-                      disabled={intervention.technician_id === technician.id}
-                      className="cursor-pointer"
-                    >
-                      <Users className="mr-2 h-4 w-4" />
-                      {technician.name}
-                      {intervention.technician_id === technician.id && (
-                        <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
-                      )}
-                    </ContextMenuItem>
-                  ))}
-                </ContextMenuSubContent>
-              </ContextMenuSub>
-            )}
-          </>
-        )}
-        
-        <ContextMenuSeparator />
-        
-        <ContextMenuItem onClick={onWeatherEvaluation} className="cursor-pointer">
-          <Cloud className="mr-2 h-4 w-4" />
-          Évaluation météo
-        </ContextMenuItem>
-        
-        {canDelete && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuItem 
-              onClick={onDelete} 
-              className="cursor-pointer text-destructive focus:text-destructive"
+  return (
+    <>
+      {childrenWithContextMenu}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-50" 
+          onClick={() => setIsOpen(false)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div 
+            className="absolute bg-popover border border-border rounded-md shadow-lg p-1 z-50"
+            style={{ 
+              left: Math.min(position.x, window.innerWidth - 200), 
+              top: Math.min(position.y, window.innerHeight - 300),
+              minWidth: '200px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div 
+              onClick={onViewDetails} 
+              className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
             >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+              <Eye className="mr-2 h-4 w-4" />
+              Voir les détails
+            </div>
+            
+            {canEdit && (
+              <>
+                <div 
+                  onClick={onEdit} 
+                  className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Modifier
+                </div>
+                
+                <div className="h-px bg-border my-1" />
+                
+                {/* Status submenu */}
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  <div className="flex items-center">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Changer le statut
+                  </div>
+                  <div className="ml-6 mt-1 space-y-1">
+                    {statusOptions.map((status) => {
+                      const StatusIcon = status.icon;
+                      return (
+                        <div
+                          key={status.value}
+                          onClick={() => onStatusChange(status.value)}
+                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
+                            intervention.status === status.value 
+                              ? 'bg-accent text-accent-foreground' 
+                              : 'hover:bg-accent hover:text-accent-foreground'
+                          }`}
+                        >
+                          <StatusIcon className={`mr-2 h-4 w-4 ${status.color}`} />
+                          {status.label}
+                          {intervention.status === status.value && (
+                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {canReassign && technicians.length > 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    <div className="flex items-center">
+                      <Users className="mr-2 h-4 w-4" />
+                      Réassigner
+                    </div>
+                    <div className="ml-6 mt-1 space-y-1">
+                      <div
+                        onClick={() => onReassign('')}
+                        className="flex items-center px-2 py-1 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                      >
+                        <XCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        Non assigné
+                      </div>
+                      {technicians.map((technician) => (
+                        <div
+                          key={technician.id}
+                          onClick={() => onReassign(technician.id)}
+                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
+                            intervention.technician_id === technician.id 
+                              ? 'bg-accent text-accent-foreground' 
+                              : 'hover:bg-accent hover:text-accent-foreground'
+                          }`}
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          {technician.name}
+                          {intervention.technician_id === technician.id && (
+                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            
+            <div className="h-px bg-border my-1" />
+            
+            <div 
+              onClick={onWeatherEvaluation} 
+              className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              <Cloud className="mr-2 h-4 w-4" />
+              Évaluation météo
+            </div>
+            
+            {canDelete && (
+              <>
+                <div className="h-px bg-border my-1" />
+                <div 
+                  onClick={onDelete} 
+                  className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-destructive hover:text-destructive-foreground cursor-pointer text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
