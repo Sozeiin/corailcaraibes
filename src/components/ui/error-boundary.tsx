@@ -23,9 +23,20 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
     
-    // Log specific DOM manipulation errors differently
-    if (error.name === 'NotFoundError' && error.message.includes('object can not be found here')) {
-      console.warn('DOM manipulation race condition detected, attempting recovery...');
+    // Log more details for debugging
+    console.error('Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack
+    });
+    
+    // Handle specific React rendering errors
+    if (error.message.includes('Cannot read properties') || 
+        error.message.includes('undefined') ||
+        error.name === 'TypeError' ||
+        error.name === 'NotFoundError') {
+      console.warn('React rendering error detected, attempting recovery...');
       // Attempt recovery after a short delay
       setTimeout(() => {
         this.setState({ hasError: false, error: undefined });
