@@ -95,20 +95,40 @@ export function AdvancedOrders() {
 
   const getStatusColor = (status: string) => {
     const colors = {
+      draft: 'bg-gray-100 text-gray-800',
+      pending_approval: 'bg-yellow-100 text-yellow-800',
+      approved: 'bg-green-100 text-green-800',
+      supplier_search: 'bg-blue-100 text-blue-800',
+      order_confirmed: 'bg-purple-100 text-purple-800',
+      shipping_antilles: 'bg-orange-100 text-orange-800',
+      received_scanned: 'bg-teal-100 text-teal-800',
+      completed: 'bg-green-100 text-green-800',
+      rejected: 'bg-red-100 text-red-800',
+      cancelled: 'bg-gray-100 text-gray-800',
+      // Legacy statuses
       pending: 'bg-yellow-100 text-yellow-800',
       confirmed: 'bg-blue-100 text-blue-800',
-      delivered: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800'
+      delivered: 'bg-green-100 text-green-800'
     };
-    return colors[status as keyof typeof colors] || colors.pending;
+    return colors[status as keyof typeof colors] || colors.pending_approval;
   };
 
   const getStatusLabel = (status: string) => {
     const labels = {
+      draft: 'Brouillon',
+      pending_approval: 'En attente d\'approbation',
+      approved: 'Approuvé',
+      supplier_search: 'Recherche fournisseurs',
+      order_confirmed: 'Commande confirmée',
+      shipping_antilles: 'Envoi Antilles',
+      received_scanned: 'Réception scannée',
+      completed: 'Terminé',
+      rejected: 'Rejeté',
+      cancelled: 'Annulé',
+      // Legacy statuses
       pending: 'En attente',
       confirmed: 'Confirmée',
-      delivered: 'Livrée',
-      cancelled: 'Annulée'
+      delivered: 'Livrée'
     };
     return labels[status as keyof typeof labels] || status;
   };
@@ -198,10 +218,16 @@ export function AdvancedOrders() {
                   className="px-3 py-2 border rounded-md text-sm"
                 >
                   <option value="all">Tous les statuts</option>
-                  <option value="pending">En attente</option>
-                  <option value="confirmed">Confirmée</option>
-                  <option value="delivered">Livrée</option>
-                  <option value="cancelled">Annulée</option>
+                  <option value="draft">Brouillon</option>
+                  <option value="pending_approval">En attente d'approbation</option>
+                  <option value="approved">Approuvé</option>
+                  <option value="supplier_search">Recherche fournisseurs</option>
+                  <option value="order_confirmed">Commande confirmée</option>
+                  <option value="shipping_antilles">Envoi Antilles</option>
+                  <option value="received_scanned">Réception scannée</option>
+                  <option value="completed">Terminé</option>
+                  <option value="rejected">Rejeté</option>
+                  <option value="cancelled">Annulé</option>
                 </select>
 
                 <select

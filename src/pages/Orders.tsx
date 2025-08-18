@@ -42,7 +42,7 @@ export default function Orders() {
       
       console.log('Fetching orders for user:', { role: user.role, baseId: user.baseId });
       
-      // Requête optimisée - pas de JOIN pour éviter la lenteur
+      // Requête avec order_items pour avoir le bon nombre d'articles et montant
       let query = supabase.from('orders').select(`
         id,
         supplier_id,
@@ -59,7 +59,15 @@ export default function Orders() {
         requested_by,
         approved_by,
         approved_at,
-        documents
+        documents,
+        order_items(
+          id,
+          product_name,
+          reference,
+          quantity,
+          unit_price,
+          total_price
+        )
       `);
 
       // Filtrage côté serveur selon le rôle
@@ -76,40 +84,55 @@ export default function Orders() {
       console.log('Orders fetched:', data?.length || 0);
 
       // Transform database fields to match Order interface
-      return data.map(order => ({
-        id: order.id,
-        supplierId: order.supplier_id || '',
-        baseId: order.base_id || '',
-        orderNumber: order.order_number || '',
-        status: order.status || 'pending',
-        totalAmount: Number(order.total_amount) || 0,
-        orderDate: order.order_date || new Date().toISOString().split('T')[0],
-        deliveryDate: order.delivery_date || '',
-        items: [], // Chargement à la demande
-        documents: Array.isArray(order.documents) ? order.documents : [],
-        createdAt: order.created_at || new Date().toISOString(),
-        // Purchase request fields
-        isPurchaseRequest: Boolean(order.is_purchase_request),
-        boatId: order.boat_id || '',
-        urgencyLevel: order.urgency_level || 'normal',
-        requestedBy: order.requested_by || '',
-        approvedBy: order.approved_by || '',
-        approvedAt: order.approved_at || '',
-        photos: [],
-        trackingUrl: '',
-        rejectionReason: '',
-        requestNotes: ''
-      })) as Order[];
+      return data.map(order => {
+        const items = (order.order_items || []).map((item: any) => ({
+          id: item.id,
+          productName: item.product_name,
+          reference: item.reference || '',
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          totalPrice: item.total_price
+        }));
+        
+        // Calculate total from items if no total_amount set
+        const calculatedTotal = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
+        
+        return {
+          id: order.id,
+          supplierId: order.supplier_id || '',
+          baseId: order.base_id || '',
+          orderNumber: order.order_number || '',
+          status: order.status || 'pending',
+          totalAmount: Number(order.total_amount) || calculatedTotal,
+          orderDate: order.order_date || new Date().toISOString().split('T')[0],
+          deliveryDate: order.delivery_date || '',
+          items,
+          documents: Array.isArray(order.documents) ? order.documents : [],
+          createdAt: order.created_at || new Date().toISOString(),
+          // Purchase request fields
+          isPurchaseRequest: Boolean(order.is_purchase_request),
+          boatId: order.boat_id || '',
+          urgencyLevel: order.urgency_level || 'normal',
+          requestedBy: order.requested_by || '',
+          approvedBy: order.approved_by || '',
+          approvedAt: order.approved_at || '',
+          photos: [],
+          trackingUrl: '',
+          rejectionReason: '',
+          requestNotes: ''
+        };
+      }) as Order[];
     },
     enabled: !!user,
     staleTime: 60000, // Cache plus long
     gcTime: 300000,
   });
 
-  // Get unique statuses for filter
+  // Get unique statuses for filter with new workflow statuses
   const statuses = [
-    'pending', 'confirmed', 'delivered', 'cancelled', 
-    'pending_approval', 'supplier_requested', 'shipping_mainland', 'shipping_antilles'
+    'draft', 'pending_approval', 'approved', 'supplier_search', 
+    'order_confirmed', 'shipping_antilles', 'received_scanned', 'completed',
+    'rejected', 'cancelled'
   ];
 
   // Filter orders based on search, status, and type
@@ -138,14 +161,20 @@ export default function Orders() {
       label: 'Statut',
       render: (_: any, order: Order) => {
         const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive', icon: string }> = {
+          draft: { variant: 'secondary', icon: '📝' },
+          pending_approval: { variant: 'secondary', icon: '⏳' },
+          approved: { variant: 'default', icon: '✅' },
+          supplier_search: { variant: 'default', icon: '🔍' },
+          order_confirmed: { variant: 'default', icon: '📋' },
+          shipping_antilles: { variant: 'default', icon: '🚢' },
+          received_scanned: { variant: 'default', icon: '📦' },
+          completed: { variant: 'default', icon: '✅' },
+          rejected: { variant: 'destructive', icon: '❌' },
+          cancelled: { variant: 'destructive', icon: '🚫' },
+          // Legacy statuses
           pending: { variant: 'secondary', icon: '⏳' },
           confirmed: { variant: 'default', icon: '✓' },
-          delivered: { variant: 'default', icon: '✓' },
-          cancelled: { variant: 'destructive', icon: '✗' },
-          pending_approval: { variant: 'secondary', icon: '⏳' },
-          supplier_requested: { variant: 'default', icon: '✓' },
-          shipping_mainland: { variant: 'default', icon: '🚚' },
-          shipping_antilles: { variant: 'default', icon: '🚢' }
+          delivered: { variant: 'default', icon: '✓' }
         };
         const status = statusMap[order.status] || { variant: 'default', icon: '?' };
         return <ResponsiveBadge variant={status.variant}>{status.icon}</ResponsiveBadge>;
@@ -314,6 +343,7 @@ export default function Orders() {
                 orders={filteredOrders}
                 isLoading={isLoading}
                 onEdit={handleEdit}
+                onViewDetails={handleViewDetails}
                 onDelete={handleDelete}
                 canManage={canManageOrders}
               />

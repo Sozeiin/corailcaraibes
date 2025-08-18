@@ -17,25 +17,46 @@ interface OrderTableProps {
   orders: Order[];
   isLoading: boolean;
   onEdit: (order: Order) => void;
+  onViewDetails: (order: Order) => void;
   onDelete: (order: Order) => void;
   canManage: boolean;
 }
 
 const statusColors = {
+  draft: 'bg-gray-100 text-gray-800',
+  pending_approval: 'bg-yellow-100 text-yellow-800',
+  approved: 'bg-green-100 text-green-800',
+  supplier_search: 'bg-blue-100 text-blue-800',
+  order_confirmed: 'bg-purple-100 text-purple-800',
+  shipping_antilles: 'bg-orange-100 text-orange-800',
+  received_scanned: 'bg-teal-100 text-teal-800',
+  completed: 'bg-green-100 text-green-800',
+  rejected: 'bg-red-100 text-red-800',
+  cancelled: 'bg-gray-100 text-gray-800',
+  // Legacy statuses
   pending: 'bg-yellow-100 text-yellow-800',
   confirmed: 'bg-blue-100 text-blue-800', 
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800'
+  delivered: 'bg-green-100 text-green-800'
 };
 
 const statusLabels = {
+  draft: 'Brouillon',
+  pending_approval: 'En attente d\'approbation',
+  approved: 'Approuvé',
+  supplier_search: 'Recherche fournisseurs',
+  order_confirmed: 'Commande confirmée',
+  shipping_antilles: 'Envoi Antilles',
+  received_scanned: 'Réception scannée',
+  completed: 'Terminé',
+  rejected: 'Rejeté',
+  cancelled: 'Annulé',
+  // Legacy statuses
   pending: 'En attente',
   confirmed: 'Confirmée',
-  delivered: 'Livrée', 
-  cancelled: 'Annulée'
+  delivered: 'Livrée'
 };
 
-export function OrderTable({ orders, isLoading, onEdit, onDelete, canManage }: OrderTableProps) {
+export function OrderTable({ orders, isLoading, onEdit, onViewDetails, onDelete, canManage }: OrderTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -63,7 +84,7 @@ export function OrderTable({ orders, isLoading, onEdit, onDelete, canManage }: O
           <TableRow>
             <TableHead>N° Commande</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Statut</TableHead>
+            <TableHead>Étape actuelle</TableHead>
             <TableHead>Montant</TableHead>
             <TableHead>Articles</TableHead>
             <TableHead>Livraison</TableHead>
@@ -80,8 +101,8 @@ export function OrderTable({ orders, isLoading, onEdit, onDelete, canManage }: O
                 {new Date(order.orderDate).toLocaleDateString('fr-FR')}
               </TableCell>
               <TableCell>
-                <Badge className={statusColors[order.status as keyof typeof statusColors]}>
-                  {statusLabels[order.status as keyof typeof statusLabels]}
+                <Badge className={statusColors[order.status as keyof typeof statusColors] || statusColors.pending_approval}>
+                  {statusLabels[order.status as keyof typeof statusLabels] || order.status}
                 </Badge>
               </TableCell>
               <TableCell className="font-medium">
@@ -99,10 +120,10 @@ export function OrderTable({ orders, isLoading, onEdit, onDelete, canManage }: O
                 {canManage && (
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
-                      <Button
+                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onEdit(order)}
+                        onClick={() => onViewDetails(order)}
                         title="Voir les détails"
                       >
                         <Eye className="h-4 w-4" />
