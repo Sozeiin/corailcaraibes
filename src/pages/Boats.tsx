@@ -93,7 +93,7 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onMaintenance }: BoatCard
           onClick={() => onEdit(boat)}
         >
           <Edit className="h-4 w-4 mr-2" />
-          Modifier
+        
         </Button>
         <Button
           size="sm"
