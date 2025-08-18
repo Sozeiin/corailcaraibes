@@ -1,7 +1,6 @@
 
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search } from 'lucide-react';
@@ -18,7 +17,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 export default function Suppliers() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
@@ -26,62 +24,34 @@ export default function Suppliers() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const isMobile = useIsMobile();
 
-  const { data: suppliers = [], isLoading, error } = useQuery({
-    queryKey: ['suppliers', user?.id, user?.baseId],
-    queryFn: async () => {
-      if (!user?.baseId) return [];
-      
-      console.log('Fetching suppliers for user:', { role: user.role, baseId: user.baseId });
-      
-      let query = supabase
-        .from('suppliers')
-        .select('*')
-        .order('created_at', { ascending: false });
+  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
 
-      // Filter by base_id unless user is direction (can see all)
-      if (user.role !== 'direction') {
-        query = query.or(`base_id.eq.${user.baseId},base_id.is.null`);
-      }
+  const {
+    data: rawSuppliers = [],
+    loading: isLoading,
+    error,
+    remove: removeSupplier,
+    refetch: refetchSuppliers
+  } = useOfflineData<any>({ table: 'suppliers', baseId, dependencies: [user?.id, user?.baseId] });
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching suppliers:', error);
-        throw error;
-      }
-
-      console.log('Suppliers fetched:', data?.length || 0);
-      
-      // Transform database fields to match Supplier interface
-      return data.map(supplier => ({
-        id: supplier.id,
-        name: supplier.name,
-        email: supplier.email || '',
-        phone: supplier.phone || '',
-        address: supplier.address || '',
-        category: supplier.category || '',
-        baseId: supplier.base_id || '',
-        createdAt: supplier.created_at || new Date().toISOString()
-      })) as Supplier[];
-    },
-    enabled: !!user
-  });
+  const suppliers: Supplier[] = rawSuppliers.map((supplier: any) => ({
+    id: supplier.id,
+    name: supplier.name,
+    email: supplier.email || '',
+    phone: supplier.phone || '',
+    address: supplier.address || '',
+    category: supplier.category || '',
+    baseId: supplier.base_id || '',
+    createdAt: supplier.created_at || new Date().toISOString()
+  }));
 
   const handleDelete = async (supplierId: string) => {
     try {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', supplierId);
-
-      if (error) throw error;
-
+      await removeSupplier(supplierId);
       toast({
         title: "Fournisseur supprimé",
         description: "Le fournisseur a été supprimé avec succès."
       });
-
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
     } catch (error) {
       console.error('Error deleting supplier:', error);
       toast({
@@ -105,7 +75,7 @@ export default function Suppliers() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setSelectedSupplier(null);
-    queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+    refetchSuppliers();
   };
 
   // Filter suppliers based on search term and category

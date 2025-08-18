@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Plus, Search, History, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
@@ -88,75 +87,23 @@ export const Boats = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
-  const {
-    toast
-  } = useToast();
-  const {
-    user
-  } = useAuth();
-  const {
-    data: boats = [],
-    isLoading
-  } = useQuery({
-    queryKey: ['boats', user?.role, user?.baseId],
-    queryFn: async () => {
-      console.log('Fetching boats for user:', {
-        role: user?.role,
-        baseId: user?.baseId
-      });
-      let query = supabase.from('boats').select(`
-          *,
-          base:bases(name)
-        `).order('name');
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-      // Filter by base_id unless user is direction (can see all)
-      if (user?.role !== 'direction' && user?.baseId) {
-        query = query.eq('base_id', user.baseId);
-      }
-      const {
-        data,
-        error
-      } = await query;
-      if (error) throw error;
-      console.log('Boats fetched:', data?.length || 0);
-      return data || [];
-    },
-    enabled: !!user
-  });
+  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
+
   const {
-    data: bases = []
-  } = useQuery({
-    queryKey: ['bases'],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('bases').select('id, name').order('name');
-      if (error) throw error;
-      return data;
-    }
-  });
-  const deleteMutation = useMutation({
-    mutationFn: async (boatId: string) => {
-      const {
-        error
-      } = await supabase.from('boats').delete().eq('id', boatId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: "Bateau supprimé",
-        description: "Le bateau a été supprimé avec succès."
-      });
-    },
-    onError: error => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer le bateau.",
-        variant: "destructive"
-      });
-    }
-  });
+    data: rawBoats = [],
+    loading: isLoading,
+    remove: removeBoat
+  } = useOfflineData<any>({ table: 'boats', baseId, dependencies: [user?.role, user?.baseId] });
+
+  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
+
+  const boats = rawBoats.map((boat: any) => ({
+    ...boat,
+    base: bases.find((b: any) => b.id === boat.base_id)
+  }));
   const filteredBoats = boats?.filter(boat => {
     const matchesSearch = !searchTerm || boat.name.toLowerCase().includes(searchTerm.toLowerCase()) || boat.model.toLowerCase().includes(searchTerm.toLowerCase()) || boat.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || boat.status === filterStatus;
@@ -178,9 +125,22 @@ export const Boats = () => {
     });
     setIsDialogOpen(true);
   };
-  const handleDelete = (boatId: string, boatName: string) => {
+  const handleDelete = async (boatId: string, boatName: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer le bateau "${boatName}" ?`)) {
-      deleteMutation.mutate(boatId);
+      try {
+        await removeBoat(boatId);
+        toast({
+          title: "Bateau supprimé",
+          description: "Le bateau a été supprimé avec succès."
+        });
+      } catch (error) {
+        console.error('Error deleting boat:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer le bateau.",
+          variant: "destructive"
+        });
+      }
     }
   };
   const handleHistory = (boatId: string) => {

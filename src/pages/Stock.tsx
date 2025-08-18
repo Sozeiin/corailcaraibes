@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Plus, Search, AlertTriangle, FileSpreadsheet } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function Stock() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedBase, setSelectedBase] = useState('all');
@@ -36,78 +34,39 @@ export default function Stock() {
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const { data: stockItems = [], isLoading } = useQuery({
-    queryKey: ['stock', user?.role, user?.baseId],
-    queryFn: async () => {
-      if (!user?.baseId) return [];
-      
-      console.log('Fetching stock for user:', { role: user.role, baseId: user.baseId });
-      
-      // Requête optimisée sans JOIN
-      let query = supabase.from('stock_items').select(`
-        id,
-        name,
-        reference,
-        category,
-        quantity,
-        min_threshold,
-        unit,
-        location,
-        base_id,
-        last_updated
-      `);
+  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
 
-      // Filtrage côté serveur selon le rôle
-      if (user.role !== 'direction') {
-        query = query.eq('base_id', user.baseId);
-      }
+  const {
+    data: rawStockItems = [],
+    loading: isLoading,
+    update: updateItem,
+    remove: removeItem,
+    refetch: refetchStock
+  } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
 
-      const { data, error } = await query
-        .order('name')
-        .limit(300); // Réduire la limite
-
-      if (error) throw error;
-
-      console.log('Stock items fetched:', data?.length || 0);
-
-      // Transform database fields to match StockItem interface
-      return data.map(item => ({
-        id: item.id,
-        name: item.name,
-        reference: item.reference || '',
-        category: item.category || '',
-        quantity: item.quantity || 0,
-        minThreshold: item.min_threshold || 0,
-        unit: item.unit || '',
-        location: item.location || '',
-        baseId: item.base_id || '',
-        baseName: '', // Chargement à la demande si nécessaire
-        lastUpdated: item.last_updated || new Date().toISOString(),
-        lastPurchaseDate: null,
-        lastPurchaseCost: null,
-        lastSupplierId: null
-      })) as StockItem[];
-    },
-    enabled: !!user,
-    staleTime: 60000, // Cache plus long
-    gcTime: 300000,
-  });
+  const stockItems: StockItem[] = rawStockItems.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    reference: item.reference || '',
+    category: item.category || '',
+    quantity: item.quantity || 0,
+    minThreshold: item.min_threshold || 0,
+    unit: item.unit || '',
+    location: item.location || '',
+    baseId: item.base_id || '',
+    baseName: '',
+    lastUpdated: item.last_updated || new Date().toISOString(),
+    lastPurchaseDate: null,
+    lastPurchaseCost: null,
+    lastSupplierId: null
+  }));
 
   // Get bases for filter
-  const { data: bases = [] } = useQuery({
-    queryKey: ['bases'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bases')
-        .select('id, name')
-        .order('name');
-      if (error) throw error;
-      return data;
-    }
-  });
+  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
   // Get unique categories for filter
   const categories = Array.from(new Set(stockItems.filter(item => item.category).map(item => item.category)));
@@ -165,17 +124,10 @@ export default function Stock() {
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
     try {
-      const { error } = await supabase
-        .from('stock_items')
-        .update({ 
-          quantity: newQuantity,
-          last_updated: new Date().toISOString()
-        })
-        .eq('id', itemId);
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      await updateItem(itemId, {
+        quantity: newQuantity,
+        last_updated: new Date().toISOString()
+      });
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la quantité:', error);
     }
@@ -184,7 +136,7 @@ export default function Stock() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingItem(null);
-    queryClient.invalidateQueries({ queryKey: ['stock'] });
+    refetchStock();
   };
 
   const handleDuplicateDialogClose = () => {
@@ -202,43 +154,32 @@ export default function Stock() {
     setDetailsItem(null);
   };
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (itemId: string) => {
-      const { error } = await supabase
-        .from('stock_items')
-        .delete()
-        .eq('id', itemId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
-      toast({
-        title: "Article supprimé",
-        description: "L'article a été supprimé avec succès.",
-      });
-      setIsDeleteDialogOpen(false);
-      setDeleteItem(null);
-    },
-    onError: (error) => {
-      console.error('Erreur lors de la suppression:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'article.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const handleDelete = (item: StockItem) => {
     setDeleteItem(item);
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteItem) {
-      deleteMutation.mutate(deleteItem.id);
+      setIsDeleting(true);
+      try {
+        await removeItem(deleteItem.id);
+        toast({
+          title: "Article supprimé",
+          description: "L'article a été supprimé avec succès.",
+        });
+        setIsDeleteDialogOpen(false);
+        setDeleteItem(null);
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer l'article.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -399,13 +340,13 @@ export default function Stock() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={confirmDelete}
-              disabled={deleteMutation.isPending}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
-            </AlertDialogAction>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
+              </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

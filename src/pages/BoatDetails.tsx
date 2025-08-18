@@ -1,7 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,28 +18,17 @@ export const BoatDetails = () => {
   }>();
   const navigate = useNavigate();
   console.log('BoatDetails rendered with boatId:', boatId);
-  const {
-    data: boat,
-    isLoading
-  } = useQuery({
-    queryKey: ['boat', boatId],
-    queryFn: async () => {
-      const {
-        data,
-        error
-      } = await supabase.from('boats').select(`
-          *,
-          base:bases(name)
-        `).eq('id', boatId).single();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!boatId
-  });
+  const { data: boats = [], loading: isLoading } = useOfflineData<any>({ table: 'boats' });
+  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
+
+  const boat = boats.find((b: any) => b.id === boatId);
+  const boatBase = bases.find((b: any) => b.id === boat?.base_id);
+  const boatWithBase = boat ? { ...boat, base: boatBase } : null;
+
   if (isLoading) {
     return <LoadingSpinner />;
   }
-  if (!boat) {
+  if (!boatWithBase) {
     return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <h2 className="text-2xl font-semibold">Bateau non trouvé</h2>
         <Button onClick={() => navigate('/boats')}>
@@ -57,13 +45,13 @@ export const BoatDetails = () => {
             
           </Button>
           <div>
-            <h1 className="font-bold text-3xl text-[#f975c4] text-right mx-[33px]">{boat.name}</h1>
+            <h1 className="font-bold text-3xl text-[#f975c4] text-right mx-[33px]">{boatWithBase.name}</h1>
             
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${boat.status === 'available' ? 'bg-green-100 text-green-800' : boat.status === 'rented' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
-            {boat.status === 'available' ? 'Disponible' : boat.status === 'rented' ? 'En location' : boat.status === 'maintenance' ? 'En maintenance' : 'Hors service'}
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${boatWithBase.status === 'available' ? 'bg-green-100 text-green-800' : boatWithBase.status === 'rented' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+            {boatWithBase.status === 'available' ? 'Disponible' : boatWithBase.status === 'rented' ? 'En location' : boatWithBase.status === 'maintenance' ? 'En maintenance' : 'Hors service'}
           </span>
         </div>
       </div>
@@ -80,23 +68,23 @@ export const BoatDetails = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Modèle</p>
-              <p className="text-lg">{boat.model}</p>
+              <p className="text-lg">{boatWithBase.model}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Année</p>
-              <p className="text-lg">{boat.year}</p>
+              <p className="text-lg">{boatWithBase.year}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">N° de série</p>
-              <p className="text-lg">{boat.serial_number}</p>
+              <p className="text-lg">{boatWithBase.serial_number}</p>
             </div>
-            {boat.next_maintenance && <div>
+            {boatWithBase.next_maintenance && <div>
                 <p className="text-sm font-medium text-muted-foreground">Prochaine maintenance</p>
-                <p className="text-lg">{new Date(boat.next_maintenance).toLocaleDateString()}</p>
+                <p className="text-lg">{new Date(boatWithBase.next_maintenance).toLocaleDateString()}</p>
               </div>}
             <div>
               <p className="text-sm font-medium text-muted-foreground">Base</p>
-              <p className="text-lg">{boat.base?.name}</p>
+              <p className="text-lg">{boatWithBase.base?.name}</p>
             </div>
           </div>
         </CardContent>
@@ -124,19 +112,19 @@ export const BoatDetails = () => {
         </TabsList>
 
         <TabsContent value="dashboard" className="space-y-6">
-          <BoatDashboard boatId={boat.id} boatName={boat.name} />
+          <BoatDashboard boatId={boatWithBase.id} boatName={boatWithBase.name} />
         </TabsContent>
 
         <TabsContent value="components" className="space-y-6">
-          <BoatComponentsManager boatId={boat.id} boatName={boat.name} />
+          <BoatComponentsManager boatId={boatWithBase.id} boatName={boatWithBase.name} />
         </TabsContent>
 
         <TabsContent value="maintenance" className="space-y-6">
-          <BoatMaintenancePlanner boatId={boat.id} boatName={boat.name} />
+          <BoatMaintenancePlanner boatId={boatWithBase.id} boatName={boatWithBase.name} />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
-          <BoatHistoryContent boatId={boat.id} />
+          <BoatHistoryContent boatId={boatWithBase.id} />
         </TabsContent>
       </Tabs>
     </div>;
