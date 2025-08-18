@@ -31,7 +31,7 @@ export function AdvancedOrders() {
   const [selectedBase, setSelectedBase] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [viewMode, setViewMode] = useState<'standard' | 'bulk'>('standard');
+  const [viewMode] = useState<'bulk'>('bulk');
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['advanced-orders', viewMode],
@@ -44,7 +44,7 @@ export function AdvancedOrders() {
           bases(name, location),
           order_items(*)
         `)
-        .eq('is_bulk_purchase', viewMode === 'bulk')
+        .eq('is_bulk_purchase', true)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -184,14 +184,13 @@ export function AdvancedOrders() {
         </div>
       </div>
 
-      {/* Order Type Tabs */}
-      <Tabs value={viewMode} onValueChange={(value) => setViewMode(value as 'standard' | 'bulk')}>
+      {/* Order Type Tabs - Keep only Bulk Purchases */}
+      <Tabs value="bulk" onValueChange={() => {}}>
         <TabsList>
-          <TabsTrigger value="standard">Commandes Standard</TabsTrigger>
           <TabsTrigger value="bulk">Achats Groupés</TabsTrigger>
         </TabsList>
 
-        <TabsContent value={viewMode} className="space-y-4">
+        <TabsContent value="bulk" className="space-y-4">
           {/* Filters */}
           <Card>
             <CardHeader className="pb-3 sm:pb-6">
@@ -283,9 +282,7 @@ export function AdvancedOrders() {
                           <Badge className={getStatusColor(order.status)}>
                             {getStatusLabel(order.status)}
                           </Badge>
-                          {viewMode === 'bulk' && (
-                            <Badge variant="outline">Achat Groupé</Badge>
-                          )}
+                           <Badge variant="outline">Achat Groupé</Badge>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">

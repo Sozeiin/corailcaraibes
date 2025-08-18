@@ -346,6 +346,7 @@ export default function Orders() {
                 onViewDetails={handleViewDetails}
                 onDelete={handleDelete}
                 canManage={canManageOrders}
+                onOrderUpdate={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
               />
             )}
           </div>
