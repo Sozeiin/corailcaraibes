@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ import {
   Anchor
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 
@@ -75,95 +74,48 @@ export default function Dashboard() {
     );
   }
 
-  // Récupération du nom de la base avec useQuery pour optimiser
-  const { data: baseData } = useQuery({
-    queryKey: ['base-name', user?.baseId],
-    queryFn: async () => {
-      if (!user?.baseId || user.role === 'direction') return null;
-      
-      const { data, error } = await supabase
-        .from('bases')
-        .select('name')
-        .eq('id', user.baseId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching base:', error);
-        return null;
-      }
-      return data;
-    },
-    enabled: !!user?.baseId && user?.role !== 'direction',
-    staleTime: 300000, // Cache 5 minutes
-  });
+  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
   useEffect(() => {
-    if (baseData?.name) {
-      setBaseName(baseData.name);
+    if (user?.baseId && user.role !== 'direction') {
+      const base = bases.find((b: any) => b.id === user.baseId);
+      if (base?.name) {
+        setBaseName(base.name);
+      }
     }
-  }, [baseData]);
+  }, [bases, user]);
 
-  // Récupération des interventions filtrées pour les techniciens
-  const { data: interventions = [], isLoading: interventionsLoading } = useQuery({
-    queryKey: ['dashboard-interventions', user?.id, user?.role],
-    queryFn: async () => {
-      if (!user) return [];
-
-      let query = supabase
-        .from('interventions')
-        .select(`
-          *,
-          boats(name, model)
-        `)
-        .order('scheduled_date', { ascending: true });
-
-      // Filtrage selon le rôle de l'utilisateur
-      if (user.role === 'technicien') {
-        // Pour les techniciens : interventions assignées OU dans leur base ET non assignées
-        query = query.or(`technician_id.eq.${user.id},and(base_id.eq.${user.baseId},technician_id.is.null)`);
-      } else if (user.role === 'chef_base') {
-        // Pour les chefs de base : toutes les interventions de leur base
-        query = query.eq('base_id', user.baseId);
-      }
-      // Pour la direction : toutes les interventions (pas de filtre)
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data || [];
-    },
-    enabled: !!user
+  const {
+    data: rawInterventions = [],
+    loading: interventionsLoading
+  } = useOfflineData<any>({
+    table: 'interventions',
+    baseId: user.role !== 'direction' ? user.baseId : undefined,
+    dependencies: [user?.id, user?.role]
   });
 
-  // Récupération des alertes pour le tableau de bord
-  const { data: alerts = [] } = useQuery({
-    queryKey: ['dashboard-alerts', user?.baseId, user?.role],
-    queryFn: async () => {
-      if (!user) return [];
+  const { data: boats = [] } = useOfflineData<any>({ table: 'boats' });
 
-      let query = supabase
-        .from('alerts')
-        .select('*')
-        .eq('is_read', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
+  const interventions = rawInterventions.map((i: any) => ({
+    ...i,
+    boats: boats.find((b: any) => b.id === i.boat_id) || null
+  }));
 
-      // Filtrage selon le rôle
-      if (user.role !== 'direction') {
-        query = query.eq('base_id', user.baseId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      
-      return data?.map(alert => ({
-        type: alert.type,
-        message: alert.message,
-        severity: alert.severity
-      })) || [];
-    },
-    enabled: !!user
+  const { data: rawAlerts = [] } = useOfflineData<any>({
+    table: 'alerts',
+    baseId: user.role !== 'direction' ? user.baseId : undefined,
+    dependencies: [user?.baseId, user?.role]
   });
+
+  const alerts = rawAlerts
+    .filter((a: any) => a.is_read === false)
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 5)
+    .map((alert: any) => ({
+      type: alert.type,
+      message: alert.message,
+      severity: alert.severity
+    }));
 
   // Calcul des statistiques avec vérifications défensives
   const myInterventions = user?.role === 'technicien' ? 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Plus, Search, ShoppingCart } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,7 +21,6 @@ import { getWorkflowStatusList, getStatusColor, getStatusLabel } from '@/lib/wor
 export default function Orders() {
   console.log('Orders page rendering...');
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
@@ -36,97 +34,54 @@ export default function Orders() {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
-  const { data: orders = [], isLoading } = useQuery({
-    queryKey: ['orders', user?.role, user?.baseId],
-    queryFn: async () => {
-      if (!user?.baseId) return [];
-      
-      console.log('Fetching orders for user:', { role: user.role, baseId: user.baseId });
-      
-      // Requête avec order_items pour avoir le bon nombre d'articles et montant
-      let query = supabase.from('orders').select(`
-        id,
-        supplier_id,
-        base_id,
-        order_number,
-        status,
-        total_amount,
-        order_date,
-        delivery_date,
-        created_at,
-        is_purchase_request,
-        boat_id,
-        urgency_level,
-        requested_by,
-        approved_by,
-        approved_at,
-        documents,
-        order_items(
-          id,
-          product_name,
-          reference,
-          quantity,
-          unit_price,
-          total_price
-        )
-      `);
+  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
 
-      // Filtrage côté serveur selon le rôle
-      if (user.role !== 'direction') {
-        query = query.eq('base_id', user.baseId);
-      }
+  const {
+    data: rawOrders = [],
+    loading: isLoading,
+    remove: removeOrderRecord,
+    refetch: refetchOrders
+  } = useOfflineData<any>({ table: 'orders', baseId, dependencies: [user?.role, user?.baseId] });
 
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(100); // Réduire la limite
+  const { data: rawOrderItems = [], remove: removeOrderItem, refetch: refetchOrderItems } = useOfflineData<any>({ table: 'order_items', baseId });
 
-      if (error) throw error;
+  const orders: Order[] = rawOrders.map((order: any) => {
+    const items = rawOrderItems
+      .filter((item: any) => item.order_id === order.id)
+      .map((item: any) => ({
+        id: item.id,
+        productName: item.product_name,
+        reference: item.reference || '',
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        totalPrice: item.total_price
+      }));
 
-      console.log('Orders fetched:', data?.length || 0);
+    const calculatedTotal = items.reduce((sum: number, item: any) => sum + (item.totalPrice || 0), 0);
 
-      // Transform database fields to match Order interface
-      return data.map(order => {
-        const items = (order.order_items || []).map((item: any) => ({
-          id: item.id,
-          productName: item.product_name,
-          reference: item.reference || '',
-          quantity: item.quantity,
-          unitPrice: item.unit_price,
-          totalPrice: item.total_price
-        }));
-        
-        // Calculate total from items if no total_amount set
-        const calculatedTotal = items.reduce((sum, item) => sum + (item.totalPrice || 0), 0);
-        
-        return {
-          id: order.id,
-          supplierId: order.supplier_id || '',
-          baseId: order.base_id || '',
-          orderNumber: order.order_number || '',
-          status: order.status || 'pending',
-          totalAmount: Number(order.total_amount) || calculatedTotal,
-          orderDate: order.order_date || new Date().toISOString().split('T')[0],
-          deliveryDate: order.delivery_date || '',
-          items,
-          documents: Array.isArray(order.documents) ? order.documents : [],
-          createdAt: order.created_at || new Date().toISOString(),
-          // Purchase request fields
-          isPurchaseRequest: Boolean(order.is_purchase_request),
-          boatId: order.boat_id || '',
-          urgencyLevel: order.urgency_level || 'normal',
-          requestedBy: order.requested_by || '',
-          approvedBy: order.approved_by || '',
-          approvedAt: order.approved_at || '',
-          photos: [],
-          trackingUrl: '',
-          rejectionReason: '',
-          requestNotes: ''
-        };
-      }) as Order[];
-    },
-    enabled: !!user,
-    staleTime: 60000, // Cache plus long
-    gcTime: 300000,
+    return {
+      id: order.id,
+      supplierId: order.supplier_id || '',
+      baseId: order.base_id || '',
+      orderNumber: order.order_number || '',
+      status: order.status || 'pending',
+      totalAmount: Number(order.total_amount) || calculatedTotal,
+      orderDate: order.order_date || new Date().toISOString().split('T')[0],
+      deliveryDate: order.delivery_date || '',
+      items,
+      documents: Array.isArray(order.documents) ? order.documents : [],
+      createdAt: order.created_at || new Date().toISOString(),
+      isPurchaseRequest: Boolean(order.is_purchase_request),
+      boatId: order.boat_id || '',
+      urgencyLevel: order.urgency_level || 'normal',
+      requestedBy: order.requested_by || '',
+      approvedBy: order.approved_by || '',
+      approvedAt: order.approved_at || '',
+      photos: [],
+      trackingUrl: '',
+      rejectionReason: '',
+      requestNotes: ''
+    } as Order;
   });
 
   // Get workflow statuses for filter
@@ -184,13 +139,15 @@ export default function Orders() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingOrder(null);
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    refetchOrders();
+    refetchOrderItems();
   };
 
   const handlePurchaseRequestDialogClose = () => {
     setIsPurchaseRequestDialogOpen(false);
     setEditingOrder(null);
-    queryClient.invalidateQueries({ queryKey: ['orders'] });
+    refetchOrders();
+    refetchOrderItems();
   };
 
   const handleDetailsDialogClose = () => {
@@ -198,52 +155,40 @@ export default function Orders() {
     setDetailsOrder(null);
   };
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async (orderId: string) => {
-      // Delete order items first
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('order_id', orderId);
-
-      if (itemsError) throw itemsError;
-
-      // Delete the order
-      const { error: orderError } = await supabase
-        .from('orders')
-        .delete()
-        .eq('id', orderId);
-
-      if (orderError) throw orderError;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast({
-        title: "Commande supprimée",
-        description: "La commande a été supprimée avec succès.",
-      });
-      setIsDeleteDialogOpen(false);
-      setDeleteOrder(null);
-    },
-    onError: (error) => {
-      console.error('Erreur lors de la suppression:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de supprimer la commande.",
-        variant: "destructive",
-      });
-    },
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = (order: Order) => {
     setDeleteOrder(order);
     setIsDeleteDialogOpen(true);
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (deleteOrder) {
-      deleteMutation.mutate(deleteOrder.id);
+      setIsDeleting(true);
+      try {
+        const items = rawOrderItems.filter((i: any) => i.order_id === deleteOrder.id);
+        for (const item of items) {
+          await removeOrderItem(item.id);
+        }
+        await removeOrderRecord(deleteOrder.id);
+        toast({
+          title: "Commande supprimée",
+          description: "La commande a été supprimée avec succès.",
+        });
+        setIsDeleteDialogOpen(false);
+        setDeleteOrder(null);
+        refetchOrders();
+        refetchOrderItems();
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible de supprimer la commande.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -326,7 +271,10 @@ export default function Orders() {
                 onViewDetails={handleViewDetails}
                 onDelete={handleDelete}
                 canManage={canManageOrders}
-                onOrderUpdate={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
+                onOrderUpdate={() => {
+                  refetchOrders();
+                  refetchOrderItems();
+                }}
                 showCompactView={false}
               />
             )}
@@ -368,13 +316,13 @@ export default function Orders() {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Annuler</AlertDialogCancel>
-              <AlertDialogAction 
-                onClick={confirmDelete}
-                disabled={deleteMutation.isPending}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                {deleteMutation.isPending ? 'Suppression...' : 'Supprimer'}
-              </AlertDialogAction>
+                <AlertDialogAction
+                  onClick={confirmDelete}
+                  disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {isDeleting ? 'Suppression...' : 'Supprimer'}
+                </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
