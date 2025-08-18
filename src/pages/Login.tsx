@@ -104,15 +104,6 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-sm mb-2">Comptes de démonstration :</h3>
-              <div className="space-y-1 text-xs text-gray-600">
-                <div>Direction: direction@fleetcat.com</div>
-                <div>Chef de base: chef.martinique@fleetcat.com</div>
-                <div>Technicien: tech.martinique@fleetcat.com</div>
-                <div className="mt-2 font-medium">Mot de passe: password</div>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>

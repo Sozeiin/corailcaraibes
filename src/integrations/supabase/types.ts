@@ -3026,6 +3026,15 @@ export type Database = {
         Args: { alert_id_param: string }
         Returns: undefined
       }
+      update_user_profile: {
+        Args: {
+          new_base_id?: string
+          new_name?: string
+          new_role?: Database["public"]["Enums"]["user_role"]
+          target_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       activity_status:
