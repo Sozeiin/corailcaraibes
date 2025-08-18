@@ -52,7 +52,7 @@ export const BoatDetails = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={() => navigate('/boats')}>
+          <Button variant="outline" size="sm" onClick={() => navigate('/boats')} className="text-center">
             <ArrowLeft className="h-4 w-4 mr-2" />
             
           </Button>
@@ -107,7 +107,7 @@ export const BoatDetails = () => {
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
-            <span>Tableau de bord</span>
+            <span>Home</span>
           </TabsTrigger>
           <TabsTrigger value="components" className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
