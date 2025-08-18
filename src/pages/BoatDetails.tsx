@@ -54,7 +54,7 @@ export const BoatDetails = () => {
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" onClick={() => navigate('/boats')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour
+            
           </Button>
           <div>
             <h1 className="font-bold text-3xl text-[#f975c4] text-right mx-[33px]">{boat.name}</h1>
