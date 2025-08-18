@@ -100,7 +100,7 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onMaintenance }: BoatCard
           variant="destructive"
           onClick={() => onDelete(boat.id, boat.name)}
         >
-          <Trash2 className="h-4 w-4 mr-2" />
+          <Trash2 className="h-2 w-2 mr-2" />
           
         </Button>
       </div>
