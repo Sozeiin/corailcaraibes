@@ -46,9 +46,11 @@ export default function Auth() {
     // Load remembered email on component mount
     const rememberedEmail = secureStorage.getRememberedEmail();
     const isRemembered = secureStorage.isRememberMeEnabled();
-    
     if (rememberedEmail && isRemembered) {
-      setLoginForm(prev => ({ ...prev, email: rememberedEmail }));
+      setLoginForm(prev => ({
+        ...prev,
+        email: rememberedEmail
+      }));
       setRememberMe(true);
     }
   }, []);
@@ -59,7 +61,9 @@ export default function Auth() {
     if (e) e.preventDefault();
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const {
+        error
+      } = await supabase.auth.signInWithPassword({
         email: loginForm.email,
         password: loginForm.password
       });
@@ -72,7 +76,6 @@ export default function Auth() {
       } else {
         // Save/clear remembered email based on remember me checkbox
         secureStorage.saveRememberedEmail(loginForm.email, rememberMe);
-        
         toast({
           title: "Connexion réussie",
           description: "Redirection en cours..."
@@ -145,9 +148,9 @@ export default function Auth() {
     }
   };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md rounded-lg">
         <CardHeader className="text-center">
-          <img src={authLogo} alt="Corail Caraibes logo" className="w-40 h-40 object-contain rounded-lg mx-auto mb-4" />
+          <img src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
@@ -176,11 +179,7 @@ export default function Auth() {
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Checkbox 
-                    id="remember-me" 
-                    checked={rememberMe}
-                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                  />
+                  <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={checked => setRememberMe(checked as boolean)} />
                   <Label htmlFor="remember-me" className="text-sm font-normal">
                     Se souvenir de moi
                   </Label>
