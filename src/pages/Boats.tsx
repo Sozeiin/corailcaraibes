@@ -198,7 +198,7 @@ export const Boats = () => {
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestion des Bateaux</h1>
+          <h1 className="text-3xl font-bold">Bateaux</h1>
           <p className="text-muted-foreground">{boats?.length || 0} bateau(x) au total</p>
         </div>
         {canManageBoats && <Button onClick={() => setIsDialogOpen(true)}>
@@ -208,7 +208,7 @@ export const Boats = () => {
       </div>
 
       <div className="flex gap-4">
-        <div className="relative flex-1">
+        <div className="relative flex-1 my-0 py-px">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input placeholder="Rechercher par nom, modèle ou numéro de série..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
