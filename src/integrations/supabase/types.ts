@@ -2814,6 +2814,87 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_alerts: {
+        Row: {
+          alert_message: string
+          alert_type: string
+          created_at: string
+          id: string
+          is_resolved: boolean
+          order_id: string
+          resolved_at: string | null
+          severity: string
+          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          threshold_hours: number
+          triggered_at: string
+        }
+        Insert: {
+          alert_message: string
+          alert_type: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          order_id: string
+          resolved_at?: string | null
+          severity?: string
+          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          threshold_hours: number
+          triggered_at?: string
+        }
+        Update: {
+          alert_message?: string
+          alert_type?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean
+          order_id?: string
+          resolved_at?: string | null
+          severity?: string
+          step_status?: Database["public"]["Enums"]["purchase_workflow_status"]
+          threshold_hours?: number
+          triggered_at?: string
+        }
+        Relationships: []
+      }
+      workflow_automation_rules: {
+        Row: {
+          auto_delay_hours: number | null
+          created_at: string
+          from_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          id: string
+          is_active: boolean
+          requires_approval: boolean
+          rule_name: string
+          to_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          trigger_condition: string
+          updated_at: string
+        }
+        Insert: {
+          auto_delay_hours?: number | null
+          created_at?: string
+          from_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          id?: string
+          is_active?: boolean
+          requires_approval?: boolean
+          rule_name: string
+          to_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          trigger_condition: string
+          updated_at?: string
+        }
+        Update: {
+          auto_delay_hours?: number | null
+          created_at?: string
+          from_status?: Database["public"]["Enums"]["purchase_workflow_status"]
+          id?: string
+          is_active?: boolean
+          requires_approval?: boolean
+          rule_name?: string
+          to_status?: Database["public"]["Enums"]["purchase_workflow_status"]
+          trigger_condition?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workflow_notifications: {
         Row: {
           created_at: string | null
@@ -2933,8 +3014,16 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      process_workflow_automation: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       refresh_purchasing_analytics: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      resolve_workflow_alert: {
+        Args: { alert_id_param: string }
         Returns: undefined
       }
     }

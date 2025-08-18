@@ -31,3 +31,12 @@ enabled = true
 
 [functions.weather-sync]
 verify_jwt = false
+
+[functions.workflow-notification]
+verify_jwt = false
+
+[functions.workflow-automation]
+verify_jwt = false
+
+[functions.send-notification-email]
+verify_jwt = false
