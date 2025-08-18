@@ -30,7 +30,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-50 to-slate-100">
         <div className="text-center p-8 rounded-xl bg-white shadow-lg">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-marine-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Chargement de l'application...</p>
+          <p className="text-gray-600">Chargement en cours...</p>
         </div>
       </div>
     );
