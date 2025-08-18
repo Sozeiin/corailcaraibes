@@ -44,7 +44,7 @@ export class OfflineSyncManager {
             }
             
             // Check if record exists locally
-            const existingRecord = await sqliteService.findById(`offline_${tableName}`, record.id as string);
+            const existingRecord = await sqliteService.findById(tableName, record.id as string);
             
             if (existingRecord) {
               // Check for conflicts
@@ -64,13 +64,13 @@ export class OfflineSyncManager {
               }
               
               // Update existing record
-              await sqliteService.update(`offline_${tableName}`, record.id as string, {
+              await sqliteService.update(tableName, record.id as string, {
                 ...record,
                 sync_status: 'synced'
               });
             } else {
               // Insert new record
-              await sqliteService.insert(`offline_${tableName}`, {
+              await sqliteService.insert(tableName, {
                 ...record,
                 sync_status: 'synced'
               });
@@ -140,7 +140,7 @@ export class OfflineSyncManager {
           
           // Update local record sync status
           if (change.operation !== 'DELETE') {
-            await sqliteService.update(`offline_${tableName}`, change.record_id, {
+            await sqliteService.update(tableName, change.record_id, {
               sync_status: 'synced'
             });
           }
@@ -231,9 +231,9 @@ export class OfflineSyncManager {
     try {
       // Count offline records
       for (const table of this.defaultOptions.tables!) {
-        const records = await sqliteService.findAll(`offline_${table}`);
+        const records = await sqliteService.findAll(table);
         stats.totalOfflineRecords += records.length;
-        
+
         // Get last sync time
         stats.lastSyncTimes[table] = await sqliteService.getLastSyncTime(table);
       }
