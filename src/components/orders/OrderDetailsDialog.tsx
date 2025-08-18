@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Order } from '@/types';
 import { WorkflowTimeline } from './WorkflowTimeline';
 import { WorkflowActions } from './WorkflowActions';
-import { WORKFLOW_STEPS } from '@/types/workflow';
+import { WorkflowStatusIndicator, WorkflowStepsOverview } from './WorkflowStatusIndicator';
+import { WorkflowStatus } from '@/types/workflow';
 import { ExternalLink, Package, Calendar, User, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -73,8 +74,7 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
     urgent: 'Urgente'
   };
 
-  const currentStatusConfig = WORKFLOW_STEPS[order.status as keyof typeof WORKFLOW_STEPS] || 
-    { label: order.status, color: 'bg-gray-100 text-gray-800' };
+  // Remove this as we'll use WorkflowStatusIndicator instead
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -85,10 +85,13 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
               <DialogTitle className="text-xl font-bold">
                 {order.isPurchaseRequest ? 'Demande d\'achat' : 'Commande'} {order.orderNumber}
               </DialogTitle>
-              <div className="flex items-center gap-2 mt-2">
-                <Badge className={currentStatusConfig.color}>
-                  {currentStatusConfig.label}
-                </Badge>
+              <div className="flex items-center gap-3 mt-2">
+                <WorkflowStatusIndicator 
+                  status={order.status as WorkflowStatus}
+                  showIcon={true}
+                  showProgress={true}
+                  size="md"
+                />
                 {order.urgencyLevel && (
                   <Badge className={urgencyColors[order.urgencyLevel]}>
                     Urgence: {urgencyLabels[order.urgencyLevel]}
@@ -273,7 +276,15 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
           </Card>
         </div>
 
-        {/* Timeline du workflow - sur toute la largeur */}
+        {/* Vue d'ensemble du workflow */}
+        <div className="mt-6">
+          <WorkflowStepsOverview 
+            currentStatus={order.status as WorkflowStatus}
+            className="mb-6"
+          />
+        </div>
+
+        {/* Timeline détaillée du workflow */}
         <div className="mt-6">
           <WorkflowTimeline orderId={order.id} />
         </div>

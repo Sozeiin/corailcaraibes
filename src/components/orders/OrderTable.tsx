@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Order } from '@/types';
 import { formatCurrency } from '@/lib/utils';
-import { getStatusColor, getStatusLabel } from '@/lib/workflowUtils';
 import { WorkflowActions } from '@/components/orders/WorkflowActions';
+import { WorkflowStatusIndicator } from '@/components/orders/WorkflowStatusIndicator';
+import { WorkflowStatus } from '@/types/workflow';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface OrderTableProps {
@@ -74,9 +75,11 @@ export function OrderTable({ orders, isLoading, onEdit, onViewDetails, onDelete,
                 {new Date(order.orderDate).toLocaleDateString('fr-FR')}
               </TableCell>
               <TableCell>
-                <Badge className={getStatusColor(order.status)}>
-                  {getStatusLabel(order.status)}
-                </Badge>
+                <WorkflowStatusIndicator 
+                  status={order.status as WorkflowStatus} 
+                  showIcon={true}
+                  showProgress={false}
+                />
               </TableCell>
               <TableCell className="font-medium">
                 {formatCurrency(order.totalAmount)}
