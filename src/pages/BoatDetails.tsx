@@ -11,76 +11,59 @@ import { BoatHistoryContent } from '@/components/boats/BoatHistoryContent';
 import { BoatMaintenancePlanner } from '@/components/boats/BoatMaintenancePlanner';
 import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-
 export const BoatDetails = () => {
-  const { boatId } = useParams<{ boatId: string }>();
+  const {
+    boatId
+  } = useParams<{
+    boatId: string;
+  }>();
   const navigate = useNavigate();
   console.log('BoatDetails rendered with boatId:', boatId);
-
-  const { data: boat, isLoading } = useQuery({
+  const {
+    data: boat,
+    isLoading
+  } = useQuery({
     queryKey: ['boat', boatId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('boats')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('boats').select(`
           *,
           base:bases(name)
-        `)
-        .eq('id', boatId)
-        .single();
-
+        `).eq('id', boatId).single();
       if (error) throw error;
       return data;
     },
-    enabled: !!boatId,
+    enabled: !!boatId
   });
-
   if (isLoading) {
     return <LoadingSpinner />;
   }
-
   if (!boat) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+    return <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
         <h2 className="text-2xl font-semibold">Bateau non trouvé</h2>
         <Button onClick={() => navigate('/boats')}>
           Retour aux bateaux
         </Button>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/boats')}
-          >
+          <Button variant="outline" size="sm" onClick={() => navigate('/boats')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">{boat.name}</h1>
-            <p className="text-muted-foreground">
-              {boat.model} • {boat.year} • {boat.base?.name}
-            </p>
+            <h1 className="font-bold text-3xl text-[#f975c4] text-right mx-[33px]">{boat.name}</h1>
+            
           </div>
         </div>
         <div className="flex items-center space-x-2">
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            boat.status === 'available' 
-              ? 'bg-green-100 text-green-800'
-              : boat.status === 'rented'
-              ? 'bg-blue-100 text-blue-800'
-              : 'bg-red-100 text-red-800'
-          }`}>
-            {boat.status === 'available' ? 'Disponible' : 
-             boat.status === 'rented' ? 'En location' : 
-             boat.status === 'maintenance' ? 'En maintenance' : 'Hors service'}
+          <span className={`px-3 py-1 rounded-full text-sm font-medium ${boat.status === 'available' ? 'bg-green-100 text-green-800' : boat.status === 'rented' ? 'bg-blue-100 text-blue-800' : 'bg-red-100 text-red-800'}`}>
+            {boat.status === 'available' ? 'Disponible' : boat.status === 'rented' ? 'En location' : boat.status === 'maintenance' ? 'En maintenance' : 'Hors service'}
           </span>
         </div>
       </div>
@@ -107,12 +90,10 @@ export const BoatDetails = () => {
               <p className="text-sm font-medium text-muted-foreground">N° de série</p>
               <p className="text-lg">{boat.serial_number}</p>
             </div>
-            {boat.next_maintenance && (
-              <div>
+            {boat.next_maintenance && <div>
                 <p className="text-sm font-medium text-muted-foreground">Prochaine maintenance</p>
                 <p className="text-lg">{new Date(boat.next_maintenance).toLocaleDateString()}</p>
-              </div>
-            )}
+              </div>}
             <div>
               <p className="text-sm font-medium text-muted-foreground">Base</p>
               <p className="text-lg">{boat.base?.name}</p>
@@ -158,6 +139,5 @@ export const BoatDetails = () => {
           <BoatHistoryContent boatId={boat.id} />
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 };
