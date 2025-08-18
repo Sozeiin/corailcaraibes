@@ -1,442 +1,281 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Euro, Package, Building2, Truck, FileText, ImageIcon, Edit, Save, X } from 'lucide-react';
-import { Order } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { OrderTrackingWidget } from './OrderTrackingWidget';
+import { Order } from '@/types';
+import { WorkflowTimeline } from './WorkflowTimeline';
+import { WorkflowActions } from './WorkflowActions';
+import { WORKFLOW_STEPS } from '@/types/workflow';
+import { ExternalLink, Package, Calendar, User, MapPin } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface OrderDetailsDialogProps {
-  order: Order | null;
   isOpen: boolean;
   onClose: () => void;
+  order: Order | null;
 }
 
-const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800', 
-  delivered: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-  pending_approval: 'bg-orange-100 text-orange-800',
-  supplier_requested: 'bg-purple-100 text-purple-800',
-  shipping_mainland: 'bg-cyan-100 text-cyan-800',
-  shipping_antilles: 'bg-indigo-100 text-indigo-800'
-};
+export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialogProps) {
+  // Charger les détails complets de la commande et ses items
+  const { data: orderDetails, isLoading, refetch } = useQuery({
+    queryKey: ['order-details', order?.id],
+    queryFn: async () => {
+      if (!order?.id) return null;
 
-const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  confirmed: 'Confirmée',
-  delivered: 'Livrée', 
-  cancelled: 'Annulée',
-  pending_approval: 'En attente d\'approbation',
-  supplier_requested: 'Demande effectuée auprès du fournisseur',
-  shipping_mainland: 'Commande en cours de livraison - Métropole',
-  shipping_antilles: 'Commande en cours d\'envoi - Antilles'
-};
-
-export function OrderDetailsDialog({ order, isOpen, onClose }: OrderDetailsDialogProps) {
-  // Tous les hooks doivent être appelés AVANT les conditions qui retournent
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const [isEditingStatus, setIsEditingStatus] = useState(false);
-  const [newStatus, setNewStatus] = useState<string>('');
-  
-  // Mutation pour mettre à jour le statut - doit être déclarée AVANT les conditions
-  const updateStatusMutation = useMutation({
-    mutationFn: async (status: string) => {
-      if (!order) return;
-      
-      const updateData: any = { status };
-      
-      // Si le statut passe à delivered, ajouter la date de livraison
-      if (status === 'delivered' && !order.deliveryDate) {
-        updateData.delivery_date = new Date().toISOString().split('T')[0];
-      }
-      
-      const { error } = await supabase
+      const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .update(updateData)
-        .eq('id', order.id);
-      
-      if (error) throw error;
+        .select(`
+          *,
+          supplier:suppliers(name),
+          base:bases(name, location),
+          boat:boats(name, model),
+          requested_by_profile:profiles!orders_requested_by_fkey(name)
+        `)
+        .eq('id', order.id)
+        .single();
+
+      if (orderError) throw orderError;
+
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('order_id', order.id)
+        .order('product_name');
+
+      if (itemsError) throw itemsError;
+
+      return {
+        ...orderData,
+        items: itemsData || []
+      };
     },
-    onSuccess: () => {
-      toast({
-        title: "Succès",
-        description: "Le statut de la commande a été mis à jour."
-      });
-      setIsEditingStatus(false);
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut de la commande.",
-        variant: "destructive"
-      });
-      console.error('Error updating order status:', error);
-    }
+    enabled: !!order?.id && isOpen
   });
 
-  // Mutation pour mettre à jour les informations de suivi
-  const updateTrackingMutation = useMutation({
-    mutationFn: async ({ trackingNumber, carrier }: { trackingNumber: string; carrier: string }) => {
-      if (!order) return;
-      
-      // Stocker le transporteur dans les notes pour l'instant
-      const carrierInfo = `Transporteur: ${carrier}`;
-      const existingNotes = order.requestNotes || '';
-      const updatedNotes = existingNotes.includes('Transporteur:') 
-        ? existingNotes.replace(/Transporteur: \w+/g, carrierInfo)
-        : `${existingNotes}${existingNotes ? '\n' : ''}${carrierInfo}`;
-      
-      const { error } = await supabase
-        .from('orders')
-        .update({
-          tracking_url: trackingNumber,
-          request_notes: updatedNotes
-        })
-        .eq('id', order.id);
-      
-      if (error) throw error;
-      
-      return { trackingNumber, carrier };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      toast({
-        title: "Suivi mis à jour",
-        description: "Les informations de suivi ont été enregistrées avec succès."
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour les informations de suivi.",
-        variant: "destructive"
-      });
-      console.error('Error updating tracking info:', error);
-    }
-  });
-
-  // Extraire le transporteur des notes
-  const extractCarrierFromNotes = (notes: string | null): string | undefined => {
-    if (!notes) return undefined;
-    const match = notes.match(/Transporteur: (\w+)/);
-    return match ? match[1] : undefined;
-  };
-
-  const handleUpdateTracking = (trackingNumber: string, carrier: string) => {
-    updateTrackingMutation.mutate({ trackingNumber, carrier });
-  };
-  
-  
-  
   if (!order) return null;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(amount);
+  const urgencyColors = {
+    low: 'bg-gray-100 text-gray-800',
+    normal: 'bg-blue-100 text-blue-800',
+    high: 'bg-orange-100 text-orange-800',
+    urgent: 'bg-red-100 text-red-800'
   };
 
-  const totalQuantity = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-
-  // Vérifier si l'utilisateur peut modifier le statut
-  const canEditStatus = user?.role === 'direction' || user?.role === 'chef_base';
-
-  // Statuts disponibles selon le contexte
-  const availableStatuses = order.isPurchaseRequest ? [
-    'pending_approval',
-    'supplier_requested',
-    'shipping_mainland',
-    'shipping_antilles',
-    'delivered',
-    'cancelled'
-  ] : [
-    'pending',
-    'confirmed',
-    'delivered',
-    'cancelled'
-  ];
-
-  const handleStartEditStatus = () => {
-    setNewStatus(order.status);
-    setIsEditingStatus(true);
+  const urgencyLabels = {
+    low: 'Faible',
+    normal: 'Normale',
+    high: 'Élevée',
+    urgent: 'Urgente'
   };
 
-  const handleSaveStatus = () => {
-    if (newStatus && newStatus !== order.status) {
-      updateStatusMutation.mutate(newStatus);
-    } else {
-      setIsEditingStatus(false);
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditingStatus(false);
-    setNewStatus('');
-  };
+  const currentStatusConfig = WORKFLOW_STEPS[order.status as keyof typeof WORKFLOW_STEPS] || 
+    { label: order.status, color: 'bg-gray-100 text-gray-800' };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold mb-2">
-                Commande {order.orderNumber}
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-xl font-bold">
+                {order.isPurchaseRequest ? 'Demande d\'achat' : 'Commande'} {order.orderNumber}
               </DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                Créée le {new Date(order.orderDate).toLocaleDateString('fr-FR')}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {isEditingStatus ? (
-                <div className="flex items-center gap-2">
-                  <Select value={newStatus} onValueChange={setNewStatus}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Sélectionner un statut" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableStatuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {statusLabels[status] || status}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button 
-                    size="sm" 
-                    onClick={handleSaveStatus}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={handleCancelEdit}
-                    disabled={updateStatusMutation.isPending}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Badge className={statusColors[order.status] || 'bg-gray-100 text-gray-800'}>
-                    {statusLabels[order.status] || order.status}
+              <div className="flex items-center gap-2 mt-2">
+                <Badge className={currentStatusConfig.color}>
+                  {currentStatusConfig.label}
+                </Badge>
+                {order.urgencyLevel && (
+                  <Badge className={urgencyColors[order.urgencyLevel]}>
+                    Urgence: {urgencyLabels[order.urgencyLevel]}
                   </Badge>
-                  {canEditStatus && (
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={handleStartEditStatus}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
+                )}
+              </div>
             </div>
+            
+            {/* Actions du workflow */}
+            <WorkflowActions 
+              order={order} 
+              onOrderUpdate={() => {
+                refetch();
+                // Pas besoin de fermer le dialog, on veut voir la mise à jour
+              }} 
+            />
           </div>
         </DialogHeader>
 
-            <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Informations générales */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Euro className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Montant total</span>
-                </div>
-                <div className="text-xl font-bold">
-                  {formatCurrency(order.totalAmount)}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Articles</span>
-                </div>
-                <div className="text-xl font-bold">
-                  {order.items?.length || 0}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Package className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Quantité totale</span>
-                </div>
-                <div className="text-xl font-bold">
-                  {totalQuantity}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Commande</span>
-                </div>
-                <div className="text-sm font-medium">
-                  {new Date(order.orderDate).toLocaleDateString('fr-FR')}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Date de livraison */}
-          {order.deliveryDate && (
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Truck className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium">Livrée le</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(order.deliveryDate).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Liste des articles */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
-                Articles commandés
+                <Package className="w-5 h-5" />
+                Informations générales
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {(order.items || []).map((item, index) => (
-                  <div 
-                    key={item.id || index} 
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.productName}</h4>
-                      {item.reference && (
-                        <p className="text-sm text-muted-foreground">
-                          Réf: {item.reference}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-4">
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Qté:</span>
-                          <span className="font-medium ml-1">{item.quantity}</span>
-                        </div>
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Prix unitaire:</span>
-                          <span className="font-medium ml-1">{formatCurrency(item.unitPrice)}</span>
-                        </div>
-                        <div className="text-sm font-semibold min-w-20">
-                          {formatCurrency(item.totalPrice)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Total */}
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium">Total</span>
-                  <span className="text-xl font-bold">
-                    {formatCurrency(order.totalAmount)}
-                  </span>
+            <CardContent className="space-y-4">
+              {isLoading ? (
+                <div className="animate-pulse space-y-3">
+                  {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="h-4 bg-gray-200 rounded"></div>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Date de commande</p>
+                      <p className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        {new Date(orderDetails?.order_date || order.orderDate).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    
+                    {orderDetails?.delivery_date && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Livraison prévue</p>
+                        <p className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          {new Date(orderDetails.delivery_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    {orderDetails?.supplier && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Fournisseur</p>
+                        <p>{orderDetails.supplier.name}</p>
+                      </div>
+                    )}
+
+                    {orderDetails?.base && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Base</p>
+                        <p className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4" />
+                          {orderDetails.base.name} - {orderDetails.base.location}
+                        </p>
+                      </div>
+                    )}
+
+                    {orderDetails?.boat && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Bateau concerné</p>
+                        <p>{orderDetails.boat.name} - {orderDetails.boat.model}</p>
+                      </div>
+                    )}
+
+                    {orderDetails?.requested_by_profile && (
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Demandé par</p>
+                        <p className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          {orderDetails.requested_by_profile.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <p className="text-sm font-medium text-gray-500">Montant total</p>
+                    <p className="text-lg font-semibold">
+                      {(orderDetails?.total_amount || order.totalAmount)?.toFixed(2)} €
+                    </p>
+                  </div>
+
+                  {orderDetails?.request_notes && (
+                    <>
+                      <Separator />
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Notes de la demande</p>
+                        <p className="text-sm bg-gray-50 p-3 rounded">
+                          {orderDetails.request_notes}
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {orderDetails?.tracking_url && (
+                    <>
+                      <Separator />
+                      <div>
+                        <p className="text-sm font-medium text-gray-500">Suivi transporteur</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => window.open(orderDetails.tracking_url, '_blank')}
+                          className="flex items-center gap-2"
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                          Voir le suivi
+                        </Button>
+                      </div>
+                    </>
+                  )}
+
+                  <div className="text-xs text-gray-500">
+                    Créée {formatDistanceToNow(new Date(order.createdAt), { 
+                      addSuffix: true, 
+                      locale: fr 
+                    })}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 
-          {/* Photos */}
-          {order.photos && order.photos.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ImageIcon className="h-5 w-5" />
-                  Photos
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {order.photos.map((photo, index) => (
-                    <div key={index} className="relative aspect-square">
-                      <img
-                        src={photo}
-                        alt={`Photo ${index + 1}`}
-                        className="w-full h-full object-cover rounded border"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23f3f4f6"/><text x="50" y="50" text-anchor="middle" dy=".3em" fill="%236b7280">Image non disponible</text></svg>';
-                        }}
-                      />
-                    </div>
+          {/* Articles */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Articles commandés</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="animate-pulse space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="h-16 bg-gray-200 rounded"></div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Documents */}
-          {order.documents && order.documents.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  Documents
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {order.documents.map((doc, index) => (
-                    <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
-                      <FileText className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{doc}</span>
+              ) : (
+                <div className="space-y-3">
+                  {orderDetails?.items?.map((item: any) => (
+                    <div key={item.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{item.product_name}</h4>
+                        {item.reference && (
+                          <p className="text-sm text-gray-600">Réf: {item.reference}</p>
+                        )}
+                      </div>
+                      <div className="text-right text-sm">
+                        <p className="font-medium">Qté: {item.quantity}</p>
+                        <p className="text-gray-600">{item.unit_price?.toFixed(2)} €/u</p>
+                        <p className="font-semibold">{(item.total_price || item.quantity * item.unit_price)?.toFixed(2)} €</p>
+                      </div>
                     </div>
                   ))}
+                  
+                  {(!orderDetails?.items || orderDetails.items.length === 0) && (
+                    <p className="text-gray-500 text-center py-4">Aucun article</p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Widget de suivi de colis */}
-          {(order.isPurchaseRequest && 
-            (order.status === 'shipping_mainland' || 
-             order.status === 'shipping_antilles' || 
-             order.status === 'delivered' || 
-             order.trackingUrl)) && (
-            <OrderTrackingWidget
-              orderId={order.id}
-              trackingNumber={order.trackingUrl}
-              carrier={extractCarrierFromNotes(order.requestNotes)}
-              onUpdateTracking={handleUpdateTracking}
-            />
-          )}
+        {/* Timeline du workflow - sur toute la largeur */}
+        <div className="mt-6">
+          <WorkflowTimeline orderId={order.id} />
         </div>
       </DialogContent>
     </Dialog>

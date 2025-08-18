@@ -1,0 +1,53 @@
+export type WorkflowStatus = 
+  | 'draft'
+  | 'pending_approval' 
+  | 'approved'
+  | 'supplier_search'
+  | 'order_confirmed'
+  | 'shipping_antilles'
+  | 'received_scanned'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled';
+
+export interface WorkflowStep {
+  id: string;
+  orderId: string;
+  stepStatus: WorkflowStatus;
+  stepNumber: number;
+  stepName: string;
+  stepDescription?: string;
+  userId?: string;
+  userName?: string;
+  startedAt: string;
+  completedAt?: string;
+  durationMinutes?: number;
+  notes?: string;
+  autoCompleted: boolean;
+  createdAt: string;
+}
+
+export interface WorkflowNotification {
+  id: string;
+  orderId: string;
+  recipientUserId: string;
+  notificationType: string;
+  title: string;
+  message: string;
+  isSent: boolean;
+  sentAt?: string;
+  createdAt: string;
+}
+
+export const WORKFLOW_STEPS: Record<WorkflowStatus, { label: string; color: string; icon: string }> = {
+  draft: { label: 'Brouillon', color: 'bg-gray-100 text-gray-800', icon: 'FileText' },
+  pending_approval: { label: 'En attente d\'approbation', color: 'bg-yellow-100 text-yellow-800', icon: 'Clock' },
+  approved: { label: 'Approuvé', color: 'bg-green-100 text-green-800', icon: 'CheckCircle' },
+  supplier_search: { label: 'Recherche fournisseurs', color: 'bg-blue-100 text-blue-800', icon: 'Search' },
+  order_confirmed: { label: 'Commande confirmée', color: 'bg-purple-100 text-purple-800', icon: 'ShoppingCart' },
+  shipping_antilles: { label: 'Envoi Antilles', color: 'bg-orange-100 text-orange-800', icon: 'Ship' },
+  received_scanned: { label: 'Réception scannée', color: 'bg-teal-100 text-teal-800', icon: 'Scan' },
+  completed: { label: 'Terminé', color: 'bg-green-100 text-green-800', icon: 'CheckCircle2' },
+  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800', icon: 'XCircle' },
+  cancelled: { label: 'Annulé', color: 'bg-gray-100 text-gray-800', icon: 'X' }
+};

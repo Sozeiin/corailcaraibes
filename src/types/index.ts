@@ -48,7 +48,7 @@ export interface Order {
   supplierId: string;
   baseId: string;
   orderNumber: string;
-  status: 'pending' | 'confirmed' | 'delivered' | 'cancelled' | 'pending_approval' | 'supplier_requested' | 'shipping_mainland' | 'shipping_antilles';
+  status: 'draft' | 'pending_approval' | 'approved' | 'supplier_search' | 'order_confirmed' | 'shipping_antilles' | 'received_scanned' | 'completed' | 'rejected' | 'cancelled' | 'pending' | 'confirmed' | 'delivered';
   totalAmount: number;
   orderDate: string;
   deliveryDate?: string;

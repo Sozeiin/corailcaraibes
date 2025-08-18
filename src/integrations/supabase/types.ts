@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -2205,6 +2205,65 @@ export type Database = {
           },
         ]
       }
+      purchase_workflow_steps: {
+        Row: {
+          auto_completed: boolean | null
+          completed_at: string | null
+          created_at: string | null
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          order_id: string
+          started_at: string | null
+          step_description: string | null
+          step_name: string
+          step_number: number
+          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          auto_completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          order_id: string
+          started_at?: string | null
+          step_description?: string | null
+          step_name: string
+          step_number: number
+          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          auto_completed?: boolean | null
+          completed_at?: string | null
+          created_at?: string | null
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          order_id?: string
+          started_at?: string | null
+          step_description?: string | null
+          step_name?: string
+          step_number?: number
+          step_status?: Database["public"]["Enums"]["purchase_workflow_status"]
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_workflow_steps_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchasing_templates: {
         Row: {
           category: string | null
@@ -2755,6 +2814,50 @@ export type Database = {
         }
         Relationships: []
       }
+      workflow_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_sent: boolean | null
+          message: string
+          notification_type: string
+          order_id: string
+          recipient_user_id: string
+          sent_at: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_sent?: boolean | null
+          message: string
+          notification_type: string
+          order_id: string
+          recipient_user_id: string
+          sent_at?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_sent?: boolean | null
+          message?: string
+          notification_type?: string
+          order_id?: string
+          recipient_user_id?: string
+          sent_at?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       purchasing_analytics: {
@@ -2781,11 +2884,20 @@ export type Database = {
       }
     }
     Functions: {
+      advance_workflow_step: {
+        Args: {
+          new_status: Database["public"]["Enums"]["purchase_workflow_status"]
+          notes_param?: string
+          order_id_param: string
+          user_id_param?: string
+        }
+        Returns: undefined
+      }
       calculate_next_maintenance_date: {
         Args: {
-          last_date: string
-          interval_value: number
           interval_unit: string
+          interval_value: number
+          last_date: string
         }
         Returns: string
       }
@@ -2794,7 +2906,7 @@ export type Database = {
         Returns: undefined
       }
       evaluate_weather_for_maintenance: {
-        Args: { maintenance_date: string; base_id_param: string }
+        Args: { base_id_param: string; maintenance_date: string }
         Returns: Json
       }
       generate_receipt_number: {
@@ -2816,6 +2928,10 @@ export type Database = {
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      initialize_purchase_workflow: {
+        Args: { order_id_param: string }
+        Returns: undefined
       }
       refresh_purchasing_analytics: {
         Args: Record<PropertyKey, never>
@@ -2857,6 +2973,17 @@ export type Database = {
         | "supplier_requested"
         | "shipping_mainland"
         | "shipping_antilles"
+      purchase_workflow_status:
+        | "draft"
+        | "pending_approval"
+        | "approved"
+        | "supplier_search"
+        | "order_confirmed"
+        | "shipping_antilles"
+        | "received_scanned"
+        | "completed"
+        | "rejected"
+        | "cancelled"
       user_role: "direction" | "chef_base" | "technicien"
     }
     CompositeTypes: {
@@ -3022,6 +3149,18 @@ export const Constants = {
         "supplier_requested",
         "shipping_mainland",
         "shipping_antilles",
+      ],
+      purchase_workflow_status: [
+        "draft",
+        "pending_approval",
+        "approved",
+        "supplier_search",
+        "order_confirmed",
+        "shipping_antilles",
+        "received_scanned",
+        "completed",
+        "rejected",
+        "cancelled",
       ],
       user_role: ["direction", "chef_base", "technicien"],
     },

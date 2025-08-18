@@ -68,7 +68,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
     photos: order?.photos || []
   });
   
-  const [items, setItems] = useState<OrderItem[]>(order?.items || []);
+  const [items, setItems] = useState<OrderItem[]>([]);
   const [newItem, setNewItem] = useState({
     productName: '',
     reference: '',
@@ -76,6 +76,35 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
     unitPrice: 0,
     totalPrice: 0
   });
+
+  // Charger les items quand le dialog s'ouvre
+  React.useEffect(() => {
+    if (isOpen && order?.id) {
+      // Charger les items de la commande depuis la base de données
+      const loadOrderItems = async () => {
+        const { data, error } = await supabase
+          .from('order_items')
+          .select('*')
+          .eq('order_id', order.id);
+        
+        if (!error && data) {
+          const loadedItems = data.map(item => ({
+            id: item.id,
+            productName: item.product_name,
+            reference: item.reference || '',
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            totalPrice: item.total_price || (item.quantity * item.unit_price)
+          }));
+          setItems(loadedItems);
+        }
+      };
+      loadOrderItems();
+    } else if (!order) {
+      // Nouveau dialog, reset les items
+      setItems([]);
+    }
+  }, [isOpen, order?.id]);
 
   const isEditing = !!order;
   const canEdit = user?.role === 'direction' || user?.role === 'chef_base' || (order && order.requestedBy === user?.id && order.status === 'pending_approval');
@@ -104,6 +133,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
   const mutation = useMutation({
     mutationFn: async (data: any) => {
       if (isEditing) {
+        // Mettre à jour la commande
         const { data: updated, error } = await supabase
           .from('orders')
           .update(data)
@@ -112,6 +142,32 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
           .single();
         
         if (error) throw error;
+
+        // Supprimer les anciens items et réinsérer les nouveaux
+        await supabase
+          .from('order_items')
+          .delete()
+          .eq('order_id', order.id);
+
+        if (items.length > 0) {
+          const orderItems = items.map(item => ({
+            order_id: order.id,
+            product_name: item.productName,
+            reference: item.reference || null,
+            quantity: item.quantity,
+            unit_price: item.unitPrice
+          }));
+
+          const { error: itemsError } = await supabase
+            .from('order_items')
+            .insert(orderItems);
+          
+          if (itemsError) {
+            console.error('Order items insertion error:', itemsError);
+            throw itemsError;
+          }
+        }
+        
         return updated;
       } else {
         // Insert new order
@@ -134,10 +190,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
             reference: item.reference || null,
             quantity: item.quantity,
             unit_price: item.unitPrice
-            // total_price sera calculé automatiquement par la base de données
           }));
-
-          
 
           const { error: itemsError } = await supabase
             .from('order_items')
