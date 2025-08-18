@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { OrderTable } from '@/components/orders/OrderTable';
+import { OrderTableEnhanced } from '@/components/orders/OrderTableEnhanced';
 import { OrderDialog } from '@/components/orders/OrderDialog';
 import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
@@ -319,7 +319,7 @@ export default function Orders() {
                 onRowClick={handleViewDetails}
               />
             ) : (
-              <OrderTable
+              <OrderTableEnhanced
                 orders={filteredOrders}
                 isLoading={isLoading}
                 onEdit={handleEdit}
@@ -327,6 +327,7 @@ export default function Orders() {
                 onDelete={handleDelete}
                 canManage={canManageOrders}
                 onOrderUpdate={() => queryClient.invalidateQueries({ queryKey: ['orders'] })}
+                showCompactView={false}
               />
             )}
           </div>

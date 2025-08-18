@@ -10,6 +10,7 @@ import { Order } from '@/types';
 import { WorkflowTimeline } from './WorkflowTimeline';
 import { WorkflowActions } from './WorkflowActions';
 import { WorkflowStatusIndicator, WorkflowStepsOverview } from './WorkflowStatusIndicator';
+import { WorkflowTimelineEnhanced } from './WorkflowTimelineEnhanced';
 import { WorkflowStatus } from '@/types/workflow';
 import { ExternalLink, Package, Calendar, User, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -286,7 +287,7 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
 
         {/* Timeline détaillée du workflow */}
         <div className="mt-6">
-          <WorkflowTimeline orderId={order.id} />
+          <WorkflowTimelineEnhanced orderId={order.id} />
         </div>
       </DialogContent>
     </Dialog>
