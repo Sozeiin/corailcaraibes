@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
-import { SyncStatusIndicator } from '@/components/ui/sync-status-indicator';
-import { OfflineIndicator } from '@/components/ui/offline-indicator';
+import { OfflineStatusIcon } from '@/components/OfflineStatusIcon';
 export const Header = () => {
   const {
     user,
@@ -40,7 +39,7 @@ export const Header = () => {
         return role;
     }
   };
-  return <header className="h-12 sm:h-14 lg:h-16 border-b border-gray-200 flex items-center justify-between px-2 sm:px-4 lg:px-6 shadow-sm bg-marine-50">
+  return <header className="relative h-12 sm:h-14 lg:h-16 border-b border-gray-200 flex items-center justify-between px-2 sm:px-4 lg:px-6 shadow-sm bg-marine-50">
       <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0 flex-1">
         <SidebarTrigger className="text-marine-600 hover:text-marine-700 flex-shrink-0" />
         <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 min-w-0">
@@ -52,8 +51,6 @@ export const Header = () => {
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-shrink-0">
-        <OfflineIndicator />
-        <SyncStatusIndicator showDetails />
         <NotificationDropdown />
 
         <DropdownMenu>
@@ -87,6 +84,9 @@ export const Header = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+      </div>
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <OfflineStatusIcon />
       </div>
     </header>;
 };

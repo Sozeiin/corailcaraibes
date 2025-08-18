@@ -4,7 +4,6 @@ import { AppSidebar } from '@/components/AppSidebar';
 import { Header } from '@/components/Header';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
-import { MobileOfflineBar } from '@/components/mobile/MobileOfflineBar';
 import { MobileQuickActions } from '@/components/mobile/MobileQuickActions';
 import { backgroundSyncService } from '@/services/backgroundSync';
 
@@ -34,7 +33,6 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <SidebarProvider defaultOpen={false}>
       <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
-        <MobileOfflineBar />
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />

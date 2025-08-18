@@ -52,17 +52,6 @@
   }
 }
 
-/* Offline indicator styles */
-.offline-bar {
-  background: linear-gradient(45deg, #ff6b35, #f7931e);
-  animation: offline-pulse 2s ease-in-out infinite alternate;
-}
-
-@keyframes offline-pulse {
-  from { opacity: 0.8; }
-  to { opacity: 1; }
-}
-
 /* Sync progress animation */
 .sync-progress {
   background: linear-gradient(90deg, 
