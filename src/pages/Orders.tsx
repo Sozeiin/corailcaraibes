@@ -17,6 +17,7 @@ import { Order } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/lib/utils';
+import { getWorkflowStatusList, getStatusColor, getStatusLabel } from '@/lib/workflowUtils';
 
 export default function Orders() {
   console.log('Orders page rendering...');
@@ -128,12 +129,8 @@ export default function Orders() {
     gcTime: 300000,
   });
 
-  // Get unique statuses for filter with new workflow statuses
-  const statuses = [
-    'draft', 'pending_approval', 'approved', 'supplier_search', 
-    'order_confirmed', 'shipping_antilles', 'received_scanned', 'completed',
-    'rejected', 'cancelled'
-  ];
+  // Get workflow statuses for filter
+  const statuses = getWorkflowStatusList();
 
   // Filter orders based on search, status, and type
   const filteredOrders = orders.filter(order => {
@@ -160,24 +157,7 @@ export default function Orders() {
       key: 'status',
       label: 'Statut',
       render: (_: any, order: Order) => {
-        const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive', icon: string }> = {
-          draft: { variant: 'secondary', icon: '📝' },
-          pending_approval: { variant: 'secondary', icon: '⏳' },
-          approved: { variant: 'default', icon: '✅' },
-          supplier_search: { variant: 'default', icon: '🔍' },
-          order_confirmed: { variant: 'default', icon: '📋' },
-          shipping_antilles: { variant: 'default', icon: '🚢' },
-          received_scanned: { variant: 'default', icon: '📦' },
-          completed: { variant: 'default', icon: '✅' },
-          rejected: { variant: 'destructive', icon: '❌' },
-          cancelled: { variant: 'destructive', icon: '🚫' },
-          // Legacy statuses
-          pending: { variant: 'secondary', icon: '⏳' },
-          confirmed: { variant: 'default', icon: '✓' },
-          delivered: { variant: 'default', icon: '✓' }
-        };
-        const status = statusMap[order.status] || { variant: 'default', icon: '?' };
-        return <ResponsiveBadge variant={status.variant}>{status.icon}</ResponsiveBadge>;
+        return <ResponsiveBadge variant="default">{getStatusLabel(order.status)}</ResponsiveBadge>;
       }
     },
     {

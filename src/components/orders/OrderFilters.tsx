@@ -10,14 +10,23 @@ interface OrderFiltersProps {
 }
 
 const statusLabels = {
+  // Nouveaux statuts du workflow
+  draft: 'Brouillon',
+  pending_approval: 'En attente d\'approbation',
+  approved: 'Approuvé',
+  supplier_search: 'Recherche fournisseurs',
+  order_confirmed: 'Commande confirmée',
+  shipping_antilles: 'Envoi Antilles',
+  received_scanned: 'Réception scannée',
+  completed: 'Terminé',
+  rejected: 'Rejeté',
+  cancelled: 'Annulé',
+  // Anciens statuts (legacy)
   pending: 'En attente',
   confirmed: 'Confirmée',
   delivered: 'Livrée',
-  cancelled: 'Annulée',
-  pending_approval: 'En attente d\'approbation',
   supplier_requested: 'Demande effectuée',
-  shipping_mainland: 'Livraison Métropole',
-  shipping_antilles: 'Envoi Antilles'
+  shipping_mainland: 'Livraison Métropole'
 };
 
 const typeLabels = {
