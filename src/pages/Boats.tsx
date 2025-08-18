@@ -76,7 +76,7 @@ const BoatCard = ({ boat, onEdit, onDelete, onHistory, onMaintenance }: BoatCard
           variant="outline"
           onClick={() => navigate(`/boats/${boat.id}?tab=history`)}
         >
-          <History className="h-4 w-4 mr-2" />
+          <History className="h-3 w-3 mr-2" />
           Historique
         </Button>
         <Button
