@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, LogOut, Settings, User, Zap } from 'lucide-react';
+import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { SyncStatusIndicator } from '@/components/ui/sync-status-indicator';
@@ -54,20 +54,6 @@ export const Header = () => {
       <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 flex-shrink-0">
         <OfflineIndicator />
         <SyncStatusIndicator showDetails />
-        
-        {/* Quick Workflow Access for Direction */}
-        {user?.role === 'direction' && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/purchasing?tab=workflow')}
-            className="hidden sm:flex items-center gap-1 text-marine-600 hover:text-marine-700"
-          >
-            <Zap className="h-4 w-4" />
-            <span className="text-xs">Workflow</span>
-          </Button>
-        )}
-        
         <NotificationDropdown />
 
         <DropdownMenu>

@@ -15,16 +15,12 @@ import {
   Calendar,
   Users,
   Clock,
-  Anchor,
-  Zap,
-  BarChart3
+  Anchor
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 import WeatherWidget from '@/components/weather/WeatherWidget';
-import { WorkflowAutomationDashboard } from '@/components/workflow/WorkflowAutomationDashboard';
-import { WorkflowNotificationCenter } from '@/components/workflow/WorkflowNotificationCenter';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
@@ -169,36 +165,6 @@ export default function Dashboard() {
     enabled: !!user
   });
 
-  // Récupération des données du workflow pour les statistiques
-  const { data: workflowStats } = useQuery({
-    queryKey: ['dashboard-workflow-stats', user?.baseId, user?.role],
-    queryFn: async () => {
-      if (!user) return null;
-
-      // Statistiques des commandes par statut
-      const { data: orderStats, error } = await supabase
-        .from('orders')
-        .select('status, is_purchase_request')
-        .eq('base_id', user.role === 'direction' ? user.baseId : user.baseId);
-
-      if (error) throw error;
-
-      const stats = orderStats?.reduce((acc, order) => {
-        if (order.is_purchase_request) {
-          acc.pending_approval += order.status === 'pending_approval' ? 1 : 0;
-          acc.confirmed += order.status === 'confirmed' ? 1 : 0;
-          acc.purchase_requests += 1;
-        }
-        acc.total += 1;
-        return acc;
-      }, { pending_approval: 0, confirmed: 0, purchase_requests: 0, total: 0 }) || 
-      { pending_approval: 0, confirmed: 0, purchase_requests: 0, total: 0 };
-
-      return stats;
-    },
-    enabled: !!user && (user.role === 'direction' || user.role === 'chef_base')
-  });
-
   // Calcul des statistiques avec vérifications défensives
   const myInterventions = user?.role === 'technicien' ? 
     (interventions || []).filter(i => i?.technician_id === user.id) : [];
@@ -232,31 +198,6 @@ export default function Dashboard() {
       value: myInterventions.filter(i => i.status === 'in_progress').length.toString(),
       icon: Package,
       color: 'bg-green-500'
-    }
-  ] : user?.role === 'direction' ? [
-    {
-      title: 'Demandes en Attente',
-      value: workflowStats?.pending_approval?.toString() || '0',
-      icon: AlertTriangle,
-      color: 'bg-orange-500'
-    },
-    {
-      title: 'Demandes Confirmées',
-      value: workflowStats?.confirmed?.toString() || '0',
-      icon: Package,
-      color: 'bg-green-500'
-    },
-    {
-      title: 'Total Demandes',
-      value: workflowStats?.purchase_requests?.toString() || '0',
-      icon: BarChart3,
-      color: 'bg-blue-500'
-    },
-    {
-      title: 'Workflow Actif',
-      value: workflowStats?.total?.toString() || '0',
-      icon: Zap,
-      color: 'bg-marine-500'
     }
   ] : [
     {
@@ -329,37 +270,9 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Workflow Dashboard for Direction */}
-      {user?.role === 'direction' && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-marine-500" />
-              Automatisation du Workflow
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WorkflowAutomationDashboard />
-          </CardContent>
-        </Card>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Weather Widget - Temporarily disabled */}
         {/* <WeatherWidget /> */}
-
-        {/* Notifications Center */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Centre de Notifications
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <WorkflowNotificationCenter />
-          </CardContent>
-        </Card>
 
         {/* Alerts Panel */}
         <Card>

@@ -13,8 +13,7 @@ import {
   TrendingUp,
   Globe,
   Settings,
-  Target,
-  Zap
+  Target
 } from 'lucide-react';
 import { AdvancedOrders } from '@/components/purchasing/AdvancedOrders';
 import { SupplierManagement } from '@/components/purchasing/SupplierManagement';
@@ -22,7 +21,6 @@ import { InterBaseLogistics } from '@/components/purchasing/InterBaseLogistics';
 import { MobileScanning } from '@/components/purchasing/MobileScanning';
 import { LogisticsDashboard } from '@/components/logistics/LogisticsDashboard';
 import { CampaignManagement } from '@/components/purchasing/CampaignManagement';
-import { WorkflowAutomationDashboard } from '@/components/workflow/WorkflowAutomationDashboard';
 
 export default function Purchasing() {
   const { user } = useAuth();
@@ -45,12 +43,6 @@ export default function Purchasing() {
       label: 'Commandes',
       icon: ShoppingCart,
       component: AdvancedOrders
-    },
-    {
-      id: 'workflow',
-      label: 'Automatisation',
-      icon: Zap,
-      component: WorkflowAutomationDashboard
     },
     {
       id: 'suppliers',
@@ -92,7 +84,7 @@ export default function Purchasing() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-2 sm:space-y-6">
         <div className="overflow-x-auto pb-1">
-          <TabsList className="grid w-full grid-cols-2 xs:grid-cols-3 sm:grid-cols-7 h-auto p-1 gap-1 min-w-max">
+          <TabsList className="grid w-full grid-cols-2 xs:grid-cols-3 sm:grid-cols-6 h-auto p-1 gap-1 min-w-max">
             {tabs.map((tab) => (
               <TabsTrigger 
                 key={tab.id} 
