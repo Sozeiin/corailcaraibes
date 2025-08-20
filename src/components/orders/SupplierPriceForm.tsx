@@ -102,15 +102,15 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
 
       if (orderError) throw orderError;
 
-      // 2. Update order items with negotiated prices
+      // 2. Update order items with negotiated prices (only unit_price, total_price is calculated by trigger)
       for (const [itemId, price] of Object.entries(itemPrices)) {
         const item = orderItems.find(i => i.id === itemId);
         if (item) {
           const { error: itemError } = await supabase
             .from('order_items')
             .update({ 
-              unit_price: price,
-              total_price: price * item.quantity
+              unit_price: price
+              // total_price is automatically calculated by trigger
             })
             .eq('id', itemId);
 
