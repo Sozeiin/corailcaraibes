@@ -181,11 +181,11 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
             
             return (
               <div key={step.id} className="relative">
-                <div className="flex items-start space-x-4">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
                   {/* Icône et ligne de connexion améliorées */}
-                  <div className="relative">
+                  <div className="relative flex-shrink-0 self-start">
                     <div className={`
-                      w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
+                      w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 shadow-sm
                       ${isCompleted 
                         ? 'bg-gradient-to-br from-green-100 to-green-200 text-green-700 ring-2 ring-green-300' 
                         : isCurrent 
@@ -195,13 +195,13 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                           : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-500'
                       }
                     `}>
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
                     </div>
                     
                     {/* Ligne de connexion avec dégradé */}
                     {index < steps.length - 1 && (
                       <div className={`
-                        absolute left-6 top-12 w-0.5 h-10 transition-all duration-300
+                        absolute left-5 sm:left-6 top-10 sm:top-12 w-0.5 h-10 transition-all duration-300
                         ${isCompleted 
                           ? 'bg-gradient-to-b from-green-300 to-green-200' 
                           : 'bg-gradient-to-b from-gray-200 to-gray-100'
@@ -213,7 +213,7 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                   {/* Contenu de l'étape avec animations */}
                   <div className="flex-1 min-w-0">
                     <div className={`
-                      p-4 rounded-lg border transition-all duration-300
+                      p-3 sm:p-4 rounded-lg border transition-all duration-300
                       ${isCompleted 
                         ? 'bg-green-50 border-green-200' 
                         : isCurrent 
@@ -223,22 +223,22 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                           : 'bg-gray-50 border-gray-200'
                       }
                     `}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <h4 className="text-base font-semibold text-gray-900 flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 break-words">
                             {step.stepName}
                             {step.autoCompleted && (
-                              <Zap className="w-4 h-4 text-yellow-500" />
+                              <Zap className="w-4 h-4 text-yellow-500 flex-shrink-0" />
                             )}
                           </h4>
                           {step.stepDescription && (
-                            <p className="text-sm text-gray-600 mt-1">
+                            <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
                               {step.stepDescription}
                             </p>
                           )}
                         </div>
                         
-                        <Badge className={`${stepConfig.color} shadow-sm`}>
+                        <Badge className={`${stepConfig.color} shadow-sm w-fit flex-shrink-0`}>
                           {stepConfig.label}
                         </Badge>
                       </div>
@@ -246,15 +246,15 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                       {/* Détails avec icônes */}
                       <div className="space-y-2">
                         {step.userName && (
-                          <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <Users className="w-4 h-4" />
-                            <span>Par: {step.userName}</span>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700">
+                            <Users className="w-4 h-4 flex-shrink-0" />
+                            <span className="break-words">Par: {step.userName}</span>
                           </div>
                         )}
                         
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Clock className="w-4 h-4" />
-                          <span>
+                        <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600">
+                          <Clock className="w-4 h-4 flex-shrink-0" />
+                          <span className="break-words">
                             Démarrée: {formatDistanceToNow(new Date(step.startedAt), { 
                               addSuffix: true, 
                               locale: fr 
@@ -263,25 +263,27 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                         </div>
                         
                         {step.completedAt && (
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span>
-                              Terminée: {formatDistanceToNow(new Date(step.completedAt), { 
-                                addSuffix: true, 
-                                locale: fr 
-                              })}
-                              {step.durationMinutes && (
-                                <span className="ml-2 px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
-                                  {Math.round(step.durationMinutes)} min
-                                </span>
-                              )}
-                            </span>
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                              <span className="break-words">
+                                Terminée: {formatDistanceToNow(new Date(step.completedAt), { 
+                                  addSuffix: true, 
+                                  locale: fr 
+                                })}
+                              </span>
+                            </div>
+                            {step.durationMinutes && (
+                              <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs w-fit">
+                                {Math.round(step.durationMinutes)} min
+                              </span>
+                            )}
                           </div>
                         )}
                         
                         {step.notes && (
                           <div className="mt-3 p-3 bg-white/70 rounded border border-gray-200">
-                            <p className="text-sm text-gray-800">
+                            <p className="text-xs sm:text-sm text-gray-800 break-words">
                               {step.notes}
                             </p>
                           </div>
@@ -305,27 +307,27 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
         {/* Résumé amélioré avec statistiques */}
         <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg border border-gray-200">
           <h4 className="text-sm font-semibold text-gray-900 mb-4">Statistiques du workflow</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-xl sm:text-2xl font-bold text-green-600">
                 {completedSteps.length}
               </div>
               <div className="text-xs text-gray-600">Étapes terminées</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-xl sm:text-2xl font-bold text-blue-600">
                 {currentStep ? 1 : 0}
               </div>
               <div className="text-xs text-gray-600">Étape en cours</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
+              <div className="text-xl sm:text-2xl font-bold text-gray-600">
                 {steps.length}
               </div>
               <div className="text-xs text-gray-600">Total étapes</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
+              <div className="text-xl sm:text-2xl font-bold text-purple-600">
                 {steps.filter(s => s.autoCompleted).length}
               </div>
               <div className="text-xs text-gray-600">Automatiques</div>

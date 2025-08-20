@@ -199,12 +199,12 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
             {selectedSupplier && (
               <div className="p-3 bg-muted/50 rounded-lg">
                 <h4 className="font-medium">{selectedSupplier.name}</h4>
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-1">
+                <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:gap-4 text-sm text-muted-foreground mt-1">
                   {selectedSupplier.category && (
                     <span>Catégorie: {selectedSupplier.category}</span>
                   )}
                   {selectedSupplier.email && (
-                    <span>Email: {selectedSupplier.email}</span>
+                    <span className="break-all">Email: {selectedSupplier.email}</span>
                   )}
                   {selectedSupplier.phone && (
                     <span>Tél: {selectedSupplier.phone}</span>
@@ -225,23 +225,26 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
             
             <div className="space-y-3">
               {orderItems.map(item => (
-                <div key={item.id} className="p-4 border rounded-lg space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{item.product_name}</h4>
+                <div key={item.id} className="p-3 sm:p-4 border rounded-lg space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium break-words">{item.product_name}</h4>
                       {item.reference && (
-                        <p className="text-sm text-muted-foreground">Réf: {item.reference}</p>
+                        <p className="text-sm text-muted-foreground break-all">Réf: {item.reference}</p>
                       )}
-                      <p className="text-sm text-muted-foreground">
-                        Quantité: {item.quantity} | Prix initial: {item.unit_price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                      </p>
+                      <div className="text-sm text-muted-foreground space-y-1 sm:space-y-0">
+                        <p>Quantité: {item.quantity}</p>
+                        <p>Prix initial: {item.unit_price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
+                      </div>
                     </div>
-                    <Badge variant="outline">
-                      {item.quantity} x {(itemPrices[item.id] || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
-                    </Badge>
+                    <div className="flex-shrink-0">
+                      <Badge variant="outline" className="text-xs">
+                        {item.quantity} x {(itemPrices[item.id] || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                      </Badge>
+                    </div>
                   </div>
                   
-                  <div className="flex items-center space-x-4">
+                  <div className="flex flex-col sm:flex-row sm:items-end gap-3">
                     <div className="flex-1">
                       <Label htmlFor={`price-${item.id}`}>Prix négocié unitaire</Label>
                       <Input
@@ -252,9 +255,10 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
                         value={itemPrices[item.id] || ''}
                         onChange={(e) => handleItemPriceChange(item.id, parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
+                        className="mt-1"
                       />
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                       <p className="text-sm text-muted-foreground">Total ligne</p>
                       <p className="font-semibold">
                         {((itemPrices[item.id] || 0) * item.quantity).toLocaleString('fr-FR', { 
@@ -278,22 +282,22 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
               <h3 className="text-lg font-semibold">Résumé de la négociation</h3>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Total initial</p>
-                <p className="text-lg font-semibold">
+                <p className="text-base sm:text-lg font-semibold break-words">
                   {originalTotal.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Total négocié</p>
-                <p className="text-lg font-semibold text-primary">
+                <p className="text-base sm:text-lg font-semibold text-primary break-words">
                   {totalAmount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">Économie</p>
-                <p className={`text-lg font-semibold ${savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-base sm:text-lg font-semibold break-words ${savings >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {savings >= 0 ? '+' : ''}{savings.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
                 </p>
               </div>
@@ -313,14 +317,14 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
           </div>
 
           {/* Action Button */}
-          <div className="flex justify-end">
+          <div className="flex flex-col sm:flex-row justify-end gap-3">
             <Button 
               onClick={() => confirmOrderMutation.mutate()}
               disabled={!isFormValid || confirmOrderMutation.isPending}
-              className="flex items-center space-x-2"
+              className="flex items-center justify-center space-x-2 w-full sm:w-auto"
             >
               <CheckCircle className="h-4 w-4" />
-              <span>
+              <span className="truncate">
                 {confirmOrderMutation.isPending ? 'Confirmation...' : 'Confirmer fournisseur et prix'}
               </span>
             </Button>

@@ -130,12 +130,14 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-gray-500">Date de commande</p>
                       <p className="flex items-center gap-2">
                         <Calendar className="w-4 h-4" />
-                        {new Date(orderDetails?.order_date || order.orderDate).toLocaleDateString('fr-FR')}
+                        <span className="break-words">
+                          {new Date(orderDetails?.order_date || order.orderDate).toLocaleDateString('fr-FR')}
+                        </span>
                       </p>
                     </div>
                     
@@ -144,7 +146,9 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                         <p className="text-sm font-medium text-gray-500">Livraison prévue</p>
                         <p className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          {new Date(orderDetails.delivery_date).toLocaleDateString('fr-FR')}
+                          <span className="break-words">
+                            {new Date(orderDetails.delivery_date).toLocaleDateString('fr-FR')}
+                          </span>
                         </p>
                       </div>
                     )}
@@ -156,16 +160,16 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                     {orderDetails?.supplier && (
                       <div>
                         <p className="text-sm font-medium text-gray-500">Fournisseur</p>
-                        <p>{orderDetails.supplier.name}</p>
+                        <p className="break-words">{orderDetails.supplier.name}</p>
                       </div>
                     )}
 
                     {orderDetails?.base && (
                       <div>
                         <p className="text-sm font-medium text-gray-500">Base</p>
-                        <p className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4" />
-                          {orderDetails.base.name} - {orderDetails.base.location}
+                        <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                          <MapPin className="w-4 h-4 flex-shrink-0" />
+                          <span className="break-words">{orderDetails.base.name} - {orderDetails.base.location}</span>
                         </p>
                       </div>
                     )}
@@ -173,16 +177,16 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                     {orderDetails?.boat && (
                       <div>
                         <p className="text-sm font-medium text-gray-500">Bateau concerné</p>
-                        <p>{orderDetails.boat.name} - {orderDetails.boat.model}</p>
+                        <p className="break-words">{orderDetails.boat.name} - {orderDetails.boat.model}</p>
                       </div>
                     )}
 
                     {orderDetails?.requested_by_profile && (
                       <div>
                         <p className="text-sm font-medium text-gray-500">Demandé par</p>
-                        <p className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          {orderDetails.requested_by_profile.name}
+                        <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                          <User className="w-4 h-4 flex-shrink-0" />
+                          <span className="break-words">{orderDetails.requested_by_profile.name}</span>
                         </p>
                       </div>
                     )}
@@ -192,7 +196,7 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
 
                   <div>
                     <p className="text-sm font-medium text-gray-500">Montant total</p>
-                    <p className="text-lg font-semibold">
+                    <p className="text-lg font-semibold break-words">
                       {(orderDetails?.total_amount || order.totalAmount)?.toFixed(2)} €
                     </p>
                   </div>
@@ -200,12 +204,12 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                   {orderDetails?.request_notes && (
                     <>
                       <Separator />
-                      <div>
-                        <p className="text-sm font-medium text-gray-500">Notes de la demande</p>
-                        <p className="text-sm bg-gray-50 p-3 rounded">
-                          {orderDetails.request_notes}
-                        </p>
-                      </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">Notes de la demande</p>
+                          <p className="text-sm bg-gray-50 p-3 rounded break-words">
+                            {orderDetails.request_notes}
+                          </p>
+                        </div>
                     </>
                   )}
 

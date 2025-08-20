@@ -292,7 +292,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
       )}
       
       {/* Action Buttons */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-2">
         {availableActions.map((action) => (
           <ActionButton key={action.key} action={action} />
         ))}
