@@ -5,19 +5,23 @@ import { WorkflowStatus, WORKFLOW_STEPS } from '@/types/workflow';
 export const getStatusColor = (status: string): string => {
   // Correspondance directe pour les couleurs de statut
   const statusColors: Record<string, string> = {
-    'delivered': 'bg-green-100 text-green-800',
-    'completed': 'bg-green-100 text-green-800',
+    // Statuts simplifiés pour les commandes
     'pending': 'bg-yellow-100 text-yellow-800',
-    'confirmed': 'bg-blue-100 text-blue-800',
-    'cancelled': 'bg-gray-100 text-gray-800',
-    'draft': 'bg-gray-100 text-gray-800',
+    'shipping': 'bg-blue-100 text-blue-800',
+    'delivered': 'bg-green-100 text-green-800',
+    // Statuts workflow pour les demandes d'achat
     'pending_approval': 'bg-yellow-100 text-yellow-800',
     'approved': 'bg-green-100 text-green-800',
     'supplier_search': 'bg-blue-100 text-blue-800',
     'order_confirmed': 'bg-purple-100 text-purple-800',
     'shipping_antilles': 'bg-orange-100 text-orange-800',
     'received_scanned': 'bg-teal-100 text-teal-800',
-    'rejected': 'bg-red-100 text-red-800'
+    'completed': 'bg-green-100 text-green-800',
+    'rejected': 'bg-red-100 text-red-800',
+    'cancelled': 'bg-gray-100 text-gray-800',
+    // Legacy
+    'confirmed': 'bg-blue-100 text-blue-800',
+    'draft': 'bg-gray-100 text-gray-800'
   };
   
   return statusColors[status] || 'bg-gray-100 text-gray-800';
@@ -26,19 +30,23 @@ export const getStatusColor = (status: string): string => {
 export const getStatusLabel = (status: string): string => {
   // Correspondance directe pour les statuts utilisés
   const statusLabels: Record<string, string> = {
+    // Statuts simplifiés pour les commandes
+    'pending': 'En cours',
+    'shipping': 'En cours de livraison', 
     'delivered': 'Livrée',
-    'completed': 'Terminée',
-    'pending': 'En attente',
-    'confirmed': 'Confirmée',
-    'cancelled': 'Annulée',
-    'draft': 'Brouillon',
+    // Statuts workflow pour les demandes d'achat
     'pending_approval': 'En attente d\'approbation',
     'approved': 'Approuvé',
     'supplier_search': 'Recherche fournisseurs',
     'order_confirmed': 'Commande confirmée',
     'shipping_antilles': 'Envoi Antilles',
     'received_scanned': 'Réception scannée',
-    'rejected': 'Rejeté'
+    'completed': 'Terminé',
+    'rejected': 'Rejeté',
+    'cancelled': 'Annulé',
+    // Legacy
+    'confirmed': 'Confirmée',
+    'draft': 'Brouillon'
   };
   
   return statusLabels[status] || status;
@@ -68,11 +76,20 @@ export const isWorkflowStatus = (status: string): status is WorkflowStatus => {
 export const getWorkflowStatusList = () => {
   return [
     { value: 'all', label: 'Tous les statuts' },
-    { value: 'pending', label: 'En attente' },
-    { value: 'confirmed', label: 'Confirmée' },
+    // Statuts simplifiés pour les commandes
+    { value: 'pending', label: 'En cours' },
+    { value: 'shipping', label: 'En cours de livraison' },
     { value: 'delivered', label: 'Livrée' },
-    { value: 'completed', label: 'Terminée' },
-    { value: 'cancelled', label: 'Annulée' }
+    // Statuts workflow pour les demandes d'achat
+    { value: 'pending_approval', label: 'En attente d\'approbation' },
+    { value: 'approved', label: 'Approuvé' },
+    { value: 'supplier_search', label: 'Recherche fournisseurs' },
+    { value: 'order_confirmed', label: 'Commande confirmée' },
+    { value: 'shipping_antilles', label: 'Envoi Antilles' },
+    { value: 'received_scanned', label: 'Réception scannée' },
+    { value: 'completed', label: 'Terminé' },
+    { value: 'rejected', label: 'Rejeté' },
+    { value: 'cancelled', label: 'Annulé' }
   ];
 };
 

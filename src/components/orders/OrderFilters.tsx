@@ -10,8 +10,11 @@ interface OrderFiltersProps {
 }
 
 const statusLabels = {
-  // Nouveaux statuts du workflow
-  draft: 'Brouillon',
+  // Statuts simplifiés pour les commandes
+  pending: 'En cours',
+  shipping: 'En cours de livraison',
+  delivered: 'Livrée',
+  // Statuts workflow pour les demandes d'achat
   pending_approval: 'En attente d\'approbation',
   approved: 'Approuvé',
   supplier_search: 'Recherche fournisseurs',
@@ -21,12 +24,9 @@ const statusLabels = {
   completed: 'Terminé',
   rejected: 'Rejeté',
   cancelled: 'Annulé',
-  // Anciens statuts (legacy)
-  pending: 'En attente',
-  confirmed: 'Confirmée',
-  delivered: 'Livrée',
-  supplier_requested: 'Demande effectuée',
-  shipping_mainland: 'Livraison Métropole'
+  // Legacy
+  draft: 'Brouillon',
+  confirmed: 'Confirmée'
 };
 
 const typeLabels = {

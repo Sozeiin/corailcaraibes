@@ -1858,6 +1858,7 @@ export type Database = {
           request_notes: string | null
           requested_by: string | null
           status: string | null
+          stock_added: boolean | null
           supplier_id: string | null
           total_amount: number | null
           tracking_number: string | null
@@ -1887,6 +1888,7 @@ export type Database = {
           request_notes?: string | null
           requested_by?: string | null
           status?: string | null
+          stock_added?: boolean | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_number?: string | null
@@ -1916,6 +1918,7 @@ export type Database = {
           request_notes?: string | null
           requested_by?: string | null
           status?: string | null
+          stock_added?: boolean | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_number?: string | null
@@ -3264,6 +3267,10 @@ export type Database = {
       }
     }
     Functions: {
+      add_order_items_to_stock: {
+        Args: { order_id_param: string; selected_items?: Json }
+        Returns: Json
+      }
       advance_workflow_step: {
         Args: {
           new_status: Database["public"]["Enums"]["purchase_workflow_status"]

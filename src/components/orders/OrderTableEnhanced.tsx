@@ -21,7 +21,8 @@ import { Order } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { WorkflowActions } from '@/components/orders/WorkflowActions';
 import { WorkflowStatusIndicator } from '@/components/orders/WorkflowStatusIndicator';
-import { SyncButton } from '@/components/orders/SyncButton';
+import { getStatusColor, getStatusLabel } from '@/lib/workflowUtils';
+import { AddToStockButton } from '@/components/orders/AddToStockButton';
 import { WorkflowStatus } from '@/types/workflow';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -77,12 +78,12 @@ export function OrderTableEnhanced({
           <TableRow>
             <TableHead>N° Commande</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead>Statut & Progression</TableHead>
+            <TableHead>Statut</TableHead>
             <TableHead>Montant</TableHead>
             <TableHead>Articles</TableHead>
             {!showCompactView && <TableHead>Livraison</TableHead>}
-            {!showCompactView && <TableHead>Dernière activité</TableHead>}
             {user?.role === 'direction' && <TableHead>Actions Direction</TableHead>}
+            <TableHead>Actions Stock</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -115,12 +116,18 @@ export function OrderTableEnhanced({
               </TableCell>
               
               <TableCell>
-                <WorkflowStatusIndicator 
-                  status={order.status as WorkflowStatus} 
-                  showIcon={true}
-                  showProgress={!showCompactView}
-                  size={showCompactView ? 'sm' : 'md'}
-                />
+                {order.isPurchaseRequest ? (
+                  <WorkflowStatusIndicator 
+                    status={order.status as WorkflowStatus} 
+                    showIcon={true}
+                    showProgress={!showCompactView}
+                    size={showCompactView ? 'sm' : 'md'}
+                  />
+                ) : (
+                  <Badge className={getStatusColor(order.status)}>
+                    {getStatusLabel(order.status)}
+                  </Badge>
+                )}
               </TableCell>
               
               <TableCell className="font-medium">
@@ -153,16 +160,7 @@ export function OrderTableEnhanced({
                 </TableCell>
               )}
               
-              {!showCompactView && (
-                <TableCell className="text-sm text-gray-500">
-                  {formatDistanceToNow(new Date(order.createdAt), { 
-                    addSuffix: true, 
-                    locale: fr 
-                  })}
-                </TableCell>
-              )}
-              
-              {user?.role === 'direction' && (
+              {user?.role === 'direction' && order.isPurchaseRequest && (
                 <TableCell>
                   <WorkflowActions 
                     order={order} 
@@ -170,6 +168,13 @@ export function OrderTableEnhanced({
                   />
                 </TableCell>
               )}
+              
+              <TableCell>
+                <AddToStockButton 
+                  order={order}
+                  onStockAdded={onOrderUpdate}
+                />
+              </TableCell>
               
               <TableCell className="text-right">
                 <div className="flex justify-end">
@@ -189,15 +194,6 @@ export function OrderTableEnhanced({
                           <Edit className="w-4 h-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
-                        {order.status === 'confirmed' && (
-                          <div className="px-2 py-1">
-                            <SyncButton 
-                              orderId={order.id}
-                              orderNumber={order.orderNumber}
-                              onSyncComplete={onOrderUpdate}
-                            />
-                          </div>
-                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => onDelete(order)}
