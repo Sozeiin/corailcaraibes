@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -73,6 +73,15 @@ export const DashboardGridLayout = () => {
       savePreferences(newLayout);
     }, 500); // Debounce de 500ms
   }, [isEditing, layout.widgets, savePreferences]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleRemoveWidget = (widgetId: string) => {
     removeWidget(widgetId);
@@ -209,6 +218,7 @@ export const DashboardGridLayout = () => {
     </div>
   );
 };
+
 
 const getSizeConfig = (size: 'small' | 'medium' | 'large') => {
   switch (size) {

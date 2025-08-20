@@ -16,20 +16,36 @@ export const useDashboardPreferences = () => {
   }, [user?.id]);
 
   const loadPreferences = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Loading preferences for user:', user.id);
+      
       const { data, error } = await supabase
         .from('dashboard_preferences')
         .select('layout_config')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading dashboard preferences:', error);
+        throw error;
+      }
+
+      console.log('Loaded data:', data);
 
       if (data?.layout_config && Array.isArray(data.layout_config)) {
-        setLayout({ widgets: data.layout_config as unknown as WidgetConfig[] });
+        const loadedLayout = { widgets: data.layout_config as unknown as WidgetConfig[] };
+        console.log('Setting loaded layout:', loadedLayout);
+        setLayout(loadedLayout);
       } else {
         // Load default layout based on user role
-        setLayout(getDefaultLayout(user?.role || 'technicien'));
+        console.log('Loading default layout for role:', user?.role);
+        const defaultLayout = getDefaultLayout(user?.role || 'technicien');
+        setLayout(defaultLayout);
       }
     } catch (error) {
       console.error('Error loading dashboard preferences:', error);
@@ -43,20 +59,27 @@ export const useDashboardPreferences = () => {
     if (!user?.id) return;
 
     try {
+      console.log('Saving preferences for user:', user.id, 'Layout:', newLayout);
+      
       const { error } = await supabase
         .from('dashboard_preferences')
         .upsert({
           user_id: user.id,
           layout_config: newLayout.widgets as any,
+          updated_at: new Date().toISOString(),
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error saving dashboard preferences:', error);
+        throw error;
+      }
       
+      console.log('Preferences saved successfully');
       setLayout(newLayout);
       toast.success('Tableau de bord sauvegardé');
     } catch (error) {
       console.error('Error saving dashboard preferences:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      toast.error('Erreur lors de la sauvegarde: ' + (error.message || 'Erreur inconnue'));
     }
   };
 
