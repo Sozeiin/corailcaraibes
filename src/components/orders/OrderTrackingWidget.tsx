@@ -79,23 +79,93 @@ export function OrderTrackingWidget({
 
   const handleOpenTracking = () => {
     console.log('Open tracking clicked');
+    console.log('trackingData:', trackingData);
+    
     if (trackingData?.trackingUrl) {
       console.log('Opening URL:', trackingData.trackingUrl);
       try {
-        window.open(trackingData.trackingUrl, '_blank', 'noopener,noreferrer');
+        // Vérifier que l'URL est valide
+        const url = new URL(trackingData.trackingUrl);
+        console.log('Valid URL object:', url);
+        
+        // Ouvrir dans un nouvel onglet
+        const newWindow = window.open(trackingData.trackingUrl, '_blank', 'noopener,noreferrer');
+        
+        if (!newWindow) {
+          console.error('Window.open blocked by popup blocker');
+          // Fallback: copier l'URL dans le presse-papiers
+          navigator.clipboard.writeText(trackingData.trackingUrl).then(() => {
+            toast({
+              title: "Lien copié",
+              description: "Le lien de suivi a été copié dans le presse-papiers. Veuillez le coller dans votre navigateur."
+            });
+          }).catch(() => {
+            toast({
+              title: "Lien bloqué",
+              description: `Votre navigateur a bloqué l'ouverture. Voici le lien : ${trackingData.trackingUrl}`,
+              variant: "destructive"
+            });
+          });
+        } else {
+          console.log('Window opened successfully');
+          toast({
+            title: "Suivi ouvert",
+            description: "Le suivi détaillé s'ouvre dans un nouvel onglet"
+          });
+        }
       } catch (error) {
-        console.error('Error opening tracking URL:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'ouvrir le lien de suivi",
-          variant: "destructive"
-        });
+        console.error('Error with URL or opening window:', error);
+        // Fallback : essayer d'ouvrir sans validation d'URL
+        try {
+          window.location.href = trackingData.trackingUrl;
+        } catch (fallbackError) {
+          console.error('Fallback failed:', fallbackError);
+          toast({
+            title: "Erreur d'ouverture",
+            description: `Impossible d'ouvrir le lien. URL: ${trackingData.trackingUrl}`,
+            variant: "destructive"
+          });
+        }
       }
+    } else if (trackingNumber && carrier) {
+      // Générer une URL de suivi manuelle si pas d'URL dans les données
+      console.log('No tracking URL, generating manual URL');
+      let manualUrl = '';
+      
+      switch (carrier.toLowerCase()) {
+        case 'chronopost':
+          manualUrl = `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`;
+          break;
+        case 'dhl':
+          manualUrl = `https://www.dhl.com/fr-fr/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`;
+          break;
+        case 'fedex':
+          manualUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+          break;
+        case 'ups':
+          manualUrl = `https://www.ups.com/track?tracknum=${trackingNumber}`;
+          break;
+        case 'colissimo':
+          manualUrl = `https://www.laposte.fr/outils/suivre-vos-envois?code=${trackingNumber}`;
+          break;
+        case 'dpd':
+          manualUrl = `https://tracking.dpd.de/status/fr_FR/parcel/${trackingNumber}`;
+          break;
+        default:
+          manualUrl = `https://www.track123.com/track/${trackingNumber}`;
+      }
+      
+      console.log('Generated manual URL:', manualUrl);
+      window.open(manualUrl, '_blank', 'noopener,noreferrer');
+      toast({
+        title: "Suivi ouvert",
+        description: "Le suivi détaillé s'ouvre dans un nouvel onglet"
+      });
     } else {
-      console.log('No tracking URL available');
+      console.log('No tracking URL or tracking info available');
       toast({
         title: "Lien indisponible",
-        description: "Le lien de suivi n'est pas disponible",
+        description: "Aucune information de suivi disponible",
         variant: "destructive"
       });
     }
