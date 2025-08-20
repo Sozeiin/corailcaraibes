@@ -73,127 +73,140 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   }, []);
 
   const startScan = async (operation: 'add' | 'remove') => {
-    console.log('🚀 Démarrage du scan pour opération:', operation);
+    console.log('🚀 DEBUT DU SCAN - Opération:', operation);
     setCurrentOperation(operation);
     setIsScanning(true);
     
     try {
-      console.log('📷 Demande d\'accès à la caméra...');
+      console.log('📱 Vérification du support caméra...');
       
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('L\'accès à la caméra n\'est pas supporté par ce navigateur');
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Caméra non supportée');
       }
 
+      console.log('📷 Demande d\'accès caméra...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { min: 640, ideal: 1280 },
+          height: { min: 480, ideal: 720 }
         }
       });
 
-      console.log('✅ Caméra accessible, création de l\'interface...');
+      console.log('✅ Caméra obtenue, création interface...');
 
-      // Créer la vidéo
+      // Interface simple
+      const overlay = document.createElement('div');
+      overlay.id = 'scanner-overlay';
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: black; z-index: 10000; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 20px;
+      `;
+
       const video = document.createElement('video');
       video.srcObject = stream;
       video.autoplay = true;
       video.playsInline = true;
       video.muted = true;
-      video.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
-
-      // Overlay principal
-      const overlay = document.createElement('div');
-      overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.9); z-index: 9999;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
+      video.style.cssText = `
+        width: 100%; max-width: 400px; height: 300px; 
+        border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        border-radius: 8px; object-fit: cover;
       `;
 
-      // Container vidéo
-      const videoContainer = document.createElement('div');
-      videoContainer.style.cssText = `
-        position: relative; width: 90%; max-width: 400px; aspect-ratio: 16/9;
-        border-radius: 12px; overflow: hidden; border: 2px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+      const title = document.createElement('h2');
+      title.textContent = operation === 'add' ? 'SCANNER POUR AJOUTER' : 'SCANNER POUR RETIRER';
+      title.style.cssText = `
+        color: ${operation === 'add' ? '#22c55e' : '#ef4444'}; 
+        margin-bottom: 20px; text-align: center; font-size: 18px;
       `;
 
-      // Zone de scan
-      const scanZone = document.createElement('div');
-      scanZone.style.cssText = `
-        position: absolute; top: 30%; left: 10%; right: 10%; height: 40%;
-        border: 2px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
-        background: rgba(${operation === 'add' ? '34,197,94' : '239,68,68'}, 0.1);
+      const status = document.createElement('div');
+      status.id = 'scan-status';
+      status.textContent = 'Prêt à scanner...';
+      status.style.cssText = `
+        color: white; margin: 20px 0; text-align: center; 
+        font-size: 16px; font-weight: bold;
       `;
 
-      // Texte d'instruction
-      const instructionText = document.createElement('div');
-      instructionText.style.cssText = 'color: white; text-align: center; margin-bottom: 20px; font-size: 18px;';
-      instructionText.textContent = operation === 'add' ? 'Scanner pour AJOUTER' : 'Scanner pour RETIRER';
-
-      // Bouton fermer
-      const closeButton = document.createElement('button');
-      closeButton.textContent = 'Fermer';
-      closeButton.style.cssText = `
-        padding: 12px 24px; background: #ef4444; color: white; border: none;
-        border-radius: 6px; margin-top: 20px; cursor: pointer; font-size: 16px;
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'FERMER';
+      closeBtn.style.cssText = `
+        padding: 12px 30px; background: #ef4444; color: white;
+        border: none; border-radius: 6px; font-size: 16px; 
+        font-weight: bold; cursor: pointer; margin-top: 20px;
       `;
 
-      // Assemblage
-      videoContainer.appendChild(video);
-      videoContainer.appendChild(scanZone);
-      overlay.appendChild(instructionText);
-      overlay.appendChild(videoContainer);
-      overlay.appendChild(closeButton);
+      overlay.appendChild(title);
+      overlay.appendChild(video);
+      overlay.appendChild(status);
+      overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
 
-      // Scanner ZXing
-      const codeReader = new BrowserMultiFormatReader();
       let scanning = true;
+      const codeReader = new BrowserMultiFormatReader();
 
       const cleanup = () => {
-        console.log('🧹 Nettoyage du scanner...');
+        console.log('🧹 NETTOYAGE SCANNER');
         scanning = false;
         stream.getTracks().forEach(track => track.stop());
-        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        const overlayEl = document.getElementById('scanner-overlay');
+        if (overlayEl) overlayEl.remove();
         setIsScanning(false);
       };
 
-      closeButton.onclick = cleanup;
+      closeBtn.onclick = cleanup;
 
-      // Attendre que la vidéo soit prête
+      // Attendre vidéo prête
+      console.log('⏳ Attente vidéo prête...');
       await new Promise((resolve) => {
-        video.onloadedmetadata = () => {
+        video.addEventListener('loadedmetadata', () => {
+          console.log('✅ Vidéo prête');
           video.play().then(resolve);
-        };
+        });
       });
 
-      console.log('🔍 Démarrage du décodage...');
+      console.log('🔍 DEMARRAGE DECODAGE...');
+      status.textContent = 'Scanning en cours...';
 
-      // Décodage continu
-      codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
-        if (result && scanning) {
-          const code = result.getText().trim();
-          console.log('📷 Code détecté:', code);
-          
-          if (validateBarcodeFormat(code)) {
-            console.log('✅ Code valide:', code);
-            cleanup();
-            processScannedCode(code, operation);
+      // Décodage simple
+      const decode = async () => {
+        while (scanning) {
+          try {
+            const result = await codeReader.decodeOnceFromVideoDevice(undefined, video);
+            if (result && scanning) {
+              const code = result.getText().trim();
+              console.log('📷 CODE DETECTE:', code);
+              status.textContent = `Code détecté: ${code}`;
+              
+              if (code && code.length >= 3) {
+                console.log('✅ CODE ACCEPTE:', code);
+                status.textContent = `✅ Code validé: ${code}`;
+                setTimeout(() => {
+                  cleanup();
+                  processScannedCode(code, operation);
+                }, 500);
+                return;
+              }
+            }
+          } catch (error) {
+            if (scanning && error.name !== 'NotFoundException') {
+              console.log('⚠️ Erreur scan:', error.name);
+            }
           }
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
-        
-        if (error && error.name !== 'NotFoundException') {
-          console.log('⚠️ Erreur scan:', error.name);
-        }
-      });
+      };
+
+      decode();
       
     } catch (error) {
-      console.error('❌ Erreur scanner:', error);
+      console.error('❌ ERREUR SCANNER:', error);
       setIsScanning(false);
-      
       toast({
-        title: 'Erreur scanner',
-        description: error instanceof Error ? error.message : 'Erreur inconnue',
+        title: 'Erreur Scanner',
+        description: `Impossible d'accéder à la caméra: ${error.message}`,
         variant: 'destructive'
       });
     }
