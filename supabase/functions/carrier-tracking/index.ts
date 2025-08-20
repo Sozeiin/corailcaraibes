@@ -21,40 +21,26 @@ interface TrackingData {
 
 interface Track123Event {
   time: string;
-  utc: string;
-  stage: string;
-  description: string;
   location: string;
+  detail: string;
+  stage: string;
 }
 
 interface Track123Data {
-  id: string;
   tracking_number: string;
   carrier_code: string;
   carrier_name: string;
   status: string;
-  stage: string;
-  origin_country: string;
   destination_country: string;
-  original_country: string;
-  itemTimeLength: number;
-  stayTimeLength: number;
-  service_code: string;
-  package_type: string;
+  origin_country: string;
   events: Track123Event[];
-  lastUpdateTime: string;
-  delivery_status: string;
-  delivery_substatus: string;
   delivery_date?: string;
   estimated_delivery_date?: string;
 }
 
 interface Track123Response {
-  meta: {
-    code: number;
-    type: string;
-    message: string;
-  };
+  code: number;
+  message: string;
   data: Track123Data;
 }
 
@@ -67,14 +53,15 @@ async function fetchTrack123Tracking(trackingNumber: string, carrier?: string): 
       throw new Error('Track123 API key not configured');
     }
 
-    // Créer un tracker si un transporteur est spécifié
+    // Essayer d'abord de créer un tracker
     if (carrier) {
       try {
-        const createResponse = await fetch('https://api.track123.com/v1/trackings', {
+        const createResponse = await fetch('https://api.track123.com/v2/trackings', {
           method: 'POST',
           headers: {
             'Track123-Api-Secret': track123ApiKey,
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             tracking_number: trackingNumber,
@@ -82,72 +69,84 @@ async function fetchTrack123Tracking(trackingNumber: string, carrier?: string): 
           })
         });
 
-        if (!createResponse.ok) {
-          console.log('Failed to create tracker, continuing with simple lookup...');
-        } else {
-          console.log('Tracker created successfully');
+        console.log('Create tracker response status:', createResponse.status);
+        if (createResponse.ok) {
+          const createData = await createResponse.json();
+          console.log('Tracker created:', createData);
         }
       } catch (createError) {
         console.log('Error creating tracker:', createError);
       }
     }
 
-    // Récupérer les informations de suivi
-    const trackingResponse = await fetch(`https://api.track123.com/v1/trackings/get?nums=${trackingNumber}`, {
+    // Récupérer les informations de suivi avec l'API v2
+    const trackingResponse = await fetch(`https://api.track123.com/v2/trackings/get?nums=${trackingNumber}`, {
       method: 'GET',
       headers: {
         'Track123-Api-Secret': track123ApiKey,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       }
     });
 
+    console.log('Track123 API response status:', trackingResponse.status);
+    
     if (!trackingResponse.ok) {
-      throw new Error(`Track123 API error: ${trackingResponse.status} ${trackingResponse.statusText}`);
+      const errorText = await trackingResponse.text();
+      console.error('Track123 API error response:', errorText);
+      throw new Error(`Track123 API error: ${trackingResponse.status} - ${errorText}`);
     }
 
     const response: Track123Response = await trackingResponse.json();
-    console.log('Track123 response:', JSON.stringify(response, null, 2));
+    console.log('Track123 full response:', JSON.stringify(response, null, 2));
 
-    if (response.meta.code !== 200) {
-      throw new Error(`Track123 API error: ${response.meta.message}`);
+    if (response.code !== 200) {
+      console.error('Track123 API error code:', response.code, response.message);
+      throw new Error(`Track123 API error: ${response.message}`);
     }
 
     if (!response.data) {
-      throw new Error('No tracking information found');
+      throw new Error('No tracking data found in response');
     }
 
     const tracking = response.data;
     const events = tracking.events || [];
 
-    // Déterminer le statut basé sur le stage Track123
+    console.log('Track123 tracking data:', tracking);
+    console.log('Track123 events:', events);
+
+    // Déterminer le statut basé sur le status Track123
     let status: TrackingData['status'] = 'pending';
-    let location = tracking.origin_country || 'Informations en cours de récupération';
+    let location = tracking.origin_country || 'En cours de traitement';
     let lastUpdate = new Date().toLocaleDateString('fr-FR');
 
-    // Mapper les stages Track123 vers nos statuts
-    switch (tracking.stage?.toLowerCase()) {
+    // Mapper les statuts Track123
+    switch (tracking.status?.toLowerCase()) {
       case 'delivered':
         status = 'delivered';
         location = 'Livré au destinataire';
         break;
+      case 'transit':
       case 'out_for_delivery':
       case 'in_transit':
-      case 'transit':
         status = 'in_transit';
+        location = 'En transit';
         break;
       case 'exception':
       case 'expired':
       case 'undelivered':
         status = 'exception';
+        location = 'Incident de livraison';
         break;
       case 'info_received':
       case 'pickup':
       default:
         status = 'pending';
+        location = 'Informations reçues';
         break;
     }
 
-    // Utiliser les événements pour obtenir des informations plus précises
+    // Utiliser les événements pour affiner les informations
     if (events.length > 0) {
       // Trier les événements par date (plus récent en premier)
       const sortedEvents = events.sort((a, b) => 
@@ -155,41 +154,46 @@ async function fetchTrack123Tracking(trackingNumber: string, carrier?: string): 
       );
       
       const lastEvent = sortedEvents[0];
+      console.log('Last event:', lastEvent);
       
-      // Mettre à jour les informations avec le dernier événement
-      lastUpdate = new Date(lastEvent.time).toLocaleDateString('fr-FR');
+      // Mettre à jour avec le dernier événement
+      if (lastEvent.time) {
+        lastUpdate = new Date(lastEvent.time).toLocaleDateString('fr-FR');
+      }
       
       if (lastEvent.location) {
         location = lastEvent.location;
       }
 
-      // Affiner le statut basé sur la description de l'événement
-      const description = lastEvent.description?.toLowerCase() || '';
-      if (description.includes('delivered') || description.includes('livré')) {
-        status = 'delivered';
-        location = 'Livré au destinataire';
-      } else if (description.includes('out for delivery') || description.includes('en cours de livraison')) {
-        status = 'in_transit';
-      } else if (description.includes('exception') || description.includes('failed') || description.includes('échec')) {
-        status = 'exception';
+      // Affiner le statut basé sur les événements
+      if (lastEvent.detail) {
+        const detail = lastEvent.detail.toLowerCase();
+        if (detail.includes('delivered') || detail.includes('livré') || detail.includes('remis')) {
+          status = 'delivered';
+          location = 'Livré au destinataire';
+        } else if (detail.includes('out for delivery') || detail.includes('en cours de livraison') || detail.includes('tournée')) {
+          status = 'in_transit';
+        } else if (detail.includes('exception') || detail.includes('échec') || detail.includes('failed')) {
+          status = 'exception';
+        }
       }
     }
 
-    // Utiliser la date de livraison réelle si disponible
+    // Utiliser la date de livraison si disponible
     if (tracking.delivery_date) {
+      status = 'delivered';
+      location = 'Livré au destinataire';
       lastUpdate = new Date(tracking.delivery_date).toLocaleDateString('fr-FR');
-    } else if (tracking.lastUpdateTime) {
-      lastUpdate = new Date(tracking.lastUpdateTime).toLocaleDateString('fr-FR');
     }
 
     // Mapper les événements pour l'affichage
     const mappedEvents = events.map(event => ({
       date: new Date(event.time).toLocaleDateString('fr-FR'),
-      status: event.stage === 'delivered' ? 'delivered' : 
-              event.stage === 'in_transit' || event.stage === 'out_for_delivery' ? 'in_transit' : 
+      status: event.stage === 'delivered' || event.detail?.toLowerCase().includes('delivered') ? 'delivered' : 
+              event.stage === 'transit' || event.stage === 'out_for_delivery' ? 'in_transit' : 
               event.stage === 'exception' ? 'exception' : 'pending',
       location: event.location || 'Localisation non disponible',
-      description: event.description || 'Événement de suivi'
+      description: event.detail || event.stage || 'Événement de suivi'
     })).reverse(); // Inverser pour avoir les plus anciens en premier
 
     const trackingData: TrackingData = {
@@ -202,8 +206,13 @@ async function fetchTrack123Tracking(trackingNumber: string, carrier?: string): 
         new Date(tracking.delivery_date).toLocaleDateString('fr-FR') :
         status === 'delivered' ? lastUpdate : 
         new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
-      trackingUrl: `https://www.track123.com/track/en/${trackingNumber}`,
-      events: mappedEvents
+      trackingUrl: `https://www.track123.com/track/${trackingNumber}`,
+      events: mappedEvents.length > 0 ? mappedEvents : [{
+        date: lastUpdate,
+        status: status,
+        location: location,
+        description: `Suivi Track123 - ${trackingNumber}`
+      }]
     };
 
     console.log('*** FINAL TRACK123 TRACKING DATA ***');
@@ -212,18 +221,19 @@ async function fetchTrack123Tracking(trackingNumber: string, carrier?: string): 
 
   } catch (error) {
     console.error('Track123 API error:', error);
+    console.error('Error stack:', error.stack);
     
-    // Fallback - retourner des données de base
+    // Fallback - retourner des données de base avec plus d'informations d'erreur
     return {
       status: 'pending',
-      location: 'Informations non disponibles',
+      location: 'Service de suivi temporairement indisponible',
       lastUpdate: new Date().toLocaleDateString('fr-FR'),
-      trackingUrl: `https://www.track123.com/track/en/${trackingNumber}`,
+      trackingUrl: `https://www.track123.com/track/${trackingNumber}`,
       events: [{
         date: new Date().toLocaleDateString('fr-FR'),
         status: 'pending',
         location: 'API Track123',
-        description: 'Consultez le suivi complet sur Track123.com'
+        description: `Erreur: ${error.message}. Consultez le suivi sur Track123.com`
       }]
     };
   }
