@@ -548,12 +548,29 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     const operation = operations.find(op => op.id === operationId);
     if (!operation) return;
 
+    console.log('🔄 Executing operation:', {
+      operationId,
+      operation: operation.operation,
+      currentQuantity: operation.stockItem.quantity,
+      operationQuantity: operation.quantity,
+      stockItemId: operation.stockItem.id,
+      stockItemName: operation.stockItem.name
+    });
+
     try {
       const newQuantity = operation.operation === 'add' 
         ? operation.stockItem.quantity + operation.quantity
         : operation.stockItem.quantity - operation.quantity;
 
+      console.log('📊 Quantity calculation:', {
+        operation: operation.operation,
+        current: operation.stockItem.quantity,
+        change: operation.quantity,
+        new: newQuantity
+      });
+
       if (newQuantity < 0) {
+        console.log('❌ Negative quantity detected');
         toast({
           title: 'Erreur',
           description: 'Quantité insuffisante en stock',
@@ -561,6 +578,8 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         });
         return;
       }
+
+      console.log('💾 Updating database with quantity:', newQuantity);
 
       const { error } = await supabase
         .from('stock_items')
@@ -570,7 +589,12 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         })
         .eq('id', operation.stockItem.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database update error:', error);
+        throw error;
+      }
+
+      console.log('✅ Database update successful');
 
       setOperations(prev => 
         prev.map(op => 
