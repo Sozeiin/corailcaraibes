@@ -14,6 +14,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -280,16 +286,21 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
 
   return (
     <div className="space-y-4">
-      {/* Supplier Configuration Form */}
-      {showSupplierForm && (
-        <SupplierPriceForm 
-          order={order} 
-          onComplete={() => {
-            setShowSupplierForm(false);
-            onOrderUpdate?.();
-          }} 
-        />
-      )}
+      {/* Supplier Configuration Dialog */}
+      <Dialog open={showSupplierForm} onOpenChange={setShowSupplierForm}>
+        <DialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Configuration fournisseur et prix</DialogTitle>
+          </DialogHeader>
+          <SupplierPriceForm 
+            order={order} 
+            onComplete={() => {
+              setShowSupplierForm(false);
+              onOrderUpdate?.();
+            }} 
+          />
+        </DialogContent>
+      </Dialog>
       
       {/* Action Buttons */}
       <div className="flex flex-col sm:flex-row flex-wrap gap-2">
