@@ -415,6 +415,14 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         return;
       }
 
+      console.log('🔄 Mise à jour du stock...', {
+        itemId: operation.stockItem.id,
+        currentQuantity: operation.stockItem.quantity,
+        changeQuantity: operation.quantity,
+        newQuantity: newQuantity,
+        operation: operation.operation
+      });
+
       const { error } = await supabase
         .from('stock_items')
         .update({ 
@@ -422,6 +430,8 @@ export function StockScanner({ stockItems }: StockScannerProps) {
           last_updated: new Date().toISOString()
         })
         .eq('id', operation.stockItem.id);
+
+      console.log('📊 Résultat mise à jour stock:', { error });
 
       if (error) throw error;
 
