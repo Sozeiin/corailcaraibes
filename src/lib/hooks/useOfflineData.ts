@@ -28,70 +28,89 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { syncStatus } = useOfflineSync();
+  
+  // Fallback si syncStatus n'est pas encore initialisé
+  const isOnline = syncStatus?.isOnline ?? true;
 
   const fetchData = useCallback(async () => {
+    console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}`);
     setLoading(true);
     setError(null);
     
     try {
       let fetchedData: T[] = [];
       
-      if (syncStatus.isOnline) {
+      if (isOnline) {
+        console.log(`[useOfflineData] Fetching from Supabase for table: ${table}`);
         // En ligne : récupérer de Supabase et synchroniser avec SQLite
         const queryBuilder = (supabase as any).from(table).select('*');
         
         let finalQuery;
         if (baseId) {
           finalQuery = queryBuilder.eq('base_id', baseId);
+          console.log(`[useOfflineData] Filtering by base_id: ${baseId}`);
         } else {
           finalQuery = queryBuilder;
         }
         
         const { data: onlineData, error: supabaseError } = await finalQuery;
         
-        if (supabaseError) throw supabaseError;
+        if (supabaseError) {
+          console.error(`[useOfflineData] Supabase error for ${table}:`, supabaseError);
+          throw supabaseError;
+        }
         
         fetchedData = (onlineData as any) || [];
+        console.log(`[useOfflineData] Fetched ${fetchedData.length} records from Supabase for ${table}`);
         
-        // Synchroniser avec SQLite en arrière-plan
-        try {
-          await sqliteService.initialize();
-          for (const record of fetchedData) {
-            const existing = await sqliteService.findById(table, record.id);
-            if (existing) {
-              await sqliteService.update(table, record.id, {
-                ...record,
-                sync_status: 'synced'
-              });
-            } else {
-              await sqliteService.insert(table, {
-                ...record,
-                sync_status: 'synced'
-              });
+        // Synchroniser avec SQLite en arrière-plan (non bloquant)
+        Promise.resolve().then(async () => {
+          try {
+            await sqliteService.initialize();
+            for (const record of fetchedData) {
+              const existing = await sqliteService.findById(table, record.id);
+              if (existing) {
+                await sqliteService.update(table, record.id, {
+                  ...record,
+                  sync_status: 'synced'
+                });
+              } else {
+                await sqliteService.insert(table, {
+                  ...record,
+                  sync_status: 'synced'
+                });
+              }
             }
+            console.log(`[useOfflineData] SQLite sync completed for ${table}`);
+          } catch (syncError) {
+            console.warn(`[useOfflineData] SQLite sync error for ${table}:`, syncError);
           }
-        } catch (syncError) {
-          console.warn('Erreur lors de la synchronisation avec SQLite:', syncError);
-        }
+        });
       } else {
+        console.log(`[useOfflineData] Fetching from SQLite for table: ${table} (offline mode)`);
         // Hors ligne : récupérer de SQLite uniquement
         await sqliteService.initialize();
         const localData = await sqliteService.findAll(table, baseId);
         fetchedData = localData as T[];
+        console.log(`[useOfflineData] Fetched ${fetchedData.length} records from SQLite for ${table}`);
       }
       
       setData(fetchedData);
+      console.log(`[useOfflineData] Data set successfully for ${table}`);
     } catch (err) {
-      console.error(`Error fetching ${table}:`, err);
+      console.error(`[useOfflineData] Error fetching ${table}:`, err);
       
       // En cas d'erreur en ligne, essayer de récupérer depuis SQLite
-      if (syncStatus.isOnline) {
+      if (isOnline) {
+        console.log(`[useOfflineData] Trying fallback to SQLite for ${table}`);
         try {
           await sqliteService.initialize();
           const localData = await sqliteService.findAll(table, baseId);
           setData(localData as T[]);
           setError('Données récupérées depuis le cache local');
+          console.log(`[useOfflineData] Fallback successful for ${table}`);
         } catch (localErr) {
+          console.error(`[useOfflineData] Fallback failed for ${table}:`, localErr);
           setError(err instanceof Error ? err.message : 'Erreur lors du chargement des données');
         }
       } else {
@@ -99,8 +118,9 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       }
     } finally {
       setLoading(false);
+      console.log(`[useOfflineData] Fetch completed for ${table}`);
     }
-  }, [table, baseId, syncStatus.isOnline, ...dependencies]);
+  }, [table, baseId, isOnline, ...dependencies]);
 
   const create = useCallback(async (item: Omit<T, 'id'>): Promise<string> => {
     const newItem = {
@@ -113,7 +133,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
     try {
       let insertedData: any;
       
-      if (syncStatus.isOnline) {
+      if (isOnline) {
         // En ligne : créer dans Supabase
         const { data, error } = await (supabase as any)
           .from(table)
@@ -151,13 +171,13 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error creating item:', error);
       throw error;
     }
-  }, [table, baseId, syncStatus.isOnline]);
+  }, [table, baseId, isOnline]);
 
   const update = useCallback(async (id: string, item: Partial<T>): Promise<void> => {
     const updateData = { ...item, updated_at: new Date().toISOString() } as any;
 
     try {
-      if (syncStatus.isOnline) {
+      if (isOnline) {
         // En ligne : mettre à jour dans Supabase
         const { error } = await (supabase as any)
           .from(table)
@@ -189,13 +209,13 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error updating item:', error);
       throw error;
     }
-  }, [table, syncStatus.isOnline]);
+  }, [table, isOnline]);
 
   const remove = useCallback(async (id: string): Promise<void> => {
     try {
       console.log(`Attempting to delete ${table} with id:`, id);
       
-      if (syncStatus.isOnline) {
+      if (isOnline) {
         // En ligne : supprimer de Supabase
         const { error, data: deletedData } = await (supabase as any)
           .from(table)
@@ -227,7 +247,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error deleting item:', error);
       throw error;
     }
-  }, [table, syncStatus.isOnline]);
+  }, [table, isOnline]);
 
   useEffect(() => {
     fetchData();
