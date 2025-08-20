@@ -77,95 +77,60 @@ export function OrderTrackingWidget({
     }
   };
 
+  const generateTrackingUrl = (trackingNumber: string, carrier: string): string => {
+    switch (carrier.toLowerCase()) {
+      case 'chronopost':
+        return `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`;
+      case 'dhl':
+        return `https://www.dhl.com/fr-fr/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`;
+      case 'fedex':
+        return `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
+      case 'ups':
+        return `https://www.ups.com/track?tracknum=${trackingNumber}`;
+      case 'colissimo':
+        return `https://www.laposte.fr/outils/suivre-vos-envois?code=${trackingNumber}`;
+      case 'dpd':
+        return `https://tracking.dpd.de/status/fr_FR/parcel/${trackingNumber}`;
+      default:
+        return `https://www.google.com/search?q=suivi+colis+${trackingNumber}`;
+    }
+  };
+
   const handleOpenTracking = () => {
     console.log('Open tracking clicked');
-    console.log('trackingData:', trackingData);
     
-    if (trackingData?.trackingUrl) {
-      console.log('Opening URL:', trackingData.trackingUrl);
+    if (trackingNumber && carrier) {
+      const trackingUrl = generateTrackingUrl(trackingNumber, carrier);
+      console.log('Opening direct carrier URL:', trackingUrl);
+      
       try {
-        // Vérifier que l'URL est valide
-        const url = new URL(trackingData.trackingUrl);
-        console.log('Valid URL object:', url);
+        // Ouvrir directement l'URL du transporteur
+        const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
         
-        // Ouvrir dans un nouvel onglet
-        const newWindow = window.open(trackingData.trackingUrl, '_blank', 'noopener,noreferrer');
-        
-        if (!newWindow) {
-          console.error('Window.open blocked by popup blocker');
-          // Fallback: copier l'URL dans le presse-papiers
-          navigator.clipboard.writeText(trackingData.trackingUrl).then(() => {
-            toast({
-              title: "Lien copié",
-              description: "Le lien de suivi a été copié dans le presse-papiers. Veuillez le coller dans votre navigateur."
-            });
-          }).catch(() => {
-            toast({
-              title: "Lien bloqué",
-              description: `Votre navigateur a bloqué l'ouverture. Voici le lien : ${trackingData.trackingUrl}`,
-              variant: "destructive"
-            });
-          });
-        } else {
+        if (newWindow) {
           console.log('Window opened successfully');
           toast({
             title: "Suivi ouvert",
-            description: "Le suivi détaillé s'ouvre dans un nouvel onglet"
+            description: `Redirection vers le site ${selectedCarrier?.label} pour le suivi détaillé`
           });
+        } else {
+          // Si le popup est bloqué, essayer une redirection directe
+          console.log('Popup blocked, trying direct navigation');
+          window.location.href = trackingUrl;
         }
       } catch (error) {
-        console.error('Error with URL or opening window:', error);
-        // Fallback : essayer d'ouvrir sans validation d'URL
-        try {
-          window.location.href = trackingData.trackingUrl;
-        } catch (fallbackError) {
-          console.error('Fallback failed:', fallbackError);
-          toast({
-            title: "Erreur d'ouverture",
-            description: `Impossible d'ouvrir le lien. URL: ${trackingData.trackingUrl}`,
-            variant: "destructive"
-          });
-        }
+        console.error('Error opening tracking URL:', error);
+        toast({
+          title: "Erreur d'ouverture",
+          description: "Impossible d'ouvrir le lien de suivi. Copiez ce lien dans votre navigateur : " + trackingUrl,
+          variant: "destructive"
+        });
       }
-    } else if (trackingNumber && carrier) {
-      // Générer une URL de suivi manuelle si pas d'URL dans les données
-      console.log('No tracking URL, generating manual URL');
-      let manualUrl = '';
-      
-      switch (carrier.toLowerCase()) {
-        case 'chronopost':
-          manualUrl = `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`;
-          break;
-        case 'dhl':
-          manualUrl = `https://www.dhl.com/fr-fr/home/tracking/tracking-express.html?submit=1&tracking-id=${trackingNumber}`;
-          break;
-        case 'fedex':
-          manualUrl = `https://www.fedex.com/fedextrack/?trknbr=${trackingNumber}`;
-          break;
-        case 'ups':
-          manualUrl = `https://www.ups.com/track?tracknum=${trackingNumber}`;
-          break;
-        case 'colissimo':
-          manualUrl = `https://www.laposte.fr/outils/suivre-vos-envois?code=${trackingNumber}`;
-          break;
-        case 'dpd':
-          manualUrl = `https://tracking.dpd.de/status/fr_FR/parcel/${trackingNumber}`;
-          break;
-        default:
-          manualUrl = `https://www.track123.com/track/${trackingNumber}`;
-      }
-      
-      console.log('Generated manual URL:', manualUrl);
-      window.open(manualUrl, '_blank', 'noopener,noreferrer');
-      toast({
-        title: "Suivi ouvert",
-        description: "Le suivi détaillé s'ouvre dans un nouvel onglet"
-      });
     } else {
-      console.log('No tracking URL or tracking info available');
+      console.log('No tracking number or carrier available');
       toast({
-        title: "Lien indisponible",
-        description: "Aucune information de suivi disponible",
+        title: "Informations manquantes",
+        description: "Numéro de suivi ou transporteur non configuré",
         variant: "destructive"
       });
     }
@@ -320,21 +285,30 @@ export function OrderTrackingWidget({
                   </div>
                 )}
                 
-                {trackingData.trackingUrl && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={handleOpenTracking}
-                    className="w-full"
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    Voir le suivi détaillé
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleOpenTracking}
+                  className="w-full"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Voir le suivi détaillé
+                </Button>
               </div>
             ) : (
-              <div className="text-sm text-gray-500">
-                Cliquez sur "Actualiser" pour obtenir les informations de suivi
+              <div className="space-y-3">
+                <div className="text-sm text-gray-500">
+                  Cliquez sur "Actualiser" pour obtenir les informations de suivi
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleOpenTracking}
+                  className="w-full"
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Voir le suivi détaillé
+                </Button>
               </div>
             )}
             
