@@ -19,6 +19,7 @@ import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatCurrency } from '@/lib/utils';
 import { getWorkflowStatusList, getStatusColor, getStatusLabel } from '@/lib/workflowUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Orders() {
   console.log('Orders page rendering...');
@@ -168,11 +169,47 @@ export default function Orders() {
     if (deleteOrder) {
       setIsDeleting(true);
       try {
+        // Supprimer d'abord tous les éléments liés dans l'ordre correct
+        
+        // 1. Supprimer les workflow steps
+        const { error: workflowError } = await supabase
+          .from('purchase_workflow_steps')
+          .delete()
+          .eq('order_id', deleteOrder.id);
+        
+        if (workflowError) {
+          console.warn('Erreur lors de la suppression des workflow steps:', workflowError);
+        }
+
+        // 2. Supprimer les notifications liées
+        const { error: notifError } = await supabase
+          .from('workflow_notifications')
+          .delete()
+          .eq('order_id', deleteOrder.id);
+        
+        if (notifError) {
+          console.warn('Erreur lors de la suppression des notifications:', notifError);
+        }
+
+        // 3. Supprimer les alertes liées
+        const { error: alertError } = await supabase
+          .from('workflow_alerts')
+          .delete()
+          .eq('order_id', deleteOrder.id);
+        
+        if (alertError) {
+          console.warn('Erreur lors de la suppression des alertes:', alertError);
+        }
+
+        // 4. Supprimer les items de commande
         const items = rawOrderItems.filter((i: any) => i.order_id === deleteOrder.id);
         for (const item of items) {
           await removeOrderItem(item.id);
         }
+
+        // 5. Enfin supprimer la commande
         await removeOrderRecord(deleteOrder.id);
+        
         toast({
           title: "Commande supprimée",
           description: "La commande a été supprimée avec succès.",
@@ -185,7 +222,7 @@ export default function Orders() {
         console.error('Erreur lors de la suppression:', error);
         toast({
           title: "Erreur",
-          description: "Impossible de supprimer la commande.",
+          description: "Impossible de supprimer la commande: " + (error as Error).message,
           variant: "destructive",
         });
       } finally {
