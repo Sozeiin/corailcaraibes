@@ -2,7 +2,7 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 
 interface OrderFiltersProps {
-  statuses: string[];
+  statuses: { value: string; label: string; }[];
   selectedStatus: string;
   onStatusChange: (status: string) => void;
   selectedType: string;
@@ -66,14 +66,14 @@ export function OrderFilters({ statuses, selectedStatus, onStatusChange, selecte
           >
             Tous
           </Badge>
-          {statuses.map((status) => (
+          {statuses.filter(s => s.value !== 'all').map((status) => (
             <Badge
-              key={status}
-              variant={selectedStatus === status ? 'default' : 'secondary'}
+              key={status.value}
+              variant={selectedStatus === status.value ? 'default' : 'secondary'}
               className="cursor-pointer"
-              onClick={() => onStatusChange(status)}
+              onClick={() => onStatusChange(status.value)}
             >
-              {statusLabels[status as keyof typeof statusLabels] || status}
+              {status.label}
             </Badge>
           ))}
         </div>

@@ -3,37 +3,45 @@ import { WorkflowStatus, WORKFLOW_STEPS } from '@/types/workflow';
 // Utilitaires centralisés pour la gestion du workflow
 
 export const getStatusColor = (status: string): string => {
-  const workflowStatus = status as WorkflowStatus;
-  if (WORKFLOW_STEPS[workflowStatus]) {
-    return WORKFLOW_STEPS[workflowStatus].color;
-  }
-  
-  // Fallback pour les anciens statuts
-  const legacyColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-blue-100 text-blue-800',
-    delivered: 'bg-green-100 text-green-800',
-    cancelled: 'bg-gray-100 text-gray-800'
+  // Correspondance directe pour les couleurs de statut
+  const statusColors: Record<string, string> = {
+    'delivered': 'bg-green-100 text-green-800',
+    'completed': 'bg-green-100 text-green-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'confirmed': 'bg-blue-100 text-blue-800',
+    'cancelled': 'bg-gray-100 text-gray-800',
+    'draft': 'bg-gray-100 text-gray-800',
+    'pending_approval': 'bg-yellow-100 text-yellow-800',
+    'approved': 'bg-green-100 text-green-800',
+    'supplier_search': 'bg-blue-100 text-blue-800',
+    'order_confirmed': 'bg-purple-100 text-purple-800',
+    'shipping_antilles': 'bg-orange-100 text-orange-800',
+    'received_scanned': 'bg-teal-100 text-teal-800',
+    'rejected': 'bg-red-100 text-red-800'
   };
   
-  return legacyColors[status] || 'bg-gray-100 text-gray-800';
+  return statusColors[status] || 'bg-gray-100 text-gray-800';
 };
 
 export const getStatusLabel = (status: string): string => {
-  const workflowStatus = status as WorkflowStatus;
-  if (WORKFLOW_STEPS[workflowStatus]) {
-    return WORKFLOW_STEPS[workflowStatus].label;
-  }
-  
-  // Fallback pour les anciens statuts
-  const legacyLabels: Record<string, string> = {
-    pending: 'En attente',
-    confirmed: 'Confirmée',
-    delivered: 'Livrée',
-    cancelled: 'Annulée'
+  // Correspondance directe pour les statuts utilisés
+  const statusLabels: Record<string, string> = {
+    'delivered': 'Livrée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'confirmed': 'Confirmée',
+    'cancelled': 'Annulée',
+    'draft': 'Brouillon',
+    'pending_approval': 'En attente d\'approbation',
+    'approved': 'Approuvé',
+    'supplier_search': 'Recherche fournisseurs',
+    'order_confirmed': 'Commande confirmée',
+    'shipping_antilles': 'Envoi Antilles',
+    'received_scanned': 'Réception scannée',
+    'rejected': 'Rejeté'
   };
   
-  return legacyLabels[status] || status;
+  return statusLabels[status] || status;
 };
 
 export const getStatusIcon = (status: string): string => {
@@ -57,8 +65,15 @@ export const isWorkflowStatus = (status: string): status is WorkflowStatus => {
   return status in WORKFLOW_STEPS;
 };
 
-export const getWorkflowStatusList = (): WorkflowStatus[] => {
-  return Object.keys(WORKFLOW_STEPS) as WorkflowStatus[];
+export const getWorkflowStatusList = () => {
+  return [
+    { value: 'all', label: 'Tous les statuts' },
+    { value: 'pending', label: 'En attente' },
+    { value: 'confirmed', label: 'Confirmée' },
+    { value: 'delivered', label: 'Livrée' },
+    { value: 'completed', label: 'Terminée' },
+    { value: 'cancelled', label: 'Annulée' }
+  ];
 };
 
 export const getNextPossibleActions = (currentStatus: WorkflowStatus, userRole: string): WorkflowStatus[] => {
