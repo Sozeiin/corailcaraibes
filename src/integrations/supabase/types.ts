@@ -2590,6 +2590,200 @@ export type Database = {
           },
         ]
       }
+      supplier_contracts: {
+        Row: {
+          contract_number: string
+          contract_type: string
+          created_at: string | null
+          created_by: string
+          end_date: string | null
+          id: string
+          minimum_order_amount: number | null
+          negotiated_discount: number | null
+          payment_terms: number | null
+          start_date: string
+          supplier_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          contract_number: string
+          contract_type: string
+          created_at?: string | null
+          created_by: string
+          end_date?: string | null
+          id?: string
+          minimum_order_amount?: number | null
+          negotiated_discount?: number | null
+          payment_terms?: number | null
+          start_date: string
+          supplier_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          contract_number?: string
+          contract_type?: string
+          created_at?: string | null
+          created_by?: string
+          end_date?: string | null
+          id?: string
+          minimum_order_amount?: number | null
+          negotiated_discount?: number | null
+          payment_terms?: number | null
+          start_date?: string
+          supplier_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_contracts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_documents: {
+        Row: {
+          document_name: string
+          document_type: string
+          document_url: string | null
+          expiry_date: string | null
+          id: string
+          supplier_id: string
+          uploaded_at: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          document_name: string
+          document_type: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          supplier_id: string
+          uploaded_at?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          document_name?: string
+          document_type?: string
+          document_url?: string | null
+          expiry_date?: string | null
+          id?: string
+          supplier_id?: string
+          uploaded_at?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_documents_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_evaluations: {
+        Row: {
+          created_at: string | null
+          delivery_score: number
+          evaluation_date: string
+          evaluator_id: string
+          id: string
+          notes: string | null
+          overall_score: number | null
+          price_score: number
+          quality_score: number
+          service_score: number
+          supplier_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delivery_score: number
+          evaluation_date?: string
+          evaluator_id: string
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          price_score: number
+          quality_score: number
+          service_score: number
+          supplier_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delivery_score?: number
+          evaluation_date?: string
+          evaluator_id?: string
+          id?: string
+          notes?: string | null
+          overall_score?: number | null
+          price_score?: number
+          quality_score?: number
+          service_score?: number
+          supplier_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_evaluations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplier_interactions: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          follow_up_date: string | null
+          follow_up_required: boolean | null
+          id: string
+          interaction_date: string
+          interaction_type: string
+          subject: string
+          supplier_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          interaction_date?: string
+          interaction_type: string
+          subject: string
+          supplier_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          follow_up_date?: string | null
+          follow_up_required?: boolean | null
+          id?: string
+          interaction_date?: string
+          interaction_type?: string
+          subject?: string
+          supplier_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_interactions_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_quotes: {
         Row: {
           campaign_item_id: string

@@ -24,6 +24,8 @@ import {
 import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
 import type { Supplier } from '@/types';
 
+// Cette fonctionnalité a été consolidée dans src/pages/Suppliers.tsx
+// Veuillez utiliser la page Fournisseurs principale pour toutes les fonctionnalités
 export function SupplierManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -122,198 +124,31 @@ export function SupplierManagement() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Gestion Avancée des Fournisseurs</h2>
-          <p className="text-muted-foreground">
-            Vue détaillée et analytique de vos fournisseurs
-          </p>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau Fournisseur
-        </Button>
-      </div>
-
-      <Tabs defaultValue="list" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="list">Liste des Fournisseurs</TabsTrigger>
-          <TabsTrigger value="analytics">Analyses</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="space-y-4">
-          {/* Filters */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Filtres</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Rechercher fournisseur..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="px-3 py-2 border rounded-md"
-                >
-                  <option value="all">Toutes les catégories</option>
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-
-                <Button variant="outline">
-                  <Star className="h-4 w-4 mr-2" />
-                  Favoris
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Suppliers Grid */}
-          <div className="grid gap-4">
-            {isLoading ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              </div>
-            ) : filteredSuppliers.length === 0 ? (
-              <Card>
-                <CardContent className="py-8 text-center">
-                  <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium mb-2">Aucun fournisseur trouvé</h3>
-                  <p className="text-muted-foreground">
-                    Ajustez vos filtres ou créez un nouveau fournisseur
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredSuppliers.map((supplier) => {
-                const stats = supplierStats?.[supplier.id] || { totalOrders: 0, totalAmount: 0, pendingOrders: 0 };
-                
-                return (
-                  <Card key={supplier.id}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg">{supplier.name}</h3>
-                            {supplier.category && (
-                              <Badge variant="outline">{supplier.category}</Badge>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div className="space-y-2">
-                              {supplier.email && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Mail className="h-4 w-4 text-muted-foreground" />
-                                  <span>{supplier.email}</span>
-                                </div>
-                              )}
-                              {supplier.phone && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <Phone className="h-4 w-4 text-muted-foreground" />
-                                  <span>{supplier.phone}</span>
-                                </div>
-                              )}
-                              {supplier.address && (
-                                <div className="flex items-center gap-2 text-sm">
-                                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                                  <span className="truncate">{supplier.address}</span>
-                                </div>
-                              )}
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2 text-sm">
-                                <Package className="h-4 w-4 text-muted-foreground" />
-                                <span>{stats.totalOrders} commandes</span>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm">
-                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                                <span>{stats.totalAmount.toFixed(2)}€ total</span>
-                              </div>
-                              {stats.pendingOrders > 0 && (
-                                <div className="flex items-center gap-2 text-sm text-orange-600">
-                                  <Badge variant="secondary" className="text-xs">
-                                    {stats.pendingOrders} en attente
-                                  </Badge>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex gap-2 ml-4">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" onClick={() => handleEdit(supplier)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleDelete(supplier.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
+    <div className="p-6">
+      <div className="text-center py-12">
+        <div className="mx-auto max-w-md">
+          <div className="mx-auto h-12 w-12 text-muted-foreground">
+            <Users className="h-12 w-12" />
           </div>
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <Card>
-            <CardHeader>
-              <CardTitle>Analyses des Fournisseurs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Fonctionnalité d'analyse avancée en cours de développement...
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="performance">
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance des Fournisseurs</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Évaluation de la performance des fournisseurs en cours de développement...
-              </p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      <SupplierDialog
-        isOpen={isDialogOpen}
-        onClose={handleDialogClose}
-        supplier={editingSupplier}
-      />
+          <h3 className="mt-2 text-lg font-medium text-foreground">
+            Fonctionnalité Déplacée
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Cette fonctionnalité a été consolidée dans la page Fournisseurs principale. 
+            Vous y trouverez toutes les fonctionnalités avancées de gestion des fournisseurs, 
+            incluant les analytics, la performance et la gestion des relations.
+          </p>
+          <div className="mt-4">
+            <Button 
+              onClick={() => window.location.href = '/suppliers'} 
+              className="inline-flex items-center gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Aller à la page Fournisseurs
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
