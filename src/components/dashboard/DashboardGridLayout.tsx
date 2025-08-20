@@ -41,9 +41,13 @@ export const DashboardGridLayout = () => {
   }, [layout.widgets]);
 
   const handleLayoutChange = useCallback((currentLayout: any, layouts: any) => {
-    if (!isEditing) return;
+    console.log('Layout changed, isEditing:', isEditing, 'currentLayout:', currentLayout);
 
-    console.log('Layout changed, saving...', currentLayout);
+    // Sauvegarder seulement en mode édition
+    if (!isEditing) {
+      console.log('Not in editing mode, skipping save');
+      return;
+    }
 
     // Clear existing timeout
     if (saveTimeoutRef.current) {
