@@ -17,34 +17,34 @@ export function PurchaseHistory({ stockItemId }: PurchaseHistoryProps) {
     staleTime: 5 * 60 * 1000, // 5 minutes
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('order_items')
+        .from('component_purchase_history')
         .select(`
           *,
-          orders!inner (
+          supplier:suppliers (
+            name
+          ),
+          order:orders (
             order_number,
             order_date,
             delivery_date,
-            status,
-            suppliers (
-              name
-            )
+            status
           )
         `)
         .eq('stock_item_id', stockItemId)
-        .order('id', { ascending: false });
+        .order('purchase_date', { ascending: false });
 
       if (error) throw error;
 
       return data.map(item => ({
         id: item.id,
-        orderNumber: item.orders?.order_number || '',
-        supplierName: item.orders?.suppliers?.name || 'Fournisseur inconnu',
-        orderDate: item.orders?.order_date || '',
-        deliveryDate: item.orders?.delivery_date,
+        orderNumber: item.order?.order_number || `Achat direct ${new Date(item.purchase_date).toLocaleDateString()}`,
+        supplierName: item.supplier?.name || 'Fournisseur inconnu',
+        orderDate: item.purchase_date,
+        deliveryDate: item.installation_date,
         quantity: item.quantity,
-        unitPrice: item.unit_price,
-        totalPrice: item.total_price || (item.quantity * item.unit_price),
-        status: item.orders?.status || 'unknown'
+        unitPrice: item.unit_cost,
+        totalPrice: item.total_cost || (item.quantity * item.unit_cost),
+        status: item.order?.status || 'delivered'
       })) as PurchaseHistoryItem[];
     }
   });
