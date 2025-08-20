@@ -406,7 +406,7 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
                     >
                       <Star
                         className={`h-6 w-6 ${
-                          rating <= evaluationForm[key as keyof typeof evaluationForm]
+                          rating <= Number(evaluationForm[key as keyof typeof evaluationForm] || 0)
                             ? 'text-yellow-400 fill-current'
                             : 'text-gray-300'
                         }`}

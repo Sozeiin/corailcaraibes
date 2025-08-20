@@ -140,15 +140,22 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
         }
       });
 
+      const suppliersValues = Object.values(supplierStats);
+      const suppliersCount = suppliersValues.length;
+      
+      // Calculate averages safely
+      const totalDeliveryTime = suppliersValues.reduce((sum: number, s: any) => sum + (s.avgDeliveryTime || 0), 0);
+      const totalOnTimePercentage = suppliersValues.reduce((sum: number, s: any) => sum + (s.onTimePercentage || 0), 0);
+      
       return {
-        suppliers: Object.values(supplierStats).sort((a: any, b: any) => b.totalValue - a.totalValue),
+        suppliers: suppliersValues.sort((a: any, b: any) => b.totalValue - a.totalValue),
         monthlyTrends: Object.values(monthlyData).sort((a: any, b: any) => a.month.localeCompare(b.month)),
         categoryBreakdown: Object.values(categoryData),
         summary: {
-          totalSuppliers: Object.keys(supplierStats).length,
-          totalValue: Object.values(supplierStats).reduce((sum: number, s: any) => sum + s.totalValue, 0),
-          avgDeliveryTime: Object.keys(supplierStats).length > 0 ? Object.values(supplierStats).reduce((sum: number, s: any) => sum + (s.avgDeliveryTime || 0), 0) / Object.keys(supplierStats).length : 0,
-          avgOnTimePercentage: Object.values(supplierStats).reduce((sum: number, s: any) => sum + (s.onTimePercentage || 0), 0) / Object.keys(supplierStats).length
+          totalSuppliers: suppliersCount,
+          totalValue: suppliersValues.reduce((sum: number, s: any) => sum + s.totalValue, 0),
+          avgDeliveryTime: suppliersCount > 0 ? Number(totalDeliveryTime) / Number(suppliersCount) : 0,
+          avgOnTimePercentage: suppliersCount > 0 ? Number(totalOnTimePercentage) / Number(suppliersCount) : 0
         }
       };
     },
@@ -181,7 +188,7 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Valeur Totale</p>
-                <p className="text-2xl font-bold">{analyticsData?.summary.totalValue?.toLocaleString('fr-FR')} €</p>
+                <p className="text-2xl font-bold">{(analyticsData?.summary.totalValue || 0).toLocaleString()} €</p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
             </div>
