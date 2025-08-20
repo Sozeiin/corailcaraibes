@@ -167,49 +167,72 @@ export default function Orders() {
 
   const confirmDelete = async () => {
     if (deleteOrder) {
+      console.log('🗑️ Starting deletion process for order:', deleteOrder.id, deleteOrder.orderNumber);
+      console.log('🔍 User role:', user?.role, 'User base:', user?.baseId);
+      console.log('🔍 Can manage orders:', canManageOrders);
+      
       setIsDeleting(true);
       try {
-        // Supprimer d'abord tous les éléments liés dans l'ordre correct
+        // Test direct Supabase deletion first for debugging
+        console.log('🧪 Testing direct order deletion...');
+        const { error: directDeleteTest } = await supabase
+          .from('orders')
+          .select('id')
+          .eq('id', deleteOrder.id)
+          .single();
+        
+        console.log('📊 Order exists check result:', directDeleteTest);
         
         // 1. Supprimer les workflow steps
-        const { error: workflowError } = await supabase
+        console.log('🔄 Deleting workflow steps...');
+        const { error: workflowError, data: workflowData } = await supabase
           .from('purchase_workflow_steps')
           .delete()
           .eq('order_id', deleteOrder.id);
         
-        if (workflowError) {
-          console.warn('Erreur lors de la suppression des workflow steps:', workflowError);
-        }
+        console.log('📋 Workflow steps deletion result:', { error: workflowError, data: workflowData });
 
         // 2. Supprimer les notifications liées
-        const { error: notifError } = await supabase
+        console.log('🔔 Deleting notifications...');
+        const { error: notifError, data: notifData } = await supabase
           .from('workflow_notifications')
           .delete()
           .eq('order_id', deleteOrder.id);
         
-        if (notifError) {
-          console.warn('Erreur lors de la suppression des notifications:', notifError);
-        }
+        console.log('📩 Notifications deletion result:', { error: notifError, data: notifData });
 
         // 3. Supprimer les alertes liées
-        const { error: alertError } = await supabase
+        console.log('⚠️ Deleting alerts...');
+        const { error: alertError, data: alertData } = await supabase
           .from('workflow_alerts')
           .delete()
           .eq('order_id', deleteOrder.id);
         
-        if (alertError) {
-          console.warn('Erreur lors de la suppression des alertes:', alertError);
-        }
+        console.log('🚨 Alerts deletion result:', { error: alertError, data: alertData });
 
-        // 4. Supprimer les items de commande
+        // 4. Supprimer les bulk purchase distributions
+        console.log('📦 Deleting bulk purchase distributions...');
+        const { error: bulkError, data: bulkData } = await supabase
+          .from('bulk_purchase_distributions')
+          .delete()
+          .eq('order_id', deleteOrder.id);
+        
+        console.log('🛒 Bulk distributions deletion result:', { error: bulkError, data: bulkData });
+
+        // 5. Supprimer les items de commande via hook
+        console.log('🧾 Deleting order items...');
         const items = rawOrderItems.filter((i: any) => i.order_id === deleteOrder.id);
+        console.log('📝 Found order items:', items.length);
         for (const item of items) {
+          console.log('🗑️ Deleting item:', item.id);
           await removeOrderItem(item.id);
         }
 
-        // 5. Enfin supprimer la commande
+        // 6. Enfin supprimer la commande via hook
+        console.log('📋 Deleting main order...');
         await removeOrderRecord(deleteOrder.id);
         
+        console.log('✅ Order deletion completed successfully');
         toast({
           title: "Commande supprimée",
           description: "La commande a été supprimée avec succès.",
@@ -219,7 +242,8 @@ export default function Orders() {
         refetchOrders();
         refetchOrderItems();
       } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
+        console.error('❌ Erreur lors de la suppression:', error);
+        console.error('❌ Error details:', JSON.stringify(error, null, 2));
         toast({
           title: "Erreur",
           description: "Impossible de supprimer la commande: " + (error as Error).message,
