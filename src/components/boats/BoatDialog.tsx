@@ -57,6 +57,7 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
       fetchBases();
       
       if (boat) {
+        console.log('Loading boat for edit:', boat); // Debug log
         setFormData({
           name: boat.name,
           model: boat.model,
@@ -64,7 +65,7 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
           hullNumber: '',
           year: boat.year,
           status: boat.status,
-          baseId: boat.baseId,
+          baseId: boat.baseId || '',
           nextMaintenance: boat.nextMaintenance || '',
         });
       } else {
