@@ -10,6 +10,7 @@ import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { WorkflowGuide } from '@/components/orders/WorkflowGuide';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
@@ -228,6 +229,8 @@ export default function Orders() {
             </div>
           )}
         </div>
+
+        <WorkflowGuide />
 
         <ErrorBoundary>
           <div className="bg-white rounded-lg shadow-sm border">

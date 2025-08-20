@@ -99,6 +99,29 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
       return actions;
     }
 
+    // Actions pour commandes en brouillon
+    if (order.status === 'draft') {
+      // Pour tous les utilisateurs : ils peuvent choisir entre demande d'achat ou commande directe
+      actions.push(
+        {
+          key: 'submit_for_approval',
+          label: 'Soumettre pour approbation',
+          variant: 'default' as const,
+          icon: CheckCircle,
+          newStatus: 'pending_approval' as PurchaseWorkflowStatus,
+          requiresNotes: false
+        },
+        {
+          key: 'start_supplier_search',
+          label: 'Commande directe (recherche fournisseur)',
+          variant: 'outline' as const,
+          icon: Search,
+          newStatus: 'supplier_search' as PurchaseWorkflowStatus,
+          requiresNotes: false
+        }
+      );
+    }
+
     // Actions pour la direction
     if (user.role === 'direction') {
       if (order.status === 'pending_approval') {

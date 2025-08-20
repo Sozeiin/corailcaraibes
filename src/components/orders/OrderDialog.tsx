@@ -65,7 +65,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
       orderNumber: '',
       supplierId: '',
       baseId: '',
-      status: 'pending',
+        status: 'draft',
       orderDate: new Date().toISOString().split('T')[0],
       deliveryDate: '',
       items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
@@ -147,7 +147,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         orderNumber,
         supplierId: '',
         baseId: user?.role === 'direction' ? '' : (user?.baseId || ''),
-        status: 'pending',
+        status: 'draft',
         orderDate: new Date().toISOString().split('T')[0],
         deliveryDate: '',
         items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
@@ -169,10 +169,12 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         order_number: data.orderNumber,
         supplier_id: data.supplierId || null,
         base_id: data.baseId || null,
-        status: data.status as 'pending' | 'confirmed' | 'delivered' | 'cancelled',
+        status: data.status,
         order_date: data.orderDate,
         delivery_date: data.deliveryDate || null,
-        total_amount: totalAmount
+        total_amount: totalAmount,
+        is_purchase_request: data.status === 'pending_approval',
+        requested_by: user?.id || null
       };
 
       let orderId = order?.id;
@@ -296,29 +298,33 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un statut" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="pending">En attente</SelectItem>
-                        <SelectItem value="confirmed">Confirmée</SelectItem>
-                        <SelectItem value="delivered">Livrée</SelectItem>
-                        <SelectItem value="cancelled">Annulée</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="status"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Type de commande</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le type" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="draft">Brouillon</SelectItem>
+                          <SelectItem value="pending_approval">Demande d'achat (nécessite approbation)</SelectItem>
+                          <SelectItem value="supplier_search">Commande directe (recherche fournisseur)</SelectItem>
+                          {/* Statuts legacy pour compatibilité */}
+                          <SelectItem value="pending">Ancienne commande - En attente</SelectItem>
+                          <SelectItem value="confirmed">Ancienne commande - Confirmée</SelectItem>
+                          <SelectItem value="delivered">Ancienne commande - Livrée</SelectItem>
+                          <SelectItem value="cancelled">Annulée</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
