@@ -377,14 +377,28 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium">Photo de l'article</label>
-                <div className="mt-2">
-                  <StockPhotoUpload
-                    photoUrl={form.watch('photoUrl')}
-                    onPhotoChange={(url) => form.setValue('photoUrl', url || '')}
-                    disabled={isSubmitting}
-                  />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium">Photo de l'article</label>
+                  <div className="mt-2">
+                    <StockPhotoUpload
+                      photoUrl={form.watch('photoUrl')}
+                      onPhotoChange={(url) => form.setValue('photoUrl', url || '')}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                </div>
+                <div className="hidden md:flex items-center justify-center">
+                  {form.watch('photoUrl') && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-2">Aperçu</p>
+                      <img 
+                        src={form.watch('photoUrl')} 
+                        alt="Aperçu" 
+                        className="max-w-32 max-h-32 object-cover rounded-lg border shadow-sm"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

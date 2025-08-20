@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { OptimizedImage } from '@/components/ui/optimized-image';
 import { StockItem } from '@/types';
 
 interface StockTableProps {
@@ -59,7 +60,7 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="min-w-[200px]">Article</TableHead>
+            <TableHead className="min-w-[220px]">Article</TableHead>
             <TableHead className="hidden sm:table-cell">Référence</TableHead>
             <TableHead className="hidden md:table-cell">Catégorie</TableHead>
             <TableHead className="hidden lg:table-cell">Base</TableHead>
@@ -80,27 +81,38 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                 className={`hover:bg-muted/50 ${onViewDetails ? 'cursor-pointer' : ''}`}
                 onClick={() => onViewDetails?.(item)}
               >
-                <TableCell className="font-medium min-w-[200px]">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                      {item.quantity <= item.minThreshold && (
-                        <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                      )}
-                      <span className="font-medium truncate">{item.name}</span>
+                <TableCell className="font-medium min-w-[220px]">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <OptimizedImage
+                        src={item.photoUrl}
+                        alt={item.name}
+                        size="sm"
+                        className="rounded-md border"
+                        fallbackIcon={<Package className="h-8 w-8 text-muted-foreground" />}
+                      />
                     </div>
-                    {/* Informations complémentaires visibles uniquement sur mobile/tablet */}
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground sm:hidden">
-                      {item.reference && (
-                        <span className="bg-muted px-2 py-1 rounded">Réf: {item.reference}</span>
-                      )}
-                      {item.category && (
-                        <span className="bg-muted px-2 py-1 rounded">{item.category}</span>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground md:hidden">
-                      {item.location && (
-                        <span className="bg-muted px-2 py-1 rounded">📍 {item.location}</span>
-                      )}
+                    <div className="flex flex-col gap-1 min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        {item.quantity <= item.minThreshold && (
+                          <AlertTriangle className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                        )}
+                        <span className="font-medium truncate">{item.name}</span>
+                      </div>
+                      {/* Informations complémentaires visibles uniquement sur mobile/tablet */}
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground sm:hidden">
+                        {item.reference && (
+                          <span className="bg-muted px-2 py-1 rounded">Réf: {item.reference}</span>
+                        )}
+                        {item.category && (
+                          <span className="bg-muted px-2 py-1 rounded">{item.category}</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground md:hidden">
+                        {item.location && (
+                          <span className="bg-muted px-2 py-1 rounded">📍 {item.location}</span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </TableCell>
