@@ -297,17 +297,37 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
         console.log('Démarrage du décodage ZXing...');
         
+        // Configuration du scanner avec plus de formats supportés
+        const hints = new Map();
+        hints.set('POSSIBLE_FORMATS', [
+          'QR_CODE',
+          'CODE_128',
+          'CODE_39',
+          'EAN_13',
+          'EAN_8',
+          'UPC_A',
+          'UPC_E',
+          'CODABAR',
+          'ITF',
+          'RSS_14',
+          'RSS_EXPANDED',
+          'DATA_MATRIX',
+          'AZTEC',
+          'PDF_417'
+        ]);
+        hints.set('TRY_HARDER', true);
+        hints.set('PURE_BARCODE', false);
+        
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
           video, 
           (result, error) => {
             if (result && isScanning) {
               const scannedCode = result.getText().trim();
-              console.log('Code scanné:', scannedCode);
+              console.log('✅ Code détecté:', scannedCode, 'Format:', result.getBarcodeFormat());
               
               if (validateBarcodeFormat(scannedCode)) {
-                // Scan immédiat sans attendre plusieurs confirmations
-                console.log('Code confirmé:', scannedCode);
+                console.log('✅ Code validé:', scannedCode);
                 statusText.textContent = `✅ Code validé: ${scannedCode}`;
                 statusText.style.color = operation === 'add' ? '#22c55e' : '#ef4444';
                 
@@ -317,12 +337,15 @@ export function StockScanner({ stockItems }: StockScannerProps) {
                   processScannedCode(scannedCode, operation);
                 }, 100);
               } else {
-                console.log('Code rejeté (format invalide):', scannedCode);
+                console.log('⚠️ Code rejeté (format invalide):', scannedCode);
+                statusText.textContent = `⚠️ Format invalide: ${scannedCode}`;
               }
             }
             
+            // Ne logger que les vraies erreurs, pas les "NotFoundException" normales
             if (error && error.name !== 'NotFoundException') {
-              console.log('Erreur de scan (non critique):', error.name, error.message);
+              console.log('❌ Erreur de scanner:', error.name, error.message);
+              statusText.textContent = `❌ Erreur: ${error.name}`;
             }
           }
         );
