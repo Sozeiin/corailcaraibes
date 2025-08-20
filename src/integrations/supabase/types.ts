@@ -1838,6 +1838,7 @@ export type Database = {
           base_id: string | null
           boat_id: string | null
           bulk_purchase_type: string | null
+          carrier: string | null
           created_at: string | null
           delivery_date: string | null
           distribution_status: string | null
@@ -1856,6 +1857,7 @@ export type Database = {
           status: string | null
           supplier_id: string | null
           total_amount: number | null
+          tracking_number: string | null
           tracking_url: string | null
           urgency_level: string | null
         }
@@ -1865,6 +1867,7 @@ export type Database = {
           base_id?: string | null
           boat_id?: string | null
           bulk_purchase_type?: string | null
+          carrier?: string | null
           created_at?: string | null
           delivery_date?: string | null
           distribution_status?: string | null
@@ -1883,6 +1886,7 @@ export type Database = {
           status?: string | null
           supplier_id?: string | null
           total_amount?: number | null
+          tracking_number?: string | null
           tracking_url?: string | null
           urgency_level?: string | null
         }
@@ -1892,6 +1896,7 @@ export type Database = {
           base_id?: string | null
           boat_id?: string | null
           bulk_purchase_type?: string | null
+          carrier?: string | null
           created_at?: string | null
           delivery_date?: string | null
           distribution_status?: string | null
@@ -1910,6 +1915,7 @@ export type Database = {
           status?: string | null
           supplier_id?: string | null
           total_amount?: number | null
+          tracking_number?: string | null
           tracking_url?: string | null
           urgency_level?: string | null
         }

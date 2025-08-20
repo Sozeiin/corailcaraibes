@@ -39,6 +39,7 @@ type PurchaseWorkflowStatus =
   | 'cancelled';
 import { CheckCircle, XCircle, Search, ShoppingCart, Ship, Settings } from 'lucide-react';
 import { SupplierPriceForm } from './SupplierPriceForm';
+import { ShippingTrackingForm } from './ShippingTrackingForm';
 
 interface WorkflowActionsProps {
   order: Order;
@@ -52,6 +53,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const [showTrackingForm, setShowTrackingForm] = useState(false);
 
   const advanceWorkflowMutation = useMutation({
     mutationFn: async ({ newStatus, notes: notesParam }: { newStatus: PurchaseWorkflowStatus; notes?: string }) => {
@@ -150,8 +152,9 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Expédier vers Antilles',
           variant: 'default' as const,
           icon: Ship,
-          newStatus: 'shipping_antilles' as PurchaseWorkflowStatus,
-          requiresNotes: false
+          newStatus: null as any, // Special action for tracking
+          requiresNotes: false,
+          isSpecial: true
         });
       }
     }
@@ -214,6 +217,20 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           variant={action.variant} 
           className="flex items-center gap-2"
           onClick={() => setShowSupplierForm(true)}
+        >
+          <Icon className="w-4 h-4" />
+          {action.label}
+        </Button>
+      );
+    }
+
+    // Special handling for shipping to Antilles
+    if (action.isSpecial && action.key === 'ship_antilles') {
+      return (
+        <Button 
+          variant={action.variant} 
+          className="flex items-center gap-2"
+          onClick={() => setShowTrackingForm(true)}
         >
           <Icon className="w-4 h-4" />
           {action.label}
@@ -296,6 +313,22 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
             order={order} 
             onComplete={() => {
               setShowSupplierForm(false);
+              onOrderUpdate?.();
+            }} 
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Shipping Tracking Dialog */}
+      <Dialog open={showTrackingForm} onOpenChange={setShowTrackingForm}>
+        <DialogContent className="max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Expédition vers les Antilles</DialogTitle>
+          </DialogHeader>
+          <ShippingTrackingForm 
+            order={order} 
+            onComplete={() => {
+              setShowTrackingForm(false);
               onOrderUpdate?.();
             }} 
           />

@@ -11,6 +11,7 @@ import { WorkflowTimeline } from './WorkflowTimeline';
 import { WorkflowActions } from './WorkflowActions';
 import { WorkflowStatusIndicator, WorkflowStepsOverview } from './WorkflowStatusIndicator';
 import { WorkflowTimelineEnhanced } from './WorkflowTimelineEnhanced';
+import { OrderTrackingWidget } from './OrderTrackingWidget';
 import { WorkflowStatus } from '@/types/workflow';
 import { ExternalLink, Package, Calendar, User, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -213,20 +214,27 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                     </>
                   )}
 
-                  {orderDetails?.tracking_url && (
+                  {/* Tracking Widget - show if order has been shipped */}
+                  {(orderDetails?.tracking_number || orderDetails?.carrier || order.status === 'shipping_antilles' || order.status === 'received_scanned' || order.status === 'completed') && (
                     <>
                       <Separator />
                       <div>
-                        <p className="text-sm font-medium text-gray-500">Suivi transporteur</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => window.open(orderDetails.tracking_url, '_blank')}
-                          className="flex items-center gap-2"
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                          Voir le suivi
-                        </Button>
+                        <p className="text-sm font-medium text-gray-500 mb-3">Suivi de livraison</p>
+                        <OrderTrackingWidget
+                          orderId={order.id}
+                          trackingNumber={orderDetails?.tracking_number}
+                          carrier={orderDetails?.carrier}
+                          onUpdateTracking={async (trackingNumber, carrier) => {
+                            const { error } = await supabase
+                              .from('orders')
+                              .update({ tracking_number: trackingNumber, carrier: carrier })
+                              .eq('id', order.id);
+                            
+                            if (!error) {
+                              refetch();
+                            }
+                          }}
+                        />
                       </div>
                     </>
                   )}
