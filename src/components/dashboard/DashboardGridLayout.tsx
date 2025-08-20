@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback, useRef } from 'react';
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ export const DashboardGridLayout = () => {
   const { layout, loading, removeWidget, updateWidget, savePreferences, resetToDefault } = useDashboardPreferences();
   const [isEditing, setIsEditing] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Convert our widgets to grid layout format
   const gridLayouts = useMemo(() => {
@@ -39,28 +40,39 @@ export const DashboardGridLayout = () => {
     };
   }, [layout.widgets]);
 
-  const handleLayoutChange = (currentLayout: any, layouts: any) => {
+  const handleLayoutChange = useCallback((currentLayout: any, layouts: any) => {
     if (!isEditing) return;
 
-    const updatedWidgets = layout.widgets.map(widget => {
-      const layoutItem = currentLayout.find((item: any) => item.i === widget.id);
-      if (layoutItem) {
-        return {
-          ...widget,
-          position: {
-            x: layoutItem.x,
-            y: layoutItem.y,
-            w: layoutItem.w,
-            h: layoutItem.h,
-          }
-        };
-      }
-      return widget;
-    });
+    console.log('Layout changed, saving...', currentLayout);
 
-    const newLayout = { widgets: updatedWidgets };
-    savePreferences(newLayout);
-  };
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Debounce the save operation
+    saveTimeoutRef.current = setTimeout(() => {
+      const updatedWidgets = layout.widgets.map(widget => {
+        const layoutItem = currentLayout.find((item: any) => item.i === widget.id);
+        if (layoutItem) {
+          return {
+            ...widget,
+            position: {
+              x: layoutItem.x,
+              y: layoutItem.y,
+              w: layoutItem.w,
+              h: layoutItem.h,
+            }
+          };
+        }
+        return widget;
+      });
+
+      const newLayout = { widgets: updatedWidgets };
+      console.log('Saving layout:', newLayout);
+      savePreferences(newLayout);
+    }, 500); // Debounce de 500ms
+  }, [isEditing, layout.widgets, savePreferences]);
 
   const handleRemoveWidget = (widgetId: string) => {
     removeWidget(widgetId);
