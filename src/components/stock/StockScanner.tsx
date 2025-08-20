@@ -558,13 +558,37 @@ export function StockScanner({ stockItems }: StockScannerProps) {
     });
 
     try {
+      // Vérifier d'abord que l'item existe en base
+      const { data: existingItem, error: fetchError } = await supabase
+        .from('stock_items')
+        .select('quantity, id')
+        .eq('id', operation.stockItem.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('❌ Error fetching stock item:', fetchError);
+        throw fetchError;
+      }
+
+      if (!existingItem) {
+        console.error('❌ Stock item not found in database:', operation.stockItem.id);
+        toast({
+          title: 'Erreur',
+          description: 'Article non trouvé en base de données. Veuillez actualiser la page.',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      console.log('📊 Current quantity from DB:', existingItem.quantity);
+
       const newQuantity = operation.operation === 'add' 
-        ? operation.stockItem.quantity + operation.quantity
-        : operation.stockItem.quantity - operation.quantity;
+        ? existingItem.quantity + operation.quantity
+        : existingItem.quantity - operation.quantity;
 
       console.log('📊 Quantity calculation:', {
         operation: operation.operation,
-        current: operation.stockItem.quantity,
+        currentFromDB: existingItem.quantity,
         change: operation.quantity,
         new: newQuantity
       });
