@@ -96,7 +96,8 @@ export const Boats = () => {
   const {
     data: rawBoats = [],
     loading: isLoading,
-    remove: removeBoat
+    remove: removeBoat,
+    refetch: refetchBoats
   } = useOfflineData<any>({ table: 'boats', baseId, dependencies: [user?.role, user?.baseId] });
 
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
@@ -207,9 +208,15 @@ export const Boats = () => {
           {filteredBoats.map(boat => <BoatCard key={boat.id} boat={boat} onEdit={handleEdit} onDelete={handleDelete} onHistory={handleHistory} onMaintenance={handleMaintenance} />)}
         </div>}
 
-      <BoatDialog isOpen={isDialogOpen} onClose={() => {
-      setIsDialogOpen(false);
-      setSelectedBoat(null);
-    }} boat={selectedBoat} />
+      <BoatDialog 
+        isOpen={isDialogOpen} 
+        onClose={() => {
+          setIsDialogOpen(false);
+          setSelectedBoat(null);
+          // Rafraîchir les données après fermeture du dialog
+          refetchBoats();
+        }} 
+        boat={selectedBoat} 
+      />
     </div>;
 };

@@ -57,7 +57,6 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
       fetchBases();
       
       if (boat) {
-        console.log('Loading boat for edit:', boat); // Debug log
         setFormData({
           name: boat.name,
           model: boat.model,
@@ -99,8 +98,6 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         updated_at: new Date().toISOString(),
       };
 
-      console.log('Saving boat with data:', boatData); // Debug log
-
       if (boat) {
         // Update existing boat
         const { data: updatedData, error } = await supabase
@@ -110,8 +107,6 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
           .select(); // Récupère les données mises à jour
 
         if (error) throw error;
-        
-        console.log('Boat updated successfully:', updatedData); // Debug log
 
         toast({
           title: 'Bateau modifié',
