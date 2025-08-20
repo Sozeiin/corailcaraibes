@@ -18,11 +18,12 @@ interface StockTableProps {
   onEdit: (item: StockItem) => void;
   onDuplicate?: (item: StockItem) => void;
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
+  onViewDetails?: (item: StockItem) => void;
   onDelete: (item: StockItem) => void;
   canManage: boolean;
 }
 
-export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onDelete, canManage }: StockTableProps) {
+export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onViewDetails, onDelete, canManage }: StockTableProps) {
   if (isLoading) {
     return (
       <div className="p-8">
@@ -74,7 +75,11 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
           {items.map((item) => {
             const status = getStockStatus(item);
             return (
-              <TableRow key={item.id} className="hover:bg-muted/50">
+              <TableRow 
+                key={item.id} 
+                className={`hover:bg-muted/50 ${onViewDetails ? 'cursor-pointer' : ''}`}
+                onClick={() => onViewDetails?.(item)}
+              >
                 <TableCell className="font-medium min-w-[200px]">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
@@ -119,7 +124,10 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateQuantity(item.id, Math.max(0, item.quantity - 1));
+                          }}
                           disabled={item.quantity === 0}
                           title="Diminuer la quantité"
                           className="h-6 w-6 p-0"
@@ -134,7 +142,10 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdateQuantity(item.id, item.quantity + 1);
+                          }}
                           title="Augmenter la quantité"
                           className="h-6 w-6 p-0"
                         >
@@ -177,7 +188,10 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => onDuplicate(item)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDuplicate(item);
+                          }}
                           title="Dupliquer sur une autre base"
                           className="h-8 w-8 p-0"
                         >
@@ -187,7 +201,10 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onEdit(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(item);
+                        }}
                         title="Modifier"
                         className="h-8 w-8 p-0"
                       >
@@ -196,7 +213,10 @@ export function StockTable({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => onDelete(item)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(item);
+                        }}
                         title="Supprimer"
                         className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >

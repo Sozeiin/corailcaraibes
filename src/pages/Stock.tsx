@@ -292,6 +292,7 @@ export default function Stock() {
                   onDuplicate={handleDuplicate}
                   onUpdateQuantity={handleUpdateQuantity}
                   onDelete={handleDelete}
+                  onViewDetails={handleViewDetails}
                   canManage={canManageStock}
                 />
               )}
