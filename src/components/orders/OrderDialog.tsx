@@ -303,22 +303,29 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Type de commande</FormLabel>
+                      <FormLabel>Statut / Type de commande</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner le type" />
+                            <SelectValue placeholder="Sélectionner le statut" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
+                          {/* Workflow moderne */}
                           <SelectItem value="draft">Brouillon</SelectItem>
                           <SelectItem value="pending_approval">Demande d'achat (nécessite approbation)</SelectItem>
-                          <SelectItem value="supplier_search">Commande directe (recherche fournisseur)</SelectItem>
-                          {/* Statuts legacy pour compatibilité */}
-                          <SelectItem value="pending">Ancienne commande - En attente</SelectItem>
-                          <SelectItem value="confirmed">Ancienne commande - Confirmée</SelectItem>
-                          <SelectItem value="delivered">Ancienne commande - Livrée</SelectItem>
+                          <SelectItem value="approved">Approuvé (direction)</SelectItem>
+                          <SelectItem value="supplier_search">Recherche fournisseur</SelectItem>
+                          <SelectItem value="order_confirmed">Commande confirmée</SelectItem>
+                          <SelectItem value="shipping_antilles">Envoi vers Antilles</SelectItem>
+                          <SelectItem value="received_scanned">Réception scannée</SelectItem>
+                          <SelectItem value="completed">Terminé</SelectItem>
+                          {/* Statuts legacy */}
+                          <SelectItem value="pending">Ancienne - En attente</SelectItem>
+                          <SelectItem value="confirmed">Ancienne - Confirmée</SelectItem>
+                          <SelectItem value="delivered">Ancienne - Livrée</SelectItem>
                           <SelectItem value="cancelled">Annulée</SelectItem>
+                          <SelectItem value="rejected">Rejetée</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

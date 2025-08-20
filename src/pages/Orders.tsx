@@ -11,6 +11,7 @@ import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { WorkflowGuide } from '@/components/orders/WorkflowGuide';
+import { StockSyncTestWidget } from '@/components/orders/StockSyncTestWidget';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
@@ -230,7 +231,14 @@ export default function Orders() {
           )}
         </div>
 
-        <WorkflowGuide />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <WorkflowGuide />
+          </div>
+          <div>
+            <StockSyncTestWidget />
+          </div>
+        </div>
 
         <ErrorBoundary>
           <div className="bg-white rounded-lg shadow-sm border">
