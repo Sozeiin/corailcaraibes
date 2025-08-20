@@ -85,6 +85,7 @@ export const Boats = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterBase, setFilterBase] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const { toast } = useToast();
@@ -105,9 +106,16 @@ export const Boats = () => {
     base: bases.find((b: any) => b.id === boat.base_id)
   }));
   const filteredBoats = boats?.filter(boat => {
-    const matchesSearch = !searchTerm || boat.name.toLowerCase().includes(searchTerm.toLowerCase()) || boat.model.toLowerCase().includes(searchTerm.toLowerCase()) || boat.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = !searchTerm || 
+      boat.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      boat.model.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      boat.serial_number.toLowerCase().includes(searchTerm.toLowerCase());
+    
     const matchesStatus = filterStatus === 'all' || boat.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    
+    const matchesBase = filterBase === 'all' || boat.base_id === filterBase;
+    
+    return matchesSearch && matchesStatus && matchesBase;
   }) || [];
   const handleEdit = (boat: any) => {
     setSelectedBoat({
@@ -172,7 +180,14 @@ export const Boats = () => {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
           <Input placeholder="Rechercher par nom, modèle ou numéro de série..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
         </div>
-        <BoatFilters selectedStatus={filterStatus} onStatusChange={setFilterStatus} selectedBase="all" onBaseChange={() => {}} bases={bases} userRole={user?.role || ''} />
+        <BoatFilters 
+          selectedStatus={filterStatus} 
+          onStatusChange={setFilterStatus} 
+          selectedBase={filterBase} 
+          onBaseChange={setFilterBase} 
+          bases={bases} 
+          userRole={user?.role || ''} 
+        />
       </div>
 
       {filteredBoats.length === 0 ? <Card>
