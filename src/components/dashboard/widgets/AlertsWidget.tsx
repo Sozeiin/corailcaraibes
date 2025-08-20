@@ -1,21 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WidgetProps } from '@/types/widget';
-import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 
 export const AlertsWidget = ({ config }: WidgetProps) => {
-  const alerts = useOfflineData<any>({ table: 'alerts' });
+  const dashboardData = useDashboardData();
 
   const recentAlerts = useMemo(() => {
-    if (alerts.loading || !alerts.data) return [];
+    if (dashboardData.loading || !dashboardData.alerts) return [];
     
-    return alerts.data
+    return dashboardData.alerts
       .filter(alert => !alert.is_read)
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 5);
-  }, [alerts.data, alerts.loading]);
+  }, [dashboardData.alerts, dashboardData.loading]);
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {

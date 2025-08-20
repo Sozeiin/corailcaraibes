@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
-import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
+import { DashboardGridLayout } from '@/components/dashboard/DashboardGridLayout';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
@@ -216,8 +216,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Customizable Dashboard Grid */}
-      <DashboardGrid />
+      {/* Customizable Dashboard Grid with Drag & Drop */}
+      <DashboardGridLayout />
 
       <CheckInOutDialog 
         open={checkInOutDialogOpen}

@@ -45,6 +45,19 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
     return layout.widgets.some(w => w.type === widgetType);
   };
 
+  const getSizeConfig = (size: 'small' | 'medium' | 'large') => {
+    switch (size) {
+      case 'small':
+        return { w: 3, h: 4 };
+      case 'medium':
+        return { w: 6, h: 4 };
+      case 'large':
+        return { w: 12, h: 6 };
+      default:
+        return { w: 6, h: 4 };
+    }
+  };
+
   const handleAddWidget = (widgetType: string) => {
     const widget = availableWidgets.find(w => w.type === widgetType);
     if (!widget) return;
@@ -54,10 +67,16 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
       type: widgetType,
       title: widget.title,
       size: widget.defaultSize,
-      position: { x: 0, y: 0, w: 1, h: 1 }, // Will be auto-positioned
+      position: { 
+        x: 0, 
+        y: 0, 
+        w: getSizeConfig(widget.defaultSize).w, 
+        h: getSizeConfig(widget.defaultSize).h 
+      },
     };
 
     addWidget(newWidget);
+    console.log('Adding widget:', newWidget);
   };
 
   const getIcon = (iconName: string) => {
@@ -90,7 +109,6 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
             ))}
           </div>
 
-          {/* Widgets Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredWidgets.map(widget => {
               const Icon = getIcon(widget.icon);

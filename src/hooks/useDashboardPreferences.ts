@@ -61,9 +61,11 @@ export const useDashboardPreferences = () => {
   };
 
   const addWidget = (widgetConfig: WidgetConfig) => {
+    console.log('Adding widget to layout:', widgetConfig);
     const newLayout = {
       widgets: [...layout.widgets, widgetConfig],
     };
+    console.log('New layout:', newLayout);
     savePreferences(newLayout);
   };
 

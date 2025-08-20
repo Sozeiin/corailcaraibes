@@ -1,26 +1,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useMemo } from 'react';
 import { TrendingUp, TrendingDown, Activity, CheckCircle } from 'lucide-react';
 
 export const StatisticsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
-  const interventions = useOfflineData<any>({ table: 'interventions' });
-  const boats = useOfflineData<any>({ table: 'boats' });
-  const alerts = useOfflineData<any>({ table: 'alerts' });
-  const bases = useOfflineData<any>({ table: 'bases' });
+  const dashboardData = useDashboardData();
 
   const stats = useMemo(() => {
-    if (interventions.loading || boats.loading || alerts.loading) return null;
+    if (dashboardData.loading) return null;
 
-    const interventionsData = interventions.data || [];
-    const boatsData = boats.data || [];
-    const alertsData = alerts.data || [];
+    const { interventions, boats, alerts, bases } = dashboardData;
 
     if (user?.role === 'technicien') {
-      const myInterventions = interventionsData.filter(i => i.technician_id === user.id);
+      const myInterventions = interventions.filter(i => i.technician_id === user.id);
       const completed = myInterventions.filter(i => i.status === 'completed').length;
       const pending = myInterventions.filter(i => i.status === 'scheduled').length;
       
@@ -48,9 +43,9 @@ export const StatisticsWidget = ({ config }: WidgetProps) => {
         },
       ];
     } else if (user?.role === 'chef_base') {
-      const baseInterventions = interventionsData.filter(i => i.base_id === user.baseId);
-      const baseBoats = boatsData.filter(b => b.base_id === user.baseId);
-      const baseAlerts = alertsData.filter(a => a.base_id === user.baseId);
+      const baseInterventions = interventions.filter(i => i.base_id === user.baseId);
+      const baseBoats = boats.filter(b => b.base_id === user.baseId);
+      const baseAlerts = alerts.filter(a => a.base_id === user.baseId);
       
       return [
         {
@@ -79,28 +74,28 @@ export const StatisticsWidget = ({ config }: WidgetProps) => {
       return [
         {
           title: 'Total Interventions',
-          value: interventionsData.length,
+          value: interventions.length,
           change: '+15%',
           trend: 'up',
           icon: Activity,
         },
         {
           title: 'Total Bateaux',
-          value: boatsData.length,
+          value: boats.length,
           change: '+3%',
           trend: 'up',
           icon: CheckCircle,
         },
         {
           title: 'Bases Actives',
-          value: bases.data?.length || 0,
+          value: bases.length || 0,
           change: '0%',
           trend: 'up',
           icon: TrendingUp,
         },
       ];
     }
-  }, [interventions.data, boats.data, alerts.data, bases.data, user]);
+  }, [dashboardData, user]);
 
   if (!stats) {
     return (

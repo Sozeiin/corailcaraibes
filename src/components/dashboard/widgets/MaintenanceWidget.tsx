@@ -2,28 +2,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
-import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { Calendar, Clock, Wrench } from 'lucide-react';
 import { useMemo } from 'react';
 
 export const MaintenanceWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
-  const interventions = useOfflineData<any>({ table: 'interventions' });
-  const boats = useOfflineData<any>({ table: 'boats' });
+  const dashboardData = useDashboardData();
 
   const upcomingMaintenance = useMemo(() => {
-    if (interventions.loading || boats.loading || !interventions.data || !boats.data) return [];
+    if (dashboardData.loading || !dashboardData.interventions || !dashboardData.boats) return [];
     
-    const interventionsData = interventions.data || [];
-    const boatsData = boats.data || [];
+    const { interventions, boats } = dashboardData;
     
-    let filteredInterventions = interventionsData;
+    let filteredInterventions = interventions;
     
     // Filter based on user role
     if (user?.role === 'technicien') {
-      filteredInterventions = interventionsData.filter(i => i.technician_id === user.id);
+      filteredInterventions = interventions.filter(i => i.technician_id === user.id);
     } else if (user?.role === 'chef_base') {
-      filteredInterventions = interventionsData.filter(i => i.base_id === user.baseId);
+      filteredInterventions = interventions.filter(i => i.base_id === user.baseId);
     }
     
     return filteredInterventions
@@ -34,10 +32,10 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
       .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
       .slice(0, 5)
       .map(intervention => {
-        const boat = boatsData.find(b => b.id === intervention.boat_id);
+        const boat = boats.find(b => b.id === intervention.boat_id);
         return { ...intervention, boat };
       });
-  }, [interventions.data, boats.data, interventions.loading, boats.loading, user]);
+  }, [dashboardData.interventions, dashboardData.boats, dashboardData.loading, user]);
 
   const getStatusColor = (date: string) => {
     const today = new Date();

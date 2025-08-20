@@ -1,23 +1,20 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { WidgetProps } from '@/types/widget';
-import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useDashboardData } from '@/hooks/useDashboardData';
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const AnalyticsWidget = ({ config }: WidgetProps) => {
-  const interventions = useOfflineData<any>({ table: 'interventions' });
-  const orders = useOfflineData<any>({ table: 'orders' });
-  const bases = useOfflineData<any>({ table: 'bases' });
+  const dashboardData = useDashboardData();
 
   const chartData = useMemo(() => {
-    if (interventions.loading || orders.loading || bases.loading || 
-        !interventions.data || !orders.data || !bases.data) return [];
+    if (dashboardData.loading || !dashboardData.interventions || !dashboardData.orders || !dashboardData.bases) return [];
 
-    const basesData = bases.data || [];
+    const { bases, interventions, orders } = dashboardData;
     
-    return basesData.map(base => {
-      const baseInterventions = interventions.data.filter(i => i.base_id === base.id);
-      const baseOrders = orders.data.filter(o => o.base_id === base.id);
+    return bases.map(base => {
+      const baseInterventions = interventions.filter(i => i.base_id === base.id);
+      const baseOrders = orders.filter(o => o.base_id === base.id);
       
       return {
         name: base.name,
@@ -26,7 +23,7 @@ export const AnalyticsWidget = ({ config }: WidgetProps) => {
         completed: baseInterventions.filter(i => i.status === 'completed').length,
       };
     });
-  }, [interventions.data, orders.data, bases.data, interventions.loading, orders.loading, bases.loading]);
+  }, [dashboardData.interventions, dashboardData.orders, dashboardData.bases, dashboardData.loading]);
 
   return (
     <Card className="h-full">
