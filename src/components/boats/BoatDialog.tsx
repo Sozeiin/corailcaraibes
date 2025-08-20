@@ -55,8 +55,14 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
 
     if (isOpen) {
       fetchBases();
-      
+    }
+  }, [isOpen, user]);
+
+  // Séparé: initialiser le formulaire après que les bases soient chargées
+  useEffect(() => {
+    if (isOpen && bases.length > 0) {
       if (boat) {
+        console.log('Setting form data for boat:', boat.baseId, 'Available bases:', bases.map(b => b.id));
         setFormData({
           name: boat.name,
           model: boat.model,
@@ -80,7 +86,7 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         });
       }
     }
-  }, [isOpen, boat, user]);
+  }, [isOpen, boat, user, bases]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
