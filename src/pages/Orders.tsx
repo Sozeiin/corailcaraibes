@@ -10,8 +10,8 @@ import { OrderDetailsDialog } from '@/components/orders/OrderDetailsDialog';
 import { PurchaseRequestDialog } from '@/components/orders/PurchaseRequestDialog';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { ErrorBoundary } from '@/components/ui/error-boundary';
-import { WorkflowGuide } from '@/components/orders/WorkflowGuide';
-import { StockSyncTestWidget } from '@/components/orders/StockSyncTestWidget';
+import { AutoSyncInfo } from '@/components/orders/AutoSyncInfo';
+import { BulkSyncButton } from '@/components/orders/BulkSyncButton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
@@ -167,83 +167,60 @@ export default function Orders() {
 
   const confirmDelete = async () => {
     if (deleteOrder) {
-      console.log('🗑️ Starting deletion process for order:', deleteOrder.id, deleteOrder.orderNumber);
-      console.log('🔍 User role:', user?.role, 'User base:', user?.baseId);
-      console.log('🔍 Can manage orders:', canManageOrders);
-      
       setIsDeleting(true);
       try {
-        // Test direct Supabase deletion first for debugging
-        console.log('🧪 Testing direct order deletion...');
-        const { error: directDeleteTest } = await supabase
-          .from('orders')
-          .select('id')
-          .eq('id', deleteOrder.id)
-          .single();
+        // Supprimer toutes les relations dans l'ordre approprié
         
-        console.log('📊 Order exists check result:', directDeleteTest);
-        
-        // 1. Supprimer les workflow steps
-        console.log('🔄 Deleting workflow steps...');
-        const { error: workflowError, data: workflowData } = await supabase
+        // 1. Supprimer l'historique d'achat lié
+        await supabase
+          .from('component_purchase_history')
+          .delete()
+          .eq('order_id', deleteOrder.id);
+
+        // 2. Supprimer les workflow steps
+        await supabase
           .from('purchase_workflow_steps')
           .delete()
           .eq('order_id', deleteOrder.id);
-        
-        console.log('📋 Workflow steps deletion result:', { error: workflowError, data: workflowData });
 
-        // 2. Supprimer les notifications liées
-        console.log('🔔 Deleting notifications...');
-        const { error: notifError, data: notifData } = await supabase
+        // 3. Supprimer les notifications liées
+        await supabase
           .from('workflow_notifications')
           .delete()
           .eq('order_id', deleteOrder.id);
-        
-        console.log('📩 Notifications deletion result:', { error: notifError, data: notifData });
 
-        // 3. Supprimer les alertes liées
-        console.log('⚠️ Deleting alerts...');
-        const { error: alertError, data: alertData } = await supabase
+        // 4. Supprimer les alertes liées
+        await supabase
           .from('workflow_alerts')
           .delete()
           .eq('order_id', deleteOrder.id);
-        
-        console.log('🚨 Alerts deletion result:', { error: alertError, data: alertData });
 
-        // 4. Supprimer les bulk purchase distributions
-        console.log('📦 Deleting bulk purchase distributions...');
-        const { error: bulkError, data: bulkData } = await supabase
+        // 5. Supprimer les distributions d'achat groupé
+        await supabase
           .from('bulk_purchase_distributions')
           .delete()
           .eq('order_id', deleteOrder.id);
-        
-        console.log('🛒 Bulk distributions deletion result:', { error: bulkError, data: bulkData });
 
-        // 5. Supprimer les items de commande via hook
-        console.log('🧾 Deleting order items...');
+        // 6. Supprimer les items de commande
         const items = rawOrderItems.filter((i: any) => i.order_id === deleteOrder.id);
-        console.log('📝 Found order items:', items.length);
         for (const item of items) {
-          console.log('🗑️ Deleting item:', item.id);
           await removeOrderItem(item.id);
         }
 
-        // 6. Enfin supprimer la commande via hook
-        console.log('📋 Deleting main order...');
+        // 7. Enfin supprimer la commande
         await removeOrderRecord(deleteOrder.id);
         
-        console.log('✅ Order deletion completed successfully');
         toast({
-          title: "Commande supprimée",
-          description: "La commande a été supprimée avec succès.",
+          title: "✅ Commande supprimée",
+          description: "La commande et tous ses éléments ont été supprimés avec succès.",
         });
-        setIsDeleteDialogOpen(false);
+        
         setDeleteOrder(null);
+        setIsDeleteDialogOpen(false);
         refetchOrders();
         refetchOrderItems();
       } catch (error) {
-        console.error('❌ Erreur lors de la suppression:', error);
-        console.error('❌ Error details:', JSON.stringify(error, null, 2));
+        console.error('Erreur lors de la suppression:', error);
         toast({
           title: "Erreur",
           description: "Impossible de supprimer la commande: " + (error as Error).message,
@@ -292,14 +269,9 @@ export default function Orders() {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2">
-            <WorkflowGuide />
-          </div>
-          <div>
-            <StockSyncTestWidget />
-          </div>
-        </div>
+        <AutoSyncInfo />
+        
+        {user?.role === 'direction' && <BulkSyncButton />}
 
         <ErrorBoundary>
           <div className="bg-white rounded-lg shadow-sm border">

@@ -21,6 +21,7 @@ import { Order } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { WorkflowActions } from '@/components/orders/WorkflowActions';
 import { WorkflowStatusIndicator } from '@/components/orders/WorkflowStatusIndicator';
+import { SyncButton } from '@/components/orders/SyncButton';
 import { WorkflowStatus } from '@/types/workflow';
 import { useAuth } from '@/contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -188,6 +189,15 @@ export function OrderTableEnhanced({
                           <Edit className="w-4 h-4 mr-2" />
                           Modifier
                         </DropdownMenuItem>
+                        {order.status === 'confirmed' && (
+                          <div className="px-2 py-1">
+                            <SyncButton 
+                              orderId={order.id}
+                              orderNumber={order.orderNumber}
+                              onSyncComplete={onOrderUpdate}
+                            />
+                          </div>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           onClick={() => onDelete(order)}
