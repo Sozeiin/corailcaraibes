@@ -51,149 +51,219 @@ async function fetchChronopostTracking(trackingNumber: string): Promise<Tracking
   try {
     console.log('Fetching real Chronopost tracking for:', trackingNumber);
     
-    // URL du site de suivi Chronopost
-    const chronopostUrl = `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`;
+    // Essayer d'abord l'API officielle Chronopost (si disponible)
+    const chronopostApiUrl = `https://www.chronopost.fr/tracking-cxf/TrackingServiceWS/getTrackingInformation/${trackingNumber}`;
     
     try {
-      const response = await fetch(chronopostUrl, {
+      console.log('Trying Chronopost API first...');
+      const apiResponse = await fetch(chronopostApiUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-          'Cache-Control': 'no-cache',
+          'Accept': 'application/json, text/plain, */*',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Referer': 'https://www.chronopost.fr/'
         }
       });
 
-      if (response.ok) {
-        const html = await response.text();
-        console.log('Chronopost response received, parsing...');
+      if (apiResponse.ok) {
+        const apiData = await apiResponse.json();
+        console.log('Chronopost API response:', JSON.stringify(apiData, null, 2));
         
-        // Parser les informations du HTML de Chronopost avec des patterns plus précis
-        let status: TrackingData['status'] = 'pending';
-        let location = 'Centre de tri Chronopost';
-        let lastUpdate = new Date().toLocaleDateString('fr-FR');
-        let estimatedDelivery = '';
-        
-        // Normaliser le HTML pour la recherche
-        const normalizedHtml = html.toLowerCase();
-        
-        // Rechercher le statut avec des patterns plus précis
-        if (normalizedHtml.includes('livré le') || 
-            normalizedHtml.includes('delivery completed') || 
-            normalizedHtml.includes('colis livré') ||
-            normalizedHtml.includes('delivered on') ||
-            normalizedHtml.includes('remis au destinataire') ||
-            normalizedHtml.includes('distribution effectuée') ||
-            normalizedHtml.includes('colis réceptionné')) {
-          status = 'delivered';
-          console.log('Detected delivered status from Chronopost');
-        } else if (normalizedHtml.includes('en cours de livraison') || 
-                   normalizedHtml.includes('out for delivery') ||
-                   normalizedHtml.includes('en cours de distribution') ||
-                   normalizedHtml.includes('en tournée') ||
-                   normalizedHtml.includes('acheminé vers') ||
-                   normalizedHtml.includes('en transit') ||
-                   normalizedHtml.includes('transport en cours')) {
-          status = 'in_transit';
-          console.log('Detected in_transit status from Chronopost');
-        } else if (normalizedHtml.includes('exception') || 
-                   normalizedHtml.includes('incident') || 
-                   normalizedHtml.includes('problème') ||
-                   normalizedHtml.includes('échec de livraison') ||
-                   normalizedHtml.includes('delivery failed') ||
-                   normalizedHtml.includes('non distribué')) {
-          status = 'exception';
-          console.log('Detected exception status from Chronopost');
-        }
-        
-        // Rechercher la date de livraison réelle si le colis est livré
-        if (status === 'delivered') {
-          const deliveredDateMatch = html.match(/livré\s+le\s+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                                    html.match(/delivered\s+on\s+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                                    html.match(/distribution\s+effectuée\s+le\s+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i);
+        if (apiData && apiData.return && apiData.return.trackingHistory) {
+          // Parser la réponse API officielle
+          const history = apiData.return.trackingHistory;
+          const lastEvent = history[history.length - 1];
           
-          if (deliveredDateMatch) {
-            lastUpdate = deliveredDateMatch[1];
-            estimatedDelivery = deliveredDateMatch[1]; // Même date si déjà livré
-            console.log('Found Chronopost delivery date:', lastUpdate);
+          let status: TrackingData['status'] = 'pending';
+          if (lastEvent?.statusCode === '1' || lastEvent?.statusLabel?.toLowerCase().includes('livré')) {
+            status = 'delivered';
+          } else if (lastEvent?.statusLabel?.toLowerCase().includes('transit') || 
+                     lastEvent?.statusLabel?.toLowerCase().includes('acheminé')) {
+            status = 'in_transit';
           }
-        } else {
-          // Rechercher la date de livraison estimée pour les colis non livrés
-          const estimatedDeliveryMatch = html.match(/livraison[^>]*prévue[^>]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                                        html.match(/estimated[^>]*delivery[^>]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                                        html.match(/prévue[^>]*le[^>]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                                        html.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})[^>]*livraison/i);
           
-          if (estimatedDeliveryMatch) {
-            estimatedDelivery = estimatedDeliveryMatch[1];
-            console.log('Found Chronopost estimated delivery:', estimatedDelivery);
-          }
+          const events = history.map((event: any) => ({
+            date: new Date(event.eventDate).toLocaleDateString('fr-FR'),
+            status: event.statusCode === '1' ? 'delivered' : 'in_transit',
+            location: event.eventSite || 'France',
+            description: event.statusLabel || event.eventLabel || 'Événement Chronopost'
+          }));
+
+          return {
+            status,
+            location: lastEvent?.eventSite || 'France',
+            lastUpdate: new Date(lastEvent?.eventDate || Date.now()).toLocaleDateString('fr-FR'),
+            estimatedDelivery: status === 'delivered' 
+              ? new Date(lastEvent?.eventDate).toLocaleDateString('fr-FR')
+              : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'),
+            trackingUrl: `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`,
+            events
+          };
         }
-        
-        // Rechercher la localisation actuelle avec plus de précision
-        const locationMatch = html.match(/Centre de tri[^<]*([^<]+)/i) ||
-                             html.match(/Plateforme[^<]*([^<]+)/i) ||
-                             html.match(/Agence[^<]*([^<]+)/i) ||
-                             html.match(/localisation[^>]*:\s*([^<]+)/i) ||
-                             html.match(/dernière position[^>]*:\s*([^<]+)/i) ||
-                             html.match(/position actuelle[^>]*:\s*([^<]+)/i);
-        
-        if (locationMatch) {
-          location = locationMatch[1].trim();
-        } else if (status === 'delivered') {
-          location = 'Livré au destinataire';
-        }
-        
-        // Rechercher la dernière mise à jour avec plus de précision
-        const dateMatch = html.match(/dernière mise à jour[^>]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                         html.match(/last update[^>]*(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i) ||
-                         html.match(/(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/);
-        
-        if (dateMatch) {
-          lastUpdate = dateMatch[1];
-        }
-        
-        const trackingData: TrackingData = {
-          status,
-          location,
-          lastUpdate,
-          estimatedDelivery: estimatedDelivery || (status === 'delivered' ? lastUpdate : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')),
-          trackingUrl: chronopostUrl,
-          events: [{
-            date: lastUpdate,
-            status: status,
-            location: location,
-            description: status === 'delivered' 
-              ? `Colis livré - ${trackingNumber}` 
-              : status === 'in_transit' 
-                ? `En cours de livraison - ${trackingNumber}`
-                : `Suivi Chronopost - ${trackingNumber}`
-          }]
-        };
-        
-        console.log('Parsed Chronopost tracking data:', trackingData);
-        return trackingData;
       }
-    } catch (scrapeError) {
-      console.error('Error scraping Chronopost website:', scrapeError);
+    } catch (apiError) {
+      console.log('Chronopost API failed, falling back to scraping:', apiError);
     }
     
-    // Fallback : utiliser des données par défaut plus réalistes
-    console.log('Using fallback data for Chronopost');
-    return {
-      status: 'in_transit',
-      location: 'Centre de tri Chronopost - France',
-      lastUpdate: new Date().toLocaleDateString('fr-FR'),
-      estimatedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR'), // +3 jours pour Chronopost
+    // Fallback : scraping du site web Chronopost
+    console.log('Using Chronopost website scraping...');
+    const chronopostUrl = `https://www.chronopost.fr/tracking-no-cms/suivi-page?listeNumerosLT=${trackingNumber}`;
+    
+    const response = await fetch(chronopostUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const html = await response.text();
+    console.log('Chronopost HTML received, length:', html.length);
+    
+    // Log des parties importantes du HTML pour debug
+    const htmlSnippet = html.substring(0, 1000);
+    console.log('HTML snippet:', htmlSnippet);
+    
+    // Patterns de recherche plus robustes et spécifiques
+    let status: TrackingData['status'] = 'pending';
+    let location = 'France';
+    let lastUpdate = new Date().toLocaleDateString('fr-FR');
+    let estimatedDelivery = '';
+    let events: any[] = [];
+    
+    // Recherche améliorée du statut avec expressions régulières plus précises
+    const deliveredPatterns = [
+      /colis\s+livré/i,
+      /livré\s+le\s+\d/i,
+      /distribution\s+effectuée/i,
+      /remis\s+au\s+destinataire/i,
+      /delivered/i,
+      /livraison\s+réussie/i,
+      /colis\s+réceptionné/i
+    ];
+    
+    const transitPatterns = [
+      /en\s+cours\s+de\s+livraison/i,
+      /en\s+cours\s+de\s+distribution/i,
+      /en\s+tournée/i,
+      /en\s+transit/i,
+      /acheminé\s+vers/i,
+      /transport\s+en\s+cours/i,
+      /out\s+for\s+delivery/i
+    ];
+    
+    const exceptionPatterns = [
+      /échec\s+de\s+livraison/i,
+      /incident/i,
+      /exception/i,
+      /problème/i,
+      /non\s+distribué/i,
+      /delivery\s+failed/i
+    ];
+
+    // Vérifier les patterns dans l'ordre de priorité
+    for (const pattern of deliveredPatterns) {
+      if (pattern.test(html)) {
+        status = 'delivered';
+        console.log('Detected DELIVERED status with pattern:', pattern.source);
+        break;
+      }
+    }
+    
+    if (status === 'pending') {
+      for (const pattern of transitPatterns) {
+        if (pattern.test(html)) {
+          status = 'in_transit';
+          console.log('Detected IN_TRANSIT status with pattern:', pattern.source);
+          break;
+        }
+      }
+    }
+    
+    if (status === 'pending') {
+      for (const pattern of exceptionPatterns) {
+        if (pattern.test(html)) {
+          status = 'exception';
+          console.log('Detected EXCEPTION status with pattern:', pattern.source);
+          break;
+        }
+      }
+    }
+
+    // Recherche de dates plus précise
+    const datePatterns = [
+      /livré\s+le\s+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i,
+      /distribution\s+effectuée\s+le\s+(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i,
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})\s+\d{1,2}:\d{1,2}/i,
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{4})/i
+    ];
+
+    for (const pattern of datePatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        if (status === 'delivered') {
+          lastUpdate = match[1];
+          estimatedDelivery = match[1];
+        } else {
+          lastUpdate = match[1];
+        }
+        console.log('Found date with pattern:', pattern.source, '- Date:', match[1]);
+        break;
+      }
+    }
+
+    // Recherche de localisation plus précise
+    const locationPatterns = [
+      /Centre\s+de\s+tri\s+([^<\n\r]+)/i,
+      /Plateforme\s+([^<\n\r]+)/i,
+      /Agence\s+([^<\n\r]+)/i,
+      /(\w+\s+\w+)\s+\(\d{5}\)/i
+    ];
+
+    for (const pattern of locationPatterns) {
+      const match = html.match(pattern);
+      if (match) {
+        location = match[1].trim();
+        console.log('Found location with pattern:', pattern.source, '- Location:', location);
+        break;
+      }
+    }
+
+    if (status === 'delivered') {
+      location = 'Livré au destinataire';
+    }
+
+    // Créer un événement basé sur les informations trouvées
+    events.push({
+      date: lastUpdate,
+      status: status,
+      location: location,
+      description: status === 'delivered' 
+        ? `Colis livré le ${lastUpdate}` 
+        : status === 'in_transit' 
+          ? `En cours de livraison - ${location}`
+          : `Suivi Chronopost - ${trackingNumber}`
+    });
+
+    const trackingData: TrackingData = {
+      status,
+      location,
+      lastUpdate,
+      estimatedDelivery: estimatedDelivery || (status === 'delivered' ? lastUpdate : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('fr-FR')),
       trackingUrl: chronopostUrl,
-      events: [{
-        date: new Date().toLocaleDateString('fr-FR'),
-        status: 'in_transit',
-        location: 'Centre de tri Chronopost',
-        description: 'Consultez le suivi complet sur Chronopost.fr'
-      }]
+      events
     };
+    
+    console.log('Final Chronopost tracking data:', JSON.stringify(trackingData, null, 2));
+    return trackingData;
+    
   } catch (error) {
     console.error('Erreur Chronopost:', error);
     const trackingUrl = CARRIER_CONFIGS.chronopost.trackingUrl(trackingNumber);
