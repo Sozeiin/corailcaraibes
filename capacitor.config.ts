@@ -6,6 +6,10 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   bundledWebRuntime: false,
   plugins: {
+    Browser: {
+      androidCustomTabs: true,
+      iOSCustomTabs: true
+    },
     BarcodeScanner: {
       shouldShowOverlay: true,
       shouldShowTorchButton: true,

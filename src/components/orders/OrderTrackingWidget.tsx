@@ -109,15 +109,17 @@ export function OrderTrackingWidget({
         // Vérifier si nous sommes sur une plateforme mobile (Capacitor)
         if (Capacitor.isNativePlatform()) {
           console.log('Opening in external browser via Capacitor');
-          // Utiliser le plugin Browser de Capacitor pour ouvrir dans le navigateur externe
+          // Utiliser le plugin Browser de Capacitor avec des options pour forcer l'ouverture externe
           await Browser.open({ 
             url: trackingUrl,
-            windowName: '_blank'
+            windowName: '_system',
+            toolbarColor: '#ffffff',
+            presentationStyle: 'fullscreen'
           });
           
           toast({
             title: "Suivi ouvert",
-            description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur`
+            description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur externe`
           });
         } else {
           console.log('Opening in new tab via window.open');
@@ -137,12 +139,20 @@ export function OrderTrackingWidget({
           }
         }
       } catch (error) {
-        console.error('Error opening tracking URL:', error);
-        toast({
-          title: "Erreur d'ouverture",
-          description: "Impossible d'ouvrir le lien de suivi. Copiez ce lien dans votre navigateur : " + trackingUrl,
-          variant: "destructive"
-        });
+        console.error('Error opening tracking URL with Capacitor Browser:', error);
+        
+        // Fallback : essayer d'ouvrir avec window.location même sur mobile
+        try {
+          console.log('Fallback: trying window.location.href');
+          window.location.href = trackingUrl;
+        } catch (fallbackError) {
+          console.error('All methods failed:', fallbackError);
+          toast({
+            title: "Erreur d'ouverture",
+            description: "Impossible d'ouvrir le lien de suivi. Copiez ce lien dans votre navigateur : " + trackingUrl,
+            variant: "destructive"
+          });
+        }
       }
     } else {
       console.log('No tracking number or carrier available');
