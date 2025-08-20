@@ -1,5 +1,7 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChevronDown } from 'lucide-react';
 
 interface OrderFiltersProps {
   statuses: { value: string; label: string; }[];
@@ -37,45 +39,45 @@ const typeLabels = {
 
 export function OrderFilters({ statuses, selectedStatus, onStatusChange, selectedType, onTypeChange }: OrderFiltersProps) {
   return (
-    <div className="mt-4 space-y-3">
-      {/* Type Filter */}
-      <div>
-        <span className="text-sm font-medium text-muted-foreground mb-2 block">Type :</span>
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(typeLabels).map(([type, label]) => (
-            <Badge
-              key={type}
-              variant={selectedType === type ? 'default' : 'secondary'}
-              className="cursor-pointer"
-              onClick={() => onTypeChange(type)}
-            >
-              {label}
-            </Badge>
-          ))}
+    <div className="mt-4 space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Type Filter */}
+        <div className="space-y-2">
+          <span className="text-sm font-medium text-muted-foreground">Type :</span>
+          <Select value={selectedType} onValueChange={onTypeChange}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Sélectionner un type" />
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-lg z-50">
+              {Object.entries(typeLabels).map(([type, label]) => (
+                <SelectItem key={type} value={type} className="hover:bg-muted">
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
-      </div>
 
-      {/* Status Filter */}
-      <div>
-        <span className="text-sm font-medium text-muted-foreground mb-2 block">Statut :</span>
-        <div className="flex flex-wrap gap-2">
-          <Badge
-            variant={selectedStatus === 'all' ? 'default' : 'secondary'}
-            className="cursor-pointer"
-            onClick={() => onStatusChange('all')}
-          >
-            Tous
-          </Badge>
-          {statuses.filter(s => s.value !== 'all').map((status) => (
-            <Badge
-              key={status.value}
-              variant={selectedStatus === status.value ? 'default' : 'secondary'}
-              className="cursor-pointer"
-              onClick={() => onStatusChange(status.value)}
-            >
-              {status.label}
-            </Badge>
-          ))}
+        {/* Status Filter */}
+        <div className="space-y-2">
+          <span className="text-sm font-medium text-muted-foreground">Statut :</span>
+          <Select value={selectedStatus} onValueChange={onStatusChange}>
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="Sélectionner un statut" />
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            </SelectTrigger>
+            <SelectContent className="bg-background border shadow-lg z-50 max-h-60 overflow-y-auto">
+              <SelectItem value="all" className="hover:bg-muted">
+                Tous
+              </SelectItem>
+              {statuses.filter(s => s.value !== 'all').map((status) => (
+                <SelectItem key={status.value} value={status.value} className="hover:bg-muted">
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
