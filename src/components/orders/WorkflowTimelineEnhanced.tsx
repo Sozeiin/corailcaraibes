@@ -24,6 +24,7 @@ import { fr } from 'date-fns/locale';
 
 interface WorkflowTimelineEnhancedProps {
   orderId: string;
+  onShippingClick?: () => void; // Nouvelle prop pour gérer le clic sur l'expédition
 }
 
 const getIcon = (iconName: string) => {
@@ -42,7 +43,7 @@ const getIcon = (iconName: string) => {
   return icons[iconName as keyof typeof icons] || Clock;
 };
 
-export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedProps) {
+export function WorkflowTimelineEnhanced({ orderId, onShippingClick }: WorkflowTimelineEnhancedProps) {
   const { data: steps = [], isLoading, refetch } = useQuery({
     queryKey: ['workflow-steps', orderId],
     queryFn: async () => {
@@ -178,6 +179,8 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
             const isCompleted = !!step.completedAt;
             const isCurrent = !isCompleted && currentStep?.id === step.id;
             const isUpcoming = !isCompleted && !isCurrent;
+            const isShippingStep = step.stepStatus === 'shipping_antilles';
+            const canClickShipping = isShippingStep && (isCompleted || isCurrent) && onShippingClick;
             
             return (
               <div key={step.id} className="relative">
@@ -210,33 +213,46 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
                     )}
                   </div>
 
-                  {/* Contenu de l'étape avec animations */}
-                  <div className="flex-1 min-w-0">
-                    <div className={`
-                      p-3 sm:p-4 rounded-lg border transition-all duration-300
-                      ${isCompleted 
-                        ? 'bg-green-50 border-green-200' 
-                        : isCurrent 
-                          ? hasRejectedOrCancelled
-                            ? 'bg-red-50 border-red-200'
-                            : 'bg-blue-50 border-blue-200 shadow-md'
-                          : 'bg-gray-50 border-gray-200'
-                      }
-                    `}>
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 break-words">
-                            {step.stepName}
-                            {step.autoCompleted && (
-                              <Zap className="w-4 h-4 text-yellow-500 flex-shrink-0" />
-                            )}
-                          </h4>
-                          {step.stepDescription && (
-                            <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
-                              {step.stepDescription}
-                            </p>
-                          )}
-                        </div>
+                   {/* Contenu de l'étape avec animations */}
+                   <div className="flex-1 min-w-0">
+                     <div className={`
+                       p-3 sm:p-4 rounded-lg border transition-all duration-300
+                       ${isCompleted 
+                         ? 'bg-green-50 border-green-200' 
+                         : isCurrent 
+                           ? hasRejectedOrCancelled
+                             ? 'bg-red-50 border-red-200'
+                             : 'bg-blue-50 border-blue-200 shadow-md'
+                           : 'bg-gray-50 border-gray-200'
+                       }
+                       ${canClickShipping 
+                         ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] hover:bg-blue-100' 
+                         : ''
+                       }
+                     `}
+                     onClick={canClickShipping ? onShippingClick : undefined}
+                     title={canClickShipping ? 'Cliquez pour voir le suivi de livraison' : undefined}
+                   >
+                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                         <div className="min-w-0 flex-1">
+                           <h4 className="text-sm sm:text-base font-semibold text-gray-900 flex items-center gap-2 break-words">
+                             {step.stepName}
+                             {step.autoCompleted && (
+                               <Zap className="w-4 h-4 text-yellow-500 flex-shrink-0" />
+                             )}
+                             {canClickShipping && (
+                               <span className="text-blue-600 text-sm">📦 Cliquez pour le suivi</span>
+                             )}
+                           </h4>
+                           {step.stepDescription && (
+                             <p className="text-xs sm:text-sm text-gray-600 mt-1 break-words">
+                               {step.stepDescription}
+                               {canClickShipping && (
+                                 <span className="text-blue-600 ml-2">• Cliquez pour voir le suivi de livraison</span>
+                               )}
+                             </p>
+                           )}
+                         </div>
                         
                         <Badge className={`${stepConfig.color} shadow-sm w-fit flex-shrink-0`}>
                           {stepConfig.label}

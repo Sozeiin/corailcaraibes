@@ -123,9 +123,10 @@ export function WorkflowStatusIndicator({
 interface WorkflowStepsOverviewProps {
   currentStatus: WorkflowStatus;
   className?: string;
+  onShippingClick?: () => void; // Nouvelle prop pour gérer le clic sur l'expédition
 }
 
-export function WorkflowStepsOverview({ currentStatus, className = '' }: WorkflowStepsOverviewProps) {
+export function WorkflowStepsOverview({ currentStatus, className = '', onShippingClick }: WorkflowStepsOverviewProps) {
   const allSteps: { status: WorkflowStatus; required: boolean }[] = [
     { status: 'draft', required: true },
     { status: 'pending_approval', required: true },
@@ -161,6 +162,8 @@ export function WorkflowStepsOverview({ currentStatus, className = '' }: Workflo
           const isPassed = index < currentIndex;
           const isCurrent = index === currentIndex;
           const isBlocked = ['rejected', 'cancelled'].includes(currentStatus);
+          const isShippingStep = step.status === 'shipping_antilles';
+          const canClickShipping = isShippingStep && (isPassed || isCurrent) && onShippingClick;
           
           const stepConfig = WORKFLOW_STEPS[step.status] || { 
             label: step.status, 
@@ -182,13 +185,23 @@ export function WorkflowStepsOverview({ currentStatus, className = '' }: Workflo
                       : 'bg-blue-50 text-blue-700 ring-2 ring-blue-200'
                     : 'bg-gray-50 text-gray-400'
                 }
+                ${canClickShipping 
+                  ? 'cursor-pointer hover:shadow-md hover:scale-105 hover:bg-blue-100' 
+                  : ''
+                }
               `}
-              title={stepConfig.label}
+              title={canClickShipping ? `Cliquez pour voir le suivi de livraison - ${stepConfig.label}` : stepConfig.label}
+              onClick={canClickShipping ? onShippingClick : undefined}
             >
               <Icon className="w-4 h-4 mb-1" />
               <span className="text-xs font-medium truncate w-full">
                 {stepConfig.label.split(' ')[0]}
               </span>
+              {canClickShipping && (
+                <div className="text-xs text-blue-600 mt-1">
+                  📦 Cliquez
+                </div>
+              )}
             </div>
           );
         })}

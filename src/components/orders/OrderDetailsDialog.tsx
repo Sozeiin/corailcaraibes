@@ -16,6 +16,8 @@ import { WorkflowStatus } from '@/types/workflow';
 import { ExternalLink, Package, Calendar, User, MapPin } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useState } from 'react';
+import { Dialog as TrackingDialog, DialogContent as TrackingDialogContent, DialogHeader as TrackingDialogHeader, DialogTitle as TrackingDialogTitle } from '@/components/ui/dialog';
 
 interface OrderDetailsDialogProps {
   isOpen: boolean;
@@ -24,6 +26,7 @@ interface OrderDetailsDialogProps {
 }
 
 export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialogProps) {
+  const [showTrackingDialog, setShowTrackingDialog] = useState(false);
   // Charger les détails complets de la commande et ses items
   const { data: orderDetails, isLoading, refetch } = useQuery({
     queryKey: ['order-details', order?.id],
@@ -294,13 +297,48 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
           <WorkflowStepsOverview 
             currentStatus={order.status as WorkflowStatus}
             className="mb-6"
+            onShippingClick={() => setShowTrackingDialog(true)}
           />
         </div>
 
         {/* Timeline détaillée du workflow */}
         <div className="mt-6">
-          <WorkflowTimelineEnhanced orderId={order.id} />
+          <WorkflowTimelineEnhanced 
+            orderId={order.id} 
+            onShippingClick={() => setShowTrackingDialog(true)}
+          />
         </div>
+
+        {/* Dialog pour le suivi de livraison */}
+        <TrackingDialog open={showTrackingDialog} onOpenChange={setShowTrackingDialog}>
+          <TrackingDialogContent className="max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <TrackingDialogHeader>
+              <TrackingDialogTitle>🚚 Suivi de livraison - Commande {order.orderNumber}</TrackingDialogTitle>
+            </TrackingDialogHeader>
+            <div className="space-y-6">
+              <OrderTrackingWidget
+                orderId={order.id}
+                trackingNumber={orderDetails?.tracking_number}
+                carrier={orderDetails?.carrier}
+                onUpdateTracking={async (trackingNumber, carrier) => {
+                  const { error } = await supabase
+                    .from('orders')
+                    .update({ tracking_number: trackingNumber, carrier: carrier })
+                    .eq('id', order.id);
+                  
+                  if (!error) {
+                    refetch();
+                  }
+                }}
+              />
+              <div className="flex justify-end">
+                <Button variant="outline" onClick={() => setShowTrackingDialog(false)}>
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </TrackingDialogContent>
+        </TrackingDialog>
       </DialogContent>
     </Dialog>
   );
