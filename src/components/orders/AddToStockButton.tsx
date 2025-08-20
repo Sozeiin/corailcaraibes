@@ -47,14 +47,27 @@ export function AddToStockButton({ order, onStockAdded }: AddToStockButtonProps)
 
     setIsLoading(true);
     try {
+      console.log('Tentative d\'ajout au stock pour:', {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        selectedItems: selectedItems
+      });
+
       const { data, error } = await supabase.rpc('add_order_items_to_stock', {
         order_id_param: order.id,
         selected_items: selectedItems
       });
 
-      if (error) throw error;
+      console.log('Réponse de la fonction:', { data, error });
+
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
 
       const result = data as { added_items: any[], errors: any[], success: boolean };
+      
+      console.log('Résultat traité:', result);
       
       if (result.success && result.added_items.length > 0) {
         toast({
@@ -68,9 +81,25 @@ export function AddToStockButton({ order, onStockAdded }: AddToStockButtonProps)
       }
 
       if (result.errors && result.errors.length > 0) {
+        console.error('Erreurs détaillées:', result.errors);
+        
+        // Afficher les erreurs spécifiques dans la console pour le débogage
+        result.errors.forEach((err: any, index: number) => {
+          console.error(`Erreur ${index + 1}:`, err);
+        });
+
         toast({
           title: "⚠️ Erreurs lors de l'ajout",
-          description: `${result.errors.length} erreur(s) sont survenues lors de l'ajout de certains articles.`,
+          description: `${result.errors.length} erreur(s) sont survenues. Consultez la console pour plus de détails.`,
+          variant: "destructive"
+        });
+      }
+
+      // Si aucun article n'a été ajouté et qu'il n'y a pas d'erreurs explicites
+      if (result.success && result.added_items.length === 0 && (!result.errors || result.errors.length === 0)) {
+        toast({
+          title: "⚠️ Aucun article ajouté",
+          description: "Aucun article n'a pu être ajouté au stock. Vérifiez les données de la commande.",
           variant: "destructive"
         });
       }
