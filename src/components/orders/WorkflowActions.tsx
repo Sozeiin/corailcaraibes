@@ -31,7 +31,8 @@ type PurchaseWorkflowStatus =
   | 'completed'
   | 'rejected'
   | 'cancelled';
-import { CheckCircle, XCircle, Search, ShoppingCart, Ship } from 'lucide-react';
+import { CheckCircle, XCircle, Search, ShoppingCart, Ship, Settings } from 'lucide-react';
+import { SupplierPriceForm } from './SupplierPriceForm';
 
 interface WorkflowActionsProps {
   order: Order;
@@ -44,6 +45,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
   const queryClient = useQueryClient();
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
 
   const advanceWorkflowMutation = useMutation({
     mutationFn: async ({ newStatus, notes: notesParam }: { newStatus: PurchaseWorkflowStatus; notes?: string }) => {
@@ -126,12 +128,13 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
       
       if (order.status === 'supplier_search') {
         actions.push({
-          key: 'confirm_order',
-          label: 'Commande confirmée',
+          key: 'configure_supplier',
+          label: 'Configurer fournisseur & prix',
           variant: 'default' as const,
-          icon: ShoppingCart,
-          newStatus: 'order_confirmed' as PurchaseWorkflowStatus,
-          requiresNotes: false
+          icon: Settings,
+          newStatus: null as any, // Special action
+          requiresNotes: false,
+          isSpecial: true
         });
       }
       
@@ -162,12 +165,13 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
       
       if (order.status === 'supplier_search') {
         actions.push({
-          key: 'confirm_order',
-          label: 'Commande confirmée',
+          key: 'configure_supplier',
+          label: 'Configurer fournisseur & prix',
           variant: 'default' as const,
-          icon: ShoppingCart,
-          newStatus: 'order_confirmed' as PurchaseWorkflowStatus,
-          requiresNotes: false
+          icon: Settings,
+          newStatus: null as any, // Special action
+          requiresNotes: false,
+          isSpecial: true
         });
       }
     }
@@ -196,6 +200,20 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
 
   const ActionButton = ({ action }: { action: any }) => {
     const Icon = action.icon;
+    
+    // Special handling for supplier configuration
+    if (action.isSpecial && action.key === 'configure_supplier') {
+      return (
+        <Button 
+          variant={action.variant} 
+          className="flex items-center gap-2"
+          onClick={() => setShowSupplierForm(true)}
+        >
+          <Icon className="w-4 h-4" />
+          {action.label}
+        </Button>
+      );
+    }
     
     return (
       <AlertDialog>
@@ -261,10 +279,24 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
   };
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {availableActions.map((action) => (
-        <ActionButton key={action.key} action={action} />
-      ))}
+    <div className="space-y-4">
+      {/* Supplier Configuration Form */}
+      {showSupplierForm && (
+        <SupplierPriceForm 
+          order={order} 
+          onComplete={() => {
+            setShowSupplierForm(false);
+            onOrderUpdate?.();
+          }} 
+        />
+      )}
+      
+      {/* Action Buttons */}
+      <div className="flex flex-wrap gap-2">
+        {availableActions.map((action) => (
+          <ActionButton key={action.key} action={action} />
+        ))}
+      </div>
     </div>
   );
 }
