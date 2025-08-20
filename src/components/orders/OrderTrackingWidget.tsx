@@ -7,6 +7,7 @@ import { Truck, Package, CheckCircle, Clock, AlertCircle, ExternalLink } from 'l
 import { useOrderTracking } from '@/hooks/useOrderTracking';
 import { useToast } from '@/hooks/use-toast';
 import { Browser } from '@capacitor/browser';
+import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 
 interface OrderTrackingWidgetProps {
@@ -101,84 +102,73 @@ export function OrderTrackingWidget({
   const handleOpenTracking = async () => {
     console.log('Open tracking clicked');
     
-    if (trackingNumber && carrier) {
-      const trackingUrl = generateTrackingUrl(trackingNumber, carrier);
-      console.log('Opening direct carrier URL:', trackingUrl);
-      
-      try {
-        // Vérifier si nous sommes sur une plateforme mobile (Capacitor)
-        if (Capacitor.isNativePlatform()) {
-          console.log('Opening in external browser via Capacitor');
-          // Utiliser le plugin Browser de Capacitor pour ouvrir dans le navigateur externe SEULEMENT
-          await Browser.open({ 
-            url: trackingUrl,
-            windowName: '_system',
-            toolbarColor: '#ffffff',
-            presentationStyle: 'fullscreen'
-          });
-          
-          console.log('Browser opened successfully with Capacitor');
-          toast({
-            title: "Suivi ouvert",
-            description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur externe`
-          });
-          
-          // IMPORTANT: Return ici pour éviter toute autre redirection
-          return;
-        } else {
-          console.log('Opening in new tab via window.open (web)');
-          // Sur web, utiliser window.open pour ouvrir dans un nouvel onglet
-          const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
-          
-          if (newWindow) {
-            console.log('Window opened successfully');
-            toast({
-              title: "Suivi ouvert",
-              description: `Redirection vers le site ${selectedCarrier?.label} pour le suivi détaillé`
-            });
-          } else {
-            // Si le popup est bloqué sur web seulement
-            console.log('Popup blocked on web');
-            toast({
-              title: "Pop-up bloqué",
-              description: "Veuillez autoriser les pop-ups pour ouvrir le suivi dans un nouvel onglet",
-              variant: "destructive"
-            });
-          }
-          return;
-        }
-      } catch (error) {
-        console.error('Error opening tracking URL with Capacitor Browser:', error);
-        
-        // Afficher une erreur sans rediriger l'application
-        toast({
-          title: "Erreur d'ouverture",
-          description: `Impossible d'ouvrir le lien automatiquement. Copiez ce lien : ${trackingUrl}`,
-          variant: "destructive"
-        });
-        
-        // Optionnel : copier le lien dans le presse-papiers
-        try {
-          if (navigator.clipboard) {
-            await navigator.clipboard.writeText(trackingUrl);
-            toast({
-              title: "Lien copié",
-              description: "Le lien de suivi a été copié dans le presse-papiers"
-            });
-          }
-        } catch (clipboardError) {
-          console.log('Clipboard not available:', clipboardError);
-        }
-        
-        return;
-      }
-    } else {
+    if (!trackingNumber || !carrier) {
       console.log('No tracking number or carrier available');
       toast({
         title: "Informations manquantes",
         description: "Numéro de suivi ou transporteur non configuré",
         variant: "destructive"
       });
+      return;
+    }
+
+    const trackingUrl = generateTrackingUrl(trackingNumber, carrier);
+    console.log('Generated tracking URL:', trackingUrl);
+    
+    try {
+      if (Capacitor.isNativePlatform()) {
+        console.log('Mobile detected - using Browser.open with _system');
+        // Utiliser Browser.open avec _system pour forcer l'ouverture externe
+        await Browser.open({ 
+          url: trackingUrl,
+          windowName: '_system'
+        });
+        
+        console.log('App.openUrl called successfully');
+        toast({
+          title: "Suivi ouvert",
+          description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur`
+        });
+      } else {
+        console.log('Web detected - using window.open');
+        // Sur web, utiliser window.open standard
+        const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+        
+        if (newWindow) {
+          toast({
+            title: "Suivi ouvert",
+            description: `Ouverture dans un nouvel onglet`
+          });
+        } else {
+          toast({
+            title: "Pop-up bloqué",
+            description: "Veuillez autoriser les pop-ups pour ouvrir le suivi",
+            variant: "destructive"
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error opening URL:', error);
+      
+      // En cas d'erreur, copier le lien dans le presse-papiers
+      try {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(trackingUrl);
+          toast({
+            title: "Lien copié",
+            description: "Le lien de suivi a été copié dans le presse-papiers"
+          });
+        } else {
+          throw new Error('Clipboard not available');
+        }
+      } catch (clipboardError) {
+        console.error('Clipboard error:', clipboardError);
+        toast({
+          title: "Erreur",
+          description: `Impossible d'ouvrir le lien. URL: ${trackingUrl}`,
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -339,6 +329,29 @@ export function OrderTrackingWidget({
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Voir le suivi détaillé
+                </Button>
+                
+                {/* Bouton de test temporaire */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={async () => {
+                    const url = 'https://www.google.com';
+                    try {
+                      if (Capacitor.isNativePlatform()) {
+                        await Browser.open({ url, windowName: '_system' });
+                        toast({ title: "Test", description: "Ouvert avec Browser.open _system" });
+                      } else {
+                        window.open(url, '_blank');
+                        toast({ title: "Test", description: "Ouvert avec window.open" });
+                      }
+                    } catch (e) {
+                      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+                    }
+                  }}
+                  className="w-full mt-2"
+                >
+                  🧪 Test Google (debug)
                 </Button>
               </div>
             ) : (

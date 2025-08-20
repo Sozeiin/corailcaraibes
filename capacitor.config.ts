@@ -7,8 +7,8 @@ const config: CapacitorConfig = {
   bundledWebRuntime: false,
   plugins: {
     Browser: {
-      androidCustomTabs: true,
-      iOSCustomTabs: true
+      androidCustomTabs: false,
+      iOSCustomTabs: false
     },
     BarcodeScanner: {
       shouldShowOverlay: true,
