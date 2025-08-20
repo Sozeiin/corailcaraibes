@@ -1853,7 +1853,7 @@ export type Database = {
           rejection_reason: string | null
           request_notes: string | null
           requested_by: string | null
-          status: Database["public"]["Enums"]["order_status"] | null
+          status: string | null
           supplier_id: string | null
           total_amount: number | null
           tracking_url: string | null
@@ -1880,7 +1880,7 @@ export type Database = {
           rejection_reason?: string | null
           request_notes?: string | null
           requested_by?: string | null
-          status?: Database["public"]["Enums"]["order_status"] | null
+          status?: string | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_url?: string | null
@@ -1907,7 +1907,7 @@ export type Database = {
           rejection_reason?: string | null
           request_notes?: string | null
           requested_by?: string | null
-          status?: Database["public"]["Enums"]["order_status"] | null
+          status?: string | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_url?: string | null
@@ -3289,6 +3289,12 @@ export type Database = {
         | "supplier_requested"
         | "shipping_mainland"
         | "shipping_antilles"
+        | "approved"
+        | "supplier_search"
+        | "order_confirmed"
+        | "received_scanned"
+        | "completed"
+        | "rejected"
       purchase_workflow_status:
         | "draft"
         | "pending_approval"
@@ -3465,6 +3471,12 @@ export const Constants = {
         "supplier_requested",
         "shipping_mainland",
         "shipping_antilles",
+        "approved",
+        "supplier_search",
+        "order_confirmed",
+        "received_scanned",
+        "completed",
+        "rejected",
       ],
       purchase_workflow_status: [
         "draft",
