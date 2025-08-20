@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Truck, Package, CheckCircle, Clock, AlertCircle, ExternalLink } from 'lucide-react';
 import { useOrderTracking } from '@/hooks/useOrderTracking';
 import { useToast } from '@/hooks/use-toast';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 
 interface OrderTrackingWidgetProps {
   orderId: string;
@@ -96,7 +98,7 @@ export function OrderTrackingWidget({
     }
   };
 
-  const handleOpenTracking = () => {
+  const handleOpenTracking = async () => {
     console.log('Open tracking clicked');
     
     if (trackingNumber && carrier) {
@@ -104,19 +106,35 @@ export function OrderTrackingWidget({
       console.log('Opening direct carrier URL:', trackingUrl);
       
       try {
-        // Ouvrir directement l'URL du transporteur
-        const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
-        
-        if (newWindow) {
-          console.log('Window opened successfully');
+        // Vérifier si nous sommes sur une plateforme mobile (Capacitor)
+        if (Capacitor.isNativePlatform()) {
+          console.log('Opening in external browser via Capacitor');
+          // Utiliser le plugin Browser de Capacitor pour ouvrir dans le navigateur externe
+          await Browser.open({ 
+            url: trackingUrl,
+            windowName: '_blank'
+          });
+          
           toast({
             title: "Suivi ouvert",
-            description: `Redirection vers le site ${selectedCarrier?.label} pour le suivi détaillé`
+            description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur`
           });
         } else {
-          // Si le popup est bloqué, essayer une redirection directe
-          console.log('Popup blocked, trying direct navigation');
-          window.location.href = trackingUrl;
+          console.log('Opening in new tab via window.open');
+          // Sur web, utiliser window.open pour ouvrir dans un nouvel onglet
+          const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
+          
+          if (newWindow) {
+            console.log('Window opened successfully');
+            toast({
+              title: "Suivi ouvert",
+              description: `Redirection vers le site ${selectedCarrier?.label} pour le suivi détaillé`
+            });
+          } else {
+            // Si le popup est bloqué, essayer une redirection directe
+            console.log('Popup blocked, trying direct navigation');
+            window.location.href = trackingUrl;
+          }
         }
       } catch (error) {
         console.error('Error opening tracking URL:', error);
