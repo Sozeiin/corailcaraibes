@@ -109,7 +109,7 @@ export function OrderTrackingWidget({
         // Vérifier si nous sommes sur une plateforme mobile (Capacitor)
         if (Capacitor.isNativePlatform()) {
           console.log('Opening in external browser via Capacitor');
-          // Utiliser le plugin Browser de Capacitor avec des options pour forcer l'ouverture externe
+          // Utiliser le plugin Browser de Capacitor pour ouvrir dans le navigateur externe SEULEMENT
           await Browser.open({ 
             url: trackingUrl,
             windowName: '_system',
@@ -117,12 +117,16 @@ export function OrderTrackingWidget({
             presentationStyle: 'fullscreen'
           });
           
+          console.log('Browser opened successfully with Capacitor');
           toast({
             title: "Suivi ouvert",
             description: `Ouverture du suivi ${selectedCarrier?.label} dans le navigateur externe`
           });
+          
+          // IMPORTANT: Return ici pour éviter toute autre redirection
+          return;
         } else {
-          console.log('Opening in new tab via window.open');
+          console.log('Opening in new tab via window.open (web)');
           // Sur web, utiliser window.open pour ouvrir dans un nouvel onglet
           const newWindow = window.open(trackingUrl, '_blank', 'noopener,noreferrer');
           
@@ -133,26 +137,40 @@ export function OrderTrackingWidget({
               description: `Redirection vers le site ${selectedCarrier?.label} pour le suivi détaillé`
             });
           } else {
-            // Si le popup est bloqué, essayer une redirection directe
-            console.log('Popup blocked, trying direct navigation');
-            window.location.href = trackingUrl;
+            // Si le popup est bloqué sur web seulement
+            console.log('Popup blocked on web');
+            toast({
+              title: "Pop-up bloqué",
+              description: "Veuillez autoriser les pop-ups pour ouvrir le suivi dans un nouvel onglet",
+              variant: "destructive"
+            });
           }
+          return;
         }
       } catch (error) {
         console.error('Error opening tracking URL with Capacitor Browser:', error);
         
-        // Fallback : essayer d'ouvrir avec window.location même sur mobile
+        // Afficher une erreur sans rediriger l'application
+        toast({
+          title: "Erreur d'ouverture",
+          description: `Impossible d'ouvrir le lien automatiquement. Copiez ce lien : ${trackingUrl}`,
+          variant: "destructive"
+        });
+        
+        // Optionnel : copier le lien dans le presse-papiers
         try {
-          console.log('Fallback: trying window.location.href');
-          window.location.href = trackingUrl;
-        } catch (fallbackError) {
-          console.error('All methods failed:', fallbackError);
-          toast({
-            title: "Erreur d'ouverture",
-            description: "Impossible d'ouvrir le lien de suivi. Copiez ce lien dans votre navigateur : " + trackingUrl,
-            variant: "destructive"
-          });
+          if (navigator.clipboard) {
+            await navigator.clipboard.writeText(trackingUrl);
+            toast({
+              title: "Lien copié",
+              description: "Le lien de suivi a été copié dans le presse-papiers"
+            });
+          }
+        } catch (clipboardError) {
+          console.log('Clipboard not available:', clipboardError);
         }
+        
+        return;
       }
     } else {
       console.log('No tracking number or carrier available');
