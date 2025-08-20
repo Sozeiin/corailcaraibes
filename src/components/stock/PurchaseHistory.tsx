@@ -20,7 +20,7 @@ export function PurchaseHistory({ stockItemId }: PurchaseHistoryProps) {
         .from('order_items')
         .select(`
           *,
-          orders (
+          orders!inner (
             order_number,
             order_date,
             delivery_date,
@@ -31,7 +31,7 @@ export function PurchaseHistory({ stockItemId }: PurchaseHistoryProps) {
           )
         `)
         .eq('stock_item_id', stockItemId)
-        .order('orders.order_date', { ascending: false });
+        .order('id', { ascending: false });
 
       if (error) throw error;
 
