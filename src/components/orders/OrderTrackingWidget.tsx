@@ -30,6 +30,14 @@ export function OrderTrackingWidget({
     carrier
   });
 
+  console.log('OrderTrackingWidget state:', { 
+    trackingNumber, 
+    carrier, 
+    trackingData, 
+    isLoading, 
+    error 
+  });
+
   const carriers = [
     { value: 'chronopost', label: 'Chronopost', color: 'bg-blue-500' },
     { value: 'dhl', label: 'DHL', color: 'bg-yellow-500' },
@@ -46,6 +54,49 @@ export function OrderTrackingWidget({
       toast({
         title: "Informations de suivi mises à jour",
         description: "Le numéro de suivi a été enregistré avec succès."
+      });
+    }
+  };
+
+  const handleRefresh = () => {
+    console.log('Refresh button clicked');
+    if (trackingNumber && carrier) {
+      console.log('Calling refetch with:', { trackingNumber, carrier });
+      refetch();
+      toast({
+        title: "Actualisation en cours",
+        description: "Récupération des dernières informations de suivi..."
+      });
+    } else {
+      console.log('No tracking info to refresh');
+      toast({
+        title: "Impossible d'actualiser",
+        description: "Aucun numéro de suivi configuré",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleOpenTracking = () => {
+    console.log('Open tracking clicked');
+    if (trackingData?.trackingUrl) {
+      console.log('Opening URL:', trackingData.trackingUrl);
+      try {
+        window.open(trackingData.trackingUrl, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        console.error('Error opening tracking URL:', error);
+        toast({
+          title: "Erreur",
+          description: "Impossible d'ouvrir le lien de suivi",
+          variant: "destructive"
+        });
+      }
+    } else {
+      console.log('No tracking URL available');
+      toast({
+        title: "Lien indisponible",
+        description: "Le lien de suivi n'est pas disponible",
+        variant: "destructive"
       });
     }
   };
@@ -165,10 +216,11 @@ export function OrderTrackingWidget({
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => refetch()}
+                  onClick={handleRefresh}
                   className="ml-2"
+                  disabled={isLoading}
                 >
-                  Réessayer
+                  {isLoading ? 'Actualisation...' : 'Réessayer'}
                 </Button>
               </div>
             ) : trackingData ? (
@@ -202,7 +254,7 @@ export function OrderTrackingWidget({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => window.open(trackingData.trackingUrl, '_blank')}
+                    onClick={handleOpenTracking}
                     className="w-full"
                   >
                     <ExternalLink className="w-4 h-4 mr-2" />
@@ -219,10 +271,18 @@ export function OrderTrackingWidget({
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={() => refetch()}
+              onClick={handleRefresh}
               className="w-full"
+              disabled={isLoading}
             >
-              Actualiser le suivi
+              {isLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-900 mr-2"></div>
+                  Actualisation...
+                </>
+              ) : (
+                'Actualiser le suivi'
+              )}
             </Button>
           </div>
         )}
