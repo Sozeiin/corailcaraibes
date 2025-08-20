@@ -2674,6 +2674,86 @@ export type Database = {
           },
         ]
       }
+      stock_purchase_history: {
+        Row: {
+          created_at: string
+          id: string
+          invoice_reference: string | null
+          notes: string | null
+          order_id: string | null
+          order_item_id: string | null
+          purchase_date: string
+          quantity: number
+          stock_item_id: string
+          supplier_id: string | null
+          total_cost: number | null
+          unit_cost: number
+          updated_at: string
+          warranty_months: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invoice_reference?: string | null
+          notes?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          purchase_date?: string
+          quantity?: number
+          stock_item_id: string
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number
+          updated_at?: string
+          warranty_months?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invoice_reference?: string | null
+          notes?: string | null
+          order_id?: string | null
+          order_item_id?: string | null
+          purchase_date?: string
+          quantity?: number
+          stock_item_id?: string
+          supplier_id?: string | null
+          total_cost?: number | null
+          unit_cost?: number
+          updated_at?: string
+          warranty_months?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_purchase_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_purchase_history_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_purchase_history_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_purchase_history_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_contracts: {
         Row: {
           contract_number: string
