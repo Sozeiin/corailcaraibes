@@ -105,8 +105,18 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
 
   const remove = useCallback(async (id: string): Promise<void> => {
     try {
-      const { error } = await (supabase as any).from(table).delete().eq('id', id);
-      if (error) throw error;
+      console.log(`Attempting to delete ${table} with id:`, id);
+      const { error, data: deletedData } = await (supabase as any)
+        .from(table)
+        .delete()
+        .eq('id', id);
+      
+      console.log('Delete result:', { error, deletedData });
+      
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
       
       setData(prev => prev.filter(record => record.id !== id));
     } catch (error) {
