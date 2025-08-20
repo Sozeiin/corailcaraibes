@@ -10,10 +10,23 @@ export const useDashboardPreferences = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('useDashboardPreferences - User changed:', user?.id);
     if (user?.id) {
       loadPreferences();
+    } else {
+      console.log('useDashboardPreferences - No user, setting default layout');
+      setLayout(getDefaultLayout('technicien'));
+      setLoading(false);
     }
   }, [user?.id]);
+
+  // Fonction pour forcer le rechargement 
+  const refetchPreferences = () => {
+    if (user?.id) {
+      console.log('Manually refetching preferences');
+      loadPreferences();
+    }
+  };
 
   const loadPreferences = async () => {
     if (!user?.id) {
@@ -121,6 +134,7 @@ export const useDashboardPreferences = () => {
     updateWidget,
     resetToDefault,
     savePreferences,
+    refetchPreferences,
   };
 };
 

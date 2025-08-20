@@ -82,6 +82,15 @@ export const DashboardGridLayout = () => {
       }
     };
   }, []);
+  
+  // Debug logs pour tracer les changements
+  useEffect(() => {
+    console.log('DashboardGridLayout - Layout changed:', layout);
+  }, [layout]);
+
+  useEffect(() => {
+    console.log('DashboardGridLayout - Loading state:', loading);
+  }, [loading]);
 
   const handleRemoveWidget = (widgetId: string) => {
     removeWidget(widgetId);
