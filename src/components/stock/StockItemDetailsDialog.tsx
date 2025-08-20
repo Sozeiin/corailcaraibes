@@ -8,6 +8,7 @@ import { PurchaseHistory } from './PurchaseHistory';
 import { SupplierHistory } from './SupplierHistory';
 import { PriceAnalysis } from './PriceAnalysis';
 import { UsageAnalysis } from './UsageAnalysis';
+import { StockItemQuotes } from './StockItemQuotes';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 
 interface StockItemDetailsDialogProps {
@@ -112,10 +113,14 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
         </div>
 
         <Tabs defaultValue="purchases" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="purchases" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               Achats
+            </TabsTrigger>
+            <TabsTrigger value="quotes" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Devis
             </TabsTrigger>
             <TabsTrigger value="supplier" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -133,6 +138,10 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
 
           <TabsContent value="purchases" className="mt-6">
             <PurchaseHistory stockItemId={item.id} />
+          </TabsContent>
+
+          <TabsContent value="quotes" className="mt-6">
+            <StockItemQuotes stockItem={item} />
           </TabsContent>
 
           <TabsContent value="supplier" className="mt-6">

@@ -846,6 +846,7 @@ export type Database = {
           order_item_id: string | null
           purchase_date: string
           quantity: number
+          quote_id: string | null
           stock_item_id: string | null
           sub_component_id: string | null
           supplier_id: string | null
@@ -864,6 +865,7 @@ export type Database = {
           order_item_id?: string | null
           purchase_date: string
           quantity?: number
+          quote_id?: string | null
           stock_item_id?: string | null
           sub_component_id?: string | null
           supplier_id?: string | null
@@ -882,6 +884,7 @@ export type Database = {
           order_item_id?: string | null
           purchase_date?: string
           quantity?: number
+          quote_id?: string | null
           stock_item_id?: string | null
           sub_component_id?: string | null
           supplier_id?: string | null
@@ -2524,6 +2527,78 @@ export type Database = {
           target_user_id?: string | null
           user_agent?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      stock_item_quotes: {
+        Row: {
+          attachment_url: string | null
+          created_at: string
+          currency: string
+          delivery_days: number | null
+          id: string
+          minimum_quantity: number
+          notes: string | null
+          payment_terms: string | null
+          quote_date: string
+          quote_number: string | null
+          requested_by: string | null
+          response_date: string | null
+          selected_at: string | null
+          selected_by: string | null
+          status: string
+          stock_item_id: string
+          supplier_id: string
+          unit_price: number
+          updated_at: string
+          validity_date: string | null
+          warranty_months: number | null
+        }
+        Insert: {
+          attachment_url?: string | null
+          created_at?: string
+          currency?: string
+          delivery_days?: number | null
+          id?: string
+          minimum_quantity?: number
+          notes?: string | null
+          payment_terms?: string | null
+          quote_date?: string
+          quote_number?: string | null
+          requested_by?: string | null
+          response_date?: string | null
+          selected_at?: string | null
+          selected_by?: string | null
+          status?: string
+          stock_item_id: string
+          supplier_id: string
+          unit_price?: number
+          updated_at?: string
+          validity_date?: string | null
+          warranty_months?: number | null
+        }
+        Update: {
+          attachment_url?: string | null
+          created_at?: string
+          currency?: string
+          delivery_days?: number | null
+          id?: string
+          minimum_quantity?: number
+          notes?: string | null
+          payment_terms?: string | null
+          quote_date?: string
+          quote_number?: string | null
+          requested_by?: string | null
+          response_date?: string | null
+          selected_at?: string | null
+          selected_by?: string | null
+          status?: string
+          stock_item_id?: string
+          supplier_id?: string
+          unit_price?: number
+          updated_at?: string
+          validity_date?: string | null
+          warranty_months?: number | null
         }
         Relationships: []
       }
