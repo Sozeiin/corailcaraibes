@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
+import { DashboardGrid } from '@/components/dashboard/DashboardGrid';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
@@ -215,117 +216,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">{/* Cards modifiées pour 2 colonnes sur mobile */}
-        {stats.map((stat, index) => (
-          <StatCard key={index} {...stat} />
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Weather Widget - Temporarily disabled */}
-        {/* <WeatherWidget /> */}
-
-        {/* Alerts Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-orange-500" />
-              Alertes Récentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {alerts.map((alert, index) => (
-              <AlertItem key={index} {...alert} />
-            ))}
-            <Button variant="outline" className="w-full mt-4">
-              Toutes les alertes
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Maintenance */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Wrench className="h-5 w-5 text-blue-500" />
-              Maintenances
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {upcomingMaintenance.length === 0 ? (
-              <p className="text-gray-500 text-center py-4">Aucune intervention programmée</p>
-            ) : (
-              upcomingMaintenance.map((item, index) => (
-                <div key={index} className={`flex items-center justify-between p-3 rounded-lg ${
-                  item.isAssignedToMe ? 'bg-marine-50 border-l-4 border-marine-500' : 'bg-gray-50'
-                }`}>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{item.boat}</p>
-                      {item.isAssignedToMe && (
-                        <Badge variant="default" className="bg-marine-500 text-xs">
-                          Assignée
-                        </Badge>
-                      )}
-                      {!item.isAssignedToMe && user?.role === 'technicien' && (
-                        <Badge variant="outline" className="text-xs">
-                          Disponible
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-600">{item.type}</p>
-                    <p className="text-xs text-gray-500">
-                      Statut: {item.status === 'scheduled' ? 'Programmée' : 'En cours'}
-                    </p>
-                  </div>
-                  <Badge variant="outline">
-                    {new Date(item.date).toLocaleDateString('fr-FR')}
-                  </Badge>
-                </div>
-              ))
-            )}
-            <Button variant="outline" className="w-full mt-4">
-              Planifier maintenance
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Fleet Status Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Ship className="h-5 w-5 text-marine-500" />
-            État de la Flotte
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Disponibles</span>
-                <span className="text-sm text-gray-600">18/24</span>
-              </div>
-              <Progress value={75} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">En Location</span>
-                <span className="text-sm text-gray-600">15/24</span>
-              </div>
-              <Progress value={62.5} className="h-2" />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium">Maintenance</span>
-                <span className="text-sm text-gray-600">3/24</span>
-              </div>
-              <Progress value={12.5} className="h-2" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Customizable Dashboard Grid */}
+      <DashboardGrid />
 
       <CheckInOutDialog 
         open={checkInOutDialogOpen}
