@@ -136,9 +136,8 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
 
       
       // Force refresh of the boats data
-      queryClient.invalidateQueries({ queryKey: ['boats'] });
-      // Also force a page refresh to ensure data is updated
-      window.location.reload();
+      await queryClient.invalidateQueries({ queryKey: ['boats'] });
+      await queryClient.refetchQueries({ queryKey: ['boats'] });
       onClose();
     } catch (error) {
       toast({
