@@ -59,6 +59,7 @@ export default function Stock() {
     location: item.location || '',
     baseId: item.base_id || '',
     baseName: '',
+    photoUrl: item.photo_url || '',
     lastUpdated: item.last_updated || new Date().toISOString(),
     lastPurchaseDate: null,
     lastPurchaseCost: null,

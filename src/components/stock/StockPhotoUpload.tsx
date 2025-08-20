@@ -57,6 +57,11 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
         .from('stock-photos')
         .getPublicUrl(uploadData.path);
 
+      console.log('Photo uploaded successfully:', { 
+        uploadPath: uploadData.path, 
+        publicUrl: urlData.publicUrl 
+      });
+
       onPhotoChange(urlData.publicUrl);
 
       toast({

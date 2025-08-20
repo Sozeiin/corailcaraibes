@@ -151,6 +151,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     try {
       setIsSubmitting(true);
       
+      console.log('Submitting stock item with photo URL:', data.photoUrl);
+      
       const stockData = {
         name: data.name,
         reference: data.reference || null,
@@ -163,6 +165,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         photo_url: data.photoUrl || null,
         last_updated: new Date().toISOString(),
       };
+
+      console.log('Stock data to save:', stockData);
 
       let result;
       if (item) {
@@ -179,6 +183,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       }
 
       const { error } = result;
+
+      console.log('Save result:', { data: result.data, error });
 
       if (error) throw error;
 
