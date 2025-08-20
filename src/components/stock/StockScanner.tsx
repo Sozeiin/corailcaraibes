@@ -625,8 +625,30 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
 
+  // Debug logs pour vérifier les permissions
+  console.log('StockScanner - User data:', { 
+    user: user, 
+    role: user?.role, 
+    canManageStock: canManageStock 
+  });
+
   if (!canManageStock) {
-    return null;
+    console.log('StockScanner - Access denied, user cannot manage stock');
+    return (
+      <div className="text-center p-4">
+        <p className="text-muted-foreground">
+          Accès non autorisé. Contactez votre administrateur.
+        </p>
+        <p className="text-sm text-muted-foreground mt-2">
+          Rôle requis: direction, chef_base ou technicien
+        </p>
+        {user && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Votre rôle: {user.role || 'non défini'}
+          </p>
+        )}
+      </div>
+    );
   }
 
   return (
