@@ -301,7 +301,7 @@ export default function Stock() {
 
         <TabsContent value="scanner" className="space-y-4">
           <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-            <StockScanner stockItems={filteredItems} />
+            <StockScanner stockItems={filteredItems} onRefreshStock={refetchStock} />
           </div>
         </TabsContent>
       </Tabs>

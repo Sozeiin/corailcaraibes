@@ -26,6 +26,7 @@ import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@
 
 interface StockScannerProps {
   stockItems: any[];
+  onRefreshStock?: () => void;
 }
 
 interface ScannedOperation {
@@ -40,7 +41,7 @@ interface ScannedOperation {
   sourceBase?: string;
 }
 
-export function StockScanner({ stockItems }: StockScannerProps) {
+export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -443,7 +444,11 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         )
       );
 
-      queryClient.invalidateQueries({ queryKey: ['stock'] });
+      if (onRefreshStock) {
+        onRefreshStock();
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['stock'] });
+      }
 
       toast({
         title: 'Stock mis à jour',
@@ -481,7 +486,11 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
   const handleItemCreated = () => {
     // Actualiser les données de stock après création
-    queryClient.invalidateQueries({ queryKey: ['stock'] });
+    if (onRefreshStock) {
+      onRefreshStock();
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['stock'] });
+    }
     setCodeToCreate('');
     setIsCreateDialogOpen(false);
   };
