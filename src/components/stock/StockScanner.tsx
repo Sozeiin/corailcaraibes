@@ -297,27 +297,6 @@ export function StockScanner({ stockItems }: StockScannerProps) {
 
         console.log('Démarrage du décodage ZXing...');
         
-        // Configuration du scanner avec plus de formats supportés
-        const hints = new Map();
-        hints.set('POSSIBLE_FORMATS', [
-          'QR_CODE',
-          'CODE_128',
-          'CODE_39',
-          'EAN_13',
-          'EAN_8',
-          'UPC_A',
-          'UPC_E',
-          'CODABAR',
-          'ITF',
-          'RSS_14',
-          'RSS_EXPANDED',
-          'DATA_MATRIX',
-          'AZTEC',
-          'PDF_417'
-        ]);
-        hints.set('TRY_HARDER', true);
-        hints.set('PURE_BARCODE', false);
-        
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
           video, 
