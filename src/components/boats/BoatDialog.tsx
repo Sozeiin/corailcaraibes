@@ -99,14 +99,19 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         updated_at: new Date().toISOString(),
       };
 
+      console.log('Saving boat with data:', boatData); // Debug log
+
       if (boat) {
         // Update existing boat
-        const { error } = await supabase
+        const { data: updatedData, error } = await supabase
           .from('boats')
           .update(boatData)
-          .eq('id', boat.id);
+          .eq('id', boat.id)
+          .select(); // Récupère les données mises à jour
 
         if (error) throw error;
+        
+        console.log('Boat updated successfully:', updatedData); // Debug log
 
         toast({
           title: 'Bateau modifié',
@@ -129,7 +134,11 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
         });
       }
 
+      
+      // Force refresh of the boats data
       queryClient.invalidateQueries({ queryKey: ['boats'] });
+      // Also force a page refresh to ensure data is updated
+      window.location.reload();
       onClose();
     } catch (error) {
       toast({
