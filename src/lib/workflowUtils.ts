@@ -72,7 +72,11 @@ export const getNextPossibleActions = (currentStatus: WorkflowStatus, userRole: 
     received_scanned: ['completed'],
     completed: [],
     rejected: [],
-    cancelled: []
+    cancelled: [],
+    // Legacy statuses - limited actions
+    pending: ['confirmed', 'cancelled'],
+    confirmed: ['delivered', 'cancelled'],
+    delivered: []
   };
   
   return actions[currentStatus] || [];

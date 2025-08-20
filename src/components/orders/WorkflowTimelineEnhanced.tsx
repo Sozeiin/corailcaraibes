@@ -169,7 +169,11 @@ export function WorkflowTimelineEnhanced({ orderId }: WorkflowTimelineEnhancedPr
         
         <div className="space-y-6">
           {steps.map((step, index) => {
-            const stepConfig = WORKFLOW_STEPS[step.stepStatus];
+            const stepConfig = WORKFLOW_STEPS[step.stepStatus] || { 
+              label: step.stepStatus, 
+              color: 'bg-gray-100 text-gray-800', 
+              icon: 'Clock' 
+            };
             const Icon = getIcon(stepConfig.icon);
             const isCompleted = !!step.completedAt;
             const isCurrent = !isCompleted && currentStep?.id === step.id;

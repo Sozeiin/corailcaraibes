@@ -69,7 +69,11 @@ export function WorkflowStatusIndicator({
   showProgress = false,
   className = ''
 }: WorkflowStatusIndicatorProps) {
-  const stepConfig = WORKFLOW_STEPS[status];
+  const stepConfig = WORKFLOW_STEPS[status] || { 
+    label: status || 'Statut inconnu', 
+    color: 'bg-gray-100 text-gray-800', 
+    icon: 'Clock' 
+  };
   const Icon = showIcon ? getIcon(stepConfig.icon) : null;
   const progress = showProgress ? getWorkflowProgress(status) : null;
   
@@ -158,7 +162,11 @@ export function WorkflowStepsOverview({ currentStatus, className = '' }: Workflo
           const isCurrent = index === currentIndex;
           const isBlocked = ['rejected', 'cancelled'].includes(currentStatus);
           
-          const stepConfig = WORKFLOW_STEPS[step.status];
+          const stepConfig = WORKFLOW_STEPS[step.status] || { 
+            label: step.status, 
+            color: 'bg-gray-100 text-gray-800', 
+            icon: 'Clock' 
+          };
           const Icon = getIcon(stepConfig.icon);
           
           return (

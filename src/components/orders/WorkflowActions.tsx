@@ -19,6 +19,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
 import { WorkflowStatus } from '@/types/workflow';
+
+type PurchaseWorkflowStatus = 
+  | 'draft'
+  | 'pending_approval' 
+  | 'approved'
+  | 'supplier_search'
+  | 'order_confirmed'
+  | 'shipping_antilles'
+  | 'received_scanned'
+  | 'completed'
+  | 'rejected'
+  | 'cancelled';
 import { CheckCircle, XCircle, Search, ShoppingCart, Ship } from 'lucide-react';
 
 interface WorkflowActionsProps {
@@ -34,7 +46,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
   const [rejectionReason, setRejectionReason] = useState('');
 
   const advanceWorkflowMutation = useMutation({
-    mutationFn: async ({ newStatus, notes: notesParam }: { newStatus: WorkflowStatus; notes?: string }) => {
+    mutationFn: async ({ newStatus, notes: notesParam }: { newStatus: PurchaseWorkflowStatus; notes?: string }) => {
       const { error } = await supabase.rpc('advance_workflow_step', {
         order_id_param: order.id,
         new_status: newStatus,
@@ -71,6 +83,12 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
 
     if (!user) return actions;
 
+    // Skip workflow actions for legacy statuses that don't support new workflow
+    const legacyStatuses = ['pending', 'confirmed', 'delivered'];
+    if (legacyStatuses.includes(order.status)) {
+      return actions;
+    }
+
     // Actions pour la direction
     if (user.role === 'direction') {
       if (order.status === 'pending_approval') {
@@ -80,7 +98,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
             label: 'Approuver',
             variant: 'default' as const,
             icon: CheckCircle,
-            newStatus: 'approved' as WorkflowStatus,
+            newStatus: 'approved' as PurchaseWorkflowStatus,
             requiresNotes: false
           },
           {
@@ -88,7 +106,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
             label: 'Rejeter',
             variant: 'destructive' as const,
             icon: XCircle,
-            newStatus: 'rejected' as WorkflowStatus,
+            newStatus: 'rejected' as PurchaseWorkflowStatus,
             requiresNotes: true,
             useRejectionReason: true
           }
@@ -101,7 +119,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Recherche fournisseurs',
           variant: 'default' as const,
           icon: Search,
-          newStatus: 'supplier_search' as WorkflowStatus,
+          newStatus: 'supplier_search' as PurchaseWorkflowStatus,
           requiresNotes: false
         });
       }
@@ -112,7 +130,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Commande confirmée',
           variant: 'default' as const,
           icon: ShoppingCart,
-          newStatus: 'order_confirmed' as WorkflowStatus,
+          newStatus: 'order_confirmed' as PurchaseWorkflowStatus,
           requiresNotes: false
         });
       }
@@ -123,7 +141,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Expédier vers Antilles',
           variant: 'default' as const,
           icon: Ship,
-          newStatus: 'shipping_antilles' as WorkflowStatus,
+          newStatus: 'shipping_antilles' as PurchaseWorkflowStatus,
           requiresNotes: false
         });
       }
@@ -137,7 +155,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Recherche fournisseurs',
           variant: 'default' as const,
           icon: Search,
-          newStatus: 'supplier_search' as WorkflowStatus,
+          newStatus: 'supplier_search' as PurchaseWorkflowStatus,
           requiresNotes: false
         });
       }
@@ -148,7 +166,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
           label: 'Commande confirmée',
           variant: 'default' as const,
           icon: ShoppingCart,
-          newStatus: 'order_confirmed' as WorkflowStatus,
+          newStatus: 'order_confirmed' as PurchaseWorkflowStatus,
           requiresNotes: false
         });
       }
@@ -162,7 +180,7 @@ export function WorkflowActions({ order, onOrderUpdate }: WorkflowActionsProps) 
         label: 'Annuler',
         variant: 'outline' as const,
         icon: XCircle,
-        newStatus: 'cancelled' as WorkflowStatus,
+        newStatus: 'cancelled' as PurchaseWorkflowStatus,
         requiresNotes: true
       });
     }
