@@ -73,35 +73,45 @@ export function StockScanner({ stockItems }: StockScannerProps) {
   }, []);
 
   const startScan = async (operation: 'add' | 'remove') => {
+    console.log('🎯 Démarrage du scan pour:', operation);
     setCurrentOperation(operation);
     setIsScanning(true);
     
     try {
       // Vérifier si getUserMedia est disponible
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('❌ getUserMedia non disponible');
         throw new Error('L\'accès à la caméra n\'est pas supporté par ce navigateur');
       }
 
+      console.log('📱 Demande d\'accès à la caméra...');
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1920, min: 720 },
-          height: { ideal: 1080, min: 480 }
+          width: { ideal: 1280, min: 640 },
+          height: { ideal: 720, min: 480 }
         }
       });
 
+      console.log('✅ Accès caméra accordé');
       const video = document.createElement('video');
       video.srcObject = stream;
       video.autoplay = true;
       video.playsInline = true;
       video.muted = true;
 
+      // Attendre que la vidéo soit prête
       await new Promise((resolve) => {
         video.onloadedmetadata = () => {
-          video.play().then(() => resolve(null));
+          console.log('📹 Vidéo prête, dimensions:', video.videoWidth, 'x', video.videoHeight);
+          video.play().then(() => {
+            console.log('▶️ Lecture vidéo démarrée');
+            resolve(null);
+          });
         };
       });
 
+      // Créer l'interface de scan
       const overlay = document.createElement('div');
       overlay.style.cssText = `
         position: fixed;
@@ -109,24 +119,24 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.95);
+        background: rgba(0,0,0,0.9);
         z-index: 9999;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        backdrop-filter: blur(5px);
       `;
 
       const videoContainer = document.createElement('div');
       videoContainer.style.cssText = `
         position: relative;
-        width: ${isMobile ? '95%' : '90%'};
-        max-width: ${isMobile ? '400px' : '600px'};
-        aspect-ratio: ${isMobile ? '4/3' : '16/9'};
+        width: 90%;
+        max-width: 500px;
+        aspect-ratio: 4/3;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0,255,0,0.3);
+        border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        box-shadow: 0 0 20px rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.5);
       `;
 
       video.style.cssText = `
@@ -135,121 +145,74 @@ export function StockScanner({ stockItems }: StockScannerProps) {
         object-fit: cover;
       `;
 
-      const scanOverlay = document.createElement('div');
-      scanOverlay.style.cssText = `
-        position: absolute;
-        top: ${isMobile ? '25%' : '30%'};
-        left: ${isMobile ? '5%' : '10%'};
-        right: ${isMobile ? '5%' : '10%'};
-        height: ${isMobile ? '50%' : '40%'};
-        border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
-        border-radius: 8px;
-        background: rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.1);
-        box-shadow: 
-          inset 0 0 20px rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.3),
-          0 0 20px rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.5);
-      `;
-
-      const scanLine = document.createElement('div');
-      scanLine.style.cssText = `
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(90deg, transparent, ${operation === 'add' ? '#22c55e' : '#ef4444'}, transparent);
-        animation: scan-sweep 2s linear infinite;
-      `;
-
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes scan-sweep {
-          0% { transform: translateY(0); opacity: 1; }
-          50% { opacity: 1; }
-          100% { transform: translateY(${isMobile ? '150px' : '200px'}); opacity: 0; }
-        }
-      `;
-      document.head.appendChild(style);
-
-      scanOverlay.appendChild(scanLine);
-
       const instructionText = document.createElement('div');
-      
-      // Security fix: Replace innerHTML with secure DOM creation
-      const title = document.createElement('p');
-      title.textContent = operation === 'add' ? '📦 Scan pour AJOUTER au stock' : '📤 Scan pour RETIRER du stock';
-      title.style.cssText = `color: white; margin-bottom: 15px; font-size: ${isMobile ? '14px' : '18px'}; text-align: center; font-weight: 500;`;
-      
-      const instructions = document.createElement('p');
-      instructions.textContent = 'Positionnez le code-barres dans la zone colorée';
-      instructions.style.cssText = `color: ${operation === 'add' ? '#22c55e' : '#ef4444'}; font-size: ${isMobile ? '12px' : '14px'}; text-align: center; margin-bottom: 20px;`;
-      
-      instructionText.appendChild(title);
-      instructionText.appendChild(instructions);
+      instructionText.style.cssText = `
+        color: white;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 18px;
+        font-weight: 500;
+      `;
+      instructionText.textContent = operation === 'add' ? '📦 Scanner pour AJOUTER' : '📤 Scanner pour RETIRER';
 
-      const statusText = document.createElement('p');
-      statusText.textContent = '🔍 Recherche active...';
+      const statusText = document.createElement('div');
       statusText.style.cssText = `
         color: ${operation === 'add' ? '#22c55e' : '#ef4444'};
         margin-top: 20px;
-        font-size: ${isMobile ? '12px' : '16px'};
+        font-size: 16px;
         text-align: center;
-        font-weight: 500;
-        padding: ${isMobile ? '8px 16px' : '10px 20px'};
-        background: rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.1);
-        border-radius: 20px;
+        padding: 10px 20px;
+        background: rgba(0,0,0,0.5);
+        border-radius: 10px;
         border: 1px solid rgba(${operation === 'add' ? '34,197,94' : '239,68,68'},0.3);
       `;
+      statusText.textContent = '🔍 Recherche de codes...';
 
       const closeButton = document.createElement('button');
       closeButton.textContent = '✕ Fermer';
       closeButton.style.cssText = `
-        padding: ${isMobile ? '12px 20px' : '12px 24px'};
+        margin-top: 20px;
+        padding: 12px 24px;
         background: rgba(255,68,68,0.9);
         color: white;
         border: none;
         border-radius: 25px;
-        font-size: ${isMobile ? '14px' : '16px'};
+        font-size: 16px;
         font-weight: 500;
         cursor: pointer;
-        margin-top: ${isMobile ? '20px' : '30px'};
         box-shadow: 0 4px 15px rgba(255,68,68,0.3);
       `;
 
       videoContainer.appendChild(video);
-      videoContainer.appendChild(scanOverlay);
       overlay.appendChild(instructionText);
       overlay.appendChild(videoContainer);
       overlay.appendChild(statusText);
       overlay.appendChild(closeButton);
       document.body.appendChild(overlay);
 
+      // Variables de contrôle
       const codeReader = new BrowserMultiFormatReader();
       let isScanning = true;
       let scanController: any = null;
-      let consecutiveScans: string[] = [];
 
       const cleanup = () => {
-        console.log('Nettoyage du scanner...');
+        console.log('🧹 Nettoyage du scanner...');
         isScanning = false;
         if (scanController) {
           try {
             scanController.stop();
-            console.log('Scanner arrêté');
+            console.log('🛑 Scanner arrêté');
           } catch (e) {
-            console.log('Erreur lors de l\'arrêt du scanner:', e);
+            console.log('⚠️ Erreur lors de l\'arrêt:', e);
           }
         }
         stream.getTracks().forEach(track => {
           track.stop();
-          console.log('Track de caméra arrêté');
+          console.log('📷 Caméra fermée');
         });
         if (overlay.parentNode) {
           document.body.removeChild(overlay);
-          console.log('Overlay supprimé');
-        }
-        if (style.parentNode) {
-          document.head.removeChild(style);
+          console.log('🗑️ Interface supprimée');
         }
         setIsScanning(false);
       };
@@ -257,45 +220,14 @@ export function StockScanner({ stockItems }: StockScannerProps) {
       closeButton.onclick = cleanup;
 
       try {
-        console.log('Initialisation du scanner ZXing...');
-        statusText.textContent = '🔄 Initialisation du scanner...';
+        console.log('🔄 Initialisation du scanner ZXing...');
+        statusText.textContent = '🔄 Initialisation...';
         
-        // Attendre que la vidéo soit prête avec plusieurs événements possibles
-        console.log('Attente du chargement de la vidéo...');
-        await new Promise((resolve, reject) => {
-          let resolved = false;
-          
-          const handleReady = () => {
-            if (!resolved) {
-              resolved = true;
-              console.log('Vidéo prête, démarrage du scan...');
-              statusText.textContent = '🔍 Recherche active...';
-              resolve(null);
-            }
-          };
-          
-          // Essayer plusieurs événements
-          video.oncanplay = handleReady;
-          video.onloadeddata = handleReady;
-          video.onplaying = handleReady;
-          
-          // Timeout de sécurité
-          setTimeout(() => {
-            if (!resolved) {
-              resolved = true;
-              console.log('Timeout - forcer le démarrage du scan...');
-              statusText.textContent = '🔍 Recherche active...';
-              resolve(null);
-            }
-          }, 2000);
-          
-          // Vérifier si la vidéo est déjà prête
-          if (video.readyState >= 2) {
-            handleReady();
-          }
-        });
-
-        console.log('Démarrage du décodage ZXing...');
+        // Attendre que la vidéo soit stable
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        console.log('📡 Démarrage de la détection...');
+        statusText.textContent = '🔍 Recherche active...';
         
         scanController = await codeReader.decodeFromVideoDevice(
           undefined, 
@@ -303,57 +235,62 @@ export function StockScanner({ stockItems }: StockScannerProps) {
           (result, error) => {
             if (result && isScanning) {
               const scannedCode = result.getText().trim();
-              console.log('✅ Code détecté:', scannedCode, 'Format:', result.getBarcodeFormat());
+              console.log('🎯 CODE DÉTECTÉ:', scannedCode, 'Format:', result.getBarcodeFormat());
               
               if (validateBarcodeFormat(scannedCode)) {
                 console.log('✅ Code validé:', scannedCode);
                 statusText.textContent = `✅ Code validé: ${scannedCode}`;
-                statusText.style.color = operation === 'add' ? '#22c55e' : '#ef4444';
                 
-                // Traitement immédiat
+                // Feedback visuel
+                videoContainer.style.border = '5px solid #22c55e';
+                
                 setTimeout(() => {
                   cleanup();
                   processScannedCode(scannedCode, operation);
-                }, 100);
+                }, 500);
               } else {
-                console.log('⚠️ Code rejeté (format invalide):', scannedCode);
-                statusText.textContent = `⚠️ Format invalide: ${scannedCode}`;
+                console.log('⚠️ Code rejeté:', scannedCode);
+                statusText.textContent = `⚠️ Code invalide: ${scannedCode}`;
+                // Feedback visuel d'erreur
+                videoContainer.style.border = '5px solid #ef4444';
+                setTimeout(() => {
+                  videoContainer.style.border = `3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'}`;
+                }, 1000);
               }
             }
             
-            // Ne logger que les vraies erreurs, pas les "NotFoundException" normales
             if (error && error.name !== 'NotFoundException') {
-              console.log('❌ Erreur de scanner:', error.name, error.message);
-              statusText.textContent = `❌ Erreur: ${error.name}`;
+              console.log('❌ Erreur scanner:', error.name, error.message);
             }
           }
         );
         
-        console.log('Scanner démarré avec succès');
-      } catch (error) {
-        console.error('Erreur du scanner:', error);
-        statusText.textContent = '❌ Erreur de scanner: ' + (error instanceof Error ? error.message : 'Erreur inconnue');
-        setTimeout(cleanup, 1000);
+        console.log('✅ Scanner actif et prêt');
+        
+      } catch (scanError) {
+        console.error('❌ Erreur initialisation scanner:', scanError);
+        statusText.textContent = '❌ Erreur scanner: ' + (scanError instanceof Error ? scanError.message : 'Erreur inconnue');
+        setTimeout(cleanup, 3000);
       }
       
     } catch (error) {
-      console.error('Erreur caméra:', error);
+      console.error('❌ Erreur caméra:', error);
       let errorMessage = 'Impossible d\'accéder à la caméra';
       
       if (error instanceof Error) {
         if (error.name === 'NotAllowedError') {
-          errorMessage = 'Permission d\'accès à la caméra refusée. Veuillez autoriser l\'accès et réessayer.';
+          errorMessage = 'Permission caméra refusée. Autorisez l\'accès et réessayez.';
         } else if (error.name === 'NotFoundError') {
-          errorMessage = 'Aucune caméra trouvée sur cet appareil.';
+          errorMessage = 'Aucune caméra trouvée.';
         } else if (error.name === 'NotSupportedError') {
-          errorMessage = 'L\'accès à la caméra n\'est pas supporté par ce navigateur.';
+          errorMessage = 'Caméra non supportée par ce navigateur.';
         } else {
           errorMessage = error.message;
         }
       }
       
       toast({
-        title: 'Erreur',
+        title: 'Erreur Caméra',
         description: errorMessage,
         variant: 'destructive'
       });
