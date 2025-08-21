@@ -3,9 +3,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChecklistCategory } from './ChecklistCategory';
 import type { ChecklistItem } from '@/hooks/useChecklistData';
-import { MessageSquare, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { MessageSquare, AlertTriangle, CheckCircle, Clock, TestTube, ChevronDown } from 'lucide-react';
 
 interface ChecklistInspectionProps {
   checklistItems: ChecklistItem[];
@@ -78,8 +80,71 @@ export function ChecklistInspection({
 
   const stats = getCompletionStats();
 
+  // Auto-fill test functions
+  const handleFillAllOK = () => {
+    checklistItems.forEach((item, index) => {
+      onItemStatusChange(item.id, 'ok', `Test note ${index + 1} - Element vérifié automatiquement`);
+    });
+    onGeneralNotesChange('Test rempli automatiquement - Tous les éléments sont conformes. Inspection réalisée pour test de fonctionnalité.');
+  };
+
+  const handleFillWithIssues = () => {
+    checklistItems.forEach((item, index) => {
+      if (index % 3 === 0) {
+        // Marque 1 élément sur 3 comme ayant besoin de réparation
+        onItemStatusChange(item.id, 'needs_repair', `Test - Problème détecté sur cet élément`);
+      } else {
+        onItemStatusChange(item.id, 'ok', `Test - Element vérifié OK`);
+      }
+    });
+    onGeneralNotesChange('Test avec problèmes - Certains éléments nécessitent une attention particulière. Voir détails par élément.');
+  };
+
+  const handleClearAll = () => {
+    checklistItems.forEach(item => {
+      onItemStatusChange(item.id, 'not_checked');
+      onItemNotesChange(item.id, '');
+    });
+    onGeneralNotesChange('');
+  };
+
   return (
     <div className="space-y-6">
+      {/* Auto-fill Test Button */}
+      <Card className="border-amber-200 bg-amber-50">
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TestTube className="h-4 w-4 text-amber-600" />
+              <span className="text-sm font-medium text-amber-800">Mode Test</span>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100">
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Auto-fill pour test
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={handleFillAllOK}>
+                  <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
+                  Tout OK
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFillWithIssues}>
+                  <AlertTriangle className="h-4 w-4 mr-2 text-orange-600" />
+                  Avec problèmes
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleClearAll}>
+                  <Clock className="h-4 w-4 mr-2 text-gray-600" />
+                  Vider tout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Status and Progress */}
       <Card>
         <CardHeader>
