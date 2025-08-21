@@ -561,18 +561,29 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
           </div>
         ` : ''}
         
+        
         <div class="signatures-section">
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Technicien</div>
             <div>
-              ${checklist.technician_signature ? '✅ Signé numériquement' : '⏳ Non signé'}
+              ${checklist.technician_signature ? `
+                <img src="${checklist.technician_signature}" alt="Signature technicien" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
+              ` : `
+                <div style="color: #6b7280;">⏳ Non signé</div>
+              `}
             </div>
           </div>
           
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Client</div>
             <div>
-              ${checklist.customer_signature ? '✅ Signé numériquement' : '⏳ Non signé'}
+              ${checklist.customer_signature ? `
+                <img src="${checklist.customer_signature}" alt="Signature client" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
+              ` : `
+                <div style="color: #6b7280;">⏳ Non signé</div>
+              `}
             </div>
           </div>
         </div>
