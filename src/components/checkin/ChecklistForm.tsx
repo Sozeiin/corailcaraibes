@@ -164,6 +164,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     try {
       setIsProcessing(true);
       console.log('🚀 [DEBUG] Début de la finalisation');
+      console.log('🚀 [DEBUG] Paramètres email:', { sendEmailReport, customerEmail });
       console.log('🚀 [DEBUG] Données utilisateur:', user);
       console.log('🚀 [DEBUG] Données bateau:', boat);
       console.log('🚀 [DEBUG] Données rental:', rentalData);
