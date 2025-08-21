@@ -22,19 +22,29 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { checklistId, recipientEmail, customerName, boatName, type }: ChecklistReportRequest = await req.json();
-
-    console.log('Received email request:', { checklistId, recipientEmail, customerName, boatName, type });
+    const requestBody = await req.json();
+    console.log('Received email request:', requestBody);
+    
+    const { checklistId, recipientEmail, customerName, boatName, type }: ChecklistReportRequest = requestBody;
 
     if (!checklistId || !recipientEmail) {
+      console.error('Missing required fields:', { checklistId, recipientEmail });
       throw new Error('Checklist ID and recipient email are required');
     }
 
+    console.log('Processing email request for:', { checklistId, recipientEmail, customerName, boatName, type });
+
     // Initialize Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Supabase config check:', { 
+      hasUrl: !!supabaseUrl, 
+      hasKey: !!supabaseKey,
+      url: supabaseUrl?.substring(0, 20) + '...'
+    });
+    
+    const supabase = createClient(supabaseUrl ?? '', supabaseKey ?? '');
 
     // Get checklist data
     const { data: checklist, error: checklistError } = await supabase

@@ -245,8 +245,18 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
       // Send email if requested
       if (sendEmailReport && customerEmail) {
+        console.log('📧 [DEBUG] Tentative envoi email avec:', {
+          checklistId: checklist.id,
+          recipientEmail: customerEmail,
+          customerName: rentalData?.customerName || rentalData?.name || 'Client',
+          boatName: boat?.name || 'Bateau non spécifié',
+          type,
+          rentalData,
+          boat
+        });
+        
         try {
-          const { error: emailError } = await supabase.functions.invoke('send-checklist-report', {
+          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-checklist-report', {
             body: {
               checklistId: checklist.id,
               recipientEmail: customerEmail,
@@ -256,17 +266,32 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             },
           });
 
+          console.log('📧 [DEBUG] Réponse fonction email:', { emailData, emailError });
+
           if (emailError) {
-            console.warn('⚠️ [DEBUG] Erreur envoi email:', emailError);
+            console.error('❌ [DEBUG] Erreur envoi email:', emailError);
             toast({
               title: 'Email non envoyé',
-              description: 'Le rapport a été créé mais l\'email n\'a pas pu être envoyé.',
+              description: `Erreur: ${emailError.message}`,
               variant: 'destructive',
             });
+          } else {
+            console.log('✅ [DEBUG] Email envoyé avec succès:', emailData);
+            toast({
+              title: 'Email envoyé',
+              description: 'Le rapport a été envoyé par email avec succès.',
+            });
           }
-        } catch (emailError) {
-          console.warn('⚠️ [DEBUG] Erreur envoi email:', emailError);
+        } catch (emailError: any) {
+          console.error('❌ [DEBUG] Exception envoi email:', emailError);
+          toast({
+            title: 'Erreur email',
+            description: `Exception: ${emailError.message}`,
+            variant: 'destructive',
+          });
         }
+      } else {
+        console.log('⚠️ [DEBUG] Email non envoyé car:', { sendEmailReport, customerEmail });
       }
 
       console.log('✅ [DEBUG] Finalisation réussie');
