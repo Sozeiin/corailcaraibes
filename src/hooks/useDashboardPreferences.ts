@@ -92,7 +92,9 @@ export const useDashboardPreferences = () => {
       
       const { data, error } = await supabase
         .from('dashboard_preferences')
-        .upsert(saveData);
+        .upsert(saveData, {
+          onConflict: 'user_id'
+        });
 
       if (error) {
         console.error('Supabase error details:', error);
