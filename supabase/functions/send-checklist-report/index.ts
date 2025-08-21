@@ -26,9 +26,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('=== DEBUT EDGE FUNCTION ===');
     console.log('Request body:', requestBody);
     
-    const { checklistId, recipientEmail, customerName, boatName, type } = requestBody;
+    const { checklistId, recipientEmail, customerName, boatName, type }: ChecklistReportRequest = requestBody;
 
-    // Test 1: Vérifier les paramètres
     if (!checklistId || !recipientEmail) {
       console.error('Missing required fields:', { checklistId, recipientEmail });
       return new Response(JSON.stringify({ error: 'Missing required fields' }), {
@@ -37,14 +36,50 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    console.log('=== TEST 1: Paramètres OK ===');
+    console.log('Processing email request for:', { checklistId, recipientEmail, customerName, boatName, type });
 
-    // Test 2: Vérifier la clé Resend
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    console.log('Supabase config check:', { 
+      hasUrl: !!supabaseUrl, 
+      hasKey: !!supabaseKey,
+      url: supabaseUrl?.substring(0, 20) + '...'
+    });
+    
+    const supabase = createClient(supabaseUrl ?? '', supabaseKey ?? '');
+
+    // Get checklist data
+    console.log('=== FETCHING CHECKLIST DATA ===');
+    const { data: checklist, error: checklistError } = await supabase
+      .from('boat_checklists')
+      .select(`
+        *,
+        boats(name, model, serial_number, year),
+        profiles(name, email),
+        boat_checklist_items(
+          *,
+          checklist_items(name, category, is_required)
+        )
+      `)
+      .eq('id', checklistId)
+      .single();
+
+    if (checklistError) {
+      console.error('Checklist fetch error:', checklistError);
+      return new Response(JSON.stringify({ error: `Failed to fetch checklist: ${checklistError.message}` }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log('Checklist data fetched successfully:', checklist?.id);
+
+    // Initialize Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    console.log('=== TEST 2: Clé Resend ===');
+    console.log('=== CHECKING RESEND ===');
     console.log('Has Resend key:', !!resendApiKey);
-    console.log('Key length:', resendApiKey?.length || 0);
-    console.log('Key prefix:', resendApiKey?.substring(0, 10) + '...');
     
     if (!resendApiKey) {
       console.error('RESEND_API_KEY not found');
@@ -54,39 +89,27 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Test 3: Initialiser Resend
-    console.log('=== TEST 3: Initialisation Resend ===');
-    const resend = new Resend(resendApiKey);
     console.log('Resend initialized successfully');
+    const resend = new Resend(resendApiKey);
 
-    // Test 4: Email simple sans HTML complexe
-    console.log('=== TEST 4: Envoi email simple ===');
-    
-    const simpleEmailContent = `
-      <h1>Test Email de Checklist</h1>
-      <p>Ceci est un email de test pour vérifier que l'envoi fonctionne.</p>
-      <p><strong>Client:</strong> ${customerName}</p>
-      <p><strong>Bateau:</strong> ${boatName}</p>
-      <p><strong>Type:</strong> ${type}</p>
-      <p><strong>ID Checklist:</strong> ${checklistId}</p>
-    `;
+    // Generate complete HTML report
+    console.log('=== GENERATING COMPLETE REPORT ===');
+    const htmlReport = generateHTMLReport(checklist, boatName, customerName, type);
 
     console.log('About to send email...');
     console.log('From: Marina Reports <service.technique@corail.corailapp.fr>');
     console.log('To:', recipientEmail);
-    console.log('Subject: Test Rapport', type);
+    console.log('Subject: Rapport', type);
 
     const emailResponse = await resend.emails.send({
       from: "Marina Reports <service.technique@corail.corailapp.fr>",
       to: [recipientEmail],
-      subject: `Test Rapport ${type} - ${boatName}`,
-      html: simpleEmailContent,
+      subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
+      html: htmlReport,
     });
 
     console.log('=== RESEND RESPONSE ===');
     console.log('Full response:', JSON.stringify(emailResponse, null, 2));
-    console.log('Response type:', typeof emailResponse);
-    console.log('Response keys:', Object.keys(emailResponse || {}));
 
     if (emailResponse.error) {
       console.error('Resend returned error:', emailResponse.error);
@@ -104,11 +127,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      emailId: emailResponse.data?.id,
-      debug: {
-        hasApiKey: !!resendApiKey,
-        emailResponse: emailResponse
-      }
+      emailId: emailResponse.data?.id
     }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -118,13 +137,10 @@ const handler = async (req: Request): Promise<Response> => {
     console.error("=== ERREUR DANS EDGE FUNCTION ===");
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
-    console.error("Error name:", error.name);
-    console.error("Full error:", JSON.stringify(error, null, 2));
     
     return new Response(JSON.stringify({ 
       error: error.message,
-      stack: error.stack,
-      name: error.name
+      stack: error.stack
     }), {
       status: 500,
       headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -231,6 +247,13 @@ function generateHTMLReport(checklist: any, boatName: string, customerName: stri
 
       <h2>Détail de l'inspection</h2>
       ${categoriesHTML}
+
+      ${checklist.general_notes ? `
+        <div style="margin-top: 30px; padding: 20px; background-color: #f8fafc; border-radius: 8px;">
+          <h3>Notes générales</h3>
+          <p>${checklist.general_notes}</p>
+        </div>
+      ` : ''}
 
       <div class="signature-section">
         <h3>Signatures</h3>
