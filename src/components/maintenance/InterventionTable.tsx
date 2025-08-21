@@ -153,11 +153,12 @@ export function InterventionTable({
               </TableCell>
               {canManage && !showHistory && (
                 <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex justify-end space-x-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(intervention)}
+                      className="h-8 w-8 p-0"
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -165,6 +166,7 @@ export function InterventionTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => onEdit(intervention)}
+                      className="h-8 w-8 p-0"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>

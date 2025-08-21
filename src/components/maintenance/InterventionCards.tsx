@@ -142,7 +142,7 @@ export function InterventionCards({
 
             {canManage && !showHistory && (
               <CardFooter className="pt-3 border-t bg-muted/30">
-                <div className="flex justify-end space-x-2 w-full">
+                <div className="flex justify-end space-x-1 w-full">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -150,10 +150,9 @@ export function InterventionCards({
                       e.stopPropagation();
                       onEdit(intervention);
                     }}
-                    className="hover:bg-background"
+                    className="hover:bg-background h-8 w-8 p-0"
                   >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Voir
+                    <Eye className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -162,10 +161,9 @@ export function InterventionCards({
                       e.stopPropagation();
                       onEdit(intervention);
                     }}
-                    className="hover:bg-background"
+                    className="hover:bg-background h-8 w-8 p-0"
                   >
-                    <Edit className="h-4 w-4 mr-1" />
-                    Modifier
+                    <Edit className="h-4 w-4" />
                   </Button>
                   {onDelete && (
                     <Button
@@ -177,10 +175,9 @@ export function InterventionCards({
                           onDelete(intervention);
                         }
                       }}
-                      className="hover:bg-background text-red-600 hover:text-red-700"
+                      className="hover:bg-background text-red-600 hover:text-red-700 h-8 w-8 p-0"
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
-                      Supprimer
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   )}
                 </div>
