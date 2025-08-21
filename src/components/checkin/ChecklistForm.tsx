@@ -20,6 +20,7 @@ import { ChecklistSteps } from './ChecklistSteps';
 import { ChecklistInspection } from './ChecklistInspection';
 import { SignatureStep } from './SignatureStep';
 import { EmailStep } from './EmailStep';
+import { useCreateIntervention } from '@/hooks/useCreateIntervention';
 
 interface ChecklistFormProps {
   boat: any;
@@ -50,6 +51,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const updateBoatStatusMutation = useUpdateBoatStatus();
   const updateRentalStatusMutation = useUpdateRentalStatus();
   const uploadSignatureMutation = useSignatureUpload();
+  const createInterventionMutation = useCreateIntervention();
 
   // Initialize checklist items
   useEffect(() => {
@@ -243,6 +245,43 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       };
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
+
+      // Check for problems and create intervention if needed
+      const problemItems = checklistItems.filter(item => item.status === 'needs_repair');
+      if (problemItems.length > 0) {
+        try {
+          console.log('🔧 [DEBUG] Problèmes détectés, création intervention automatique');
+          const problemsDescription = problemItems
+            .map(item => `- ${item.name}${item.category ? ` (${item.category})` : ''}: ${item.notes || 'Problème non spécifié'}`)
+            .join('\n');
+
+          const interventionTitle = `Problèmes détectés lors du ${type === 'checkin' ? 'check-in' : 'check-out'} - ${boat.name}`;
+          const interventionDescription = `Problèmes identifiés lors du ${type === 'checkin' ? 'check-in' : 'check-out'} :\n\n${problemsDescription}\n\nChecklist ID: ${checklist.id}`;
+
+          await createInterventionMutation.mutateAsync({
+            title: interventionTitle,
+            description: interventionDescription,
+            boat_id: boat.id,
+            status: 'scheduled' as const,
+            scheduled_date: new Date().toISOString().split('T')[0],
+            base_id: boat.base_id,
+            intervention_type: 'corrective'
+          });
+
+          console.log('✅ [DEBUG] Intervention créée automatiquement');
+          toast({
+            title: "Intervention créée automatiquement",
+            description: `${problemItems.length} problème(s) détecté(s). Une intervention de maintenance a été programmée.`,
+          });
+        } catch (interventionError: any) {
+          console.error('❌ [DEBUG] Erreur création intervention:', interventionError);
+          toast({
+            title: "Attention",
+            description: "Des problèmes ont été détectés mais l'intervention n'a pas pu être créée automatiquement. Veuillez créer manuellement une intervention.",
+            variant: "destructive"
+          });
+        }
+      }
 
       // Send email if requested
       if (sendEmailReport && customerEmail) {
