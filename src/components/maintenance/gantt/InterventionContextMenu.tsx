@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { 
@@ -85,43 +85,35 @@ export function InterventionContextMenu({
   ];
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        {React.cloneElement(children as React.ReactElement, {
-          onContextMenu: (e: React.MouseEvent) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Right click on intervention:', intervention.title);
-            // Trigger the dropdown menu programmatically
-            (e.currentTarget as HTMLElement).click();
-          },
-        })}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-64" align="start">
-        <DropdownMenuItem onClick={onViewDetails}>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
+        {children}
+      </ContextMenuTrigger>
+      <ContextMenuContent className="w-64">
+        <ContextMenuItem onClick={onViewDetails}>
           <Eye className="mr-2 h-4 w-4" />
           Voir les détails
-        </DropdownMenuItem>
+        </ContextMenuItem>
         
         {canEdit && (
           <>
-            <DropdownMenuItem onClick={onEdit}>
+            <ContextMenuItem onClick={onEdit}>
               <Edit className="mr-2 h-4 w-4" />
               Modifier
-            </DropdownMenuItem>
+            </ContextMenuItem>
             
-            <DropdownMenuSeparator />
+            <ContextMenuSeparator />
             
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Changer le statut
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
+              </ContextMenuSubTrigger>
+              <ContextMenuSubContent>
                 {statusOptions.map((status) => {
                   const StatusIcon = status.icon;
                   return (
-                    <DropdownMenuItem
+                    <ContextMenuItem
                       key={status.value}
                       onClick={() => onStatusChange(status.value)}
                       className={intervention.status === status.value ? 'bg-accent' : ''}
@@ -131,15 +123,15 @@ export function InterventionContextMenu({
                       {intervention.status === status.value && (
                         <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
                       )}
-                    </DropdownMenuItem>
+                    </ContextMenuItem>
                   );
                 })}
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
+              </ContextMenuSubContent>
+            </ContextMenuSub>
 
             {canReassign && technicians.length > 0 && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
+              <ContextMenuSub>
+                <ContextMenuSubTrigger>
                   <Users className="mr-2 h-4 w-4" />
                   Réassigner
                   {lastDroppedTechnician && (
@@ -147,14 +139,14 @@ export function InterventionContextMenu({
                       <AlertCircle className="h-3 w-3 text-blue-600" />
                     </div>
                   )}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => onReassign('')}>
+                </ContextMenuSubTrigger>
+                <ContextMenuSubContent>
+                  <ContextMenuItem onClick={() => onReassign('')}>
                     <XCircle className="mr-2 h-4 w-4 text-gray-500" />
                     Non assigné
-                  </DropdownMenuItem>
+                  </ContextMenuItem>
                   {technicians.map((technician) => (
-                    <DropdownMenuItem
+                    <ContextMenuItem
                       key={technician.id}
                       onClick={() => onReassign(technician.id)}
                       className={intervention.technician_id === technician.id ? 'bg-accent' : ''}
@@ -171,31 +163,31 @@ export function InterventionContextMenu({
                           </div>
                         )}
                       </div>
-                    </DropdownMenuItem>
+                    </ContextMenuItem>
                   ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
+                </ContextMenuSubContent>
+              </ContextMenuSub>
             )}
           </>
         )}
         
-        <DropdownMenuSeparator />
+        <ContextMenuSeparator />
         
-        <DropdownMenuItem onClick={onWeatherEvaluation}>
+        <ContextMenuItem onClick={onWeatherEvaluation}>
           <Cloud className="mr-2 h-4 w-4" />
           Évaluation météo
-        </DropdownMenuItem>
+        </ContextMenuItem>
         
         {canDelete && (
           <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onDelete} className="text-destructive">
+            <ContextMenuSeparator />
+            <ContextMenuItem onClick={onDelete} className="text-destructive">
               <Trash2 className="mr-2 h-4 w-4" />
               Supprimer
-            </DropdownMenuItem>
+            </ContextMenuItem>
           </>
         )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
