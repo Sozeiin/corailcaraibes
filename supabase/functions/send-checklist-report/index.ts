@@ -70,7 +70,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Initialize Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    console.log('Checking Resend API key:', { 
+      hasKey: !!resendApiKey, 
+      keyLength: resendApiKey?.length || 0,
+      keyPrefix: resendApiKey?.substring(0, 8) + '...' 
+    });
+    
     if (!resendApiKey) {
+      console.error('RESEND_API_KEY is not configured');
       throw new Error('RESEND_API_KEY is not configured');
     }
     
