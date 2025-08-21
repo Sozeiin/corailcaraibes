@@ -258,8 +258,20 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         
         try {
           console.log('📧 [DEBUG] Appel de l\'edge function...');
+          console.log('📧 [DEBUG] Données envoyées:', {
+            checklistId: checklist.id,
+            recipientEmail: customerEmail,
+            customerName: rentalData?.customerName || rentalData?.name || 'Client',
+            boatName: boat?.name || 'Bateau non spécifié',
+            type,
+          });
           
-          const response = await supabase.functions.invoke('send-checklist-report', {
+          // Ajouter un timeout de 30 secondes
+          const timeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Timeout après 30 secondes')), 30000);
+          });
+          
+          const functionCall = supabase.functions.invoke('send-checklist-report', {
             body: {
               checklistId: checklist.id,
               recipientEmail: customerEmail,
@@ -269,19 +281,27 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             },
           });
 
-          console.log('📧 [DEBUG] Réponse fonction email complète:', response);
-          console.log('📧 [DEBUG] Data:', response.data);
-          console.log('📧 [DEBUG] Error:', response.error);
+          const response = await Promise.race([functionCall, timeoutPromise]) as any;
 
-          if (response.error) {
-            console.error('❌ [DEBUG] Erreur envoi email:', response.error);
+          console.log('📧 [DEBUG] Réponse fonction email complète:', response);
+          console.log('📧 [DEBUG] Type de réponse:', typeof response);
+          console.log('📧 [DEBUG] Keys de réponse:', Object.keys(response || {}));
+
+          if (response && typeof response === 'object') {
+            console.log('📧 [DEBUG] Data:', (response as any).data);
+            console.log('📧 [DEBUG] Error:', (response as any).error);
+            console.log('📧 [DEBUG] Status:', (response as any).status);
+          }
+
+          if ((response as any)?.error) {
+            console.error('❌ [DEBUG] Erreur envoi email:', (response as any).error);
             toast({
               title: 'Email non envoyé',
-              description: `Erreur: ${response.error.message}`,
+              description: `Erreur: ${(response as any).error.message}`,
               variant: 'destructive',
             });
-          } else if (response.data && response.data.success) {
-            console.log('✅ [DEBUG] Email envoyé avec succès:', response.data);
+          } else if ((response as any)?.data?.success) {
+            console.log('✅ [DEBUG] Email envoyé avec succès:', (response as any).data);
             toast({
               title: 'Email envoyé',
               description: 'Le rapport a été envoyé par email avec succès.',
@@ -290,20 +310,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             console.warn('⚠️ [DEBUG] Réponse inattendue:', response);
             toast({
               title: 'Statut email incertain',
-              description: 'L\'envoi d\'email a une réponse inattendue.',
+              description: 'L\'edge function ne répond pas correctement.',
               variant: 'destructive',
             });
           }
         } catch (emailError: any) {
           console.error('❌ [DEBUG] Exception envoi email:', emailError);
           console.error('❌ [DEBUG] Exception details:', {
-            message: emailError.message,
-            stack: emailError.stack,
-            name: emailError.name
+            message: emailError?.message,
+            stack: emailError?.stack,
+            name: emailError?.name,
+            toString: emailError?.toString?.()
           });
           toast({
             title: 'Erreur email',
-            description: `Exception: ${emailError.message}`,
+            description: `Exception: ${emailError?.message || 'Erreur inconnue'}`,
             variant: 'destructive',
           });
         }
