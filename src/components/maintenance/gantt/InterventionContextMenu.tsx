@@ -84,10 +84,24 @@ export function InterventionContextMenu({
     { value: 'cancelled', label: 'Annulé', icon: XCircle, color: 'text-red-600' },
   ];
 
+  console.log('InterventionContextMenu rendering for:', intervention.title);
+
   return (
-    <ContextMenu>
-      <ContextMenuTrigger asChild>
-        {children}
+    <ContextMenu onOpenChange={(open) => console.log('ContextMenu open changed:', open)}>
+      <ContextMenuTrigger asChild onContextMenu={(e) => {
+        console.log('ContextMenuTrigger onContextMenu fired for:', intervention.title);
+        e.stopPropagation();
+      }}>
+        <div 
+          onContextMenu={(e) => {
+            console.log('Div onContextMenu fired for:', intervention.title);
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          style={{ width: '100%', height: '100%' }}
+        >
+          {children}
+        </div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-64">
         <ContextMenuItem onClick={onViewDetails}>

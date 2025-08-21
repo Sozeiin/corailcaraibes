@@ -59,11 +59,15 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
   };
 
   const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('DraggableTaskCard context menu:', task.title);
+    console.log('DraggableTaskCard handleContextMenu called for:', task.title, 'Button:', e.button);
+    // N'empêcher l'événement de remonter que si nécessaire
     if (!isBeingDragged && !isDragging) {
+      console.log('Allowing context menu for:', task.title);
       onContextMenu?.(e);
+    } else {
+      console.log('Blocking context menu for dragging task:', task.title);
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
@@ -93,15 +97,12 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
     <Card
       ref={setNodeRef}
       style={style}
-      {...listeners}
+      {...(listeners || {})}
       {...attributes}
       onClick={handleClick}
       onContextMenu={(e) => {
         console.log('DraggableTaskCard onContextMenu direct:', task.title);
         handleContextMenu(e);
-      }}
-      onMouseDown={(e) => {
-        console.log('Mouse down on card:', e.button); // 0=left, 1=middle, 2=right
       }}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
