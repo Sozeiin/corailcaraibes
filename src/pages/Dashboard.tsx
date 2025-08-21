@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,7 @@ const AlertItem = ({ type, message, severity }: any) => (
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [baseName, setBaseName] = useState<string>('');
   const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
@@ -201,7 +203,12 @@ export default function Dashboard() {
            </p>
         </div>
         <div className="flex flex-col xs:flex-row gap-2 xs:gap-3">
-          <Button variant="outline" size="sm" className="text-xs sm:text-sm">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs sm:text-sm"
+            onClick={() => navigate('/maintenance?tab=gantt')}
+          >
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             Planification
           </Button>

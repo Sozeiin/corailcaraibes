@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Wrench, Calendar, FileText, History } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MaintenanceInterventions } from '@/components/maintenance/MaintenanceInterventions';
@@ -10,7 +11,16 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function Maintenance() {
   const { user } = useAuth();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('interventions');
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const tab = searchParams.get('tab');
+    if (tab && ['interventions', 'preventive', 'gantt', 'history'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
