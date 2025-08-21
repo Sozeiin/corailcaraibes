@@ -169,7 +169,10 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
   const checklistDate = new Date(checklist.checklist_date).toLocaleDateString('fr-FR');
   const reportTitle = type === 'checkin' ? 'Rapport de Check-in' : 'Rapport de Check-out';
 
-  // Group items by category
+  console.log('🔧 Starting HTML generation...');
+  console.log('📦 Checklist items received:', checklist.boat_checklist_items?.length || 0);
+
+  // Group items by category with detailed logging
   const itemsByCategory = checklist.boat_checklist_items?.reduce((acc: any, item: any) => {
     const category = item.checklist_items?.category || 'Autre';
     if (!acc[category]) {
@@ -178,6 +181,9 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
     acc[category].push(item);
     return acc;
   }, {}) || {};
+
+  console.log('📊 Categories in HTML generation:', Object.keys(itemsByCategory));
+  console.log('📊 Items per category in HTML:', Object.entries(itemsByCategory).map(([cat, items]: [string, any]) => `${cat}: ${items.length}`));
 
   const getStatusText = (status: string) => {
     switch (status) {
