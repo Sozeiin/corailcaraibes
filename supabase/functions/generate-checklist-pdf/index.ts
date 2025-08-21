@@ -55,11 +55,7 @@ const handler = async (req: Request): Promise<Response> => {
       .select(`
         *,
         boats(name, model, serial_number, year),
-        technician:profiles!boat_checklists_technician_id_fkey(name, email),
-        boat_checklist_items(
-          *,
-          checklist_items(name, category, is_required)
-        )
+        technician:profiles!boat_checklists_technician_id_fkey(name, email)
       `)
       .eq('id', checklistId)
       .single();
@@ -72,12 +68,38 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
+    // Get all checklist items separately to avoid nesting issues
+    console.log('📋 Fetching checklist items...');
+    const { data: checklistItems, error: itemsError } = await supabase
+      .from('boat_checklist_items')
+      .select(`
+        *,
+        checklist_items(name, category, is_required)
+      `)
+      .eq('checklist_id', checklistId)
+      .order('item_id');
+
+    
+    if (itemsError) {
+      console.error('❌ Checklist items fetch error:', itemsError);
+      return new Response(JSON.stringify({ error: `Failed to fetch checklist items: ${itemsError.message}` }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     console.log('✅ Checklist data fetched:', {
       id: checklistData.id,
-      itemsCount: checklistData.boat_checklist_items?.length || 0,
+      itemsCount: checklistItems?.length || 0,
       boatName: checklistData.boats?.name,
       technicianName: checklistData.technician?.name
     });
+
+    console.log('🔍 All items found:', checklistItems?.map(item => ({
+      name: item.checklist_items?.name,
+      category: item.checklist_items?.category,
+      status: item.status
+    })) || []);
 
     // Get rental data
     console.log('🏠 Fetching rental data...');
@@ -93,7 +115,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const checklist = {
       ...checklistData,
-      rental: rentalData
+      rental: rentalData,
+      boat_checklist_items: checklistItems || []
     };
 
     // Group items by category for analysis
