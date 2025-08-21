@@ -98,6 +98,7 @@ export function GanttMaintenanceSchedule() {
   const [selectedInterventionForDetails, setSelectedInterventionForDetails] = useState<Intervention | null>(null);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
+  const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string | null>>({});
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -385,11 +386,18 @@ export function GanttMaintenanceSchedule() {
         scheduled_time: scheduledTime
       });
       
+      // Mémoriser le technicien sur lequel l'intervention a été déplacée
+      const finalTechnicianId = technicianId === 'unassigned' ? null : technicianId;
+      setLastDroppedTechnician(prev => ({
+        ...prev,
+        [draggedTask.id]: finalTechnicianId
+      }));
+      
       // Update the intervention
       updateInterventionMutation.mutate({
         id: draggedTask.id,
         updates: {
-          technician_id: technicianId === 'unassigned' ? null : technicianId,
+          technician_id: finalTechnicianId,
           scheduled_date: dateString,
           scheduled_time: scheduledTime
         }
@@ -533,6 +541,12 @@ export function GanttMaintenanceSchedule() {
   };
 
   const handleReassign = (intervention: Intervention, technicianId: string) => {
+    // Mémoriser le technicien sélectionné manuellement
+    setLastDroppedTechnician(prev => ({
+      ...prev,
+      [intervention.id]: technicianId || null
+    }));
+    
     updateInterventionMutation.mutate({
       id: intervention.id,
       updates: { technician_id: technicianId || null }
@@ -828,16 +842,17 @@ export function GanttMaintenanceSchedule() {
                                         getTaskTypeConfig={getTaskTypeConfig}
                                         weatherSeverity={weatherSeverity}
                                         renderTaskCard={(task) => (
-                                          <InterventionContextMenu
-                                            intervention={task as any}
-                                            technicians={technicians}
-                                            onViewDetails={() => handleViewDetails(task as any)}
-                                            onEdit={() => handleEditIntervention(task as any)}
-                                            onStatusChange={(status) => handleStatusChange(task as any, status)}
-                                            onReassign={(technicianId) => handleReassign(task as any, technicianId)}
-                                            onDelete={() => handleDeleteIntervention(task as any)}
-                                            onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}
-                                         >
+                                           <InterventionContextMenu
+                                             intervention={task as any}
+                                             technicians={technicians}
+                                             lastDroppedTechnician={lastDroppedTechnician[task.id]}
+                                             onViewDetails={() => handleViewDetails(task as any)}
+                                             onEdit={() => handleEditIntervention(task as any)}
+                                             onStatusChange={(status) => handleStatusChange(task as any, status)}
+                                             onReassign={(technicianId) => handleReassign(task as any, technicianId)}
+                                             onDelete={() => handleDeleteIntervention(task as any)}
+                                             onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}
+                                          >
                                            <DraggableTaskCard
                                              task={task}
                                              getTaskTypeConfig={getTaskTypeConfig}

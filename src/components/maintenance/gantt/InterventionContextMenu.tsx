@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +9,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { 
   FileText, 
   Edit, 
@@ -47,6 +49,7 @@ interface Technician {
 interface InterventionContextMenuProps {
   intervention: Intervention;
   technicians: Technician[];
+  lastDroppedTechnician?: string | null;
   children: React.ReactNode;
   onViewDetails: () => void;
   onEdit: () => void;
@@ -59,6 +62,7 @@ interface InterventionContextMenuProps {
 export function InterventionContextMenu({
   intervention,
   technicians,
+  lastDroppedTechnician,
   children,
   onViewDetails,
   onEdit,
@@ -68,8 +72,11 @@ export function InterventionContextMenu({
   onWeatherEvaluation,
 }: InterventionContextMenuProps) {
   const { user } = useAuth();
-  const [isOpen, setIsOpen] = React.useState(false);
-  const [position, setPosition] = React.useState({ x: 0, y: 0 });
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState<string>(
+    lastDroppedTechnician || intervention.technician_id || ''
+  );
   
   const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
   const canDelete = user?.role === 'direction' || user?.role === 'chef_base';
@@ -86,8 +93,17 @@ export function InterventionContextMenu({
     e.preventDefault();
     e.stopPropagation();
     console.log('InterventionContextMenu handleContextMenu called:', intervention.title);
+    
+    // Mettre à jour le technicien sélectionné avec le dernier technicien sur lequel l'intervention a été déplacée
+    setSelectedTechnicianId(lastDroppedTechnician || intervention.technician_id || '');
+    
     setPosition({ x: e.clientX, y: e.clientY });
     setIsOpen(true);
+  };
+
+  const handleReassignWithDropdown = () => {
+    onReassign(selectedTechnicianId);
+    setIsOpen(false);
   };
 
   // Clone children and add onContextMenu
@@ -168,35 +184,51 @@ export function InterventionContextMenu({
 
                 {canReassign && technicians.length > 0 && (
                   <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                    <div className="flex items-center">
+                    <div className="flex items-center mb-2">
                       <Users className="mr-2 h-4 w-4" />
                       Réassigner
                     </div>
-                    <div className="ml-6 mt-1 space-y-1">
-                      <div
-                        onClick={() => onReassign('')}
-                        className="flex items-center px-2 py-1 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                    <div className="ml-6">
+                      <Select 
+                        value={selectedTechnicianId} 
+                        onValueChange={setSelectedTechnicianId}
                       >
-                        <XCircle className="mr-2 h-4 w-4 text-gray-500" />
-                        Non assigné
-                      </div>
-                      {technicians.map((technician) => (
-                        <div
-                          key={technician.id}
-                          onClick={() => onReassign(technician.id)}
-                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
-                            intervention.technician_id === technician.id 
-                              ? 'bg-accent text-accent-foreground' 
-                              : 'hover:bg-accent hover:text-accent-foreground'
-                          }`}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          {technician.name}
-                          {intervention.technician_id === technician.id && (
-                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
-                          )}
-                        </div>
-                      ))}
+                        <SelectTrigger className="w-full h-8 text-xs">
+                          <SelectValue placeholder="Sélectionner un technicien" />
+                        </SelectTrigger>
+                        <SelectContent className="z-[60]">
+                          <SelectItem value="">
+                            <div className="flex items-center">
+                              <XCircle className="mr-2 h-4 w-4 text-gray-500" />
+                              Non assigné
+                            </div>
+                          </SelectItem>
+                          {technicians.map((technician) => (
+                            <SelectItem key={technician.id} value={technician.id}>
+                              <div className="flex items-center">
+                                <Users className="mr-2 h-4 w-4" />
+                                {technician.name}
+                                {intervention.technician_id === technician.id && (
+                                  <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
+                                )}
+                                {lastDroppedTechnician === technician.id && intervention.technician_id !== technician.id && (
+                                  <div title="Dernier drag & drop">
+                                    <AlertCircle className="ml-auto h-3 w-3 text-blue-600" />
+                                  </div>
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        onClick={handleReassignWithDropdown}
+                        className="w-full mt-2 h-7 text-xs"
+                        disabled={selectedTechnicianId === intervention.technician_id}
+                      >
+                        Confirmer
+                      </Button>
                     </div>
                   </div>
                 )}
