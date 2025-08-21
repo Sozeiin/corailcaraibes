@@ -107,7 +107,7 @@ export const QuickActionsWidget = ({ config }: WidgetProps) => {
 
   return (
     <Card className="h-full">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-base font-medium">{config.title}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -118,10 +118,10 @@ export const QuickActionsWidget = ({ config }: WidgetProps) => {
               variant={action.variant}
               size="sm"
               onClick={action.onClick}
-              className="h-auto py-3 flex flex-col items-center space-y-1"
+              className="h-16 p-2 flex flex-col items-center justify-center space-y-1"
             >
-              <action.icon className="h-4 w-4" />
-              <span className="text-xs text-center leading-tight">
+              <action.icon className="h-4 w-4 flex-shrink-0" />
+              <span className="text-xs text-center leading-none font-medium">
                 {action.label}
               </span>
             </Button>
