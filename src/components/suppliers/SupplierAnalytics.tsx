@@ -37,9 +37,9 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
           suppliers!supplier_id(id, name, category),
           order_items(quantity, unit_price)
         `)
-        .eq('status', 'delivered')
-        .gte('delivery_date', startDate.toISOString().split('T')[0])
-        .lte('delivery_date', endDate.toISOString().split('T')[0]);
+        .in('status', ['delivered', 'completed'])
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
       if (baseId) {
         ordersQuery = ordersQuery.eq('base_id', baseId);
@@ -71,7 +71,7 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
         if (!order.suppliers) return;
         
         const supplierId = order.suppliers.id;
-        const orderMonth = new Date(order.delivery_date).toISOString().slice(0, 7);
+        const orderMonth = new Date(order.created_at).toISOString().slice(0, 7);
         const category = order.suppliers.category || 'Non catégorisé';
 
         // Stats par fournisseur
@@ -85,7 +85,7 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
             avgDeliveryTime: 0,
             deliveryTimes: [],
             onTimeDeliveries: 0,
-            lastOrderDate: order.delivery_date
+            lastOrderDate: order.created_at
           };
         }
 
@@ -96,16 +96,20 @@ export function SupplierAnalytics({ baseId, timeRange }: SupplierAnalyticsProps)
         supplierStats[supplierId].totalOrders += 1;
         supplierStats[supplierId].totalValue += totalOrderValue;
 
-        // Calculer le temps de livraison
-        if (order.order_date && order.delivery_date) {
+        // Calculer le temps de livraison (estimation basée sur la date de création)
+        if (order.created_at) {
+          // Si pas de delivery_date, utiliser la date actuelle pour les commandes livrées
+          const deliveryDate = order.delivery_date || order.created_at;
           const deliveryTime = Math.floor(
-            (new Date(order.delivery_date).getTime() - new Date(order.order_date).getTime()) / 
+            (new Date(deliveryDate).getTime() - new Date(order.created_at).getTime()) / 
             (1000 * 60 * 60 * 24)
           );
-          supplierStats[supplierId].deliveryTimes.push(deliveryTime);
-          
-          if (deliveryTime <= 14) { // Considéré comme à temps si livré dans les 14 jours
-            supplierStats[supplierId].onTimeDeliveries += 1;
+          if (deliveryTime >= 0) {
+            supplierStats[supplierId].deliveryTimes.push(deliveryTime);
+            
+            if (deliveryTime <= 14) { // Considéré comme à temps si livré dans les 14 jours
+              supplierStats[supplierId].onTimeDeliveries += 1;
+            }
           }
         }
 

@@ -66,13 +66,12 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
         .from('orders')
         .select(`
           supplier_id,
-          order_date,
+          created_at,
           delivery_date,
           status,
-          total_amount,
           order_items(quantity, unit_price)
         `)
-        .eq('status', 'delivered');
+        .in('status', ['delivered', 'completed']);
 
       if (ordersError) throw ordersError;
 
@@ -89,11 +88,14 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
         }, 0);
 
         const deliveryTimes = supplierOrders
-          .filter(o => o.order_date && o.delivery_date)
-          .map(o => Math.floor(
-            (new Date(o.delivery_date).getTime() - new Date(o.order_date).getTime()) / 
-            (1000 * 60 * 60 * 24)
-          ));
+          .filter(o => o.created_at && (o.delivery_date || o.created_at))
+          .map(o => {
+            const deliveryDate = o.delivery_date || o.created_at;
+            return Math.floor(
+              (new Date(deliveryDate).getTime() - new Date(o.created_at).getTime()) / 
+              (1000 * 60 * 60 * 24)
+            );
+          });
 
         const avgDeliveryTime = deliveryTimes.length > 0 
           ? deliveryTimes.reduce((sum, time) => sum + time, 0) / deliveryTimes.length
@@ -126,7 +128,7 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
             avgEvaluation,
             performanceScore,
             lastOrderDate: supplierOrders.length > 0 
-              ? Math.max(...supplierOrders.map(o => new Date(o.delivery_date || o.order_date).getTime()))
+              ? Math.max(...supplierOrders.map(o => new Date(o.delivery_date || o.created_at).getTime()))
               : null
           }
         };
