@@ -242,48 +242,48 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Devis</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Devis</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{quotes.length}</div>
+          <CardContent className="p-2 sm:p-6">
+            <div className="text-lg sm:text-2xl font-bold">{quotes.length}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Articles cotés</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Articles cotés</CardTitle>
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-2 sm:p-6">
+            <div className="text-lg sm:text-2xl font-bold">
               {new Set(quotes.map(q => q.stock_item_id)).size}
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Meilleurs prix</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">Meilleurs prix</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{bestQuotes.length}</div>
+          <CardContent className="p-2 sm:p-6">
+            <div className="text-lg sm:text-2xl font-bold">{bestQuotes.length}</div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En Attente</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium">En Attente</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-2 sm:p-6">
+            <div className="text-lg sm:text-2xl font-bold">
               {quotes.filter(q => q.status === 'requested').length}
             </div>
           </CardContent>
@@ -291,20 +291,20 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
       </div>
 
       {/* Action Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end px-2 sm:px-0">
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button className="text-sm">
+              <Plus className="h-4 w-4 mr-1 sm:mr-2" />
               Ajouter un devis
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[95vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Ajouter un devis pour {supplier.name}</DialogTitle>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Article de stock *</Label>
                 <Select
                   value={formData.stockItemId}
@@ -323,7 +323,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Numéro de devis</Label>
                 <Input
                   value={formData.quoteNumber}
@@ -332,7 +332,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Prix unitaire (€) *</Label>
                 <Input
                   type="number"
@@ -342,7 +342,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Quantité minimum</Label>
                 <Input
                   type="number"
@@ -351,7 +351,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Date de validité</Label>
                 <Popover>
                   <PopoverTrigger asChild>
@@ -374,7 +374,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 </Popover>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-1">
                 <Label>Délai de livraison (jours)</Label>
                 <Input
                   type="number"
@@ -383,7 +383,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 />
               </div>
 
-              <div className="col-span-2 space-y-2">
+              <div className="col-span-1 sm:col-span-2 space-y-2">
                 <Label>Conditions de paiement</Label>
                 <Input
                   value={formData.paymentTerms}
@@ -392,7 +392,7 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
                 />
               </div>
 
-              <div className="col-span-2 space-y-2">
+              <div className="col-span-1 sm:col-span-2 space-y-2">
                 <Label>Notes</Label>
                 <Textarea
                   value={formData.notes}
@@ -402,13 +402,14 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
               </div>
             </div>
             
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                 Annuler
               </Button>
               <Button 
                 onClick={() => createQuoteMutation.mutate(formData)}
                 disabled={!formData.stockItemId || formData.unitPrice <= 0 || createQuoteMutation.isPending}
+                className="w-full sm:w-auto"
               >
                 Enregistrer
               </Button>
@@ -419,18 +420,19 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
 
       {/* Quotes Table */}
       {quotes.length > 0 ? (
-        <Table>
+        <div className="overflow-x-auto">
+          <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
-              <TableHead>Article</TableHead>
-              <TableHead>Référence devis</TableHead>
-              <TableHead>Prix unitaire</TableHead>
-              <TableHead>Qté min</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Validité</TableHead>
-              <TableHead>Délai</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="min-w-[200px]">Article</TableHead>
+              <TableHead className="min-w-[120px]">Référence devis</TableHead>
+              <TableHead className="min-w-[100px]">Prix unitaire</TableHead>
+              <TableHead className="min-w-[80px]">Qté min</TableHead>
+              <TableHead className="min-w-[90px]">Date</TableHead>
+              <TableHead className="min-w-[90px]">Validité</TableHead>
+              <TableHead className="min-w-[70px]">Délai</TableHead>
+              <TableHead className="min-w-[100px]">Statut</TableHead>
+              <TableHead className="text-right min-w-[120px]">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -498,7 +500,8 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
               </TableRow>
             ))}
           </TableBody>
-        </Table>
+          </Table>
+        </div>
       ) : (
         <Card>
           <CardContent className="text-center py-8">
