@@ -287,9 +287,11 @@ export function GanttMaintenanceSchedule() {
     enabled: interventions.length > 0
   });
 
-  // Update intervention mutation
+  // Update intervention mutation with detailed logging
   const updateInterventionMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Intervention> }) => {
+      console.log('🚀 Début de la mutation Supabase pour:', { id, updates });
+      
       // Clean the updates object to only include valid database fields
       const cleanUpdates = {
         ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
@@ -300,31 +302,59 @@ export function GanttMaintenanceSchedule() {
         ...(updates.description && { description: updates.description })
       };
 
-      console.log('Updating intervention:', id, 'with:', cleanUpdates);
+      console.log('🧹 Données nettoyées pour Supabase:', { id, cleanUpdates });
+      
+      // Vérifier que l'ID intervention est valide
+      if (!id || typeof id !== 'string') {
+        throw new Error(`ID intervention invalide: ${id}`);
+      }
 
       const { data, error } = await supabase
         .from('interventions')
         .update(cleanUpdates)
         .eq('id', id)
-        .select()
+        .select('id, title, technician_id, scheduled_date, scheduled_time, status')
         .single();
 
+      console.log('📡 Réponse Supabase:', { data, error });
+
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('❌ Erreur Supabase détaillée:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
         throw error;
       }
+      
+      if (!data) {
+        throw new Error('Aucune donnée retournée par Supabase après mise à jour');
+      }
+      
+      console.log('✅ Intervention mise à jour avec succès:', data);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('🎉 Mutation réussie, invalidation des queries...');
       queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
       queryClient.invalidateQueries({ queryKey: ['technicians'] });
-      toast({ title: "Intervention mise à jour avec succès" });
+      
+      // Afficher le nom du technicien dans le toast
+      const technicianName = data.technician_id 
+        ? technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu'
+        : 'Non assigné';
+        
+      toast({ 
+        title: "Intervention mise à jour", 
+        description: `Assignée à: ${technicianName}`
+      });
     },
     onError: (error) => {
-      console.error('Error updating intervention:', error);
+      console.error('💥 Erreur lors de la mutation:', error);
       toast({ 
         title: "Erreur lors de la mise à jour", 
-        description: "Impossible de mettre à jour l'intervention",
+        description: `Impossible de mettre à jour l'intervention: ${error.message}`,
         variant: "destructive" 
       });
     }
@@ -401,22 +431,48 @@ export function GanttMaintenanceSchedule() {
       setLastDroppedTechnician(newLastDropped);
       localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
       
-      console.log('🎯 Intervention droppée:', {
+      console.log('🎯 Intervention droppée - état mis à jour:', {
         interventionId: draggedTask.id,
+        interventionTitle: draggedTask.title,
         technicianId: technicianId,
-        technicianName: technicians?.find(t => t.id === technicianId)?.name || 'Inconnu',
-        newLastDropped
+        technicianName: technicians?.find(t => t.id === technicianId)?.name || 'Non assigné',
+        newLastDropped,
+        originalTechnicianId: draggedTask.technician_id,
+        finalTechnicianId: technicianId === 'unassigned' ? null : technicianId
       });
 
-      // Update the intervention
-      updateInterventionMutation.mutate({
+      // Préparer et valider les données de mise à jour
+      const updateData = {
         id: draggedTask.id,
         updates: {
           technician_id: technicianId === 'unassigned' ? null : technicianId,
           scheduled_date: dateString,
           scheduled_time: scheduledTime
         }
-      });
+      };
+
+      console.log('📤 Données finales à envoyer à Supabase:', updateData);
+
+      // Vérifier la validité du technicien
+      if (technicianId !== 'unassigned') {
+        const technicianExists = technicians?.find(t => t.id === technicianId);
+        if (!technicianExists) {
+          console.error('❌ Technicien introuvable:', { 
+            technicianId, 
+            availableTechnicians: technicians?.map(t => ({ id: t.id, name: t.name })) 
+          });
+          toast({
+            title: "Erreur",
+            description: "Technicien introuvable, veuillez réessayer",
+            variant: "destructive",
+          });
+          setDraggedTask(null);
+          return;
+        }
+      }
+
+      // Update the intervention avec logs détaillés
+      updateInterventionMutation.mutate(updateData);
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
       toast({ 
