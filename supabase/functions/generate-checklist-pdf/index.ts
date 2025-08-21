@@ -92,7 +92,11 @@ const handler = async (req: Request): Promise<Response> => {
       id: checklistData.id,
       itemsCount: checklistItems?.length || 0,
       boatName: checklistData.boats?.name,
-      technicianName: checklistData.technician?.name
+      technicianName: checklistData.technician?.name,
+      hasTexhnnicianSignature: !!checklistData.technician_signature,
+      hasCustomerSignature: !!checklistData.customer_signature,
+      technicianSignatureUrl: checklistData.technician_signature,
+      customerSignatureUrl: checklistData.customer_signature
     });
 
     console.log('🔍 All items found:', checklistItems?.map(item => ({
