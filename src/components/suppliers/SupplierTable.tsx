@@ -29,10 +29,11 @@ interface SupplierTableProps {
   suppliers: Supplier[];
   onEdit: (supplier: Supplier) => void;
   onDelete: (supplierId: string) => void;
+  onViewDetails?: (supplier: Supplier) => void;
   canManage: boolean;
 }
 
-export function SupplierTable({ suppliers, onEdit, onDelete, canManage }: SupplierTableProps) {
+export function SupplierTable({ suppliers, onEdit, onDelete, onViewDetails, canManage }: SupplierTableProps) {
   const getCategoryColor = (category: string | null) => {
     if (!category) return 'bg-gray-100 text-gray-800';
     
@@ -82,7 +83,11 @@ export function SupplierTable({ suppliers, onEdit, onDelete, canManage }: Suppli
           </TableHeader>
           <TableBody>
             {suppliers.map((supplier) => (
-              <TableRow key={supplier.id}>
+              <TableRow 
+                key={supplier.id}
+                className={onViewDetails ? "cursor-pointer hover:bg-muted/50" : ""}
+                onClick={() => onViewDetails?.(supplier)}
+              >
                 <TableCell className="font-medium">
                   <div>
                     <div className="font-semibold text-gray-900">{supplier.name}</div>

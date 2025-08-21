@@ -15,8 +15,7 @@ import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
 import { SupplierTable } from '@/components/suppliers/SupplierTable';
 import { SupplierFilters } from '@/components/suppliers/SupplierFilters';
 import { SupplierAnalytics } from '@/components/suppliers/SupplierAnalytics';
-import { SupplierPerformance } from '@/components/suppliers/SupplierPerformance';
-import { SupplierRelationship } from '@/components/suppliers/SupplierRelationship';
+import { SupplierDetailsDialog } from '@/components/suppliers/SupplierDetailsDialog';
 import { Supplier } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -28,6 +27,8 @@ export default function Suppliers() {
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedSupplierForDetails, setSelectedSupplierForDetails] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [timeRange, setTimeRange] = useState('90');
@@ -111,6 +112,16 @@ export default function Suppliers() {
     queryClient.invalidateQueries({ queryKey: ['suppliers-consolidated'] });
   };
 
+  const handleViewSupplierDetails = (supplier: Supplier) => {
+    setSelectedSupplierForDetails(supplier);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleDetailsDialogClose = () => {
+    setIsDetailsDialogOpen(false);
+    setSelectedSupplierForDetails(null);
+  };
+
   // Filter suppliers based on search term and category
   const filteredSuppliers = suppliers.filter(supplier => {
     const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -191,7 +202,7 @@ export default function Suppliers() {
 
       {/* Navigation par onglets */}
       <Tabs defaultValue="list" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="list" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Liste
@@ -199,14 +210,6 @@ export default function Suppliers() {
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value="performance" className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
-            Performance
-          </TabsTrigger>
-          <TabsTrigger value="relationships" className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4" />
-            Relations
           </TabsTrigger>
         </TabsList>
 
@@ -251,6 +254,7 @@ export default function Suppliers() {
                   suppliers={filteredSuppliers}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
+                  onViewDetails={handleViewSupplierDetails}
                   canManage={canManage}
                 />
               )}
@@ -277,21 +281,6 @@ export default function Suppliers() {
           <SupplierAnalytics baseId={baseId} timeRange={timeRange} />
         </TabsContent>
 
-        {/* Onglet Performance */}
-        <TabsContent value="performance" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Performance des Fournisseurs</h2>
-          </div>
-          <SupplierPerformance baseId={baseId} />
-        </TabsContent>
-
-        {/* Onglet Relations */}
-        <TabsContent value="relationships" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Gestion des Relations</h2>
-          </div>
-          <SupplierRelationship baseId={baseId} />
-        </TabsContent>
       </Tabs>
 
       {/* Dialog d'ajout/modification */}
@@ -299,6 +288,13 @@ export default function Suppliers() {
         isOpen={isDialogOpen}
         onClose={handleDialogClose}
         supplier={selectedSupplier}
+      />
+
+      {/* Dialog de détails fournisseur */}
+      <SupplierDetailsDialog
+        isOpen={isDetailsDialogOpen}
+        onClose={handleDetailsDialogClose}
+        supplier={selectedSupplierForDetails}
       />
     </div>
   );
