@@ -257,7 +257,9 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         });
         
         try {
-          const { data: emailData, error: emailError } = await supabase.functions.invoke('send-checklist-report', {
+          console.log('📧 [DEBUG] Appel de l\'edge function...');
+          
+          const response = await supabase.functions.invoke('send-checklist-report', {
             body: {
               checklistId: checklist.id,
               recipientEmail: customerEmail,
@@ -267,24 +269,38 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             },
           });
 
-          console.log('📧 [DEBUG] Réponse fonction email:', { emailData, emailError });
+          console.log('📧 [DEBUG] Réponse fonction email complète:', response);
+          console.log('📧 [DEBUG] Data:', response.data);
+          console.log('📧 [DEBUG] Error:', response.error);
 
-          if (emailError) {
-            console.error('❌ [DEBUG] Erreur envoi email:', emailError);
+          if (response.error) {
+            console.error('❌ [DEBUG] Erreur envoi email:', response.error);
             toast({
               title: 'Email non envoyé',
-              description: `Erreur: ${emailError.message}`,
+              description: `Erreur: ${response.error.message}`,
               variant: 'destructive',
             });
-          } else {
-            console.log('✅ [DEBUG] Email envoyé avec succès:', emailData);
+          } else if (response.data && response.data.success) {
+            console.log('✅ [DEBUG] Email envoyé avec succès:', response.data);
             toast({
               title: 'Email envoyé',
               description: 'Le rapport a été envoyé par email avec succès.',
             });
+          } else {
+            console.warn('⚠️ [DEBUG] Réponse inattendue:', response);
+            toast({
+              title: 'Statut email incertain',
+              description: 'L\'envoi d\'email a une réponse inattendue.',
+              variant: 'destructive',
+            });
           }
         } catch (emailError: any) {
           console.error('❌ [DEBUG] Exception envoi email:', emailError);
+          console.error('❌ [DEBUG] Exception details:', {
+            message: emailError.message,
+            stack: emailError.stack,
+            name: emailError.name
+          });
           toast({
             title: 'Erreur email',
             description: `Exception: ${emailError.message}`,
