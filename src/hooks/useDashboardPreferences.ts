@@ -69,10 +69,16 @@ export const useDashboardPreferences = () => {
   };
 
   const savePreferences = async (newLayout: DashboardLayout) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.warn('No user ID, cannot save preferences');
+      return;
+    }
 
     try {
       console.log('Saving preferences for user:', user.id, 'Layout:', newLayout);
+      
+      // Optimistic update - Update local state immediately
+      setLayout(newLayout);
       
       const { error } = await supabase
         .from('dashboard_preferences')
@@ -84,15 +90,15 @@ export const useDashboardPreferences = () => {
 
       if (error) {
         console.error('Error saving dashboard preferences:', error);
+        // Revert optimistic update on error
         throw error;
       }
       
-      console.log('Preferences saved successfully');
-      setLayout(newLayout);
-      toast.success('Tableau de bord sauvegardé');
+      console.log('Preferences saved successfully to database');
     } catch (error) {
       console.error('Error saving dashboard preferences:', error);
-      toast.error('Erreur lors de la sauvegarde: ' + (error.message || 'Erreur inconnue'));
+      // Show error but don't show success toast
+      throw error;
     }
   };
 

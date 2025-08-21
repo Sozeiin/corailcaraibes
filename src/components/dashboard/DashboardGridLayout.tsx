@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useDashboardPreferences } from '@/hooks/useDashboardPreferences';
 import { getWidgetByType } from './widgets';
 import { WidgetConfig } from '@/types/widget';
-import { Settings, Plus, X, RotateCcw } from 'lucide-react';
+import { Settings, Plus, X, RotateCcw, Loader2 } from 'lucide-react';
 import { DashboardCustomizer } from './DashboardCustomizer';
 import { toast } from 'sonner';
 import 'react-grid-layout/css/styles.css';
@@ -18,7 +18,9 @@ export const DashboardGridLayout = () => {
   const { layout, loading, removeWidget, updateWidget, savePreferences, resetToDefault } = useDashboardPreferences();
   const [isEditing, setIsEditing] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const pendingLayoutRef = useRef<any>(null);
 
   // Convert our widgets to grid layout format
   const gridLayouts = useMemo(() => {
@@ -49,6 +51,9 @@ export const DashboardGridLayout = () => {
       return;
     }
 
+    // Store the pending layout for immediate save on edit mode exit
+    pendingLayoutRef.current = currentLayout;
+
     // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -56,6 +61,15 @@ export const DashboardGridLayout = () => {
 
     // Debounce the save operation
     saveTimeoutRef.current = setTimeout(() => {
+      saveLayoutFromGrid(currentLayout);
+    }, 300); // Réduit à 300ms pour plus de réactivité
+  }, [isEditing, layout.widgets, savePreferences]);
+
+  const saveLayoutFromGrid = useCallback(async (currentLayout: any) => {
+    if (!currentLayout) return;
+
+    try {
+      setIsSaving(true);
       const updatedWidgets = layout.widgets.map(widget => {
         const layoutItem = currentLayout.find((item: any) => item.i === widget.id);
         if (layoutItem) {
@@ -74,18 +88,51 @@ export const DashboardGridLayout = () => {
 
       const newLayout = { widgets: updatedWidgets };
       console.log('Saving layout:', newLayout);
-      savePreferences(newLayout);
-    }, 500); // Debounce de 500ms
-  }, [isEditing, layout.widgets, savePreferences]);
+      await savePreferences(newLayout);
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      toast.error('Erreur lors de la sauvegarde');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [layout.widgets, savePreferences]);
 
-  // Cleanup timeout on unmount
+  // Cleanup timeout on unmount and force save if needed
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
+      // Force save any pending changes before unmount
+      if (pendingLayoutRef.current && isEditing) {
+        saveLayoutFromGrid(pendingLayoutRef.current);
+      }
     };
-  }, []);
+  }, [isEditing, saveLayoutFromGrid]);
+
+  // Handle page visibility change to save before navigation
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (pendingLayoutRef.current && isEditing) {
+        // Force synchronous save before page unload
+        navigator.sendBeacon('/api/save-layout', JSON.stringify(pendingLayoutRef.current));
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden && pendingLayoutRef.current && isEditing) {
+        saveLayoutFromGrid(pendingLayoutRef.current);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isEditing, saveLayoutFromGrid]);
   
   // Debug logs pour tracer les changements
   useEffect(() => {
@@ -178,16 +225,29 @@ export const DashboardGridLayout = () => {
           <Button
             variant={isEditing ? "default" : "outline"}
             size="sm"
-            onClick={() => {
-              setIsEditing(!isEditing);
+            disabled={isSaving}
+            onClick={async () => {
               if (isEditing) {
+                // Force save before exiting edit mode
+                if (saveTimeoutRef.current) {
+                  clearTimeout(saveTimeoutRef.current);
+                }
+                if (pendingLayoutRef.current) {
+                  await saveLayoutFromGrid(pendingLayoutRef.current);
+                  pendingLayoutRef.current = null;
+                }
                 toast.success('Modifications sauvegardées');
               } else {
                 toast.info('Mode édition activé - Glissez les widgets pour les repositionner');
               }
+              setIsEditing(!isEditing);
             }}
           >
-            <Settings className="h-4 w-4 mr-1" />
+            {isSaving ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Settings className="h-4 w-4 mr-1" />
+            )}
             {isEditing ? 'Terminer' : 'Personnaliser'}
           </Button>
         </div>
