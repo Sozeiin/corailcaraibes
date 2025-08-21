@@ -118,7 +118,7 @@ export const QuickActionsWidget = ({ config }: WidgetProps) => {
               variant={action.variant}
               size="sm"
               onClick={action.onClick}
-              className="h-16 p-2 flex flex-col items-center justify-center space-y-1"
+              className="h-16 p-2 flex flex-col items-center justify-center gap-0.5"
             >
               <action.icon className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs text-center leading-none font-medium">
