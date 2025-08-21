@@ -98,6 +98,7 @@ export function GanttMaintenanceSchedule() {
   const [selectedInterventionForDetails, setSelectedInterventionForDetails] = useState<Intervention | null>(null);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
+  const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string>>({});
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -385,6 +386,12 @@ export function GanttMaintenanceSchedule() {
         scheduled_time: scheduledTime
       });
       
+      // Store the last dropped technician for this intervention
+      setLastDroppedTechnician(prev => ({
+        ...prev,
+        [draggedTask.id]: technicianId === 'unassigned' ? '' : technicianId
+      }));
+
       // Update the intervention
       updateInterventionMutation.mutate({
         id: draggedTask.id,
@@ -827,17 +834,18 @@ export function GanttMaintenanceSchedule() {
                                         }}
                                         getTaskTypeConfig={getTaskTypeConfig}
                                         weatherSeverity={weatherSeverity}
-                                        renderTaskCard={(task) => (
-                                          <InterventionContextMenu
-                                            intervention={task as any}
-                                            technicians={technicians}
-                                            onViewDetails={() => handleViewDetails(task as any)}
-                                            onEdit={() => handleEditIntervention(task as any)}
-                                            onStatusChange={(status) => handleStatusChange(task as any, status)}
-                                            onReassign={(technicianId) => handleReassign(task as any, technicianId)}
-                                            onDelete={() => handleDeleteIntervention(task as any)}
-                                            onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}
-                                         >
+                                         renderTaskCard={(task) => (
+                                           <InterventionContextMenu
+                                             intervention={task as any}
+                                             technicians={technicians}
+                                             lastDroppedTechnicianId={lastDroppedTechnician[task.id]}
+                                             onViewDetails={() => handleViewDetails(task as any)}
+                                             onEdit={() => handleEditIntervention(task as any)}
+                                             onStatusChange={(status) => handleStatusChange(task as any, status)}
+                                             onReassign={(technicianId) => handleReassign(task as any, technicianId)}
+                                             onDelete={() => handleDeleteIntervention(task as any)}
+                                             onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}
+                                          >
                                            <DraggableTaskCard
                                              task={task}
                                              getTaskTypeConfig={getTaskTypeConfig}

@@ -47,6 +47,7 @@ interface Technician {
 interface InterventionContextMenuProps {
   intervention: Intervention;
   technicians: Technician[];
+  lastDroppedTechnicianId?: string;
   children: React.ReactNode;
   onViewDetails: () => void;
   onEdit: () => void;
@@ -59,6 +60,7 @@ interface InterventionContextMenuProps {
 export function InterventionContextMenu({
   intervention,
   technicians,
+  lastDroppedTechnicianId,
   children,
   onViewDetails,
   onEdit,
@@ -180,23 +182,33 @@ export function InterventionContextMenu({
                         <XCircle className="mr-2 h-4 w-4 text-gray-500" />
                         Non assigné
                       </div>
-                      {technicians.map((technician) => (
-                        <div
-                          key={technician.id}
-                          onClick={() => onReassign(technician.id)}
-                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
-                            intervention.technician_id === technician.id 
-                              ? 'bg-accent text-accent-foreground' 
-                              : 'hover:bg-accent hover:text-accent-foreground'
-                          }`}
-                        >
-                          <Users className="mr-2 h-4 w-4" />
-                          {technician.name}
-                          {intervention.technician_id === technician.id && (
-                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
-                          )}
-                        </div>
-                      ))}
+                      {technicians.map((technician) => {
+                        const isCurrentlyAssigned = intervention.technician_id === technician.id;
+                        const isLastDropped = lastDroppedTechnicianId === technician.id;
+                        
+                        return (
+                          <div
+                            key={technician.id}
+                            onClick={() => onReassign(technician.id)}
+                            className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
+                              isCurrentlyAssigned 
+                                ? 'bg-accent text-accent-foreground' 
+                                : 'hover:bg-accent hover:text-accent-foreground'
+                            }`}
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            {technician.name}
+                            <div className="ml-auto flex items-center gap-1">
+                              {isLastDropped && !isCurrentlyAssigned && (
+                                <div className="h-2 w-2 bg-blue-500 rounded-full" title="Dernier déplacement" />
+                              )}
+                              {isCurrentlyAssigned && (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
