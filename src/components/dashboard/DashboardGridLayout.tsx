@@ -66,13 +66,27 @@ export const DashboardGridLayout = () => {
   }, [isEditing, layout.widgets, savePreferences]);
 
   const saveLayoutFromGrid = useCallback(async (currentLayout: any) => {
-    if (!currentLayout) return;
+    if (!currentLayout) {
+      console.log('No layout to save');
+      return;
+    }
 
     try {
+      console.log('Starting saveLayoutFromGrid with:', currentLayout);
       setIsSaving(true);
+      
       const updatedWidgets = layout.widgets.map(widget => {
         const layoutItem = currentLayout.find((item: any) => item.i === widget.id);
         if (layoutItem) {
+          console.log(`Updating widget ${widget.id}:`, {
+            from: widget.position,
+            to: {
+              x: layoutItem.x,
+              y: layoutItem.y,
+              w: layoutItem.w,
+              h: layoutItem.h,
+            }
+          });
           return {
             ...widget,
             position: {
@@ -87,11 +101,16 @@ export const DashboardGridLayout = () => {
       });
 
       const newLayout = { widgets: updatedWidgets };
-      console.log('Saving layout:', newLayout);
+      console.log('Attempting to save new layout:', newLayout);
+      
       await savePreferences(newLayout);
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      toast.error('Erreur lors de la sauvegarde');
+      
+      console.log('Layout saved successfully');
+      toast.success('Position des widgets sauvegardée');
+      
+    } catch (error: any) {
+      console.error('Error in saveLayoutFromGrid:', error);
+      toast.error('Erreur lors de la sauvegarde: ' + (error?.message || 'Erreur inconnue'));
     } finally {
       setIsSaving(false);
     }

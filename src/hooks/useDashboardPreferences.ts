@@ -75,29 +75,42 @@ export const useDashboardPreferences = () => {
     }
 
     try {
-      console.log('Saving preferences for user:', user.id, 'Layout:', newLayout);
+      console.log('Starting save preferences for user:', user.id);
+      console.log('Layout to save:', JSON.stringify(newLayout, null, 2));
       
       // Optimistic update - Update local state immediately
       setLayout(newLayout);
       
-      const { error } = await supabase
+      // Prepare data for Supabase
+      const saveData = {
+        user_id: user.id,
+        layout_config: newLayout.widgets as any, // Cast to match Json type
+        updated_at: new Date().toISOString(),
+      };
+      
+      console.log('Data being sent to Supabase:', JSON.stringify(saveData, null, 2));
+      
+      const { data, error } = await supabase
         .from('dashboard_preferences')
-        .upsert({
-          user_id: user.id,
-          layout_config: newLayout.widgets as any,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(saveData);
 
       if (error) {
-        console.error('Error saving dashboard preferences:', error);
+        console.error('Supabase error details:', error);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error hint:', error.hint);
         // Revert optimistic update on error
         throw error;
       }
       
       console.log('Preferences saved successfully to database');
-    } catch (error) {
+      console.log('Supabase response data:', data);
+      
+    } catch (error: any) {
+      console.error('Full error object:', error);
       console.error('Error saving dashboard preferences:', error);
-      // Show error but don't show success toast
+      toast.error('Erreur lors de la sauvegarde: ' + (error?.message || 'Erreur inconnue'));
+      // Re-throw to handle in calling function
       throw error;
     }
   };
