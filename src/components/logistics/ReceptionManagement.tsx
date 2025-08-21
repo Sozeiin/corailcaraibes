@@ -21,7 +21,7 @@ import {
   CheckCircle,
   QrCode
 } from 'lucide-react';
-import { MobileScanning } from '../purchasing/MobileScanning';
+import { MobileScanning } from './MobileScanning';
 import { ReceptionScanner } from './ReceptionScanner';
 
 export function ReceptionManagement() {

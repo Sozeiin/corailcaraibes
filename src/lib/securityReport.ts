@@ -83,13 +83,6 @@ export const SECURITY_FIXES_IMPLEMENTED = {
       reason: "These are intentional for public registration and base viewing",
       recommendation: "Review each policy to ensure it's necessary"
     },
-    {
-      issue: "Materialized View in API",
-      status: "ACKNOWLEDGED", 
-      description: "purchasing_analytics view is exposed via API",
-      reason: "Required for dashboard analytics",
-      recommendation: "Consider adding RLS to the view"
-    }
   ]
 };
 

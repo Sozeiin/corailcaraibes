@@ -14,7 +14,7 @@ import { ShipmentPreparation } from './ShipmentPreparation';
 import { ShipmentTracking } from './ShipmentTracking';
 import { ReceptionManagement } from './ReceptionManagement';
 import { LogisticsAnalytics } from './LogisticsAnalytics';
-import { MobileScanning } from '../purchasing/MobileScanning';
+import { MobileScanning } from './MobileScanning';
 
 export function LogisticsDashboard() {
   const { user } = useAuth();
