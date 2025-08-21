@@ -88,20 +88,8 @@ export function InterventionContextMenu({
 
   return (
     <ContextMenu onOpenChange={(open) => console.log('ContextMenu open changed:', open)}>
-      <ContextMenuTrigger asChild onContextMenu={(e) => {
-        console.log('ContextMenuTrigger onContextMenu fired for:', intervention.title);
-        e.stopPropagation();
-      }}>
-        <div 
-          onContextMenu={(e) => {
-            console.log('Div onContextMenu fired for:', intervention.title);
-            e.preventDefault();
-            e.stopPropagation();
-          }}
-          style={{ width: '100%', height: '100%' }}
-        >
-          {children}
-        </div>
+      <ContextMenuTrigger asChild>
+        {children}
       </ContextMenuTrigger>
       <ContextMenuContent className="w-64">
         <ContextMenuItem onClick={onViewDetails}>

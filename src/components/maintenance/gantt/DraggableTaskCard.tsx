@@ -60,14 +60,14 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
 
   const handleContextMenu = (e: React.MouseEvent) => {
     console.log('DraggableTaskCard handleContextMenu called for:', task.title, 'Button:', e.button);
-    // N'empêcher l'événement de remonter que si nécessaire
-    if (!isBeingDragged && !isDragging) {
-      console.log('Allowing context menu for:', task.title);
-      onContextMenu?.(e);
-    } else {
+    // Ne pas bloquer l'événement du tout pour permettre au ContextMenu de fonctionner
+    if (isBeingDragged || isDragging) {
       console.log('Blocking context menu for dragging task:', task.title);
       e.preventDefault();
       e.stopPropagation();
+    } else {
+      console.log('Allowing context menu to bubble for:', task.title);
+      // Laisser l'événement remonter naturellement
     }
   };
 
