@@ -72,12 +72,12 @@ const handler = async (req: Request): Promise<Response> => {
     `;
 
     console.log('About to send email...');
-    console.log('From: Marina Reports <onboarding@resend.dev>');
+    console.log('From: Marina Reports <service.technique@corail.corailapp.fr>');
     console.log('To:', recipientEmail);
     console.log('Subject: Test Rapport', type);
 
     const emailResponse = await resend.emails.send({
-      from: "Marina Reports <onboarding@resend.dev>",
+      from: "Marina Reports <service.technique@corail.corailapp.fr>",
       to: [recipientEmail],
       subject: `Test Rapport ${type} - ${boatName}`,
       html: simpleEmailContent,
