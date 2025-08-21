@@ -62,14 +62,14 @@ const handler = async (req: Request): Promise<Response> => {
     // Test 4: Email simple sans HTML complexe
     console.log('=== TEST 4: Envoi email simple ===');
     
-    const simpleEmailContent = \`
+    const simpleEmailContent = `
       <h1>Test Email de Checklist</h1>
       <p>Ceci est un email de test pour vérifier que l'envoi fonctionne.</p>
-      <p><strong>Client:</strong> \${customerName}</p>
-      <p><strong>Bateau:</strong> \${boatName}</p>
-      <p><strong>Type:</strong> \${type}</p>
-      <p><strong>ID Checklist:</strong> \${checklistId}</p>
-    \`;
+      <p><strong>Client:</strong> ${customerName}</p>
+      <p><strong>Bateau:</strong> ${boatName}</p>
+      <p><strong>Type:</strong> ${type}</p>
+      <p><strong>ID Checklist:</strong> ${checklistId}</p>
+    `;
 
     console.log('About to send email...');
     console.log('From: Marina Reports <service.technique@corailapp.fr>');
@@ -79,7 +79,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: "Marina Reports <service.technique@corailapp.fr>",
       to: [recipientEmail],
-      subject: \`Test Rapport \${type} - \${boatName}\`,
+      subject: `Test Rapport ${type} - ${boatName}`,
       html: simpleEmailContent,
     });
 
