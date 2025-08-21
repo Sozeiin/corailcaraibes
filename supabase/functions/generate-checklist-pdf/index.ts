@@ -132,8 +132,21 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('📊 Categories found:', Object.keys(itemsByCategory));
     console.log('📊 Items per category:', Object.entries(itemsByCategory).map(([cat, items]: [string, any]) => `${cat}: ${items.length}`));
 
+    // Convert signatures to base64 if they exist
+    console.log('🖼️ Processing signatures...');
+    let technicianSignatureBase64 = null;
+    let customerSignatureBase64 = null;
+    
+    if (checklist.technician_signature) {
+      technicianSignatureBase64 = await fetchImageAsBase64(checklist.technician_signature);
+    }
+    
+    if (checklist.customer_signature) {
+      customerSignatureBase64 = await fetchImageAsBase64(checklist.customer_signature);
+    }
+
     // Instead of generating a PDF, return comprehensive HTML that can be printed as PDF
-    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type);
+    const printableHTML = await generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type, technicianSignatureBase64, customerSignatureBase64);
     
     console.log('✅ HTML generated, length:', printableHTML.length);
 
@@ -163,7 +176,26 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function generatePrintableHTML(checklist: any, customerName: string, type: string): string {
+// Function to fetch image and convert to base64
+async function fetchImageAsBase64(url: string): Promise<string | null> {
+  try {
+    console.log('🖼️ Fetching image:', url);
+    const response = await fetch(url);
+    if (!response.ok) {
+      console.error('❌ Failed to fetch image:', response.status);
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const mimeType = response.headers.get('content-type') || 'image/png';
+    return `data:${mimeType};base64,${base64}`;
+  } catch (error) {
+    console.error('❌ Error fetching image:', error);
+    return null;
+  }
+}
+
+function generatePrintableHTML(checklist: any, customerName: string, type: string, technicianSignatureBase64: string | null, customerSignatureBase64: string | null): string {
   const boatName = checklist.boats?.name || 'Bateau inconnu';
   const technicianName = checklist.technician?.name || 'Technicien inconnu';
   const checklistDate = new Date(checklist.checklist_date).toLocaleDateString('fr-FR');
@@ -566,8 +598,8 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Technicien</div>
             <div>
-              ${checklist.technician_signature ? `
-                <img src="${checklist.technician_signature}" alt="Signature technicien" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+              ${technicianSignatureBase64 ? `
+                <img src="${technicianSignatureBase64}" alt="Signature technicien" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
                 <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
               ` : `
                 <div style="color: #6b7280;">⏳ Non signé</div>
@@ -578,8 +610,8 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Client</div>
             <div>
-              ${checklist.customer_signature ? `
-                <img src="${checklist.customer_signature}" alt="Signature client" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+              ${customerSignatureBase64 ? `
+                <img src="${customerSignatureBase64}" alt="Signature client" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
                 <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
               ` : `
                 <div style="color: #6b7280;">⏳ Non signé</div>
