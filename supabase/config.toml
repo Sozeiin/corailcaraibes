@@ -1,1 +1,33 @@
 project_id = "gdhiiynmlokocelkqsiz"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+
+[storage]
+enabled = true
+port = 54327
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+port = 54328
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://gdhiiynmlokocelkqsiz.supabase.co"]
+jwt_expiry = 3600
+enable_signup = true
+enable_confirmations = false
+
+[functions.generate-checklist-pdf]
+
+[functions.send-checklist-report]
