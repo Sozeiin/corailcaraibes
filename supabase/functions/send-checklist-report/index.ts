@@ -23,107 +23,112 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const requestBody = await req.json();
-    console.log('Received email request:', requestBody);
+    console.log('=== DEBUT EDGE FUNCTION ===');
+    console.log('Request body:', requestBody);
     
-    const { checklistId, recipientEmail, customerName, boatName, type }: ChecklistReportRequest = requestBody;
+    const { checklistId, recipientEmail, customerName, boatName, type } = requestBody;
 
+    // Test 1: Vérifier les paramètres
     if (!checklistId || !recipientEmail) {
       console.error('Missing required fields:', { checklistId, recipientEmail });
-      throw new Error('Checklist ID and recipient email are required');
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    console.log('Processing email request for:', { checklistId, recipientEmail, customerName, boatName, type });
+    console.log('=== TEST 1: Paramètres OK ===');
 
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    console.log('Supabase config check:', { 
-      hasUrl: !!supabaseUrl, 
-      hasKey: !!supabaseKey,
-      url: supabaseUrl?.substring(0, 20) + '...'
-    });
-    
-    const supabase = createClient(supabaseUrl ?? '', supabaseKey ?? '');
-
-    // Get checklist data
-    const { data: checklist, error: checklistError } = await supabase
-      .from('boat_checklists')
-      .select(`
-        *,
-        boats(name, model, serial_number),
-        profiles(name, email),
-        boat_checklist_items(
-          *,
-          checklist_items(name, category, is_required)
-        )
-      `)
-      .eq('id', checklistId)
-      .single();
-
-    if (checklistError) {
-      console.error('Checklist fetch error:', checklistError);
-      throw new Error(`Failed to fetch checklist: ${checklistError.message}`);
-    }
-
-    console.log('Checklist data fetched successfully:', checklist?.id);
-
-    // Initialize Resend
+    // Test 2: Vérifier la clé Resend
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    console.log('Checking Resend API key:', { 
-      hasKey: !!resendApiKey, 
-      keyLength: resendApiKey?.length || 0,
-      keyPrefix: resendApiKey?.substring(0, 8) + '...' 
-    });
+    console.log('=== TEST 2: Clé Resend ===');
+    console.log('Has Resend key:', !!resendApiKey);
+    console.log('Key length:', resendApiKey?.length || 0);
+    console.log('Key prefix:', resendApiKey?.substring(0, 10) + '...');
     
     if (!resendApiKey) {
-      console.error('RESEND_API_KEY is not configured');
-      throw new Error('RESEND_API_KEY is not configured');
+      console.error('RESEND_API_KEY not found');
+      return new Response(JSON.stringify({ error: 'RESEND_API_KEY not configured' }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
-    
-    console.log('Resend API key found, initializing...');
+
+    // Test 3: Initialiser Resend
+    console.log('=== TEST 3: Initialisation Resend ===');
     const resend = new Resend(resendApiKey);
+    console.log('Resend initialized successfully');
 
-    // Generate HTML report
-    console.log('Generating HTML report...');
-    const htmlReport = generateHTMLReport(checklist, boatName, customerName, type);
+    // Test 4: Email simple sans HTML complexe
+    console.log('=== TEST 4: Envoi email simple ===');
+    
+    const simpleEmailContent = \`
+      <h1>Test Email de Checklist</h1>
+      <p>Ceci est un email de test pour vérifier que l'envoi fonctionne.</p>
+      <p><strong>Client:</strong> \${customerName}</p>
+      <p><strong>Bateau:</strong> \${boatName}</p>
+      <p><strong>Type:</strong> \${type}</p>
+      <p><strong>ID Checklist:</strong> \${checklistId}</p>
+    \`;
 
-    console.log('About to send email with Resend...');
-    console.log('Email details:', {
-      from: "Marina Reports <onboarding@resend.dev>",
-      to: [recipientEmail],
-      subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
-      htmlLength: htmlReport.length
-    });
+    console.log('About to send email...');
+    console.log('From: Marina Test <onboarding@resend.dev>');
+    console.log('To:', recipientEmail);
+    console.log('Subject: Test Rapport', type);
 
-    // Send email
     const emailResponse = await resend.emails.send({
-      from: "Marina Reports <onboarding@resend.dev>",
+      from: "Marina Test <onboarding@resend.dev>",
       to: [recipientEmail],
-      subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
-      html: htmlReport,
+      subject: \`Test Rapport \${type} - \${boatName}\`,
+      html: simpleEmailContent,
     });
 
-    console.log("Resend response:", emailResponse);
-    console.log("Email sent successfully:", emailResponse);
+    console.log('=== RESEND RESPONSE ===');
+    console.log('Full response:', JSON.stringify(emailResponse, null, 2));
+    console.log('Response type:', typeof emailResponse);
+    console.log('Response keys:', Object.keys(emailResponse || {}));
 
-    return new Response(JSON.stringify({ success: true, emailId: emailResponse.id }), {
+    if (emailResponse.error) {
+      console.error('Resend returned error:', emailResponse.error);
+      return new Response(JSON.stringify({ 
+        error: 'Resend error', 
+        details: emailResponse.error 
+      }), {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    console.log('=== EMAIL ENVOYÉ AVEC SUCCÈS ===');
+    console.log('Email ID:', emailResponse.data?.id);
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      emailId: emailResponse.data?.id,
+      debug: {
+        hasApiKey: !!resendApiKey,
+        emailResponse: emailResponse
+      }
+    }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
 
   } catch (error: any) {
-    console.error("Error in send-checklist-report function:", error);
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    console.error("=== ERREUR DANS EDGE FUNCTION ===");
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    console.error("Error name:", error.name);
+    console.error("Full error:", JSON.stringify(error, null, 2));
+    
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      stack: error.stack,
+      name: error.name
+    }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 
