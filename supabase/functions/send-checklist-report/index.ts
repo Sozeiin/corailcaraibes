@@ -81,7 +81,14 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Generating HTML report...');
     const htmlReport = generateHTMLReport(checklist, boatName, customerName, type);
 
-    console.log('Sending email to:', recipientEmail);
+    console.log('About to send email with Resend...');
+    console.log('Email details:', {
+      from: "Marina Reports <onboarding@resend.dev>",
+      to: [recipientEmail],
+      subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
+      htmlLength: htmlReport.length
+    });
+
     // Send email
     const emailResponse = await resend.emails.send({
       from: "Marina Reports <onboarding@resend.dev>",
@@ -90,6 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: htmlReport,
     });
 
+    console.log("Resend response:", emailResponse);
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, emailId: emailResponse.id }), {
