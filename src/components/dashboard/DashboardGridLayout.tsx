@@ -43,11 +43,8 @@ export const DashboardGridLayout = () => {
   }, [layout.widgets]);
 
   const handleLayoutChange = useCallback((currentLayout: any, layouts: any) => {
-    console.log('Layout changed, isEditing:', isEditing, 'currentLayout:', currentLayout);
-
     // Sauvegarder seulement en mode édition
     if (!isEditing) {
-      console.log('Not in editing mode, skipping save');
       return;
     }
 
@@ -106,7 +103,7 @@ export const DashboardGridLayout = () => {
       await savePreferences(newLayout);
       
       console.log('Layout saved successfully');
-      toast.success('Position des widgets sauvegardée');
+      // Pas de toast ici pour éviter les notifications répétitives
       
     } catch (error: any) {
       console.error('Error in saveLayoutFromGrid:', error);
