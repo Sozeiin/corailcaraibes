@@ -845,7 +845,7 @@ export function GanttMaintenanceSchedule() {
                                            <InterventionContextMenu
                                              intervention={task as any}
                                              technicians={technicians}
-                                             lastDroppedTechnician={lastDroppedTechnician[task.id]}
+                                             lastDroppedTechnician={lastDroppedTechnician[task.id] || null}
                                              onViewDetails={() => handleViewDetails(task as any)}
                                              onEdit={() => handleEditIntervention(task as any)}
                                              onStatusChange={(status) => handleStatusChange(task as any, status)}

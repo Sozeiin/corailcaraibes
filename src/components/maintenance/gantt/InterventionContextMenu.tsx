@@ -92,18 +92,32 @@ export function InterventionContextMenu({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('InterventionContextMenu handleContextMenu called:', intervention.title);
     
-    // Mettre à jour le technicien sélectionné avec le dernier technicien sur lequel l'intervention a été déplacée
-    setSelectedTechnicianId(lastDroppedTechnician || intervention.technician_id || '');
-    
-    setPosition({ x: e.clientX, y: e.clientY });
-    setIsOpen(true);
+    try {
+      console.log('InterventionContextMenu handleContextMenu called:', intervention.title);
+      console.log('lastDroppedTechnician:', lastDroppedTechnician);
+      console.log('intervention.technician_id:', intervention.technician_id);
+      
+      // Mettre à jour le technicien sélectionné avec le dernier technicien sur lequel l'intervention a été déplacée
+      const newSelectedTechnicianId = lastDroppedTechnician || intervention.technician_id || '';
+      console.log('Setting selectedTechnicianId to:', newSelectedTechnicianId);
+      setSelectedTechnicianId(newSelectedTechnicianId);
+      
+      setPosition({ x: e.clientX, y: e.clientY });
+      setIsOpen(true);
+    } catch (error) {
+      console.error('Error in handleContextMenu:', error);
+    }
   };
 
   const handleReassignWithDropdown = () => {
-    onReassign(selectedTechnicianId);
-    setIsOpen(false);
+    try {
+      console.log('handleReassignWithDropdown called with:', selectedTechnicianId);
+      onReassign(selectedTechnicianId);
+      setIsOpen(false);
+    } catch (error) {
+      console.error('Error in handleReassignWithDropdown:', error);
+    }
   };
 
   // Clone children and add onContextMenu
