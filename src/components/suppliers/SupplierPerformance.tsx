@@ -65,24 +65,42 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select(`
+          id,
           supplier_id,
           created_at,
           delivery_date,
-          status,
-          order_items(quantity, unit_price)
+          status
         `)
         .in('status', ['delivered', 'completed']);
 
-      if (ordersError) throw ordersError;
+      if (ordersError) {
+        console.error('Erreur lors de la récupération des commandes:', ordersError);
+        throw ordersError;
+      }
+
+      // Récupérer les éléments de commandes séparément
+      const { data: orderItems, error: orderItemsError } = await supabase
+        .from('order_items')
+        .select('order_id, quantity, unit_price');
+
+      if (orderItemsError) {
+        console.error('Erreur lors de la récupération des éléments de commandes:', orderItemsError);
+        // Ne pas faire échouer si les order_items ne sont pas accessibles
+      }
 
       // Calculer les métriques de performance pour chaque fournisseur
       const enrichedSuppliers = suppliers.map((supplier: any) => {
-        const supplierOrders = orders.filter(o => o.supplier_id === supplier.id);
+        const supplierOrders = orders?.filter(o => o.supplier_id === supplier.id) || [];
         
         // Calculer les métriques
         const totalOrders = supplierOrders.length;
+        
+        // Calculer la valeur totale en utilisant les order_items séparément
         const totalValue = supplierOrders.reduce((sum, order) => {
-          const orderValue = order.order_items.reduce((itemSum: number, item: any) => 
+          const orderItemsForOrder = orderItems?.filter(item => 
+            item.order_id === order.id
+          ) || [];
+          const orderValue = orderItemsForOrder.reduce((itemSum: number, item: any) => 
             itemSum + (item.quantity * item.unit_price), 0);
           return sum + orderValue;
         }, 0);
@@ -105,8 +123,13 @@ export function SupplierPerformance({ baseId }: SupplierPerformanceProps) {
         const onTimePercentage = totalOrders > 0 ? (onTimeDeliveries / totalOrders) * 100 : 0;
 
         // Calculer la note moyenne des évaluations
-        const avgEvaluation = supplier.supplier_evaluations.length > 0
-          ? supplier.supplier_evaluations.reduce((sum: number, evaluation: any) => sum + parseFloat(evaluation.overall_score), 0) / supplier.supplier_evaluations.length
+        const avgEvaluation = supplier.supplier_evaluations?.length > 0
+          ? supplier.supplier_evaluations.reduce((sum: number, evaluation: any) => {
+              // Calculer la moyenne des 4 scores (quality, delivery, price, service)
+              const totalScore = (evaluation.quality_score || 0) + (evaluation.delivery_score || 0) + 
+                               (evaluation.price_score || 0) + (evaluation.service_score || 0);
+              return sum + (totalScore / 4);
+            }, 0) / supplier.supplier_evaluations.length
           : 0;
 
         // Score de performance global (sur 100)
