@@ -152,23 +152,20 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
       });
 
       if (data?.success && data?.html) {
-        // Create a new window with the HTML content for printing
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (printWindow) {
-          printWindow.document.write(data.html);
-          printWindow.document.close();
-          
-          // Wait for content to load then trigger print
-          printWindow.onload = () => {
-            setTimeout(() => {
-              printWindow.print();
-            }, 500);
-          };
-        }
+        // Create a blob with the HTML content and download it
+        const blob = new Blob([data.html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `checklist-${type}-${customerName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
         
         toast({
-          title: '📄 Rapport ouvert',
-          description: 'Le rapport s\'ouvre dans une nouvelle fenêtre. Vous pouvez l\'imprimer ou l\'enregistrer en PDF.',
+          title: '📄 Rapport téléchargé',
+          description: 'Le fichier HTML a été téléchargé. Ouvrez-le dans votre navigateur et utilisez Ctrl+P pour l\'imprimer en PDF.',
         });
       } else {
         throw new Error('Format de réponse invalide');
