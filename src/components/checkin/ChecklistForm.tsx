@@ -249,7 +249,9 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           const { error: emailError } = await supabase.functions.invoke('send-checklist-report', {
             body: {
               checklistId: checklist.id,
-              customerEmail,
+              recipientEmail: customerEmail,
+              customerName: rentalData?.customerName || rentalData?.name || 'Client',
+              boatName: boat?.name || 'Bateau non spécifié',
               type,
             },
           });

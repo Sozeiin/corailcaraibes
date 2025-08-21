@@ -74,7 +74,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Sending email to:', recipientEmail);
     // Send email
     const emailResponse = await resend.emails.send({
-      from: "Marina Reports <noreply@marina.com>",
+      from: "Marina Reports <onboarding@resend.dev>",
       to: [recipientEmail],
       subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
       html: htmlReport,
