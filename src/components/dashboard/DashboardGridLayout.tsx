@@ -43,24 +43,16 @@ export const DashboardGridLayout = () => {
   }, [layout.widgets]);
 
   const handleLayoutChange = useCallback((currentLayout: any, layouts: any) => {
-    // Sauvegarder seulement en mode édition
+    // Stocker seulement le layout en cours pour sauvegarde manuelle
     if (!isEditing) {
       return;
     }
 
-    // Store the pending layout for immediate save on edit mode exit
+    // Store the pending layout for manual save on edit mode exit
     pendingLayoutRef.current = currentLayout;
-
-    // Clear existing timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    // Debounce the save operation
-    saveTimeoutRef.current = setTimeout(() => {
-      saveLayoutFromGrid(currentLayout);
-    }, 300); // Réduit à 300ms pour plus de réactivité
-  }, [isEditing, layout.widgets, savePreferences]);
+    
+    // PAS de sauvegarde automatique - seulement stockage pour plus tard
+  }, [isEditing]);
 
   const saveLayoutFromGrid = useCallback(async (currentLayout: any) => {
     if (!currentLayout) {
@@ -244,19 +236,24 @@ export const DashboardGridLayout = () => {
             disabled={isSaving}
             onClick={async () => {
               if (isEditing) {
-                // Force save before exiting edit mode
-                if (saveTimeoutRef.current) {
-                  clearTimeout(saveTimeoutRef.current);
+                // Force save before exiting edit mode - une seule fois
+                setIsSaving(true);
+                try {
+                  if (pendingLayoutRef.current) {
+                    await saveLayoutFromGrid(pendingLayoutRef.current);
+                    pendingLayoutRef.current = null;
+                  }
+                  toast.success('Modifications sauvegardées');
+                  setIsEditing(false);
+                } catch (error) {
+                  toast.error('Erreur lors de la sauvegarde');
+                } finally {
+                  setIsSaving(false);
                 }
-                if (pendingLayoutRef.current) {
-                  await saveLayoutFromGrid(pendingLayoutRef.current);
-                  pendingLayoutRef.current = null;
-                }
-                toast.success('Modifications sauvegardées');
               } else {
                 toast.info('Mode édition activé - Glissez les widgets pour les repositionner');
+                setIsEditing(true);
               }
-              setIsEditing(!isEditing);
             }}
           >
             {isSaving ? (
