@@ -136,28 +136,15 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('📊 Categories found:', Object.keys(itemsByCategory));
     console.log('📊 Items per category:', Object.entries(itemsByCategory).map(([cat, items]: [string, any]) => `${cat}: ${items.length}`));
 
-    // Convert signatures to base64 if they exist
-    console.log('🖼️ Processing signatures...');
-    console.log('🖼️ Technician signature URL:', checklist.technician_signature);
-    console.log('🖼️ Customer signature URL:', checklist.customer_signature);
-    
-    let technicianSignatureBase64 = null;
-    let customerSignatureBase64 = null;
-    
-    if (checklist.technician_signature) {
-      console.log('🔄 Converting technician signature to base64...');
-      technicianSignatureBase64 = await fetchImageAsBase64(checklist.technician_signature);
-      console.log('✅ Technician signature converted:', !!technicianSignatureBase64);
-    }
-    
-    if (checklist.customer_signature) {
-      console.log('🔄 Converting customer signature to base64...');
-      customerSignatureBase64 = await fetchImageAsBase64(checklist.customer_signature);
-      console.log('✅ Customer signature converted:', !!customerSignatureBase64);
-    }
+    // Log signature information for debugging
+    console.log('🖼️ Signature debugging:');
+    console.log('- Technician signature:', checklist.technician_signature);
+    console.log('- Customer signature:', checklist.customer_signature);
+    console.log('- Has technician signature:', !!checklist.technician_signature);
+    console.log('- Has customer signature:', !!checklist.customer_signature);
 
     // Instead of generating a PDF, return comprehensive HTML that can be printed as PDF
-    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type, technicianSignatureBase64, customerSignatureBase64);
+    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type);
     
     console.log('✅ HTML generated, length:', printableHTML.length);
 
@@ -206,7 +193,7 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-function generatePrintableHTML(checklist: any, customerName: string, type: string, technicianSignatureBase64: string | null, customerSignatureBase64: string | null): string {
+function generatePrintableHTML(checklist: any, customerName: string, type: string): string {
   const boatName = checklist.boats?.name || 'Bateau inconnu';
   const technicianName = checklist.technician?.name || 'Technicien inconnu';
   const checklistDate = new Date(checklist.checklist_date).toLocaleDateString('fr-FR');
@@ -609,8 +596,8 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Technicien</div>
             <div>
-              ${technicianSignatureBase64 ? `
-                <img src="${technicianSignatureBase64}" alt="Signature technicien" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+              ${checklist.technician_signature ? `
+                <img src="${checklist.technician_signature}" alt="Signature technicien" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
                 <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
               ` : `
                 <div style="color: #6b7280;">⏳ Non signé</div>
@@ -621,8 +608,8 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
           <div class="signature-box">
             <div style="font-weight: bold; margin-bottom: 10px;">✍️ Signature Client</div>
             <div>
-              ${customerSignatureBase64 ? `
-                <img src="${customerSignatureBase64}" alt="Signature client" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
+              ${checklist.customer_signature ? `
+                <img src="${checklist.customer_signature}" alt="Signature client" style="max-width: 200px; max-height: 80px; border: 1px solid #e5e7eb; border-radius: 4px;">
                 <div style="margin-top: 5px; font-size: 10px; color: #6b7280;">✅ Signé numériquement</div>
               ` : `
                 <div style="color: #6b7280;">⏳ Non signé</div>
