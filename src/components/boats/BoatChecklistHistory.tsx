@@ -129,6 +129,8 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
   const handleDownloadPdf = async (checklistId: string, customerName: string, type: string) => {
     setDownloadingPdf(checklistId);
     try {
+      console.log('🔽 Starting PDF download for checklist:', checklistId);
+      
       const { data, error } = await supabase.functions.invoke('generate-checklist-pdf', {
         body: {
           checklistId,
@@ -137,35 +139,45 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
         }
       });
 
-      if (error) throw error;
-
-      // Convertir base64 en blob et déclencher le téléchargement
-      const byteCharacters = atob(data.pdf);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      if (error) {
+        console.error('❌ PDF generation error:', error);
+        throw error;
       }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `rapport-${type}-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'PDF téléchargé',
-        description: 'Le rapport PDF a été téléchargé avec succès.',
+      console.log('✅ PDF generation response:', {
+        success: data?.success,
+        itemsCount: data?.itemsCount,
+        categoriesCount: data?.categoriesCount,
+        hasHtml: !!data?.html
       });
+
+      if (data?.success && data?.html) {
+        // Create a new window with the HTML content for printing
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        if (printWindow) {
+          printWindow.document.write(data.html);
+          printWindow.document.close();
+          
+          // Wait for content to load then trigger print
+          printWindow.onload = () => {
+            setTimeout(() => {
+              printWindow.print();
+            }, 500);
+          };
+        }
+        
+        toast({
+          title: '📄 Rapport ouvert',
+          description: 'Le rapport s\'ouvre dans une nouvelle fenêtre. Vous pouvez l\'imprimer ou l\'enregistrer en PDF.',
+        });
+      } else {
+        throw new Error('Format de réponse invalide');
+      }
     } catch (error: any) {
-      console.error('Erreur téléchargement PDF:', error);
+      console.error('❌ Erreur téléchargement PDF:', error);
       toast({
         title: 'Erreur',
-        description: error.message || 'Erreur lors du téléchargement du PDF',
+        description: error.message || 'Erreur lors de la génération du rapport',
         variant: 'destructive',
       });
     } finally {
