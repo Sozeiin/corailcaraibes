@@ -138,19 +138,26 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Convert signatures to base64 if they exist
     console.log('🖼️ Processing signatures...');
+    console.log('🖼️ Technician signature URL:', checklist.technician_signature);
+    console.log('🖼️ Customer signature URL:', checklist.customer_signature);
+    
     let technicianSignatureBase64 = null;
     let customerSignatureBase64 = null;
     
     if (checklist.technician_signature) {
+      console.log('🔄 Converting technician signature to base64...');
       technicianSignatureBase64 = await fetchImageAsBase64(checklist.technician_signature);
+      console.log('✅ Technician signature converted:', !!technicianSignatureBase64);
     }
     
     if (checklist.customer_signature) {
+      console.log('🔄 Converting customer signature to base64...');
       customerSignatureBase64 = await fetchImageAsBase64(checklist.customer_signature);
+      console.log('✅ Customer signature converted:', !!customerSignatureBase64);
     }
 
     // Instead of generating a PDF, return comprehensive HTML that can be printed as PDF
-    const printableHTML = await generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type, technicianSignatureBase64, customerSignatureBase64);
+    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type, technicianSignatureBase64, customerSignatureBase64);
     
     console.log('✅ HTML generated, length:', printableHTML.length);
 
