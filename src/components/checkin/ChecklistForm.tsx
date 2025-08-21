@@ -252,7 +252,11 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         try {
           console.log('🔧 [DEBUG] Problèmes détectés, création intervention automatique');
           const problemsDescription = problemItems
-            .map(item => `- ${item.name}${item.category ? ` (${item.category})` : ''}: ${item.notes || 'Problème non spécifié'}`)
+            .map(item => {
+              const firstWord = item.name.split(' ')[0];
+              const problemNote = item.notes || 'Problème non spécifié';
+              return `- ${firstWord}: ${problemNote}`;
+            })
             .join('\n');
 
           const interventionTitle = `Problèmes détectés lors du ${type === 'checkin' ? 'check-in' : 'check-out'} - ${boat.name}`;
