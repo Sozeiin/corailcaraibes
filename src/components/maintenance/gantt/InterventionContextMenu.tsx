@@ -186,6 +186,15 @@ export function InterventionContextMenu({
                         const isCurrentlyAssigned = intervention.technician_id === technician.id;
                         const isLastDropped = lastDroppedTechnicianId === technician.id;
                         
+                        console.log('🔍 Menu contextuel technician:', {
+                          techId: technician.id,
+                          techName: technician.name,
+                          isCurrentlyAssigned,
+                          isLastDropped,
+                          lastDroppedTechnicianId,
+                          interventionTechnicianId: intervention.technician_id
+                        });
+                        
                         return (
                           <div
                             key={technician.id}
@@ -199,11 +208,16 @@ export function InterventionContextMenu({
                             <Users className="mr-2 h-4 w-4" />
                             {technician.name}
                             <div className="ml-auto flex items-center gap-1">
-                              {isLastDropped && !isCurrentlyAssigned && (
-                                <div className="h-2 w-2 bg-blue-500 rounded-full" title="Dernier déplacement" />
+                              {isLastDropped && (
+                                <div 
+                                  className={`h-2 w-2 rounded-full ${isCurrentlyAssigned ? 'bg-orange-500' : 'bg-blue-500'}`} 
+                                  title={isCurrentlyAssigned ? "Assigné et dernière cible" : "Dernière cible de déplacement"} 
+                                />
                               )}
                               {isCurrentlyAssigned && (
-                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                <div title="Actuellement assigné">
+                                  <CheckCircle className="h-3 w-3 text-green-600" />
+                                </div>
                               )}
                             </div>
                           </div>

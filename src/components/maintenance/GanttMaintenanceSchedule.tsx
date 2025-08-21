@@ -98,7 +98,14 @@ export function GanttMaintenanceSchedule() {
   const [selectedInterventionForDetails, setSelectedInterventionForDetails] = useState<Intervention | null>(null);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
-  const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string>>({});
+  const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem('fleetcat_last_dropped_technician');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -386,11 +393,20 @@ export function GanttMaintenanceSchedule() {
         scheduled_time: scheduledTime
       });
       
-      // Store the last dropped technician for this intervention
-      setLastDroppedTechnician(prev => ({
-        ...prev,
+      // Store the last dropped technician for this intervention with persistence
+      const newLastDropped = {
+        ...lastDroppedTechnician,
         [draggedTask.id]: technicianId === 'unassigned' ? '' : technicianId
-      }));
+      };
+      setLastDroppedTechnician(newLastDropped);
+      localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
+      
+      console.log('🎯 Intervention droppée:', {
+        interventionId: draggedTask.id,
+        technicianId: technicianId,
+        technicianName: technicians?.find(t => t.id === technicianId)?.name || 'Inconnu',
+        newLastDropped
+      });
 
       // Update the intervention
       updateInterventionMutation.mutate({
