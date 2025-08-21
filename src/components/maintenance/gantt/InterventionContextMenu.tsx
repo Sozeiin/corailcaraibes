@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuSub,
-  ContextMenuSubContent,
-  ContextMenuSubTrigger,
-  ContextMenuTrigger,
-} from '@/components/ui/context-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   FileText, 
   Edit, 
@@ -49,7 +47,6 @@ interface Technician {
 interface InterventionContextMenuProps {
   intervention: Intervention;
   technicians: Technician[];
-  lastDroppedTechnician?: string | null;
   children: React.ReactNode;
   onViewDetails: () => void;
   onEdit: () => void;
@@ -62,7 +59,6 @@ interface InterventionContextMenuProps {
 export function InterventionContextMenu({
   intervention,
   technicians,
-  lastDroppedTechnician,
   children,
   onViewDetails,
   onEdit,
@@ -72,6 +68,8 @@ export function InterventionContextMenu({
   onWeatherEvaluation,
 }: InterventionContextMenuProps) {
   const { user } = useAuth();
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [position, setPosition] = React.useState({ x: 0, y: 0 });
   
   const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
   const canDelete = user?.role === 'direction' || user?.role === 'chef_base';
@@ -84,112 +82,152 @@ export function InterventionContextMenu({
     { value: 'cancelled', label: 'Annulé', icon: XCircle, color: 'text-red-600' },
   ];
 
-  console.log('InterventionContextMenu rendering for:', intervention.title);
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('InterventionContextMenu handleContextMenu called:', intervention.title);
+    setPosition({ x: e.clientX, y: e.clientY });
+    setIsOpen(true);
+  };
+
+  // Clone children and add onContextMenu
+  const childrenWithContextMenu = React.cloneElement(children as React.ReactElement, {
+    onContextMenu: (e: React.MouseEvent) => {
+      console.log('childrenWithContextMenu onContextMenu:', intervention.title);
+      handleContextMenu(e);
+    },
+  });
 
   return (
-    <ContextMenu onOpenChange={(open) => console.log('ContextMenu open changed:', open)}>
-      <ContextMenuTrigger asChild>
-        {children}
-      </ContextMenuTrigger>
-      <ContextMenuContent className="w-64">
-        <ContextMenuItem onClick={onViewDetails}>
-          <Eye className="mr-2 h-4 w-4" />
-          Voir les détails
-        </ContextMenuItem>
-        
-        {canEdit && (
-          <>
-            <ContextMenuItem onClick={onEdit}>
-              <Edit className="mr-2 h-4 w-4" />
-              Modifier
-            </ContextMenuItem>
+    <>
+      {childrenWithContextMenu}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 z-50" 
+          onClick={() => setIsOpen(false)}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <div 
+            className="absolute bg-popover border border-border rounded-md shadow-lg p-1 z-50"
+            style={{ 
+              left: Math.min(position.x, window.innerWidth - 200), 
+              top: Math.min(position.y, window.innerHeight - 300),
+              minWidth: '200px'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div 
+              onClick={onViewDetails} 
+              className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Voir les détails
+            </div>
             
-            <ContextMenuSeparator />
-            
-            <ContextMenuSub>
-              <ContextMenuSubTrigger>
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Changer le statut
-              </ContextMenuSubTrigger>
-              <ContextMenuSubContent>
-                {statusOptions.map((status) => {
-                  const StatusIcon = status.icon;
-                  return (
-                    <ContextMenuItem
-                      key={status.value}
-                      onClick={() => onStatusChange(status.value)}
-                      className={intervention.status === status.value ? 'bg-accent' : ''}
-                    >
-                      <StatusIcon className={`mr-2 h-4 w-4 ${status.color}`} />
-                      {status.label}
-                      {intervention.status === status.value && (
-                        <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
-                      )}
-                    </ContextMenuItem>
-                  );
-                })}
-              </ContextMenuSubContent>
-            </ContextMenuSub>
+            {canEdit && (
+              <>
+                <div 
+                  onClick={onEdit} 
+                  className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Modifier
+                </div>
+                
+                <div className="h-px bg-border my-1" />
+                
+                {/* Status submenu */}
+                <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                  <div className="flex items-center">
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Changer le statut
+                  </div>
+                  <div className="ml-6 mt-1 space-y-1">
+                    {statusOptions.map((status) => {
+                      const StatusIcon = status.icon;
+                      return (
+                        <div
+                          key={status.value}
+                          onClick={() => onStatusChange(status.value)}
+                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
+                            intervention.status === status.value 
+                              ? 'bg-accent text-accent-foreground' 
+                              : 'hover:bg-accent hover:text-accent-foreground'
+                          }`}
+                        >
+                          <StatusIcon className={`mr-2 h-4 w-4 ${status.color}`} />
+                          {status.label}
+                          {intervention.status === status.value && (
+                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {canReassign && technicians.length > 0 && (
-              <ContextMenuSub>
-                <ContextMenuSubTrigger>
-                  <Users className="mr-2 h-4 w-4" />
-                  Réassigner
-                  {lastDroppedTechnician && (
-                    <div className="ml-auto">
-                      <AlertCircle className="h-3 w-3 text-blue-600" />
-                    </div>
-                  )}
-                </ContextMenuSubTrigger>
-                <ContextMenuSubContent>
-                  <ContextMenuItem onClick={() => onReassign('')}>
-                    <XCircle className="mr-2 h-4 w-4 text-gray-500" />
-                    Non assigné
-                  </ContextMenuItem>
-                  {technicians.map((technician) => (
-                    <ContextMenuItem
-                      key={technician.id}
-                      onClick={() => onReassign(technician.id)}
-                      className={intervention.technician_id === technician.id ? 'bg-accent' : ''}
-                    >
+                {canReassign && technicians.length > 0 && (
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                    <div className="flex items-center">
                       <Users className="mr-2 h-4 w-4" />
-                      {technician.name}
-                      <div className="ml-auto flex items-center gap-1">
-                        {intervention.technician_id === technician.id && (
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                        )}
-                        {lastDroppedTechnician === technician.id && intervention.technician_id !== technician.id && (
-                          <div title="Dernier drag & drop">
-                            <AlertCircle className="h-3 w-3 text-blue-600" />
-                          </div>
-                        )}
+                      Réassigner
+                    </div>
+                    <div className="ml-6 mt-1 space-y-1">
+                      <div
+                        onClick={() => onReassign('')}
+                        className="flex items-center px-2 py-1 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                      >
+                        <XCircle className="mr-2 h-4 w-4 text-gray-500" />
+                        Non assigné
                       </div>
-                    </ContextMenuItem>
-                  ))}
-                </ContextMenuSubContent>
-              </ContextMenuSub>
+                      {technicians.map((technician) => (
+                        <div
+                          key={technician.id}
+                          onClick={() => onReassign(technician.id)}
+                          className={`flex items-center px-2 py-1 text-sm rounded-sm cursor-pointer ${
+                            intervention.technician_id === technician.id 
+                              ? 'bg-accent text-accent-foreground' 
+                              : 'hover:bg-accent hover:text-accent-foreground'
+                          }`}
+                        >
+                          <Users className="mr-2 h-4 w-4" />
+                          {technician.name}
+                          {intervention.technician_id === technician.id && (
+                            <CheckCircle className="ml-auto h-3 w-3 text-green-600" />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-          </>
-        )}
-        
-        <ContextMenuSeparator />
-        
-        <ContextMenuItem onClick={onWeatherEvaluation}>
-          <Cloud className="mr-2 h-4 w-4" />
-          Évaluation météo
-        </ContextMenuItem>
-        
-        {canDelete && (
-          <>
-            <ContextMenuSeparator />
-            <ContextMenuItem onClick={onDelete} className="text-destructive">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer
-            </ContextMenuItem>
-          </>
-        )}
-      </ContextMenuContent>
-    </ContextMenu>
+            
+            <div className="h-px bg-border my-1" />
+            
+            <div 
+              onClick={onWeatherEvaluation} 
+              className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+            >
+              <Cloud className="mr-2 h-4 w-4" />
+              Évaluation météo
+            </div>
+            
+            {canDelete && (
+              <>
+                <div className="h-px bg-border my-1" />
+                <div 
+                  onClick={onDelete} 
+                  className="flex items-center px-2 py-1.5 text-sm rounded-sm hover:bg-destructive hover:text-destructive-foreground cursor-pointer text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Supprimer
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
