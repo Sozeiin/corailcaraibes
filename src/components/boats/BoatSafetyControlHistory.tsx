@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Shield, Plus, Calendar, AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { BoatSafetyControlDialog } from './BoatSafetyControlDialog';
+import { calculateControlStatus } from '@/utils/safetyControlUtils';
 
 interface BoatSafetyControlHistoryProps {
   boatId: string;
@@ -55,7 +56,10 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
     },
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (control: any) => {
+    // Calculate the real status using the shared utility
+    const realStatus = calculateControlStatus(control);
+    
     const variants = {
       completed: { variant: 'default' as const, icon: CheckCircle, color: 'text-emerald-600' },
       pending: { variant: 'secondary' as const, icon: Clock, color: 'text-amber-600' },
@@ -63,16 +67,16 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
       failed: { variant: 'destructive' as const, icon: XCircle, color: 'text-red-600' },
     };
 
-    const config = variants[status as keyof typeof variants] || variants.pending;
+    const config = variants[realStatus as keyof typeof variants] || variants.pending;
     const Icon = config.icon;
 
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
         <Icon className={`h-3 w-3 ${config.color}`} />
-        {status === 'completed' && 'Effectué'}
-        {status === 'pending' && 'En attente'}
-        {status === 'expired' && 'Expiré'}
-        {status === 'failed' && 'Échec'}
+        {realStatus === 'completed' && 'Effectué'}
+        {realStatus === 'pending' && 'En attente'}
+        {realStatus === 'expired' && 'Expiré'}
+        {realStatus === 'failed' && 'Échec'}
       </Badge>
     );
   };
@@ -186,7 +190,7 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
                       }
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(control.status)}
+                      {getStatusBadge(control)}
                     </TableCell>
                     <TableCell>
                       {control.performed_by_profile?.name || 'Non spécifié'}
