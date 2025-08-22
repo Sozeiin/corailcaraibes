@@ -159,9 +159,12 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" aria-describedby="intervention-completion-description">
         <DialogHeader>
           <DialogTitle>Terminer l'intervention</DialogTitle>
+          <p id="intervention-completion-description" className="text-sm text-muted-foreground">
+            Mettre à jour les heures moteur et marquer l'intervention comme terminée
+          </p>
         </DialogHeader>
         
         <form onSubmit={handleSubmit(onSubmit)}>

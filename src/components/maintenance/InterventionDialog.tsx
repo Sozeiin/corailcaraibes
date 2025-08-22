@@ -50,14 +50,6 @@ interface InterventionFormData {
   scheduledDate: string;
   baseId: string;
   interventionType: string;
-  engine_hours_start?: number;
-  engine_hours_end?: number;
-  engine_hours_start_starboard?: number;
-  engine_hours_end_starboard?: number;
-  engine_hours_start_port?: number;
-  engine_hours_end_port?: number;
-  is_oil_change?: boolean;
-  notes?: string;
 }
 
 export function InterventionDialog({ isOpen, onClose, intervention }: InterventionDialogProps) {
@@ -177,15 +169,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         status: 'scheduled',
         scheduledDate: new Date().toISOString().split('T')[0],
         baseId: user?.baseId || '',
-        interventionType: 'maintenance',
-        engine_hours_start: undefined,
-        engine_hours_end: undefined,
-        engine_hours_start_starboard: undefined,
-        engine_hours_end_starboard: undefined,
-        engine_hours_start_port: undefined,
-        engine_hours_end_port: undefined,
-        is_oil_change: false,
-        notes: '',
+        interventionType: 'maintenance'
       });
       setInterventionParts([]);
     }
@@ -202,6 +186,8 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     setIsSubmitting(true);
     
     try {
+      console.log('Intervention form data:', data);
+      
       const interventionData = {
         title: data.title,
         description: data.description || null,
@@ -211,16 +197,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         scheduled_date: data.scheduledDate,
         completed_date: data.status === 'completed' ? new Date().toISOString().split('T')[0] : null,
         base_id: data.baseId || null,
-        intervention_type: data.interventionType,
-        engine_hours_start: data.engine_hours_start || null,
-        engine_hours_end: data.engine_hours_end || null,
-        engine_hours_start_starboard: data.engine_hours_start_starboard || null,
-        engine_hours_end_starboard: data.engine_hours_end_starboard || null,
-        engine_hours_start_port: data.engine_hours_start_port || null,
-        engine_hours_end_port: data.engine_hours_end_port || null,
-        is_oil_change: data.is_oil_change || false,
-        notes: data.notes || null,
+        intervention_type: data.interventionType
       };
+
+      console.log('Intervention data to be sent:', interventionData);
 
       let interventionId: string;
 
@@ -247,7 +227,12 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error creating intervention:', error);
+          throw error;
+        }
+        
+        console.log('New intervention created:', newIntervention);
         interventionId = newIntervention.id;
       }
 
@@ -323,11 +308,14 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto">
+      <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto" aria-describedby="intervention-dialog-description">
         <DialogHeader>
           <DialogTitle>
             {intervention ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
           </DialogTitle>
+          <p id="intervention-dialog-description" className="text-sm text-muted-foreground">
+            {intervention ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
+          </p>
         </DialogHeader>
 
         <Form {...form}>
@@ -483,108 +471,6 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
                 )}
               />
             </div>
-
-            {/* Engine Hours Section for Maintenance/Repair */}
-            {(form.watch('interventionType') === 'maintenance' || 
-              form.watch('interventionType') === 'repair' || 
-              form.watch('interventionType') === 'preventive') && (
-              <>
-                <Separator />
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-marine-600" />
-                    <h4 className="font-medium text-sm">Heures moteur (optionnel)</h4>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="engine_hours_start"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Heures début</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0"
-                              step="0.1"
-                              placeholder="Optionnel"
-                              {...field}
-                              value={field.value || ''}
-                              onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="engine_hours_end"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Heures fin</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="number" 
-                              min="0"
-                              step="0.1"
-                              placeholder="Optionnel"
-                              {...field}
-                              value={field.value || ''}
-                              onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <FormField
-                    control={form.control}
-                    name="is_oil_change"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                        <FormControl>
-                          <Checkbox
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                          />
-                        </FormControl>
-                        <div className="space-y-1 leading-none">
-                          <FormLabel className="text-sm font-medium">
-                            Vidange effectuée
-                          </FormLabel>
-                          <p className="text-xs text-gray-600">
-                            Cocher si une vidange sera/a été réalisée
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-sm">Notes additionnelles</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Notes sur l'intervention, pièces utilisées, observations..."
-                            rows={3}
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </>
-            )}
 
             <InterventionPartsManager
               parts={interventionParts}
