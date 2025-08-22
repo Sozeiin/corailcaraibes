@@ -52,6 +52,10 @@ interface InterventionFormData {
   interventionType: string;
   engine_hours_start?: number;
   engine_hours_end?: number;
+  engine_hours_start_starboard?: number;
+  engine_hours_end_starboard?: number;
+  engine_hours_start_port?: number;
+  engine_hours_end_port?: number;
   is_oil_change?: boolean;
   notes?: string;
 }
@@ -176,6 +180,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         interventionType: 'maintenance',
         engine_hours_start: undefined,
         engine_hours_end: undefined,
+        engine_hours_start_starboard: undefined,
+        engine_hours_end_starboard: undefined,
+        engine_hours_start_port: undefined,
+        engine_hours_end_port: undefined,
         is_oil_change: false,
         notes: '',
       });
@@ -206,6 +214,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         intervention_type: data.interventionType,
         engine_hours_start: data.engine_hours_start || null,
         engine_hours_end: data.engine_hours_end || null,
+        engine_hours_start_starboard: data.engine_hours_start_starboard || null,
+        engine_hours_end_starboard: data.engine_hours_end_starboard || null,
+        engine_hours_start_port: data.engine_hours_start_port || null,
+        engine_hours_end_port: data.engine_hours_end_port || null,
         is_oil_change: data.is_oil_change || false,
         notes: data.notes || null,
       };

@@ -548,10 +548,14 @@ export type Database = {
           base_id: string | null
           created_at: string | null
           current_engine_hours: number | null
+          current_engine_hours_port: number | null
+          current_engine_hours_starboard: number | null
           documents: string[] | null
           id: string
           last_engine_hours_update: string | null
           last_oil_change_hours: number | null
+          last_oil_change_hours_port: number | null
+          last_oil_change_hours_starboard: number | null
           model: string
           name: string
           next_maintenance: string | null
@@ -564,10 +568,14 @@ export type Database = {
           base_id?: string | null
           created_at?: string | null
           current_engine_hours?: number | null
+          current_engine_hours_port?: number | null
+          current_engine_hours_starboard?: number | null
           documents?: string[] | null
           id?: string
           last_engine_hours_update?: string | null
           last_oil_change_hours?: number | null
+          last_oil_change_hours_port?: number | null
+          last_oil_change_hours_starboard?: number | null
           model: string
           name: string
           next_maintenance?: string | null
@@ -580,10 +588,14 @@ export type Database = {
           base_id?: string | null
           created_at?: string | null
           current_engine_hours?: number | null
+          current_engine_hours_port?: number | null
+          current_engine_hours_starboard?: number | null
           documents?: string[] | null
           id?: string
           last_engine_hours_update?: string | null
           last_oil_change_hours?: number | null
+          last_oil_change_hours_port?: number | null
+          last_oil_change_hours_starboard?: number | null
           model?: string
           name?: string
           next_maintenance?: string | null
@@ -1314,7 +1326,11 @@ export type Database = {
           created_at: string | null
           description: string | null
           engine_hours_end: number | null
+          engine_hours_end_port: number | null
+          engine_hours_end_starboard: number | null
           engine_hours_start: number | null
+          engine_hours_start_port: number | null
+          engine_hours_start_starboard: number | null
           id: string
           intervention_type: string | null
           is_oil_change: boolean | null
@@ -1332,7 +1348,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           engine_hours_end?: number | null
+          engine_hours_end_port?: number | null
+          engine_hours_end_starboard?: number | null
           engine_hours_start?: number | null
+          engine_hours_start_port?: number | null
+          engine_hours_start_starboard?: number | null
           id?: string
           intervention_type?: string | null
           is_oil_change?: boolean | null
@@ -1350,7 +1370,11 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           engine_hours_end?: number | null
+          engine_hours_end_port?: number | null
+          engine_hours_end_starboard?: number | null
           engine_hours_start?: number | null
+          engine_hours_start_port?: number | null
+          engine_hours_start_starboard?: number | null
           id?: string
           intervention_type?: string | null
           is_oil_change?: boolean | null

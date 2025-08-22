@@ -37,13 +37,17 @@ interface InterventionCompletionDialogProps {
       name: string;
       model: string;
       current_engine_hours: number;
+      current_engine_hours_starboard?: number;
+      current_engine_hours_port?: number;
     } | null;
   };
 }
 
 interface CompletionFormData {
-  engine_hours_start: number;
-  engine_hours_end: number;
+  engine_hours_start_starboard: number;
+  engine_hours_end_starboard: number;
+  engine_hours_start_port: number;
+  engine_hours_end_port: number;
   is_oil_change: boolean;
   notes: string;
 }
@@ -59,8 +63,10 @@ export function InterventionCompletionDialog({
 
   const form = useForm<CompletionFormData>({
     defaultValues: {
-      engine_hours_start: 0,
-      engine_hours_end: 0,
+      engine_hours_start_starboard: 0,
+      engine_hours_end_starboard: 0,
+      engine_hours_start_port: 0,
+      engine_hours_end_port: 0,
       is_oil_change: false,
       notes: '',
     },
@@ -68,29 +74,39 @@ export function InterventionCompletionDialog({
 
   // Initialize form with current boat engine hours
   useEffect(() => {
-    if (intervention.boats?.current_engine_hours && isOpen) {
+    if (intervention.boats && isOpen) {
+      const currentStarboard = intervention.boats.current_engine_hours_starboard || intervention.boats.current_engine_hours || 0;
+      const currentPort = intervention.boats.current_engine_hours_port || intervention.boats.current_engine_hours || 0;
+      
       form.reset({
-        engine_hours_start: intervention.boats.current_engine_hours,
-        engine_hours_end: intervention.boats.current_engine_hours,
+        engine_hours_start_starboard: currentStarboard,
+        engine_hours_end_starboard: currentStarboard,
+        engine_hours_start_port: currentPort,
+        engine_hours_end_port: currentPort,
         is_oil_change: false,
         notes: '',
       });
     }
   }, [intervention, form, isOpen]);
 
-  const watchStart = form.watch('engine_hours_start');
-  const watchEnd = form.watch('engine_hours_end');
-  const hoursDifference = watchEnd - watchStart;
+  const watchStartStarboard = form.watch('engine_hours_start_starboard');
+  const watchEndStarboard = form.watch('engine_hours_end_starboard');
+  const watchStartPort = form.watch('engine_hours_start_port');
+  const watchEndPort = form.watch('engine_hours_end_port');
+  
+  const starboardDifference = watchEndStarboard - watchStartStarboard;
+  const portDifference = watchEndPort - watchStartPort;
 
   const onSubmit = async (data: CompletionFormData) => {
     setIsSubmitting(true);
     
     try {
       // Validation
-      if (data.engine_hours_end < data.engine_hours_start) {
+      if (data.engine_hours_end_starboard < data.engine_hours_start_starboard || 
+          data.engine_hours_end_port < data.engine_hours_start_port) {
         toast({
           title: "Erreur de validation",
-          description: "Les heures de fin doivent être supérieures aux heures de début.",
+          description: "Les heures de fin doivent être supérieures aux heures de début pour chaque moteur.",
           variant: "destructive"
         });
         return;
@@ -102,8 +118,10 @@ export function InterventionCompletionDialog({
         .update({
           status: 'completed',
           completed_date: new Date().toISOString().split('T')[0],
-          engine_hours_start: data.engine_hours_start,
-          engine_hours_end: data.engine_hours_end,
+          engine_hours_start_starboard: data.engine_hours_start_starboard,
+          engine_hours_end_starboard: data.engine_hours_end_starboard,
+          engine_hours_start_port: data.engine_hours_start_port,
+          engine_hours_end_port: data.engine_hours_end_port,
           is_oil_change: data.is_oil_change,
           notes: data.notes || null
         })
@@ -169,73 +187,146 @@ export function InterventionCompletionDialog({
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Gauge className="h-4 w-4 text-marine-600" />
-                <h4 className="font-medium text-sm">Heures moteur</h4>
+                <h4 className="font-medium text-sm">Heures moteur - Catamaran</h4>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="engine_hours_start"
-                  rules={{ 
-                    required: "Les heures de début sont requises",
-                    min: { value: 0, message: "Les heures doivent être positives" }
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Heures début</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          step="0.1"
-                          placeholder="0"
-                          {...field}
-                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              {/* Starboard Engine */}
+              <div className="bg-blue-50 p-3 rounded-lg space-y-3">
+                <h5 className="font-medium text-sm text-blue-800">Moteur Tribord</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="engine_hours_start_starboard"
+                    rules={{ 
+                      required: "Les heures de début sont requises",
+                      min: { value: 0, message: "Les heures doivent être positives" }
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Heures début</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            step="0.1"
+                            placeholder="0"
+                            {...field}
+                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="engine_hours_end"
-                  rules={{ 
-                    required: "Les heures de fin sont requises",
-                    min: { value: 0, message: "Les heures doivent être positives" }
-                  }}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Heures fin</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number" 
-                          min="0"
-                          step="0.1"
-                          placeholder="0"
-                          {...field}
-                          onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="engine_hours_end_starboard"
+                    rules={{ 
+                      required: "Les heures de fin sont requises",
+                      min: { value: 0, message: "Les heures doivent être positives" }
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Heures fin</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            step="0.1"
+                            placeholder="0"
+                            {...field}
+                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Starboard hours difference display */}
+                {starboardDifference > 0 && (
+                  <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
+                    Durée d'intervention tribord: {starboardDifference.toFixed(1)} heures
+                  </div>
+                )}
+
+                {starboardDifference < 0 && (
+                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                    ⚠️ Les heures de fin doivent être supérieures aux heures de début
+                  </div>
+                )}
               </div>
 
-              {/* Hours difference display */}
-              {hoursDifference > 0 && (
-                <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
-                  Durée d'intervention: {hoursDifference.toFixed(1)} heures
-                </div>
-              )}
+              {/* Port Engine */}
+              <div className="bg-green-50 p-3 rounded-lg space-y-3">
+                <h5 className="font-medium text-sm text-green-800">Moteur Bâbord</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="engine_hours_start_port"
+                    rules={{ 
+                      required: "Les heures de début sont requises",
+                      min: { value: 0, message: "Les heures doivent être positives" }
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Heures début</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            step="0.1"
+                            placeholder="0"
+                            {...field}
+                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {hoursDifference < 0 && (
-                <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                  ⚠️ Les heures de fin doivent être supérieures aux heures de début
+                  <FormField
+                    control={form.control}
+                    name="engine_hours_end_port"
+                    rules={{ 
+                      required: "Les heures de fin sont requises",
+                      min: { value: 0, message: "Les heures doivent être positives" }
+                    }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Heures fin</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min="0"
+                            step="0.1"
+                            placeholder="0"
+                            {...field}
+                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              )}
+
+                {/* Port hours difference display */}
+                {portDifference > 0 && (
+                  <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
+                    Durée d'intervention bâbord: {portDifference.toFixed(1)} heures
+                  </div>
+                )}
+
+                {portDifference < 0 && (
+                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
+                    ⚠️ Les heures de fin doivent être supérieures aux heures de début
+                  </div>
+                )}
+              </div>
             </div>
 
             <Separator />
@@ -305,7 +396,7 @@ export function InterventionCompletionDialog({
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || hoursDifference < 0}
+                disabled={isSubmitting || starboardDifference < 0 || portDifference < 0}
                 className="bg-marine-600 hover:bg-marine-700"
               >
                 {isSubmitting ? 'Finalisation...' : 'Terminer l\'intervention'}

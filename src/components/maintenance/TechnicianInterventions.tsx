@@ -41,6 +41,8 @@ interface InterventionWithBoats {
     name: string;
     model: string;
     current_engine_hours: number;
+    current_engine_hours_starboard?: number;
+    current_engine_hours_port?: number;
   } | null;
 }
 
@@ -65,7 +67,7 @@ export function TechnicianInterventions() {
         .from('interventions')
         .select(`
           *,
-          boats(name, model, current_engine_hours)
+          boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
         `)
         .or(`technician_id.eq.${user.id},and(base_id.eq.${user.baseId},technician_id.is.null)`)
         .order('scheduled_date', { ascending: true });
