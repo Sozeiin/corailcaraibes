@@ -107,7 +107,7 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
         .eq('id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      if (!userProfile || !['direction', 'chef_base'].includes(userProfile.role)) {
+      if (!userProfile || !['direction', 'chef_base', 'technicien'].includes(userProfile.role)) {
         throw new Error('Vous n\'avez pas les permissions pour finaliser cette intervention. Contactez votre chef de base.');
       }
 
