@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useQueryClient } from '@tanstack/react-query';
 import { FleetKPIGrid } from '@/components/boats/FleetKPIGrid';
 import { BoatFleetCard } from '@/components/boats/BoatFleetCard';
 import { MaintenanceAlertsPanel } from '@/components/boats/MaintenanceAlertsPanel';
@@ -16,6 +17,7 @@ import { countExpiredControls } from '@/utils/safetyControlUtils';
 export const BoatsDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
@@ -127,14 +129,18 @@ export const BoatsDashboard = () => {
     setIsInterventionDialogOpen(true);
   };
 
-  const handleCloseInterventionDialog = () => {
+  const handleCloseInterventionDialog = async () => {
     setIsInterventionDialogOpen(false);
     setSelectedBoatForIntervention(null);
     
-    // Force refresh of boat data to show updated engine hours and oil change status
-    setTimeout(() => {
-      window.location.reload();
-    }, 500);
+    // Force fresh data reload instead of full page reload
+    console.log('🔄 Refreshing dashboard data after intervention dialog close');
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['boats'] }),
+      queryClient.invalidateQueries({ queryKey: ['boat-engines'] }),
+      queryClient.invalidateQueries({ queryKey: ['interventions'] }),
+      queryClient.invalidateQueries({ queryKey: ['alerts'] })
+    ]);
   };
 
   return (

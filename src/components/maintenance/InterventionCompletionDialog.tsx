@@ -97,72 +97,108 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
     
     setIsSubmitting(true);
     try {
-      console.log('Form data being submitted:', data);
+      console.log('🔧 Starting intervention completion with data:', data);
+      console.log('🔧 Engine components found:', engineComponents);
+
+      // Validate that we have engine updates
+      if (!data.engineUpdates || Object.keys(data.engineUpdates).length === 0) {
+        throw new Error('Aucune mise à jour des heures moteur fournie');
+      }
 
       // Validate engine hours
       for (const [componentId, updateData] of Object.entries(data.engineUpdates)) {
+        console.log(`🔧 Validating component ${componentId}:`, updateData);
         if (updateData.current_engine_hours < 0) {
           throw new Error(`Les heures moteur ne peuvent pas être négatives`);
         }
+        if (updateData.current_engine_hours === 0) {
+          console.warn(`⚠️ Heures moteur à 0 pour le composant ${componentId}`);
+        }
       }
 
-      // Update intervention status to completed
+      // First update engine components to ensure data consistency
+      const componentUpdates = [];
+      for (const [componentId, updateData] of Object.entries(data.engineUpdates)) {
+        const component = engineComponents.find(e => e.id === componentId);
+        if (!component) {
+          console.warn(`⚠️ Component ${componentId} not found in engineComponents`);
+          continue;
+        }
+
+        const updatePayload: any = {
+          current_engine_hours: parseInt(updateData.current_engine_hours.toString()),
+          updated_at: new Date().toISOString()
+        };
+
+        // If oil change was performed, update the last oil change hours
+        if (updateData.is_oil_change) {
+          updatePayload.last_oil_change_hours = parseInt(updateData.current_engine_hours.toString());
+          console.log(`🛢️ Oil change recorded for component ${componentId} at ${updateData.current_engine_hours}h`);
+        }
+
+        console.log(`🔧 Updating component ${componentId} with payload:`, updatePayload);
+
+        const { data: updatedComponent, error: componentError } = await supabase
+          .from('boat_components')
+          .update(updatePayload)
+          .eq('id', componentId)
+          .select('*')
+          .single();
+
+        if (componentError) {
+          console.error('❌ Error updating component:', componentError);
+          throw new Error(`Erreur lors de la mise à jour du composant ${component.component_name}: ${componentError.message}`);
+        }
+
+        console.log(`✅ Component ${componentId} updated successfully:`, updatedComponent);
+        componentUpdates.push(updatedComponent);
+      }
+
+      // Now update intervention status to completed
+      console.log('🔧 Updating intervention status to completed');
       const { error: interventionError } = await supabase
         .from('interventions')
         .update({
           status: 'completed',
           completed_at: new Date().toISOString(),
-          notes: data.notes
+          notes: data.notes || null
         })
         .eq('id', intervention.id);
 
       if (interventionError) {
-        console.error('Intervention update error:', interventionError);
-        throw interventionError;
+        console.error('❌ Intervention update error:', interventionError);
+        throw new Error(`Erreur lors de la finalisation de l'intervention: ${interventionError.message}`);
       }
 
-      // Update engine components with new hours and oil change status
-      for (const [componentId, updateData] of Object.entries(data.engineUpdates)) {
-        const component = engineComponents.find(e => e.id === componentId);
-        if (!component) continue;
+      console.log('✅ Intervention marked as completed');
 
-        const updatePayload: any = {
-          current_engine_hours: updateData.current_engine_hours
-        };
-
-        // If oil change was performed, update the last oil change hours
-        if (updateData.is_oil_change) {
-          updatePayload.last_oil_change_hours = updateData.current_engine_hours;
-        }
-
-        console.log(`Updating component ${componentId}:`, updatePayload);
-
-        const { error: componentError } = await supabase
-          .from('boat_components')
-          .update(updatePayload)
-          .eq('id', componentId);
-
-        if (componentError) {
-          console.error('Error updating component:', componentError);
-          throw componentError;
-        }
-      }
-
-      // Force refresh of all related data
+      // Invalidate all related queries to force refresh
+      console.log('🔄 Invalidating query caches...');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['interventions'] }),
         queryClient.invalidateQueries({ queryKey: ['boats'] }),
         queryClient.invalidateQueries({ queryKey: ['boat-dashboard'] }),
         queryClient.invalidateQueries({ queryKey: ['boat-components'] }),
         queryClient.invalidateQueries({ queryKey: ['boat-engines'] }),
-        queryClient.refetchQueries({ queryKey: ['boat-engines', intervention.boat_id] })
+        queryClient.removeQueries({ queryKey: ['boat-engines', intervention.boat_id] })
       ]);
-      
-      toast.success("Intervention terminée et heures moteur mises à jour");
+
+      // Show success message
+      toast.success(`✅ Intervention finalisée avec succès. ${componentUpdates.length} moteur(s) mis à jour.`);
+
+      console.log('✅ Intervention completion successful, closing dialog');
       onClose();
+      
+      // Force a fresh data reload after a short delay
+      setTimeout(() => {
+        console.log('🔄 Forcing fresh data reload...');
+        queryClient.refetchQueries({ queryKey: ['boat-engines'] });
+        queryClient.refetchQueries({ queryKey: ['boats'] });
+      }, 500);
+      
     } catch (error: any) {
-      console.error('Error completing intervention:', error);
-      toast.error(error.message || "Erreur lors de la finalisation de l'intervention");
+      console.error('❌ Error completing intervention:', error);
+      toast.error(error instanceof Error ? error.message : "Erreur lors de la finalisation de l'intervention");
     } finally {
       setIsSubmitting(false);
     }

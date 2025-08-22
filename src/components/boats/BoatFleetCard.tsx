@@ -32,21 +32,30 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  // Fetch engine components for this boat
+  // Fetch engine components for this boat with real-time updates
   const { data: engineComponents = [], isLoading: isLoadingEngines } = useQuery({
     queryKey: ['boat-engines', boat.id],
     queryFn: async () => {
+      console.log(`🔍 Fetching engine components for boat ${boat.id}`);
       const { data, error } = await supabase
         .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
+        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, updated_at')
         .eq('boat_id', boat.id)
-        .ilike('component_type', '%moteur%');
+        .ilike('component_type', '%moteur%')
+        .order('updated_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching engine components:', error);
+        throw error;
+      }
+      
+      console.log(`✅ Found ${data?.length || 0} engine components for boat ${boat.id}:`, data);
       return data as EngineComponent[];
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    refetchOnWindowFocus: true
+    staleTime: 0, // Always fresh data
+    gcTime: 1000 * 30, // 30 seconds cache
+    refetchOnWindowFocus: true,
+    refetchInterval: 1000 * 60 // Refresh every minute
   });
 
   const oilChangeProgress = calculateWorstOilChangeProgress(engineComponents);
@@ -149,14 +158,20 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
               variant="outline" 
               size="sm" 
               className="flex-1"
-              onClick={() => navigate(`/boats/${boat.id}`)}
+              onClick={() => {
+                console.log(`🔍 Navigating to boat details: /boats/${boat.id}`);
+                navigate(`/boats/${boat.id}`);
+              }}
             >
               Détails
             </Button>
             <Button 
               size="sm" 
               className="btn-ocean"
-              onClick={() => onCreateIntervention?.(boat.id, `${boat.name} - ${boat.model}`)}
+              onClick={() => {
+                console.log(`➕ Creating new intervention for boat ${boat.id}`);
+                onCreateIntervention?.(boat.id, `${boat.name} - ${boat.model}`);
+              }}
             >
               <Plus className="h-4 w-4 mr-1" />
               Intervention
