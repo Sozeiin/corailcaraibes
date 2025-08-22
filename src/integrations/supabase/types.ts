@@ -355,6 +355,104 @@ export type Database = {
           },
         ]
       }
+      boat_safety_control_items: {
+        Row: {
+          brand: string | null
+          control_id: string
+          created_at: string
+          expiry_date: string | null
+          id: string
+          item_name: string
+          model: string | null
+          notes: string | null
+          quantity: number | null
+          serial_number: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          control_id: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          item_name: string
+          model?: string | null
+          notes?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          control_id?: string
+          created_at?: string
+          expiry_date?: string | null
+          id?: string
+          item_name?: string
+          model?: string | null
+          notes?: string | null
+          quantity?: number | null
+          serial_number?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_safety_control_items_control_id_fkey"
+            columns: ["control_id"]
+            isOneToOne: false
+            referencedRelation: "boat_safety_controls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boat_safety_controls: {
+        Row: {
+          boat_id: string
+          category_id: string
+          control_date: string | null
+          control_year: number
+          created_at: string
+          id: string
+          next_control_date: string | null
+          notes: string | null
+          performed_by: string | null
+          status: string
+          updated_at: string
+          validated_by: string | null
+        }
+        Insert: {
+          boat_id: string
+          category_id: string
+          control_date?: string | null
+          control_year: number
+          created_at?: string
+          id?: string
+          next_control_date?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          status?: string
+          updated_at?: string
+          validated_by?: string | null
+        }
+        Update: {
+          boat_id?: string
+          category_id?: string
+          control_date?: string | null
+          control_year?: number
+          created_at?: string
+          id?: string
+          next_control_date?: string | null
+          notes?: string | null
+          performed_by?: string | null
+          status?: string
+          updated_at?: string
+          validated_by?: string | null
+        }
+        Relationships: []
+      }
       boat_sub_components: {
         Row: {
           created_at: string
@@ -2441,6 +2539,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      safety_control_categories: {
+        Row: {
+          color_code: string | null
+          created_at: string
+          description: string | null
+          frequency_months: number
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color_code?: string | null
+          created_at?: string
+          description?: string | null
+          frequency_months?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color_code?: string | null
+          created_at?: string
+          description?: string | null
+          frequency_months?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       scheduled_maintenance: {
         Row: {
