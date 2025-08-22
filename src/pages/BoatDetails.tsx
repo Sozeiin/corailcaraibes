@@ -23,6 +23,7 @@ const BoatDetails = () => {
   const navigate = useNavigate();
   console.log('BoatDetails rendered with boatId:', boatId);
   const { data: boats = [], loading: isLoading } = useOfflineData<any>({ table: 'boats' });
+  console.log('Boats data loaded:', boats, 'loading:', isLoading);
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
   // Fetch engine components for this boat
@@ -43,6 +44,8 @@ const BoatDetails = () => {
   const boat = boats.find((b: any) => b.id === boatId);
   const boatBase = bases.find((b: any) => b.id === boat?.base_id);
   const boatWithBase = boat ? { ...boat, base: boatBase } : null;
+  
+  console.log('Found boat:', boat, 'boatWithBase:', boatWithBase);
 
   if (isLoading) {
     return <LoadingSpinner />;
