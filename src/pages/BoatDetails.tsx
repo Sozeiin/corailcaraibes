@@ -1,19 +1,16 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, Wrench, History, BarChart3, ShoppingCart, Cog } from 'lucide-react';
+import { ArrowLeft, Settings, Wrench, History, BarChart3, ShoppingCart } from 'lucide-react';
 import { BoatComponentsManager } from '@/components/boats/BoatComponentsManager';
 import { BoatHistoryContent } from '@/components/boats/BoatHistoryContent';
 import { BoatMaintenancePlanner } from '@/components/boats/BoatMaintenancePlanner';
 import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { BoatPurchaseHistory } from '@/components/boats/BoatPurchaseHistory';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
-import { EngineStatusCard } from '@/components/boats/EngineStatusCard';
 const BoatDetails = () => {
   const {
     boatId
@@ -25,21 +22,6 @@ const BoatDetails = () => {
   const { data: boats = [], loading: isLoading } = useOfflineData<any>({ table: 'boats' });
   console.log('Boats data loaded:', boats, 'loading:', isLoading);
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
-
-  // Fetch engine components for this boat
-  const { data: engineComponents = [] } = useQuery({
-    queryKey: ['boat-engines', boatId],
-    queryFn: async () => {
-      if (!boatId) return [];
-      const { data } = await supabase
-        .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, status')
-        .eq('boat_id', boatId)
-        .or('component_type.ilike.%moteur%,component_type.ilike.%engine%');
-      return data || [];
-    },
-    enabled: !!boatId
-  });
 
   const boat = boats.find((b: any) => b.id === boatId);
   const boatBase = bases.find((b: any) => b.id === boat?.base_id);
@@ -112,26 +94,6 @@ const BoatDetails = () => {
         </CardContent>
       </Card>
 
-      {/* Engine Status Section */}
-      {engineComponents.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Cog className="h-5 w-5 mr-2" />
-              État des moteurs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2">
-              {engineComponents.map((engine: any) => (
-                <EngineStatusCard key={engine.id} engine={engine} />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Tabs for different sections */}
       <Tabs defaultValue="dashboard" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
