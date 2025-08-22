@@ -109,8 +109,14 @@ export function InterventionCompletionDialog({
           description: "Les heures de fin doivent être supérieures aux heures de début pour chaque moteur.",
           variant: "destructive"
         });
+        setIsSubmitting(false);
         return;
       }
+
+      console.log('Attempting to complete intervention with data:', {
+        interventionId: intervention.id,
+        data: data
+      });
 
       // Update intervention with completion data
       const { error: interventionError } = await supabase
@@ -127,7 +133,10 @@ export function InterventionCompletionDialog({
         })
         .eq('id', intervention.id);
 
-      if (interventionError) throw interventionError;
+      if (interventionError) {
+        console.error('Intervention update error:', interventionError);
+        throw interventionError;
+      }
 
       // The trigger update_boat_engine_hours will automatically update the boat's engine hours
       // and reset oil change hours if is_oil_change is true
