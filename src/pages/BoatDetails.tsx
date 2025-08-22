@@ -14,7 +14,7 @@ import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { BoatPurchaseHistory } from '@/components/boats/BoatPurchaseHistory';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { EngineStatusCard } from '@/components/boats/EngineStatusCard';
-export const BoatDetails = () => {
+const BoatDetails = () => {
   const {
     boatId
   } = useParams<{
@@ -175,3 +175,5 @@ export const BoatDetails = () => {
       </Tabs>
     </div>;
 };
+
+export { BoatDetails };
