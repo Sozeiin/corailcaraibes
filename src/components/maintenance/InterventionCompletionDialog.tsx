@@ -99,6 +99,13 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
     try {
       console.log('Form data being submitted:', data);
 
+      // Validate engine hours
+      for (const [componentId, updateData] of Object.entries(data.engineUpdates)) {
+        if (updateData.current_engine_hours < 0) {
+          throw new Error(`Les heures moteur ne peuvent pas être négatives`);
+        }
+      }
+
       // Update intervention status to completed
       const { error: interventionError } = await supabase
         .from('interventions')
@@ -128,6 +135,8 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
           updatePayload.last_oil_change_hours = updateData.current_engine_hours;
         }
 
+        console.log(`Updating component ${componentId}:`, updatePayload);
+
         const { error: componentError } = await supabase
           .from('boat_components')
           .update(updatePayload)
@@ -139,17 +148,21 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
         }
       }
 
-      // Invalidate relevant queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['interventions'] });
-      queryClient.invalidateQueries({ queryKey: ['boats'] });
-      queryClient.invalidateQueries({ queryKey: ['boat-dashboard'] });
-      queryClient.invalidateQueries({ queryKey: ['boat-components'] });
+      // Force refresh of all related data
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['interventions'] }),
+        queryClient.invalidateQueries({ queryKey: ['boats'] }),
+        queryClient.invalidateQueries({ queryKey: ['boat-dashboard'] }),
+        queryClient.invalidateQueries({ queryKey: ['boat-components'] }),
+        queryClient.invalidateQueries({ queryKey: ['boat-engines'] }),
+        queryClient.refetchQueries({ queryKey: ['boat-engines', intervention.boat_id] })
+      ]);
       
-      toast.success("Intervention terminée avec succès");
+      toast.success("Intervention terminée et heures moteur mises à jour");
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing intervention:', error);
-      toast.error("Erreur lors de la finalisation de l'intervention");
+      toast.error(error.message || "Erreur lors de la finalisation de l'intervention");
     } finally {
       setIsSubmitting(false);
     }

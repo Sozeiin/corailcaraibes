@@ -17,8 +17,8 @@ interface BoatFleetCardProps {
     name: string;
     model: string;
     status: string;
-    current_engine_hours: number;
-    last_oil_change_hours: number;
+    current_engine_hours?: number;
+    last_oil_change_hours?: number;
     next_maintenance?: string;
   };
   alertsCount?: number;
@@ -33,7 +33,7 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
   const navigate = useNavigate();
   
   // Fetch engine components for this boat
-  const { data: engineComponents = [] } = useQuery({
+  const { data: engineComponents = [], isLoading: isLoadingEngines } = useQuery({
     queryKey: ['boat-engines', boat.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,7 +44,9 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
       
       if (error) throw error;
       return data as EngineComponent[];
-    }
+    },
+    staleTime: 1000 * 60 * 2, // 2 minutes
+    refetchOnWindowFocus: true
   });
 
   const oilChangeProgress = calculateWorstOilChangeProgress(engineComponents);
@@ -98,32 +100,38 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             )}
           </div>
 
-          {/* Engine hours with progress */}
-            <div className="space-y-2">
+          {/* Engine status */}
+          <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <Gauge className="h-4 w-4" />
               <span className="font-medium">Moteurs:</span>
-              <span>{engineComponents.length} moteur{engineComponents.length > 1 ? 's' : ''}</span>
+              {isLoadingEngines ? (
+                <span className="text-muted-foreground">Chargement...</span>
+              ) : (
+                <span>{engineComponents.length} moteur{engineComponents.length > 1 ? 's' : ''}</span>
+              )}
             </div>
-            {engineComponents.length > 0 && (
+            {!isLoadingEngines && engineComponents.length > 0 && (
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>État des vidanges</span>
-                  <span>{oilChangeProgress.toFixed(0)}% vers prochaine</span>
+                  <span>Progression vidange</span>
+                  <span>{Math.round(oilChangeProgress)}%</span>
                 </div>
                 <Progress 
                   value={oilChangeProgress} 
                   className="h-2"
-                  // Apply color based on progress
                   style={{
                     '--progress-foreground': oilChangeProgress >= 100 
                       ? 'hsl(var(--destructive))' 
                       : oilChangeProgress >= 80 
                       ? 'hsl(var(--accent))' 
-                      : 'hsl(var(--secondary))'
+                      : 'hsl(var(--primary))'
                   } as React.CSSProperties}
                 />
               </div>
+            )}
+            {!isLoadingEngines && engineComponents.length === 0 && (
+              <p className="text-xs text-muted-foreground">Aucun moteur configuré</p>
             )}
           </div>
 
@@ -151,7 +159,7 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
               onClick={() => onCreateIntervention?.(boat.id, `${boat.name} - ${boat.model}`)}
             >
               <Plus className="h-4 w-4 mr-1" />
-              Action
+              Intervention
             </Button>
           </div>
         </div>

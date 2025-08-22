@@ -130,6 +130,11 @@ export const BoatsDashboard = () => {
   const handleCloseInterventionDialog = () => {
     setIsInterventionDialogOpen(false);
     setSelectedBoatForIntervention(null);
+    
+    // Force refresh of boat data to show updated engine hours and oil change status
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   return (
