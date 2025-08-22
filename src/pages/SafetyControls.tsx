@@ -10,6 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SafetyStatusIcon } from '@/components/boats/SafetyStatusIcon';
+import { SafetyStatusLegend } from '@/components/boats/SafetyStatusLegend';
 
 export const SafetyControls = () => {
   const navigate = useNavigate();
@@ -120,45 +122,48 @@ export const SafetyControls = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBoats.map(boat => {
-            const base = bases.find((b: any) => b.id === boat.base_id);
-            
-            return (
-              <Card key={boat.id} className="hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-lg">{boat.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">{boat.model} ({boat.year})</p>
-                      <p className="text-xs text-muted-foreground">N° série: {boat.serial_number}</p>
+        <>
+          <SafetyStatusLegend />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBoats.map(boat => {
+              const base = bases.find((b: any) => b.id === boat.base_id);
+              
+              return (
+                <Card key={boat.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-lg">{boat.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">{boat.model} ({boat.year})</p>
+                        <p className="text-xs text-muted-foreground">N° série: {boat.serial_number}</p>
+                      </div>
+                      <SafetyStatusIcon boatId={boat.id} size="md" />
                     </div>
-                    <Shield className="h-6 w-6 text-primary" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Base: {base?.name || 'Non assignée'}
-                      </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          Base: {base?.name || 'Non assignée'}
+                        </p>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2">
+                        <Button 
+                          onClick={() => navigate(`/boats/${boat.id}/safety-controls`)}
+                          className="w-full"
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          Gérer les contrôles
+                        </Button>
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-col gap-2">
-                      <Button 
-                        onClick={() => navigate(`/boats/${boat.id}/safety-controls`)}
-                        className="w-full"
-                      >
-                        <Shield className="h-4 w-4 mr-2" />
-                        Gérer les contrôles
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
