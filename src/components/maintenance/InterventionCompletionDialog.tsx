@@ -1,28 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
-import { Gauge, Wrench, FileText } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { useForm } from 'react-hook-form';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import type { EngineComponent } from '@/utils/engineMaintenanceUtils';
 
 interface InterventionCompletionDialogProps {
   isOpen: boolean;
@@ -33,7 +21,8 @@ interface InterventionCompletionDialogProps {
     boat_id: string | null;
     technician_id: string | null;
     intervention_type?: string;
-    boats?: {
+    boat?: {
+      id: string;
       name: string;
       model: string;
       current_engine_hours: number;
@@ -44,92 +33,79 @@ interface InterventionCompletionDialogProps {
 }
 
 interface CompletionFormData {
-  engine_hours_start_starboard: number;
-  engine_hours_end_starboard: number;
-  engine_hours_start_port: number;
-  engine_hours_end_port: number;
-  is_oil_change: boolean;
   notes: string;
+  engineUpdates: {
+    [componentId: string]: {
+      current_engine_hours: number;
+      is_oil_change: boolean;
+    };
+  };
 }
 
-export function InterventionCompletionDialog({ 
-  isOpen, 
-  onClose, 
-  intervention 
-}: InterventionCompletionDialogProps) {
-  const { toast } = useToast();
+export const InterventionCompletionDialog: React.FC<InterventionCompletionDialogProps> = ({
+  isOpen,
+  onClose,
+  intervention
+}) => {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<CompletionFormData>({
-    defaultValues: {
-      engine_hours_start_starboard: 0,
-      engine_hours_end_starboard: 0,
-      engine_hours_start_port: 0,
-      engine_hours_end_port: 0,
-      is_oil_change: false,
-      notes: '',
-    },
-  });
-
-  // Initialize form with current boat engine hours
-  useEffect(() => {
-    if (intervention.boats && isOpen) {
-      const currentStarboard = intervention.boats.current_engine_hours_starboard || intervention.boats.current_engine_hours || 0;
-      const currentPort = intervention.boats.current_engine_hours_port || intervention.boats.current_engine_hours || 0;
-      
-      form.reset({
-        engine_hours_start_starboard: currentStarboard,
-        engine_hours_end_starboard: currentStarboard,
-        engine_hours_start_port: currentPort,
-        engine_hours_end_port: currentPort,
-        is_oil_change: false,
-        notes: '',
-      });
-    }
-  }, [intervention, form, isOpen]);
-
-  const watchStartStarboard = form.watch('engine_hours_start_starboard');
-  const watchEndStarboard = form.watch('engine_hours_end_starboard');
-  const watchStartPort = form.watch('engine_hours_start_port');
-  const watchEndPort = form.watch('engine_hours_end_port');
+  const [engineComponents, setEngineComponents] = useState<EngineComponent[]>([]);
   
-  const starboardDifference = watchEndStarboard - watchStartStarboard;
-  const portDifference = watchEndPort - watchStartPort;
+  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CompletionFormData>();
+
+  // Fetch engine components when dialog opens
+  useEffect(() => {
+    if (intervention?.boat_id && isOpen) {
+      fetchEngineComponents();
+      setValue('notes', '');
+      setValue('engineUpdates', {});
+    }
+  }, [intervention, isOpen, setValue]);
+
+  const fetchEngineComponents = async () => {
+    if (!intervention?.boat_id) return;
+
+    const { data, error } = await supabase
+      .from('boat_components')
+      .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
+      .eq('boat_id', intervention.boat_id)
+      .ilike('component_type', '%moteur%');
+
+    if (error) {
+      console.error('Error fetching engine components:', error);
+      toast.error('Erreur lors du chargement des moteurs');
+      return;
+    }
+
+    setEngineComponents(data || []);
+    
+    // Initialize form with current engine hours
+    const initialUpdates: any = {};
+    data?.forEach(engine => {
+      initialUpdates[engine.id] = {
+        current_engine_hours: engine.current_engine_hours || 0,
+        is_oil_change: false
+      };
+    });
+    setValue('engineUpdates', initialUpdates);
+  };
+
+  const engineUpdates = watch('engineUpdates') || {};
 
   const onSubmit = async (data: CompletionFormData) => {
-    setIsSubmitting(true);
+    if (!intervention) return;
     
+    setIsSubmitting(true);
     try {
-      // Validation
-      if (data.engine_hours_end_starboard < data.engine_hours_start_starboard || 
-          data.engine_hours_end_port < data.engine_hours_start_port) {
-        toast({
-          title: "Erreur de validation",
-          description: "Les heures de fin doivent être supérieures aux heures de début pour chaque moteur.",
-          variant: "destructive"
-        });
-        setIsSubmitting(false);
-        return;
-      }
+      console.log('Form data being submitted:', data);
 
-      console.log('Attempting to complete intervention with data:', {
-        interventionId: intervention.id,
-        data: data
-      });
-
-      // Update intervention with completion data
+      // Update intervention status to completed
       const { error: interventionError } = await supabase
         .from('interventions')
         .update({
           status: 'completed',
-          completed_date: new Date().toISOString().split('T')[0],
-          engine_hours_start_starboard: data.engine_hours_start_starboard,
-          engine_hours_end_starboard: data.engine_hours_end_starboard,
-          engine_hours_start_port: data.engine_hours_start_port,
-          engine_hours_end_port: data.engine_hours_end_port,
-          is_oil_change: data.is_oil_change,
-          notes: data.notes || null
+          completed_at: new Date().toISOString(),
+          notes: data.notes
         })
         .eq('id', intervention.id);
 
@@ -138,282 +114,144 @@ export function InterventionCompletionDialog({
         throw interventionError;
       }
 
-      // The trigger update_boat_engine_hours will automatically update the boat's engine hours
-      // and reset oil change hours if is_oil_change is true
+      // Update engine components with new hours and oil change status
+      for (const [componentId, updateData] of Object.entries(data.engineUpdates)) {
+        const component = engineComponents.find(e => e.id === componentId);
+        if (!component) continue;
 
-      toast({
-        title: "Intervention terminée",
-        description: `L'intervention a été marquée comme terminée. ${data.is_oil_change ? 'Vidange effectuée.' : ''}`,
-      });
+        const updatePayload: any = {
+          current_engine_hours: updateData.current_engine_hours
+        };
 
-      // Invalidate relevant queries
-      queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-interventions'] });
+        // If oil change was performed, update the last oil change hours
+        if (updateData.is_oil_change) {
+          updatePayload.last_oil_change_hours = updateData.current_engine_hours;
+        }
+
+        const { error: componentError } = await supabase
+          .from('boat_components')
+          .update(updatePayload)
+          .eq('id', componentId);
+
+        if (componentError) {
+          console.error('Error updating component:', componentError);
+          throw componentError;
+        }
+      }
+
+      // Invalidate relevant queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['interventions'] });
       queryClient.invalidateQueries({ queryKey: ['boats'] });
       queryClient.invalidateQueries({ queryKey: ['boat-dashboard'] });
-
+      queryClient.invalidateQueries({ queryKey: ['boat-components'] });
+      
+      toast.success("Intervention terminée avec succès");
       onClose();
     } catch (error) {
       console.error('Error completing intervention:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de terminer l'intervention.",
-        variant: "destructive"
-      });
+      toast.error("Erreur lors de la finalisation de l'intervention");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    form.reset();
-    onClose();
-  };
+  if (!isOpen) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Wrench className="h-5 w-5 text-marine-600" />
-            Terminer l'intervention
-          </DialogTitle>
+          <DialogTitle>Terminer l'intervention</DialogTitle>
         </DialogHeader>
+        
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="space-y-6">
+            {engineComponents.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Moteurs du bateau</h3>
+                
+                {engineComponents.map((engine) => {
+                  const currentHours = engineUpdates[engine.id]?.current_engine_hours || engine.current_engine_hours;
+                  const isOilChange = engineUpdates[engine.id]?.is_oil_change || false;
+                  
+                  return (
+                    <div key={engine.id} className="border rounded-lg p-4 space-y-3">
+                      <h4 className="font-medium">{engine.component_name}</h4>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor={`engine_hours_${engine.id}`}>
+                          Heures moteur actuelles
+                        </Label>
+                        <Input
+                          id={`engine_hours_${engine.id}`}
+                          type="number"
+                          value={currentHours}
+                          onChange={(e) => {
+                            const newHours = parseInt(e.target.value) || 0;
+                            setValue(`engineUpdates.${engine.id}.current_engine_hours`, newHours);
+                          }}
+                          min={engine.current_engine_hours}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          Heures précédentes: {engine.current_engine_hours}h
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Dernière vidange: {engine.last_oil_change_hours}h 
+                          ({engine.current_engine_hours - engine.last_oil_change_hours}h depuis)
+                        </p>
+                      </div>
 
-        <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="font-medium text-sm mb-1">{intervention.title}</h4>
-          {intervention.boats && (
-            <p className="text-xs text-gray-600">
-              {intervention.boats.name} - {intervention.boats.model}
-            </p>
-          )}
-        </div>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            
-            {/* Engine Hours Section */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Gauge className="h-4 w-4 text-marine-600" />
-                <h4 className="font-medium text-sm">Heures moteur - Catamaran</h4>
-              </div>
-              
-              {/* Starboard Engine */}
-              <div className="bg-blue-50 p-3 rounded-lg space-y-3">
-                <h5 className="font-medium text-sm text-blue-800">Moteur Tribord</h5>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="engine_hours_start_starboard"
-                    rules={{ 
-                      required: "Les heures de début sont requises",
-                      min: { value: 0, message: "Les heures doivent être positives" }
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Heures début</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            step="0.1"
-                            placeholder="0"
-                            {...field}
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="engine_hours_end_starboard"
-                    rules={{ 
-                      required: "Les heures de fin sont requises",
-                      min: { value: 0, message: "Les heures doivent être positives" }
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Heures fin</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            step="0.1"
-                            placeholder="0"
-                            {...field}
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Starboard hours difference display */}
-                {starboardDifference > 0 && (
-                  <div className="text-xs text-blue-700 bg-blue-100 p-2 rounded">
-                    Durée d'intervention tribord: {starboardDifference.toFixed(1)} heures
-                  </div>
-                )}
-
-                {starboardDifference < 0 && (
-                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                    ⚠️ Les heures de fin doivent être supérieures aux heures de début
-                  </div>
-                )}
-              </div>
-
-              {/* Port Engine */}
-              <div className="bg-green-50 p-3 rounded-lg space-y-3">
-                <h5 className="font-medium text-sm text-green-800">Moteur Bâbord</h5>
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="engine_hours_start_port"
-                    rules={{ 
-                      required: "Les heures de début sont requises",
-                      min: { value: 0, message: "Les heures doivent être positives" }
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Heures début</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            step="0.1"
-                            placeholder="0"
-                            {...field}
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="engine_hours_end_port"
-                    rules={{ 
-                      required: "Les heures de fin sont requises",
-                      min: { value: 0, message: "Les heures doivent être positives" }
-                    }}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Heures fin</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            min="0"
-                            step="0.1"
-                            placeholder="0"
-                            {...field}
-                            onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Port hours difference display */}
-                {portDifference > 0 && (
-                  <div className="text-xs text-green-700 bg-green-100 p-2 rounded">
-                    Durée d'intervention bâbord: {portDifference.toFixed(1)} heures
-                  </div>
-                )}
-
-                {portDifference < 0 && (
-                  <div className="text-xs text-red-600 bg-red-50 p-2 rounded">
-                    ⚠️ Les heures de fin doivent être supérieures aux heures de début
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Oil Change Section */}
-            <div className="space-y-3">
-              <FormField
-                control={form.control}
-                name="is_oil_change"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-sm font-medium">
-                        Vidange effectuée
-                      </FormLabel>
-                      <p className="text-xs text-gray-600">
-                        Cocher si une vidange a été réalisée pendant cette intervention
-                      </p>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id={`oil_change_${engine.id}`}
+                          checked={isOilChange}
+                          onCheckedChange={(checked) => {
+                            setValue(`engineUpdates.${engine.id}.is_oil_change`, checked);
+                          }}
+                        />
+                        <Label htmlFor={`oil_change_${engine.id}`}>
+                          Vidange effectuée sur ce moteur
+                        </Label>
+                      </div>
                     </div>
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <Separator />
-
-            {/* Notes Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-marine-600" />
-                <h4 className="font-medium text-sm">Notes d'intervention</h4>
+                  );
+                })}
               </div>
-              
-              <FormField
-                control={form.control}
-                name="notes"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Détails de l'intervention réalisée, problèmes rencontrés, pièces changées..."
-                        rows={4}
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>Aucun moteur trouvé pour ce bateau.</p>
+                <p className="text-sm">Assurez-vous que les composants moteur sont configurés.</p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="notes">Notes d'intervention</Label>
+              <Textarea
+                id="notes"
+                placeholder="Ajouter des notes sur l'intervention..."
+                {...register('notes')}
               />
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-end space-x-3 pt-4">
+            <div className="flex justify-end space-x-3">
               <Button
                 type="button"
                 variant="outline"
-                onClick={handleClose}
+                onClick={onClose}
                 disabled={isSubmitting}
               >
                 Annuler
               </Button>
               <Button
                 type="submit"
-                disabled={isSubmitting || starboardDifference < 0 || portDifference < 0}
-                className="bg-marine-600 hover:bg-marine-700"
+                disabled={isSubmitting}
               >
                 {isSubmitting ? 'Finalisation...' : 'Terminer l\'intervention'}
               </Button>
             </div>
-          </form>
-        </Form>
+          </div>
+        </form>
       </DialogContent>
     </Dialog>
   );
-}
+};

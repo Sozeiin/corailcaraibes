@@ -7,18 +7,30 @@ import { ArrowLeft, Shield, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { OilChangeStatusBadge } from '@/components/boats/OilChangeStatusBadge';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { EngineComponent } from '@/utils/engineMaintenanceUtils';
 
 export const BoatSafetyControls = () => {
   const { boatId } = useParams<{ boatId: string }>();
   const navigate = useNavigate();
 
-  // Fetch boat data for oil change badge
-  const { data: boat } = useOfflineData<any>({
-    table: 'boats',
-    dependencies: [boatId]
+  // Fetch engine components for oil change badge
+  const { data: engineComponents = [] } = useQuery({
+    queryKey: ['boat-engines', boatId],
+    queryFn: async () => {
+      if (!boatId) return [];
+      const { data, error } = await supabase
+        .from('boat_components')
+        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
+        .eq('boat_id', boatId)
+        .ilike('component_type', '%moteur%');
+      
+      if (error) throw error;
+      return data as EngineComponent[];
+    },
+    enabled: !!boatId
   });
-
-  const currentBoat = boat?.find((b: any) => b.id === boatId);
 
   if (!boatId) {
     return (
@@ -44,17 +56,16 @@ export const BoatSafetyControls = () => {
             <Shield className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Contrôles de Sécurité</h1>
           </div>
-          {currentBoat && (
+          {engineComponents.length > 0 && (
             <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg">
               <Wrench className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Vidange:</span>
+              <span className="text-sm text-muted-foreground">État moteurs:</span>
               <OilChangeStatusBadge 
-                currentEngineHours={currentBoat.current_engine_hours || 0}
-                lastOilChangeHours={currentBoat.last_oil_change_hours || 0}
+                engines={engineComponents}
                 size="sm"
               />
               <span className="text-sm text-muted-foreground">
-                {Math.max(0, 250 - ((currentBoat.current_engine_hours || 0) - (currentBoat.last_oil_change_hours || 0)))}h restantes
+                {engineComponents.length} moteur{engineComponents.length > 1 ? 's' : ''}
               </span>
             </div>
           )}

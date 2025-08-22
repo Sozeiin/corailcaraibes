@@ -235,9 +235,11 @@ export type Database = {
           component_name: string
           component_type: string
           created_at: string
+          current_engine_hours: number | null
           id: string
           installation_date: string | null
           last_maintenance_date: string | null
+          last_oil_change_hours: number | null
           maintenance_interval_days: number | null
           manufacturer: string | null
           model: string | null
@@ -253,9 +255,11 @@ export type Database = {
           component_name: string
           component_type: string
           created_at?: string
+          current_engine_hours?: number | null
           id?: string
           installation_date?: string | null
           last_maintenance_date?: string | null
+          last_oil_change_hours?: number | null
           maintenance_interval_days?: number | null
           manufacturer?: string | null
           model?: string | null
@@ -271,9 +275,11 @@ export type Database = {
           component_name?: string
           component_type?: string
           created_at?: string
+          current_engine_hours?: number | null
           id?: string
           installation_date?: string | null
           last_maintenance_date?: string | null
+          last_oil_change_hours?: number | null
           maintenance_interval_days?: number | null
           manufacturer?: string | null
           model?: string | null

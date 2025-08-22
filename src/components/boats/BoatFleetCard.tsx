@@ -6,7 +6,9 @@ import { Progress } from '@/components/ui/progress';
 import { Plus, Calendar, Gauge } from 'lucide-react';
 import { SafetyStatusIcon } from './SafetyStatusIcon';
 import { OilChangeStatusBadge } from './OilChangeStatusBadge';
-import { calculateOilChangeProgress } from '@/utils/engineMaintenanceUtils';
+import { calculateWorstOilChangeProgress, type EngineComponent } from '@/utils/engineMaintenanceUtils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 interface BoatFleetCardProps {
@@ -29,7 +31,23 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
   onCreateIntervention 
 }) => {
   const navigate = useNavigate();
-  const oilChangeProgress = calculateOilChangeProgress(boat.current_engine_hours, boat.last_oil_change_hours);
+  
+  // Fetch engine components for this boat
+  const { data: engineComponents = [] } = useQuery({
+    queryKey: ['boat-engines', boat.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boat_components')
+        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
+        .eq('boat_id', boat.id)
+        .ilike('component_type', '%moteur%');
+      
+      if (error) throw error;
+      return data as EngineComponent[];
+    }
+  });
+
+  const oilChangeProgress = calculateWorstOilChangeProgress(engineComponents);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -62,8 +80,7 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             <div className="flex items-center gap-2 ml-2">
               <SafetyStatusIcon boatId={boat.id} size="md" />
               <OilChangeStatusBadge 
-                currentEngineHours={boat.current_engine_hours}
-                lastOilChangeHours={boat.last_oil_change_hours}
+                engines={engineComponents}
                 size="md"
               />
             </div>
@@ -82,30 +99,32 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
           </div>
 
           {/* Engine hours with progress */}
-          <div className="space-y-2">
+            <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
               <Gauge className="h-4 w-4" />
-              <span className="font-medium">Heures moteur:</span>
-              <span>{boat.current_engine_hours}h</span>
+              <span className="font-medium">Moteurs:</span>
+              <span>{engineComponents.length} moteur{engineComponents.length > 1 ? 's' : ''}</span>
             </div>
-            <div className="space-y-1">
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Prochaine vidange</span>
-                <span>{Math.max(0, 250 - (boat.current_engine_hours - boat.last_oil_change_hours))}h restantes</span>
+            {engineComponents.length > 0 && (
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>État des vidanges</span>
+                  <span>{oilChangeProgress.toFixed(0)}% vers prochaine</span>
+                </div>
+                <Progress 
+                  value={oilChangeProgress} 
+                  className="h-2"
+                  // Apply color based on progress
+                  style={{
+                    '--progress-foreground': oilChangeProgress >= 100 
+                      ? 'hsl(var(--destructive))' 
+                      : oilChangeProgress >= 80 
+                      ? 'hsl(var(--accent))' 
+                      : 'hsl(var(--secondary))'
+                  } as React.CSSProperties}
+                />
               </div>
-              <Progress 
-                value={oilChangeProgress} 
-                className="h-2"
-                // Apply color based on progress
-                style={{
-                  '--progress-foreground': oilChangeProgress >= 100 
-                    ? 'hsl(var(--destructive))' 
-                    : oilChangeProgress >= 80 
-                    ? 'hsl(var(--accent))' 
-                    : 'hsl(var(--secondary))'
-                } as React.CSSProperties}
-              />
-            </div>
+            )}
           </div>
 
           {/* Next maintenance */}

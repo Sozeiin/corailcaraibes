@@ -1,23 +1,21 @@
 import React from 'react';
 import { Wrench } from 'lucide-react';
-import { getOilChangeStatusBadge } from '@/utils/engineMaintenanceUtils';
+import { getWorstOilChangeStatus, type EngineComponent } from '@/utils/engineMaintenanceUtils';
 
 interface OilChangeStatusBadgeProps {
-  currentEngineHours: number;
-  lastOilChangeHours: number;
+  engines: EngineComponent[];
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   showTooltip?: boolean;
 }
 
 export const OilChangeStatusBadge: React.FC<OilChangeStatusBadgeProps> = ({ 
-  currentEngineHours, 
-  lastOilChangeHours,
+  engines,
   size = 'md', 
   className = '',
   showTooltip = true
 }) => {
-  const badgeInfo = getOilChangeStatusBadge(currentEngineHours, lastOilChangeHours);
+  const badgeInfo = getWorstOilChangeStatus(engines);
   
   // Size mapping
   const sizeClasses = {
@@ -27,7 +25,7 @@ export const OilChangeStatusBadge: React.FC<OilChangeStatusBadgeProps> = ({
   };
 
   const tooltipText = showTooltip ? 
-    `Vidange: ${badgeInfo.hoursSinceLastChange}h depuis la dernière (${badgeInfo.status === 'overdue' ? 'EN RETARD' : badgeInfo.status === 'due_soon' ? 'BIENTÔT' : 'OK'})` : 
+    `Vidange: ${badgeInfo.hoursSinceLastChange}h max depuis la dernière (${badgeInfo.status === 'overdue' ? 'EN RETARD' : badgeInfo.status === 'due_soon' ? 'BIENTÔT' : 'OK'})` : 
     undefined;
 
   return (
