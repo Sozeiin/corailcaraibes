@@ -100,9 +100,15 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
       console.log('🔧 Starting intervention completion with data:', data);
       console.log('🔧 Engine components found:', engineComponents);
 
-      // Validate that we have engine updates
-      if (!data.engineUpdates || Object.keys(data.engineUpdates).length === 0) {
-        throw new Error('Aucune mise à jour des heures moteur fournie');
+      // Check user permissions first
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('role, base_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!userProfile || !['direction', 'chef_base'].includes(userProfile.role)) {
+        throw new Error('Vous n\'avez pas les permissions pour finaliser cette intervention. Contactez votre chef de base.');
       }
 
       // Validate engine hours
