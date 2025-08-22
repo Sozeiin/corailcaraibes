@@ -1327,6 +1327,7 @@ export type Database = {
         Row: {
           base_id: string | null
           boat_id: string | null
+          completed_at: string | null
           completed_date: string | null
           component_id: string | null
           created_at: string | null
@@ -1349,6 +1350,7 @@ export type Database = {
         Insert: {
           base_id?: string | null
           boat_id?: string | null
+          completed_at?: string | null
           completed_date?: string | null
           component_id?: string | null
           created_at?: string | null
@@ -1371,6 +1373,7 @@ export type Database = {
         Update: {
           base_id?: string | null
           boat_id?: string | null
+          completed_at?: string | null
           completed_date?: string | null
           component_id?: string | null
           created_at?: string | null
