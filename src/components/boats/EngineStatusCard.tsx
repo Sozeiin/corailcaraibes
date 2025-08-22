@@ -21,7 +21,7 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, clas
   const oilProgress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours);
 
   const getStatusBadgeVariant = (status: string) => {
-    switch (status.toLowerCase()) {
+    switch ((status || '').toLowerCase()) {
       case 'operational':
         return 'default';
       case 'maintenance':
