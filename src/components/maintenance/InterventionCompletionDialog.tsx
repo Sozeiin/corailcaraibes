@@ -142,16 +142,20 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
           .from('boat_components')
           .update(updatePayload)
           .eq('id', componentId)
-          .select('*')
-          .single();
+          .select('*');
 
         if (componentError) {
           console.error('❌ Error updating component:', componentError);
           throw new Error(`Erreur lors de la mise à jour du composant ${component.component_name}: ${componentError.message}`);
         }
 
-        console.log(`✅ Component ${componentId} updated successfully:`, updatedComponent);
-        componentUpdates.push(updatedComponent);
+        if (!updatedComponent || updatedComponent.length === 0) {
+          console.error('❌ No component updated, possibly blocked by RLS policy');
+          throw new Error(`Impossible de mettre à jour le composant ${component.component_name}. Vérifiez vos permissions.`);
+        }
+
+        console.log(`✅ Component ${componentId} updated successfully:`, updatedComponent[0]);
+        componentUpdates.push(updatedComponent[0]);
       }
 
       // Now update intervention status to completed
