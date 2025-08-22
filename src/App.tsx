@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import { Boats } from "./pages/Boats";
 import { BoatDetails } from "./pages/BoatDetails";
+import { BoatSafetyControls } from "./pages/BoatSafetyControls";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
@@ -73,6 +74,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <BoatDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boats/:boatId/safety-controls"
+        element={
+          <ProtectedRoute>
+            <BoatSafetyControls />
           </ProtectedRoute>
         }
       />

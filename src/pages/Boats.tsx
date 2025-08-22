@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Plus, Search, History, Wrench } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, History, Wrench, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -68,15 +68,21 @@ const BoatCard = ({
       </div>
 
       <div className="flex gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
-        
-        
         <Button size="sm" variant="outline" onClick={() => onEdit(boat)}>
           <Edit className="h-4 w-4 mr-2" />
-        
+          Modifier
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => onHistory(boat.id)}>
+          <History className="h-4 w-4 mr-2" />
+          Historique
+        </Button>
+        <Button size="sm" variant="outline" onClick={() => navigate(`/boats/${boat.id}/safety-controls`)}>
+          <Shield className="h-4 w-4 mr-2" />
+          Contrôles
         </Button>
         <Button size="sm" variant="destructive" onClick={() => onDelete(boat.id, boat.name)}>
-          <Trash2 className="h-2 w-2 mr-2" />
-          
+          <Trash2 className="h-4 w-4 mr-2" />
+          Supprimer
         </Button>
       </div>
     </Card>;

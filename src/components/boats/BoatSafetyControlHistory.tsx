@@ -27,7 +27,7 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
         .from('boat_safety_controls')
         .select(`
           *,
-          category:safety_control_categories(*),
+          safety_control_categories(*),
           performed_by_profile:profiles!boat_safety_controls_performed_by_fkey(*),
           validated_by_profile:profiles!boat_safety_controls_validated_by_fkey(*),
           boat_safety_control_items(*)
@@ -168,9 +168,9 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
                       <div className="flex items-center gap-2">
                         <div 
                           className="w-3 h-3 rounded-full" 
-                          style={{ backgroundColor: control.category?.color_code || '#3b82f6' }}
+                          style={{ backgroundColor: control.safety_control_categories?.color_code || '#3b82f6' }}
                         />
-                        <span className="font-medium">{control.category?.name}</span>
+                        <span className="font-medium">{control.safety_control_categories?.name}</span>
                       </div>
                     </TableCell>
                     <TableCell>
