@@ -199,6 +199,7 @@ export const BoatSafetyControlDialog = ({
                     onSelect={(date) => setFormData({ ...formData, control_date: date })}
                     locale={fr}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
@@ -224,6 +225,7 @@ export const BoatSafetyControlDialog = ({
                     onSelect={(date) => setFormData({ ...formData, next_control_date: date })}
                     locale={fr}
                     initialFocus
+                    className="pointer-events-auto"
                   />
                 </PopoverContent>
               </Popover>
