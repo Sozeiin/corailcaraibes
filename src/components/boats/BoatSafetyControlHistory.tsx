@@ -170,7 +170,7 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
                           className="w-3 h-3 rounded-full" 
                           style={{ backgroundColor: control.safety_control_categories?.color_code || '#3b82f6' }}
                         />
-                        <span className="font-medium">{control.safety_control_categories?.name}</span>
+                        <span className="font-medium">{control.safety_control_categories?.name || 'Type non spécifié'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -189,7 +189,7 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
                       {getStatusBadge(control.status)}
                     </TableCell>
                     <TableCell>
-                      {control.performed_by_profile?.name || '-'}
+                      {control.performed_by_profile?.name || 'Non spécifié'}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate" title={control.notes}>
