@@ -3,12 +3,22 @@ import { useParams } from 'react-router-dom';
 import { BoatSafetyControlHistory } from '@/components/boats/BoatSafetyControlHistory';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft, Shield, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { OilChangeStatusBadge } from '@/components/boats/OilChangeStatusBadge';
 
 export const BoatSafetyControls = () => {
   const { boatId } = useParams<{ boatId: string }>();
   const navigate = useNavigate();
+
+  // Fetch boat data for oil change badge
+  const { data: boat } = useOfflineData<any>({
+    table: 'boats',
+    dependencies: [boatId]
+  });
+
+  const currentBoat = boat?.find((b: any) => b.id === boatId);
 
   if (!boatId) {
     return (
@@ -29,9 +39,25 @@ export const BoatSafetyControls = () => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour aux bateaux
         </Button>
-        <div className="flex items-center gap-2">
-          <Shield className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold">Contrôles de Sécurité</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Shield className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Contrôles de Sécurité</h1>
+          </div>
+          {currentBoat && (
+            <div className="flex items-center gap-2 px-3 py-1 bg-muted/50 rounded-lg">
+              <Wrench className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Vidange:</span>
+              <OilChangeStatusBadge 
+                currentEngineHours={currentBoat.current_engine_hours || 0}
+                lastOilChangeHours={currentBoat.last_oil_change_hours || 0}
+                size="sm"
+              />
+              <span className="text-sm text-muted-foreground">
+                {Math.max(0, 250 - ((currentBoat.current_engine_hours || 0) - (currentBoat.last_oil_change_hours || 0)))}h restantes
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

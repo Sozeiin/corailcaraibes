@@ -547,8 +547,11 @@ export type Database = {
         Row: {
           base_id: string | null
           created_at: string | null
+          current_engine_hours: number | null
           documents: string[] | null
           id: string
+          last_engine_hours_update: string | null
+          last_oil_change_hours: number | null
           model: string
           name: string
           next_maintenance: string | null
@@ -560,8 +563,11 @@ export type Database = {
         Insert: {
           base_id?: string | null
           created_at?: string | null
+          current_engine_hours?: number | null
           documents?: string[] | null
           id?: string
+          last_engine_hours_update?: string | null
+          last_oil_change_hours?: number | null
           model: string
           name: string
           next_maintenance?: string | null
@@ -573,8 +579,11 @@ export type Database = {
         Update: {
           base_id?: string | null
           created_at?: string | null
+          current_engine_hours?: number | null
           documents?: string[] | null
           id?: string
+          last_engine_hours_update?: string | null
+          last_oil_change_hours?: number | null
           model?: string
           name?: string
           next_maintenance?: string | null
@@ -1304,8 +1313,11 @@ export type Database = {
           component_id: string | null
           created_at: string | null
           description: string | null
+          engine_hours_end: number | null
+          engine_hours_start: number | null
           id: string
           intervention_type: string | null
+          is_oil_change: boolean | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
@@ -1319,8 +1331,11 @@ export type Database = {
           component_id?: string | null
           created_at?: string | null
           description?: string | null
+          engine_hours_end?: number | null
+          engine_hours_start?: number | null
           id?: string
           intervention_type?: string | null
+          is_oil_change?: boolean | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
@@ -1334,8 +1349,11 @@ export type Database = {
           component_id?: string | null
           created_at?: string | null
           description?: string | null
+          engine_hours_end?: number | null
+          engine_hours_start?: number | null
           id?: string
           intervention_type?: string | null
+          is_oil_change?: boolean | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
@@ -3519,6 +3537,10 @@ export type Database = {
           interval_value: number
           last_date: string
         }
+        Returns: string
+      }
+      calculate_oil_change_status: {
+        Args: { current_hours: number; last_change_hours: number }
         Returns: string
       }
       cleanup_old_logs: {

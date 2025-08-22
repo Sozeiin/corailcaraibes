@@ -8,6 +8,7 @@ import { Layout } from "@/components/Layout";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import { Boats } from "./pages/Boats";
+import { BoatsDashboard } from "./pages/BoatsDashboard";
 import { BoatDetails } from "./pages/BoatDetails";
 import { BoatSafetyControls } from "./pages/BoatSafetyControls";
 import { SafetyControls } from "./pages/SafetyControls";
@@ -59,6 +60,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/boats/dashboard"
+        element={
+          <ProtectedRoute>
+            <BoatsDashboard />
           </ProtectedRoute>
         }
       />

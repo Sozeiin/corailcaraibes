@@ -16,6 +16,10 @@ const menuItems = [{
   roles: ['direction', 'chef_base', 'technicien'],
   subItems: [
     {
+      title: 'Dashboard',
+      url: '/boats/dashboard'
+    },
+    {
       title: 'Flotte',
       url: '/boats'
     },
