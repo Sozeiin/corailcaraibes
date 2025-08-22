@@ -54,12 +54,8 @@ export const BoatsDashboard = () => {
 
   // Calculate KPIs and maintenance alerts
   const { kpis, maintenanceAlerts, filteredBoats } = useMemo(() => {
-    // Calculate oil change status for each boat
-    const boatsWithOilStatus = boats.map(boat => {
-      const currentHours = boat.current_engine_hours || 0;
-      const lastOilChangeHours = boat.last_oil_change_hours || 0;
-      const oilStatus = calculateOilChangeStatus(currentHours, lastOilChangeHours);
-      
+    // Process boats with engine data (oil status now handled in BoatFleetCard)
+    const boatsWithStatus = boats.map(boat => {
       // Get expired safety controls for this boat
       const boatSafetyControls = safetyControls.filter((control: any) => control.boat_id === boat.id);
       const expiredControlsCount = countExpiredControls(boatSafetyControls);
@@ -72,16 +68,14 @@ export const BoatsDashboard = () => {
 
       return {
         ...boat,
-        oilStatus,
         expiredControlsCount,
-        alertsCount: boatAlerts.length,
-        hoursSinceLastOilChange: currentHours - lastOilChangeHours
+        alertsCount: boatAlerts.length
       };
     });
 
     // Calculate KPIs
-    const urgentOilChanges = boatsWithOilStatus.filter(boat => boat.oilStatus === 'overdue').length;
-    const expiredControls = boatsWithOilStatus.reduce((total, boat) => total + boat.expiredControlsCount, 0);
+    const urgentOilChanges = 0; // This will be calculated in BoatFleetCard individually
+    const expiredControls = boatsWithStatus.reduce((total, boat) => total + boat.expiredControlsCount, 0);
     const overdueInterventions = interventions.filter((intervention: any) => 
       intervention.status === 'scheduled' && 
       new Date(intervention.scheduled_date) < new Date()
@@ -97,30 +91,7 @@ export const BoatsDashboard = () => {
     // Generate maintenance alerts
     const maintenanceAlerts: any[] = [];
     
-    boatsWithOilStatus.forEach(boat => {
-      // Oil change alerts
-      if (boat.oilStatus === 'overdue') {
-        maintenanceAlerts.push({
-          id: `oil-${boat.id}`,
-          type: 'oil_change',
-          boatId: boat.id,
-          boatName: boat.name,
-          message: `Vidange en retard depuis ${boat.hoursSinceLastOilChange - 250}h`,
-          urgency: 'critical',
-          hoursSinceLastChange: boat.hoursSinceLastOilChange
-        });
-      } else if (boat.oilStatus === 'due_soon') {
-        maintenanceAlerts.push({
-          id: `oil-${boat.id}`,
-          type: 'oil_change',
-          boatId: boat.id,
-          boatName: boat.name,
-          message: `Vidange bientôt nécessaire (${250 - boat.hoursSinceLastOilChange}h restantes)`,
-          urgency: 'warning',
-          hoursSinceLastChange: boat.hoursSinceLastOilChange
-        });
-      }
-
+    boatsWithStatus.forEach(boat => {
       // Safety control alerts
       if (boat.expiredControlsCount > 0) {
         maintenanceAlerts.push({
@@ -141,7 +112,7 @@ export const BoatsDashboard = () => {
     });
 
     // Filter boats based on search and status
-    const filteredBoats = boatsWithOilStatus.filter(boat => {
+    const filteredBoats = boatsWithStatus.filter(boat => {
       const matchesSearch = boat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            boat.model.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || boat.status === statusFilter;

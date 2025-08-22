@@ -11,8 +11,10 @@ import {
   Wrench, 
   TrendingUp,
   AlertTriangle,
-  CheckCircle
+  CheckCircle,
+  Cog
 } from 'lucide-react';
+import { EngineStatusCard } from './EngineStatusCard';
 
 interface BoatDashboardProps {
   boatId: string;
@@ -29,10 +31,10 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
         .select('id, status, created_at')
         .eq('boat_id', boatId);
 
-      // Get components count
+      // Get components count including engine data
       const { data: components } = await supabase
         .from('boat_components')
-        .select('id, status, next_maintenance_date')
+        .select('id, status, next_maintenance_date, component_type, component_name, current_engine_hours, last_oil_change_hours')
         .eq('boat_id', boatId);
 
       // Get scheduled maintenance
@@ -51,6 +53,12 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
         new Date(m.scheduled_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
       ) || [];
 
+      // Get engine components for display
+      const engineComponents = components?.filter(c => 
+        c.component_type?.toLowerCase().includes('moteur') || 
+        c.component_type?.toLowerCase().includes('engine')
+      ) || [];
+
       return {
         totalInterventions: interventions?.length || 0,
         completedInterventions: interventions?.filter(i => i.status === 'completed').length || 0,
@@ -58,7 +66,8 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
         operationalComponents: components?.filter(c => c.status === 'operational').length || 0,
         componentsNeedingMaintenance: componentsNeedingMaintenance.length,
         upcomingMaintenance: upcomingMaintenance.length,
-        lastInterventionDate: interventions?.[0]?.created_at
+        lastInterventionDate: interventions?.[0]?.created_at,
+        engineComponents
       };
     }
   });
@@ -186,6 +195,25 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Engine Status */}
+      {stats?.engineComponents && stats.engineComponents.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Cog className="h-5 w-5 mr-2" />
+              État des moteurs
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              {stats.engineComponents.map((engine: any) => (
+                <EngineStatusCard key={engine.id} engine={engine} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Actions */}
       {(stats?.componentsNeedingMaintenance || 0) > 0 && (
