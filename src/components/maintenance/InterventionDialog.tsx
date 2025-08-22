@@ -28,9 +28,12 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 import { Intervention, Boat, Base } from '@/types';
 import { InterventionPartsManager, InterventionPart } from './InterventionPartsManager';
 import { useNotifications } from '@/hooks/useNotifications';
+import { Gauge, Wrench } from 'lucide-react';
 
 interface InterventionDialogProps {
   isOpen: boolean;
@@ -47,6 +50,10 @@ interface InterventionFormData {
   scheduledDate: string;
   baseId: string;
   interventionType: string;
+  engine_hours_start?: number;
+  engine_hours_end?: number;
+  is_oil_change?: boolean;
+  notes?: string;
 }
 
 export function InterventionDialog({ isOpen, onClose, intervention }: InterventionDialogProps) {
@@ -167,6 +174,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         scheduledDate: new Date().toISOString().split('T')[0],
         baseId: user?.baseId || '',
         interventionType: 'maintenance',
+        engine_hours_start: undefined,
+        engine_hours_end: undefined,
+        is_oil_change: false,
+        notes: '',
       });
       setInterventionParts([]);
     }
@@ -193,6 +204,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         completed_date: data.status === 'completed' ? new Date().toISOString().split('T')[0] : null,
         base_id: data.baseId || null,
         intervention_type: data.interventionType,
+        engine_hours_start: data.engine_hours_start || null,
+        engine_hours_end: data.engine_hours_end || null,
+        is_oil_change: data.is_oil_change || false,
+        notes: data.notes || null,
       };
 
       let interventionId: string;
@@ -456,6 +471,108 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
                 )}
               />
             </div>
+
+            {/* Engine Hours Section for Maintenance/Repair */}
+            {(form.watch('interventionType') === 'maintenance' || 
+              form.watch('interventionType') === 'repair' || 
+              form.watch('interventionType') === 'preventive') && (
+              <>
+                <Separator />
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="h-4 w-4 text-marine-600" />
+                    <h4 className="font-medium text-sm">Heures moteur (optionnel)</h4>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="engine_hours_start"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Heures début</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0"
+                              step="0.1"
+                              placeholder="Optionnel"
+                              {...field}
+                              value={field.value || ''}
+                              onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="engine_hours_end"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Heures fin</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              min="0"
+                              step="0.1"
+                              placeholder="Optionnel"
+                              {...field}
+                              value={field.value || ''}
+                              onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="is_oil_change"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                        <FormControl>
+                          <Checkbox
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel className="text-sm font-medium">
+                            Vidange effectuée
+                          </FormLabel>
+                          <p className="text-xs text-gray-600">
+                            Cocher si une vidange sera/a été réalisée
+                          </p>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="notes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm">Notes additionnelles</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Notes sur l'intervention, pièces utilisées, observations..."
+                            rows={3}
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </>
+            )}
 
             <InterventionPartsManager
               parts={interventionParts}

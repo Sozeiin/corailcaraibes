@@ -20,7 +20,7 @@ interface BoatFleetCardProps {
     next_maintenance?: string;
   };
   alertsCount?: number;
-  onCreateIntervention?: (boatId: string) => void;
+  onCreateIntervention?: (boatId: string, boatName?: string) => void;
 }
 
 export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({ 
@@ -129,7 +129,7 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             <Button 
               size="sm" 
               className="btn-ocean"
-              onClick={() => onCreateIntervention?.(boat.id)}
+              onClick={() => onCreateIntervention?.(boat.id, `${boat.name} - ${boat.model}`)}
             >
               <Plus className="h-4 w-4 mr-1" />
               Action

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Intervention } from '@/types';
+import { InterventionCompletionDialog } from './InterventionCompletionDialog';
 
 // Type pour les données de l'intervention depuis Supabase
 interface InterventionWithBoats {
@@ -39,6 +40,7 @@ interface InterventionWithBoats {
   boats?: {
     name: string;
     model: string;
+    current_engine_hours: number;
   } | null;
 }
 
@@ -49,6 +51,8 @@ export function TechnicianInterventions() {
   const [completingInterventions, setCompletingInterventions] = useState<Set<string>>(new Set());
   const [selectedIntervention, setSelectedIntervention] = useState<InterventionWithBoats | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [completionIntervention, setCompletionIntervention] = useState<InterventionWithBoats | null>(null);
+  const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
 
   // Récupération de toutes les interventions pertinentes pour le technicien
   const { data: interventions = [], isLoading } = useQuery({
@@ -61,7 +65,7 @@ export function TechnicianInterventions() {
         .from('interventions')
         .select(`
           *,
-          boats(name, model)
+          boats(name, model, current_engine_hours)
         `)
         .or(`technician_id.eq.${user.id},and(base_id.eq.${user.baseId},technician_id.is.null)`)
         .order('scheduled_date', { ascending: true });
@@ -88,44 +92,14 @@ export function TechnicianInterventions() {
   );
 
 
-  const handleCompleteIntervention = async (interventionId: string) => {
-    if (!user) return;
-    
-    setCompletingInterventions(prev => new Set(prev).add(interventionId));
+  const handleCompleteIntervention = (intervention: InterventionWithBoats) => {
+    setCompletionIntervention(intervention);
+    setIsCompletionDialogOpen(true);
+  };
 
-    try {
-      const { error } = await supabase
-        .from('interventions')
-        .update({
-          status: 'completed',
-          completed_date: new Date().toISOString().split('T')[0]
-        })
-        .eq('id', interventionId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Intervention terminée",
-        description: "L'intervention a été marquée comme terminée.",
-      });
-
-      // Actualiser les données
-      queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-interventions'] });
-    } catch (error) {
-      console.error('Error completing intervention:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de terminer l'intervention.",
-        variant: "destructive"
-      });
-    } finally {
-      setCompletingInterventions(prev => {
-        const next = new Set(prev);
-        next.delete(interventionId);
-        return next;
-      });
-    }
+  const handleCloseCompletion = () => {
+    setIsCompletionDialogOpen(false);
+    setCompletionIntervention(null);
   };
 
   const handleRowClick = (intervention: InterventionWithBoats) => {
@@ -215,23 +189,17 @@ export function TechnicianInterventions() {
                       
                       <div onClick={(e) => e.stopPropagation()}>
                         {intervention.status === 'in_progress' || intervention.status === 'scheduled' ? (
-                          <div className="flex items-center gap-1">
-                            <Checkbox
-                              id={`mobile-complete-${intervention.id}`}
-                              checked={false}
-                              onCheckedChange={() => handleCompleteIntervention(intervention.id)}
-                              disabled={completingInterventions.has(intervention.id)}
-                            />
-                            <label 
-                              htmlFor={`mobile-complete-${intervention.id}`}
-                              className="text-xs font-medium cursor-pointer"
-                            >
-                              OK
-                            </label>
-                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleCompleteIntervention(intervention)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            Terminer
+                          </Button>
                         ) : (
                           <span className="text-xs text-gray-500">
-                            {intervention.status === 'completed' ? 'OK' : '-'}
+                            {intervention.status === 'completed' ? 'Terminée' : '-'}
                           </span>
                         )}
                       </div>
@@ -292,23 +260,17 @@ export function TechnicianInterventions() {
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           {intervention.status === 'in_progress' || intervention.status === 'scheduled' ? (
-                            <div className="flex items-center gap-1">
-                              <Checkbox
-                                id={`complete-${intervention.id}`}
-                                checked={false}
-                                onCheckedChange={() => handleCompleteIntervention(intervention.id)}
-                                disabled={completingInterventions.has(intervention.id)}
-                              />
-                              <label 
-                                htmlFor={`complete-${intervention.id}`}
-                                className="text-xs font-medium cursor-pointer"
-                              >
-                                OK
-                              </label>
-                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleCompleteIntervention(intervention)}
+                              className="h-7 px-3 text-xs"
+                            >
+                              Terminer
+                            </Button>
                           ) : (
                             <span className="text-xs text-gray-500">
-                              {intervention.status === 'completed' ? 'OK' : '-'}
+                              {intervention.status === 'completed' ? 'Terminée' : '-'}
                             </span>
                           )}
                         </TableCell>
@@ -495,10 +457,9 @@ export function TechnicianInterventions() {
                 {(selectedIntervention.status === 'in_progress' || selectedIntervention.status === 'scheduled') && (
                   <Button
                     onClick={() => {
-                      handleCompleteIntervention(selectedIntervention.id);
+                      handleCompleteIntervention(selectedIntervention);
                       handleCloseDetail();
                     }}
-                    disabled={completingInterventions.has(selectedIntervention.id)}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
@@ -510,6 +471,15 @@ export function TechnicianInterventions() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de finalisation d'intervention */}
+      {completionIntervention && (
+        <InterventionCompletionDialog
+          isOpen={isCompletionDialogOpen}
+          onClose={handleCloseCompletion}
+          intervention={completionIntervention}
+        />
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { FleetKPIGrid } from '@/components/boats/FleetKPIGrid';
 import { BoatFleetCard } from '@/components/boats/BoatFleetCard';
 import { MaintenanceAlertsPanel } from '@/components/boats/MaintenanceAlertsPanel';
+import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -17,6 +18,11 @@ export const BoatsDashboard = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
+  const [selectedBoatForIntervention, setSelectedBoatForIntervention] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
 
   // Fetch boats data
   const { data: boats = [] } = useOfflineData<any>({
@@ -145,9 +151,14 @@ export const BoatsDashboard = () => {
     return { kpis, maintenanceAlerts, filteredBoats };
   }, [boats, safetyControls, interventions, alerts, searchTerm, statusFilter]);
 
-  const handleCreateIntervention = (boatId: string) => {
-    // TODO: Open intervention creation dialog
-    console.log('Create intervention for boat:', boatId);
+  const handleCreateIntervention = (boatId: string, boatName?: string) => {
+    setSelectedBoatForIntervention({ id: boatId, name: boatName || '' });
+    setIsInterventionDialogOpen(true);
+  };
+
+  const handleCloseInterventionDialog = () => {
+    setIsInterventionDialogOpen(false);
+    setSelectedBoatForIntervention(null);
   };
 
   return (
@@ -228,6 +239,23 @@ export const BoatsDashboard = () => {
           <MaintenanceAlertsPanel alerts={maintenanceAlerts} />
         </div>
       </div>
+
+      {/* Intervention Dialog */}
+      <InterventionDialog
+        isOpen={isInterventionDialogOpen}
+        onClose={handleCloseInterventionDialog}
+        intervention={selectedBoatForIntervention ? {
+          id: '',
+          title: `Maintenance ${selectedBoatForIntervention.name}`,
+          description: '',
+          boatId: selectedBoatForIntervention.id,
+          technicianId: '',
+          status: 'scheduled',
+          scheduledDate: new Date().toISOString().split('T')[0],
+          baseId: user?.baseId || '',
+          interventionType: 'maintenance'
+        } as any : null}
+      />
     </div>
   );
 };
