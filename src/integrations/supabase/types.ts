@@ -1341,6 +1341,7 @@ export type Database = {
           id: string
           intervention_type: string | null
           is_oil_change: boolean | null
+          notes: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
@@ -1364,6 +1365,7 @@ export type Database = {
           id?: string
           intervention_type?: string | null
           is_oil_change?: boolean | null
+          notes?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
@@ -1387,6 +1389,7 @@ export type Database = {
           id?: string
           intervention_type?: string | null
           is_oil_change?: boolean | null
+          notes?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
