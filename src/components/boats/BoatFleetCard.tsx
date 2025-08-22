@@ -158,7 +158,9 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
               variant="outline" 
               size="sm" 
               className="flex-1"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log(`🔍 Navigating to boat details: /boats/${boat.id}`);
                 navigate(`/boats/${boat.id}`);
               }}
@@ -168,7 +170,9 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             <Button 
               size="sm" 
               className="btn-ocean"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 console.log(`➕ Creating new intervention for boat ${boat.id}`);
                 onCreateIntervention?.(boat.id, `${boat.name} - ${boat.model}`);
               }}
