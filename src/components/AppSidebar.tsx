@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -14,6 +14,11 @@ const menuItems = [{
   title: 'Bateaux',
   url: '/boats',
   icon: Ship,
+  roles: ['direction', 'chef_base', 'technicien']
+}, {
+  title: 'Contrôles de Sécurité',
+  url: '/safety-controls',
+  icon: Shield,
   roles: ['direction', 'chef_base', 'technicien']
 }, {
   title: 'Fournisseurs',

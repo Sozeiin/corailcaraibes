@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import { Boats } from "./pages/Boats";
 import { BoatDetails } from "./pages/BoatDetails";
 import { BoatSafetyControls } from "./pages/BoatSafetyControls";
+import { SafetyControls } from "./pages/SafetyControls";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
@@ -74,6 +75,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <BoatDetails />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/safety-controls"
+        element={
+          <ProtectedRoute>
+            <SafetyControls />
           </ProtectedRoute>
         }
       />
