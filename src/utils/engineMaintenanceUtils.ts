@@ -64,10 +64,13 @@ export const getOilChangeStatusBadge = (currentHours: number, lastChangeHours: n
  * Get the worst oil change status across all engine components
  */
 export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
+  console.log(`🔧 [engineUtils] Analyzing ${engines?.length || 0} engines:`, engines);
+  
   if (!engines || engines.length === 0) {
+    console.log(`⚪ [engineUtils] No engines found, returning default status`);
     return {
       status: 'ok',
-      color: 'text-secondary-foreground',
+      color: 'text-green-500',
       hoursSinceLastChange: 0,
       isOverdue: false,
       isDueSoon: false,
@@ -76,11 +79,23 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
   }
 
   let worstStatus = 'ok';
-  let worstColor = 'text-secondary-foreground';
+  let worstColor = 'text-green-500';
   let maxHours = 0;
 
-  engines.forEach(engine => {
-    const status = getOilChangeStatusBadge(engine.current_engine_hours, engine.last_oil_change_hours);
+  engines.forEach((engine, index) => {
+    const currentHours = engine.current_engine_hours || 0;
+    const lastOilChangeHours = engine.last_oil_change_hours || 0;
+    const status = getOilChangeStatusBadge(currentHours, lastOilChangeHours);
+    
+    console.log(`🛢️ [engineUtils] Engine ${index + 1} (${engine.component_name}):`, {
+      currentHours,
+      lastOilChangeHours,
+      hoursSinceChange: status.hoursSinceLastChange,
+      status: status.status,
+      isOverdue: status.isOverdue,
+      isDueSoon: status.isDueSoon
+    });
+    
     maxHours = Math.max(maxHours, status.hoursSinceLastChange);
     
     if (status.isOverdue && worstStatus !== 'overdue') {
@@ -92,7 +107,7 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
     }
   });
 
-  return {
+  const result = {
     status: worstStatus,
     color: worstColor,
     hoursSinceLastChange: maxHours,
@@ -100,6 +115,10 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
     isDueSoon: worstStatus === 'due_soon',
     isOk: worstStatus === 'ok'
   };
+
+  console.log(`🎯 [engineUtils] Worst oil status result:`, result);
+  
+  return result;
 };
 
 /**

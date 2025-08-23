@@ -64,6 +64,15 @@ export const BoatsDashboard = () => {
 
   // Calculate KPIs and maintenance alerts
   const { kpis, maintenanceAlerts, filteredBoats } = useMemo(() => {
+    // Debug logs pour diagnostic
+    console.log(`🏗️ [Dashboard] Processing data for user role: ${user?.role}, baseId: ${user?.baseId}`);
+    console.log(`📊 [Dashboard] Data counts:`, {
+      boats: boats.length,
+      safetyControls: safetyControls.length,
+      alerts: alerts.length,
+      boatComponents: boatComponents.length
+    });
+
     // Process boats with engine data using boat_components (same logic as BoatFleetCard)
     const boatsWithStatus = boats.map(boat => {
       // Get expired safety controls for this boat
@@ -76,14 +85,39 @@ export const BoatsDashboard = () => {
         (alert.boat_id === boat.id || alert.message.includes(boat.name))
       );
 
-      // Get engine components for this boat
-      const engines = boatComponents.filter((comp: any) => 
-        comp.boat_id === boat.id && 
-        comp.component_type?.toLowerCase().includes('moteur')
-      );
+      // Get engine components for this boat with improved filtering
+      const engines = boatComponents.filter((comp: any) => {
+        const isBoatComponent = comp.boat_id === boat.id;
+        const isEngineType = comp.component_type?.toLowerCase().includes('moteur') ||
+                           comp.component_type?.toLowerCase().includes('engine') ||
+                           comp.component_type?.toLowerCase().includes('motor') ||
+                           comp.component_name?.toLowerCase().includes('moteur') ||
+                           comp.component_name?.toLowerCase().includes('engine') ||
+                           comp.manufacturer?.toLowerCase().includes('motor');
+        
+        return isBoatComponent && isEngineType;
+      });
+
+      // Debug log pour chaque bateau
+      console.log(`🚤 [Dashboard] Boat ${boat.name} (${boat.id}):`, {
+        safetyControls: boatSafetyControls.length,
+        expiredControls: expiredControlsCount,
+        alerts: boatAlerts.length,
+        engineComponents: engines.length,
+        engineDetails: engines.map(e => ({
+          id: e.id,
+          name: e.component_name,
+          type: e.component_type,
+          currentHours: e.current_engine_hours,
+          lastOilChange: e.last_oil_change_hours
+        }))
+      });
 
       // Calculate oil change status using same logic as BoatFleetCard
       const oilStatus = getWorstOilChangeStatus(engines);
+
+      // Debug oil status
+      console.log(`🛢️ [Dashboard] Oil status for ${boat.name}:`, oilStatus);
 
       return {
         ...boat,
@@ -113,25 +147,37 @@ export const BoatsDashboard = () => {
       overdueInterventions
     };
 
+    // Debug KPIs
+    console.log(`📈 [Dashboard] Calculated KPIs:`, kpis);
+    console.log(`🔴 [Dashboard] Boats with urgent oil changes:`, 
+      boatsWithStatus.filter(boat => boat.oilStatus.isOverdue).map(b => ({
+        name: b.name,
+        hoursSince: b.oilStatus.hoursSinceLastChange,
+        isOverdue: b.oilStatus.isOverdue
+      }))
+    );
+
     // Generate maintenance alerts
     const maintenanceAlerts: any[] = [];
     
     boatsWithStatus.forEach(boat => {
       // Safety control alerts
       if (boat.expiredControlsCount > 0) {
-        maintenanceAlerts.push({
+        const safetyAlert = {
           id: `safety-${boat.id}`,
           type: 'safety_control',
           boatId: boat.id,
           boatName: boat.name,
           message: `${boat.expiredControlsCount} contrôle(s) de sécurité expiré(s)`,
           urgency: 'critical'
-        });
+        };
+        maintenanceAlerts.push(safetyAlert);
+        console.log(`🚨 [Dashboard] Added safety alert for ${boat.name}:`, safetyAlert);
       }
 
       // Oil change alerts using boat_components data
       if (boat.oilStatus.isOverdue) {
-        maintenanceAlerts.push({
+        const oilAlert = {
           id: `oil-${boat.id}`,
           type: 'oil_change',
           boatId: boat.id,
@@ -139,9 +185,13 @@ export const BoatsDashboard = () => {
           message: `Vidange urgente nécessaire (${boat.oilStatus.hoursSinceLastChange}h)`,
           urgency: 'critical',
           hoursSinceLastChange: boat.oilStatus.hoursSinceLastChange
-        });
+        };
+        maintenanceAlerts.push(oilAlert);
+        console.log(`🛢️ [Dashboard] Added oil change alert for ${boat.name}:`, oilAlert);
       }
     });
+
+    console.log(`⚠️ [Dashboard] Total maintenance alerts generated: ${maintenanceAlerts.length}`);
 
     // Sort alerts by urgency
     maintenanceAlerts.sort((a, b) => {
