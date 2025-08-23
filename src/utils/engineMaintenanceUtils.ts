@@ -37,9 +37,9 @@ export const calculateOilChangeStatus = (currentHours: number, lastChangeHours: 
  * Get oil change status color based on hours since last change
  */
 export const getOilChangeStatusColor = (hoursSinceLastChange: number): string => {
-  if (hoursSinceLastChange >= 250) return 'text-destructive'; // Red - overdue
-  if (hoursSinceLastChange >= 200) return 'text-accent-foreground'; // Orange - due soon
-  return 'text-secondary-foreground'; // Green - OK
+  if (hoursSinceLastChange >= 250) return 'text-red-500'; // Red - overdue
+  if (hoursSinceLastChange >= 200) return 'text-orange-500'; // Orange - due soon
+  return 'text-green-500'; // Green - OK
 };
 
 /**

@@ -40,15 +40,15 @@ export const FleetBadgesLegend: React.FC = () => {
             </h4>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-secondary-foreground" />
+                <Wrench className="h-4 w-4 text-green-500" />
                 <span>Vidange OK (&lt; 200h)</span>
               </div>
               <div className="flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-accent-foreground" />
+                <Wrench className="h-4 w-4 text-orange-500" />
                 <span>Vidange bientôt (200-249h)</span>
               </div>
               <div className="flex items-center gap-2">
-                <Wrench className="h-4 w-4 text-destructive" />
+                <Wrench className="h-4 w-4 text-red-500" />
                 <span>Vidange urgente (≥ 250h)</span>
               </div>
             </div>
