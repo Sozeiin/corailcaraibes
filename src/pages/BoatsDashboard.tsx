@@ -75,8 +75,19 @@ export const BoatsDashboard = () => {
       };
     });
 
+    // Calculate oil change urgencies across all boats
+    let urgentOilChanges = 0;
+    boats.forEach(boat => {
+      const currentHours = boat.current_engine_hours || 0;
+      const lastChangeHours = boat.last_oil_change_hours || 0;
+      const hoursSinceLastChange = currentHours - lastChangeHours;
+      
+      if (hoursSinceLastChange >= 250) {
+        urgentOilChanges++;
+      }
+    });
+
     // Calculate KPIs
-    const urgentOilChanges = 0; // This will be calculated in BoatFleetCard individually
     const expiredControls = boatsWithStatus.reduce((total, boat) => total + boat.expiredControlsCount, 0);
     const overdueInterventions = interventions.filter((intervention: any) => 
       intervention.status === 'scheduled' && 
@@ -103,6 +114,23 @@ export const BoatsDashboard = () => {
           boatName: boat.name,
           message: `${boat.expiredControlsCount} contrôle(s) de sécurité expiré(s)`,
           urgency: 'critical'
+        });
+      }
+
+      // Oil change alerts
+      const currentHours = boat.current_engine_hours || 0;
+      const lastChangeHours = boat.last_oil_change_hours || 0;
+      const hoursSinceLastChange = currentHours - lastChangeHours;
+      
+      if (hoursSinceLastChange >= 250) {
+        maintenanceAlerts.push({
+          id: `oil-${boat.id}`,
+          type: 'oil_change',
+          boatId: boat.id,
+          boatName: boat.name,
+          message: `Vidange urgente nécessaire (${hoursSinceLastChange}h)`,
+          urgency: 'critical',
+          hoursSinceLastChange
         });
       }
     });
