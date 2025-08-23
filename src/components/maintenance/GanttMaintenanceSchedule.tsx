@@ -1003,6 +1003,9 @@ export function GanttMaintenanceSchedule() {
             setSelectedTask(null);
           }}
           technicians={technicians}
+          onTaskCreated={() =>
+            queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] })
+          }
         />
       )}
 
