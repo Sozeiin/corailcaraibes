@@ -1331,6 +1331,7 @@ export type Database = {
           completed_date: string | null
           component_id: string | null
           created_at: string | null
+          created_by: string | null
           description: string | null
           engine_hours_end: number | null
           engine_hours_end_port: number | null
@@ -1342,6 +1343,7 @@ export type Database = {
           intervention_type: string | null
           is_oil_change: boolean | null
           notes: string | null
+          priority: string | null
           scheduled_date: string | null
           scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
@@ -1355,6 +1357,7 @@ export type Database = {
           completed_date?: string | null
           component_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           engine_hours_end?: number | null
           engine_hours_end_port?: number | null
@@ -1366,6 +1369,7 @@ export type Database = {
           intervention_type?: string | null
           is_oil_change?: boolean | null
           notes?: string | null
+          priority?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
@@ -1379,6 +1383,7 @@ export type Database = {
           completed_date?: string | null
           component_id?: string | null
           created_at?: string | null
+          created_by?: string | null
           description?: string | null
           engine_hours_end?: number | null
           engine_hours_end_port?: number | null
@@ -1390,6 +1395,7 @@ export type Database = {
           intervention_type?: string | null
           is_oil_change?: boolean | null
           notes?: string | null
+          priority?: string | null
           scheduled_date?: string | null
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
