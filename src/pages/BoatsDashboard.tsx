@@ -147,21 +147,11 @@ export const BoatsDashboard = () => {
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/boats')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Retour à la flotte
-          </Button>
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard Flotte</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Vue d'ensemble de la maintenance et des alertes
-            </p>
-          </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard Flotte</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
+            Vue d'ensemble de la maintenance et des alertes
+          </p>
         </div>
       </div>
 

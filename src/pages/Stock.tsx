@@ -171,6 +171,7 @@ export default function Stock() {
         });
         setIsDeleteDialogOpen(false);
         setDeleteItem(null);
+        refetchStock(); // Force refresh after deletion
       } catch (error) {
         console.error('Erreur lors de la suppression:', error);
         toast({
@@ -218,21 +219,6 @@ export default function Stock() {
         )}
       </div>
 
-      {lowStockItems.length > 0 && (
-        <Alert className="border-orange-200 bg-orange-50">
-          <AlertTriangle className="h-4 w-4 text-orange-600" />
-          <AlertDescription className="text-orange-800">
-            <strong>{lowStockItems.length}</strong> article{lowStockItems.length > 1 ? 's' : ''} en rupture ou stock faible.
-            <Button
-              variant="link"
-              className="h-auto p-0 ml-2 text-orange-600 underline"
-              onClick={() => setShowLowStock(true)}
-            >
-              Voir les articles
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
 
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-3 sm:p-6 border-b">

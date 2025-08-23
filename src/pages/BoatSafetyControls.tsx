@@ -46,10 +46,10 @@ export const BoatSafetyControls = () => {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => navigate('/boats')}
+          onClick={() => navigate('/safety-controls')}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour aux bateaux
+          Retour aux contrôles
         </Button>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">

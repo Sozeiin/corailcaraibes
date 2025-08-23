@@ -106,7 +106,11 @@ export function InterventionCards({
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
-                <span>Technicien</span>
+                <span>
+                  {intervention.technician?.name || 
+                   intervention.assignedTo?.name || 
+                   (intervention.technicianId ? 'Technicien assigné' : 'Non assigné')}
+                </span>
               </div>
 
               <div className="flex items-center gap-2 text-sm text-muted-foreground">

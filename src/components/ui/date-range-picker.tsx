@@ -80,7 +80,21 @@ export function DatePickerWithRange({ date, onDateChange, placeholder = "Sélect
               size="sm"
               onClick={() => handlePresetClick(365)}
             >
-              Cette année
+              1 an
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePresetClick(365 * 2)}
+            >
+              2 ans
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handlePresetClick(365 * 5)}
+            >
+              5 ans
             </Button>
           </div>
         </div>
