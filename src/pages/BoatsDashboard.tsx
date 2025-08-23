@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { FleetKPIGrid } from '@/components/boats/FleetKPIGrid';
 import { BoatFleetCard } from '@/components/boats/BoatFleetCard';
 import { MaintenanceAlertsPanel } from '@/components/boats/MaintenanceAlertsPanel';
+import { FleetBadgesLegend } from '@/components/boats/FleetBadgesLegend';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -192,6 +193,9 @@ export const BoatsDashboard = () => {
 
       {/* KPIs Grid */}
       <FleetKPIGrid {...kpis} />
+
+      {/* Badges Legend */}
+      <FleetBadgesLegend />
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
