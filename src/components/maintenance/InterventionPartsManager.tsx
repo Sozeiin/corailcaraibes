@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StockItemAutocomplete } from '@/components/stock/StockItemAutocomplete';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,8 +84,8 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       stockItemId: stockItem.id,
       partName: stockItem.name,
       quantity: 1,
-      unitCost: stockItem.unit_price || 0,
-      totalCost: stockItem.unit_price || 0,
+      unitCost: (stockItem as any).unit_price || 0,
+      totalCost: (stockItem as any).unit_price || 0,
       availableQuantity: stockItem.quantity,
       notes: ''
     };
@@ -136,24 +137,28 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         {!disabled && (
           <div className="flex gap-2">
             <div className="flex-1">
-              <Select value={selectedStockItem} onValueChange={setSelectedStockItem}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Ajouter une pièce du stock" />
-                </SelectTrigger>
-                <SelectContent>
-                  {stockItems
-                    .filter(item => !parts.some(part => part.stockItemId === item.id))
-                    .map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name} - {(item.unit_price || 0).toFixed(2)}€ (Stock: {item.quantity} {item.unit})
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <StockItemAutocomplete
+                stockItems={stockItems.filter(item => !parts.some(part => part.stockItemId === item.id))}
+                value=""
+                onChange={() => {}}
+                onSelect={(item) => {
+                  if (!item) return;
+                  
+                  const newPart: InterventionPart = {
+                    stockItemId: item.id,
+                    partName: item.name,
+                    quantity: 1,
+                    unitCost: (item as any).unit_price || 0,
+                    totalCost: (item as any).unit_price || 0,
+                    availableQuantity: item.quantity,
+                    notes: ''
+                  };
+
+                  onPartsChange([...parts, newPart]);
+                }}
+                placeholder="Rechercher une pièce dans le stock..."
+              />
             </div>
-            <Button onClick={addStockItem} disabled={!selectedStockItem}>
-              <Plus className="h-4 w-4" />
-            </Button>
             <Button variant="outline" onClick={addCustomPart}>
               Pièce personnalisée
             </Button>
