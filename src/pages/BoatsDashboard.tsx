@@ -19,6 +19,15 @@ export const BoatsDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Debug user context
+  console.log('👤 [Dashboard] Current user context:', {
+    userId: user?.id,
+    role: user?.role,
+    baseId: user?.baseId,
+    name: user?.name
+  });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
@@ -28,38 +37,47 @@ export const BoatsDashboard = () => {
   } | null>(null);
 
   // Fetch boats data
-  const { data: boats = [] } = useOfflineData<any>({
+  const { data: boats = [], loading: boatsLoading, error: boatsError } = useOfflineData<any>({
     table: 'boats',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch safety controls
-  const { data: safetyControls = [] } = useOfflineData<any>({
+  const { data: safetyControls = [], loading: safetyLoading, error: safetyError } = useOfflineData<any>({
     table: 'boat_safety_controls',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch interventions
-  const { data: interventions = [] } = useOfflineData<any>({
+  const { data: interventions = [], loading: interventionsLoading, error: interventionsError } = useOfflineData<any>({
     table: 'interventions',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch alerts
-  const { data: alerts = [] } = useOfflineData<any>({
+  const { data: alerts = [], loading: alertsLoading, error: alertsError } = useOfflineData<any>({
     table: 'alerts',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch boat components for engine data
-  const { data: boatComponents = [] } = useOfflineData<any>({
+  const { data: boatComponents = [], loading: componentsLoading, error: componentsError } = useOfflineData<any>({
     table: 'boat_components',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
+  });
+
+  // Debug data loading states
+  console.log('📡 [Dashboard] Data loading states:', {
+    boats: { loading: boatsLoading, count: boats.length, error: boatsError },
+    safetyControls: { loading: safetyLoading, count: safetyControls.length, error: safetyError },
+    interventions: { loading: interventionsLoading, count: interventions.length, error: interventionsError },
+    alerts: { loading: alertsLoading, count: alerts.length, error: alertsError },
+    components: { loading: componentsLoading, count: boatComponents.length, error: componentsError }
   });
 
   // Calculate KPIs and maintenance alerts
