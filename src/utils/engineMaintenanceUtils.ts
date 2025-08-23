@@ -46,18 +46,53 @@ export const getOilChangeStatusColor = (hoursSinceLastChange: number): string =>
  * Get oil change status badge info for engine components
  */
 export const getOilChangeStatusBadge = (currentHours: number, lastChangeHours: number) => {
+  console.log('🔧 getOilChangeStatusBadge called with:', { currentHours, lastChangeHours });
+  
+  // Si les données sont manquantes ou incohérentes
+  if (currentHours <= 0 && lastChangeHours <= 0) {
+    return {
+      status: 'no_data',
+      color: 'text-gray-400',
+      hoursSinceLastChange: 0,
+      isOverdue: false,
+      isDueSoon: false,
+      isOk: false,
+      needsAttention: false,
+      message: 'Données manquantes'
+    };
+  }
+  
+  // Si on a des heures moteur mais pas d'heures de dernière vidange
+  if (currentHours > 0 && lastChangeHours <= 0) {
+    return {
+      status: 'overdue',
+      color: 'text-red-500',
+      hoursSinceLastChange: currentHours,
+      isOverdue: true,
+      isDueSoon: false,
+      isOk: false,
+      needsAttention: true,
+      message: 'Vidange jamais effectuée'
+    };
+  }
+  
   const hoursSinceLastChange = currentHours - lastChangeHours;
   const status = calculateOilChangeStatus(currentHours, lastChangeHours);
   const color = getOilChangeStatusColor(hoursSinceLastChange);
   
-  return {
+  const result = {
     status,
     color,
     hoursSinceLastChange,
     isOverdue: hoursSinceLastChange >= 250,
     isDueSoon: hoursSinceLastChange >= 200 && hoursSinceLastChange < 250,
-    isOk: hoursSinceLastChange < 200
+    isOk: hoursSinceLastChange < 200,
+    needsAttention: hoursSinceLastChange >= 200,
+    message: hoursSinceLastChange >= 250 ? 'En retard' : hoursSinceLastChange >= 200 ? 'Bientôt' : 'Correct'
   };
+  
+  console.log('🔧 getOilChangeStatusBadge result:', result);
+  return result;
 };
 
 /**
@@ -74,13 +109,17 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
       hoursSinceLastChange: 0,
       isOverdue: false,
       isDueSoon: false,
-      isOk: true
+      isOk: true,
+      needsAttention: false,
+      message: 'Aucun moteur'
     };
   }
 
   let worstStatus = 'ok';
   let worstColor = 'text-green-500';
   let maxHours = 0;
+  let needsAttention = false;
+  let worstMessage = 'Correct';
 
   engines.forEach((engine, index) => {
     const currentHours = engine.current_engine_hours || 0;
@@ -93,17 +132,30 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
       hoursSinceChange: status.hoursSinceLastChange,
       status: status.status,
       isOverdue: status.isOverdue,
-      isDueSoon: status.isDueSoon
+      isDueSoon: status.isDueSoon,
+      needsAttention: status.needsAttention
     });
     
     maxHours = Math.max(maxHours, status.hoursSinceLastChange);
     
-    if (status.isOverdue && worstStatus !== 'overdue') {
+    // Mettre à jour si ce badge nécessite une attention
+    if (status.needsAttention) {
+      needsAttention = true;
+    }
+    
+    // Priorité: overdue > due_soon > no_data > ok
+    if (status.isOverdue || (status.status === 'overdue' && worstStatus !== 'overdue')) {
       worstStatus = 'overdue';
       worstColor = status.color;
-    } else if (status.isDueSoon && worstStatus === 'ok') {
+      worstMessage = status.message;
+    } else if (status.isDueSoon && worstStatus !== 'overdue') {
       worstStatus = 'due_soon';
       worstColor = status.color;
+      worstMessage = status.message;
+    } else if (status.status === 'no_data' && worstStatus === 'ok') {
+      worstStatus = 'no_data';
+      worstColor = status.color;
+      worstMessage = status.message;
     }
   });
 
@@ -113,7 +165,9 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
     hoursSinceLastChange: maxHours,
     isOverdue: worstStatus === 'overdue',
     isDueSoon: worstStatus === 'due_soon',
-    isOk: worstStatus === 'ok'
+    isOk: worstStatus === 'ok',
+    needsAttention,
+    message: worstMessage
   };
 
   console.log(`🎯 [engineUtils] Worst oil status result:`, result);
