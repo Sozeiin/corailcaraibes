@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { calculateOilChangeStatus } from '@/utils/engineMaintenanceUtils';
+import { calculateOilChangeStatus, getWorstOilChangeStatus } from '@/utils/engineMaintenanceUtils';
 import { countExpiredControls } from '@/utils/safetyControlUtils';
 
 export const BoatsDashboard = () => {
@@ -54,9 +54,16 @@ export const BoatsDashboard = () => {
     dependencies: [user?.id, user?.role]
   });
 
+  // Fetch boat components for engine data
+  const { data: boatComponents = [] } = useOfflineData<any>({
+    table: 'boat_components',
+    baseId: user?.role !== 'direction' ? user?.baseId : undefined,
+    dependencies: [user?.id, user?.role]
+  });
+
   // Calculate KPIs and maintenance alerts
   const { kpis, maintenanceAlerts, filteredBoats } = useMemo(() => {
-    // Process boats with engine data (oil status now handled in BoatFleetCard)
+    // Process boats with engine data using boat_components (same logic as BoatFleetCard)
     const boatsWithStatus = boats.map(boat => {
       // Get expired safety controls for this boat
       const boatSafetyControls = safetyControls.filter((control: any) => control.boat_id === boat.id);
@@ -68,24 +75,28 @@ export const BoatsDashboard = () => {
         (alert.boat_id === boat.id || alert.message.includes(boat.name))
       );
 
+      // Get engine components for this boat
+      const engines = boatComponents.filter((comp: any) => 
+        comp.boat_id === boat.id && 
+        comp.component_type?.toLowerCase().includes('moteur')
+      );
+
+      // Calculate oil change status using same logic as BoatFleetCard
+      const oilStatus = getWorstOilChangeStatus(engines);
+
       return {
         ...boat,
         expiredControlsCount,
-        alertsCount: boatAlerts.length
+        alertsCount: boatAlerts.length,
+        engines,
+        oilStatus
       };
     });
 
-    // Calculate oil change urgencies across all boats
-    let urgentOilChanges = 0;
-    boats.forEach(boat => {
-      const currentHours = boat.current_engine_hours || 0;
-      const lastChangeHours = boat.last_oil_change_hours || 0;
-      const hoursSinceLastChange = currentHours - lastChangeHours;
-      
-      if (hoursSinceLastChange >= 250) {
-        urgentOilChanges++;
-      }
-    });
+    // Calculate oil change urgencies using boat_components data
+    const urgentOilChanges = boatsWithStatus.filter(boat => 
+      boat.oilStatus.isOverdue
+    ).length;
 
     // Calculate KPIs
     const expiredControls = boatsWithStatus.reduce((total, boat) => total + boat.expiredControlsCount, 0);
@@ -117,20 +128,16 @@ export const BoatsDashboard = () => {
         });
       }
 
-      // Oil change alerts
-      const currentHours = boat.current_engine_hours || 0;
-      const lastChangeHours = boat.last_oil_change_hours || 0;
-      const hoursSinceLastChange = currentHours - lastChangeHours;
-      
-      if (hoursSinceLastChange >= 250) {
+      // Oil change alerts using boat_components data
+      if (boat.oilStatus.isOverdue) {
         maintenanceAlerts.push({
           id: `oil-${boat.id}`,
           type: 'oil_change',
           boatId: boat.id,
           boatName: boat.name,
-          message: `Vidange urgente nécessaire (${hoursSinceLastChange}h)`,
+          message: `Vidange urgente nécessaire (${boat.oilStatus.hoursSinceLastChange}h)`,
           urgency: 'critical',
-          hoursSinceLastChange
+          hoursSinceLastChange: boat.oilStatus.hoursSinceLastChange
         });
       }
     });
@@ -150,7 +157,7 @@ export const BoatsDashboard = () => {
     });
 
     return { kpis, maintenanceAlerts, filteredBoats };
-  }, [boats, safetyControls, interventions, alerts, searchTerm, statusFilter]);
+  }, [boats, safetyControls, interventions, alerts, boatComponents, searchTerm, statusFilter]);
 
   const handleCreateIntervention = (boatId: string, boatName?: string) => {
     setSelectedBoatForIntervention({ id: boatId, name: boatName || '' });
