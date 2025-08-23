@@ -14,6 +14,7 @@ import { ArrowLeft, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { calculateOilChangeStatus, getWorstOilChangeStatus } from '@/utils/engineMaintenanceUtils';
 import { countExpiredControls } from '@/utils/safetyControlUtils';
+import { useBoatComponents } from '@/hooks/useBoatComponents';
 
 export const BoatsDashboard = () => {
   const { user } = useAuth();
@@ -65,11 +66,9 @@ export const BoatsDashboard = () => {
   });
 
   // Fetch boat components for engine data
-  const { data: boatComponents = [], loading: componentsLoading, error: componentsError } = useOfflineData<any>({
-    table: 'boat_components',
-    baseId: user?.role !== 'direction' ? user?.baseId : undefined,
-    dependencies: [user?.id, user?.role]
-  });
+  const { data: boatComponents = [], isLoading: componentsLoading, error: componentsError } = useBoatComponents(
+    user?.role !== 'direction' ? user?.baseId : undefined
+  );
 
   // Debug data loading states
   console.log('📡 [Dashboard] Data loading states:', {
@@ -300,6 +299,7 @@ export const BoatsDashboard = () => {
               <BoatFleetCard
                 key={boat.id}
                 boat={boat}
+                engines={boat.engines}
                 alertsCount={boat.alertsCount}
                 onCreateIntervention={handleCreateIntervention}
               />
