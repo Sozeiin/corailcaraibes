@@ -2353,7 +2353,7 @@ export type Database = {
       profile_audit_log: {
         Row: {
           action: string
-          changed_by: string
+          changed_by: string | null
           created_at: string | null
           id: string
           new_data: Json | null
@@ -2362,7 +2362,7 @@ export type Database = {
         }
         Insert: {
           action: string
-          changed_by: string
+          changed_by?: string | null
           created_at?: string | null
           id?: string
           new_data?: Json | null
@@ -2371,7 +2371,7 @@ export type Database = {
         }
         Update: {
           action?: string
-          changed_by?: string
+          changed_by?: string | null
           created_at?: string | null
           id?: string
           new_data?: Json | null
@@ -2383,6 +2383,7 @@ export type Database = {
       profiles: {
         Row: {
           base_id: string | null
+          can_complete_interventions: boolean | null
           created_at: string | null
           email: string
           id: string
@@ -2391,6 +2392,7 @@ export type Database = {
         }
         Insert: {
           base_id?: string | null
+          can_complete_interventions?: boolean | null
           created_at?: string | null
           email: string
           id: string
@@ -2399,6 +2401,7 @@ export type Database = {
         }
         Update: {
           base_id?: string | null
+          can_complete_interventions?: boolean | null
           created_at?: string | null
           email?: string
           id?: string
@@ -3578,6 +3581,10 @@ export type Database = {
       calculate_oil_change_status: {
         Args: { current_hours: number; last_change_hours: number }
         Returns: string
+      }
+      can_complete_interventions: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
