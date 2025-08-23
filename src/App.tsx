@@ -15,7 +15,11 @@ import { SafetyControls } from "./pages/SafetyControls";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import Stock from "./pages/Stock";
+import StockScanner from "./pages/StockScanner";
 import Maintenance from "./pages/Maintenance";
+import MaintenancePreventive from "./pages/MaintenancePreventive";
+import MaintenanceGantt from "./pages/MaintenanceGantt";
+import MaintenanceHistory from "./pages/MaintenanceHistory";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 
@@ -128,10 +132,42 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/stock/scanner"
+        element={
+          <ProtectedRoute>
+            <StockScanner />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/maintenance"
         element={
           <ProtectedRoute>
             <Maintenance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance/preventive"
+        element={
+          <ProtectedRoute>
+            <MaintenancePreventive />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance/gantt"
+        element={
+          <ProtectedRoute>
+            <MaintenanceGantt />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/maintenance/history"
+        element={
+          <ProtectedRoute>
+            <MaintenanceHistory />
           </ProtectedRoute>
         }
       />

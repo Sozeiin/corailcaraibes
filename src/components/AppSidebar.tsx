@@ -40,14 +40,40 @@ const menuItems = [{
   roles: ['direction', 'chef_base']
 }, {
   title: 'Stock',
-  url: '/stock',
   icon: Package,
-  roles: ['direction', 'chef_base', 'technicien']
+  roles: ['direction', 'chef_base', 'technicien'],
+  subItems: [
+    {
+      title: 'Inventaire',
+      url: '/stock'
+    },
+    {
+      title: 'Scanner',
+      url: '/stock/scanner'
+    }
+  ]
 }, {
   title: 'Maintenance',
-  url: '/maintenance',
   icon: Wrench,
-  roles: ['direction', 'chef_base', 'technicien']
+  roles: ['direction', 'chef_base', 'technicien'],
+  subItems: [
+    {
+      title: 'Interventions',
+      url: '/maintenance'
+    },
+    {
+      title: 'Maintenance préventive',
+      url: '/maintenance/preventive'
+    },
+    {
+      title: 'Planning Définitif',
+      url: '/maintenance/gantt'
+    },
+    {
+      title: 'Historique',
+      url: '/maintenance/history'
+    }
+  ]
 }, {
   title: 'Paramètres',
   url: '/settings',

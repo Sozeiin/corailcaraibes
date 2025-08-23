@@ -9,12 +9,12 @@ import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
-import { StockScanner } from '@/components/stock/StockScanner';
+
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -234,79 +234,58 @@ export default function Stock() {
         </Alert>
       )}
 
-      <Tabs defaultValue="inventory" className="space-y-4" key="stock-tabs">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="inventory" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Inventaire
-          </TabsTrigger>
-          <TabsTrigger value="scanner" className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Scanner
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="inventory" className="space-y-4">
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="p-3 sm:p-6 border-b">
-              <div className="flex items-center space-x-4">
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="Rechercher un article..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <StockFilters
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                bases={bases}
-                selectedBase={selectedBase}
-                onBaseChange={setSelectedBase}
-                showLowStock={showLowStock}
-                onLowStockChange={setShowLowStock}
-                userRole={user?.role}
+      <div className="bg-white rounded-lg shadow-sm border">
+        <div className="p-3 sm:p-6 border-b">
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Rechercher un article..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
               />
             </div>
+          </div>
 
-            <div className="p-4 sm:p-6">
-              {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
-                </div>
-              ) : isMobile ? (
-                <MobileTable
-                  data={filteredItems}
-                  columns={mobileColumns}
-                  onRowClick={handleViewDetails}
-                />
-              ) : (
-                <StockTable
-                  items={filteredItems}
-                  isLoading={isLoading}
-                  onEdit={handleEdit}
-                  onDuplicate={handleDuplicate}
-                  onUpdateQuantity={handleUpdateQuantity}
-                  onDelete={handleDelete}
-                  onViewDetails={handleViewDetails}
-                  canManage={canManageStock}
-                />
-              )}
+          <StockFilters
+            categories={categories}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            bases={bases}
+            selectedBase={selectedBase}
+            onBaseChange={setSelectedBase}
+            showLowStock={showLowStock}
+            onLowStockChange={setShowLowStock}
+            userRole={user?.role}
+          />
+        </div>
+
+        <div className="p-4 sm:p-6">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
             </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="scanner" className="space-y-4">
-          <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6">
-            <StockScanner stockItems={filteredItems} onRefreshStock={refetchStock} />
-          </div>
-        </TabsContent>
-      </Tabs>
+          ) : isMobile ? (
+            <MobileTable
+              data={filteredItems}
+              columns={mobileColumns}
+              onRowClick={handleViewDetails}
+            />
+          ) : (
+            <StockTable
+              items={filteredItems}
+              isLoading={isLoading}
+              onEdit={handleEdit}
+              onDuplicate={handleDuplicate}
+              onUpdateQuantity={handleUpdateQuantity}
+              onDelete={handleDelete}
+              onViewDetails={handleViewDetails}
+              canManage={canManageStock}
+            />
+          )}
+        </div>
+      </div>
 
       <StockDialog
         isOpen={isDialogOpen}
