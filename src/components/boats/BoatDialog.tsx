@@ -141,10 +141,19 @@ export function BoatDialog({ isOpen, onClose, boat }: BoatDialogProps) {
       await queryClient.invalidateQueries({ queryKey: ['boats'] });
       await queryClient.refetchQueries({ queryKey: ['boats'] });
       onClose();
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error saving boat:', error);
+      let errorMessage = 'Impossible de sauvegarder le bateau.';
+      
+      if (error?.message?.includes('duplicate key value violates unique constraint "boats_serial_number_key"')) {
+        errorMessage = `Un bateau avec le N° HIN "${formData.hin}" existe déjà. Veuillez utiliser un numéro différent.`;
+      } else if (error?.message?.includes('duplicate')) {
+        errorMessage = 'Ce numéro HIN est déjà utilisé par un autre bateau.';
+      }
+      
       toast({
         title: 'Erreur',
-        description: 'Impossible de sauvegarder le bateau.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
