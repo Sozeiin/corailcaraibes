@@ -4,6 +4,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Intervention } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InterventionCardsProps {
   interventions: Intervention[];
@@ -43,6 +45,18 @@ export function InterventionCards({
   showHistory = false,
   onDelete
 }: InterventionCardsProps) {
+  // Fetch technician names
+  const { data: technicians = [] } = useQuery({
+    queryKey: ['technicians'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .eq('role', 'technicien');
+      if (error) throw error;
+      return data;
+    }
+  });
   if (isLoading) {
     return (
       <div className="p-8">
@@ -107,7 +121,10 @@ export function InterventionCards({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <User className="h-4 w-4" />
                 <span>
-                  {intervention.technicianId ? 'Technicien assigné' : 'Non assigné'}
+                  {(() => {
+                    const technician = technicians.find(t => t.id === intervention.technicianId);
+                    return technician ? technician.name : (intervention.technicianId ? 'Technicien assigné' : 'Non assigné');
+                  })()}
                 </span>
               </div>
 
