@@ -67,8 +67,7 @@ export const BoatsDashboard = () => {
   // Fetch boat components for engine data
   const { data: boatComponents = [], loading: componentsLoading, error: componentsError } = useOfflineData<any>({
     table: 'boat_components',
-    baseId: user?.role !== 'direction' ? user?.baseId : undefined,
-    dependencies: [user?.id, user?.role]
+    dependencies: [user?.id, user?.role, user?.baseId]
   });
 
   // Debug data loading states
