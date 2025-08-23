@@ -7,8 +7,6 @@ import { Plus, Calendar, Gauge } from 'lucide-react';
 import { SafetyStatusIcon } from './SafetyStatusIcon';
 import { OilChangeStatusBadge } from './OilChangeStatusBadge';
 import { calculateWorstOilChangeProgress, type EngineComponent } from '@/utils/engineMaintenanceUtils';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
 interface BoatFleetCardProps {
@@ -21,44 +19,20 @@ interface BoatFleetCardProps {
     last_oil_change_hours?: number;
     next_maintenance?: string;
   };
+  engines: EngineComponent[];
   alertsCount?: number;
   onCreateIntervention?: (boatId: string, boatName?: string) => void;
 }
 
-export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({ 
-  boat, 
+export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
+  boat,
+  engines = [],
   alertsCount = 0,
-  onCreateIntervention 
+  onCreateIntervention
 }) => {
   const navigate = useNavigate();
-  
-  // Fetch engine components for this boat with real-time updates
-  const { data: engineComponents = [], isLoading: isLoadingEngines } = useQuery({
-    queryKey: ['boat-engines', boat.id],
-    queryFn: async () => {
-      console.log(`🔍 Fetching engine components for boat ${boat.id}`);
-      const { data, error } = await supabase
-        .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, updated_at')
-        .eq('boat_id', boat.id)
-        .ilike('component_type', '%moteur%')
-        .order('updated_at', { ascending: false });
-      
-      if (error) {
-        console.error('❌ Error fetching engine components:', error);
-        throw error;
-      }
-      
-      console.log(`✅ Found ${data?.length || 0} engine components for boat ${boat.id}:`, data);
-      return data as EngineComponent[];
-    },
-    staleTime: 0, // Always fresh data
-    gcTime: 1000 * 30, // 30 seconds cache
-    refetchOnWindowFocus: true,
-    refetchInterval: 1000 * 60 // Refresh every minute
-  });
 
-  const oilChangeProgress = calculateWorstOilChangeProgress(engineComponents);
+  const oilChangeProgress = calculateWorstOilChangeProgress(engines);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -90,8 +64,8 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             </div>
             <div className="flex items-center gap-2 ml-2">
               <SafetyStatusIcon boatId={boat.id} size="md" />
-              <OilChangeStatusBadge 
-                engines={engineComponents}
+              <OilChangeStatusBadge
+                engines={engines}
                 size="md"
               />
             </div>
@@ -114,32 +88,28 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
             <div className="flex items-center gap-2 text-sm">
               <Gauge className="h-4 w-4" />
               <span className="font-medium">Moteurs:</span>
-              {isLoadingEngines ? (
-                <span className="text-muted-foreground">Chargement...</span>
-              ) : (
-                <span>{engineComponents.length} moteur{engineComponents.length > 1 ? 's' : ''}</span>
-              )}
+              <span>{engines.length} moteur{engines.length > 1 ? 's' : ''}</span>
             </div>
-            {!isLoadingEngines && engineComponents.length > 0 && (
+            {engines.length > 0 && (
               <div className="space-y-1">
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Progression vidange</span>
                   <span>{Math.round(oilChangeProgress)}%</span>
                 </div>
-                <Progress 
-                  value={oilChangeProgress} 
+                <Progress
+                  value={oilChangeProgress}
                   className="h-2"
                   style={{
-                    '--progress-foreground': oilChangeProgress >= 100 
-                      ? 'hsl(var(--destructive))' 
-                      : oilChangeProgress >= 80 
-                      ? 'hsl(var(--accent))' 
+                    '--progress-foreground': oilChangeProgress >= 100
+                      ? 'hsl(var(--destructive))'
+                      : oilChangeProgress >= 80
+                      ? 'hsl(var(--accent))'
                       : 'hsl(var(--primary))'
                   } as React.CSSProperties}
                 />
               </div>
             )}
-            {!isLoadingEngines && engineComponents.length === 0 && (
+            {engines.length === 0 && (
               <p className="text-xs text-muted-foreground">Aucun moteur configuré</p>
             )}
           </div>
