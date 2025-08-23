@@ -32,8 +32,7 @@ interface InterventionPartsManagerProps {
 
 export function InterventionPartsManager({ parts, onPartsChange, disabled = false, boatId }: InterventionPartsManagerProps) {
   const { user } = useAuth();
-  const [selectedStockItem, setSelectedStockItem] = useState<string>('');
-  const [selectedComponent, setSelectedComponent] = useState<string>('');
+  const [stockSearchValue, setStockSearchValue] = useState('');
 
   // Fetch available stock items
   const { data: stockItems = [] } = useQuery({
@@ -68,31 +67,6 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     },
     enabled: !!boatId
   });
-
-  const addStockItem = () => {
-    if (!selectedStockItem) return;
-    
-    const stockItem = stockItems.find(item => item.id === selectedStockItem);
-    if (!stockItem) return;
-
-    // Check if item is already added
-    if (parts.some(part => part.stockItemId === selectedStockItem)) {
-      return;
-    }
-
-    const newPart: InterventionPart = {
-      stockItemId: stockItem.id,
-      partName: stockItem.name,
-      quantity: 1,
-      unitCost: (stockItem as any).unit_price || 0,
-      totalCost: (stockItem as any).unit_price || 0,
-      availableQuantity: stockItem.quantity,
-      notes: ''
-    };
-
-    onPartsChange([...parts, newPart]);
-    setSelectedStockItem('');
-  };
 
   const addCustomPart = () => {
     const newPart: InterventionPart = {
@@ -139,11 +113,9 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
             <div className="flex-1">
               <StockItemAutocomplete
                 stockItems={stockItems.filter(item => !parts.some(part => part.stockItemId === item.id))}
-                value=""
-                onChange={() => {}}
+                value={stockSearchValue}
+                onChange={setStockSearchValue}
                 onSelect={(item) => {
-                  if (!item) return;
-                  
                   const newPart: InterventionPart = {
                     stockItemId: item.id,
                     partName: item.name,
@@ -155,6 +127,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                   };
 
                   onPartsChange([...parts, newPart]);
+                  setStockSearchValue(''); // Clear search after selection
                 }}
                 placeholder="Rechercher une pièce dans le stock..."
               />

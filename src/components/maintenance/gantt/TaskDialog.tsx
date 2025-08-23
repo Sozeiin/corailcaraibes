@@ -76,9 +76,15 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
       return;
     }
 
+    console.log('🔧 Creating task with data:', {
+      formData,
+      userBaseId: user?.baseId,
+      userId: user?.id
+    });
+
     setIsCreating(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('interventions')
         .insert({
           title: formData.title,
@@ -90,7 +96,10 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
           scheduled_time: formData.scheduled_time,
           base_id: user.baseId,
           created_by: user.id
-        });
+        })
+        .select();
+
+      console.log('📝 Insert result:', { data, error });
 
       if (error) throw error;
 
@@ -112,10 +121,10 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
       onTaskCreated?.();
       onClose();
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('❌ Error creating task:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de la création de la tâche",
+        description: `Erreur lors de la création de la tâche: ${error.message || 'Erreur inconnue'}`,
         variant: "destructive"
       });
     } finally {
