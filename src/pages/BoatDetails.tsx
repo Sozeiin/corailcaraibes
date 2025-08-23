@@ -79,9 +79,15 @@ const BoatDetails = () => {
               <p className="text-lg">{boatWithBase.year}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">N° de série</p>
-              <p className="text-lg">{boatWithBase.serial_number}</p>
+              <p className="text-sm font-medium text-muted-foreground">N° HIN</p>
+              <p className="text-lg">{boatWithBase.serial_number || 'Non renseigné'}</p>
             </div>
+            {boatWithBase.documents?.[0] && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">N° de coque</p>
+                <p className="text-lg">{boatWithBase.documents[0]}</p>
+              </div>
+            )}
             {boatWithBase.next_maintenance && <div>
                 <p className="text-sm font-medium text-muted-foreground">Prochaine maintenance</p>
                 <p className="text-lg">{new Date(boatWithBase.next_maintenance).toLocaleDateString()}</p>
