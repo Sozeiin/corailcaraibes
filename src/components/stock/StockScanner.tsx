@@ -85,6 +85,8 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
 
   const startScan = async (operation: 'add' | 'remove') => {
     console.log('🚀 DEBUT DU SCAN - Opération:', operation, 'User:', user?.role);
+    console.log('📱 Navigator available:', !!navigator);
+    console.log('📷 getUserMedia available:', !!navigator?.mediaDevices?.getUserMedia);
     setCurrentOperation(operation);
     setIsScanning(true);
     
@@ -525,6 +527,8 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     );
   }
 
+  console.log('🚨 SCANNER RENDU - Debug forcé:', new Date().toISOString());
+  
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Actions de scan */}
@@ -538,7 +542,10 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
-              onClick={() => startScan('add')} 
+              onClick={() => {
+                console.log('🔥 BOUTON SCANNER CLIQUÉ - ENTRÉE');
+                startScan('add');
+              }} 
               disabled={isScanning}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
               size="sm"
@@ -558,7 +565,10 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
-              onClick={() => startScan('remove')} 
+              onClick={() => {
+                console.log('🔥 BOUTON SCANNER CLIQUÉ - SORTIE');
+                startScan('remove');
+              }} 
               disabled={isScanning}
               className="w-full bg-red-600 hover:bg-red-700 text-sm"
               size="sm"
