@@ -1,18 +1,18 @@
 import React from 'react';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-interface DateRange {
-  from: Date;
-  to: Date;
+export interface DateRange {
+  from?: Date;
+  to?: Date;
 }
 
 interface DatePickerWithRangeProps {
-  date: DateRange;
+  date?: DateRange;
   onDateChange: (range: DateRange) => void;
   placeholder?: string;
 }
@@ -32,7 +32,7 @@ export function DatePickerWithRange({ date, onDateChange, placeholder = "Sélect
           variant="outline"
           className={cn(
             "w-full justify-start text-left font-normal",
-            !date && "text-muted-foreground"
+            (!date?.from && !date?.to) && "text-muted-foreground"
           )}
         >
           <Calendar className="mr-2 h-4 w-4" />
@@ -98,11 +98,13 @@ export function DatePickerWithRange({ date, onDateChange, placeholder = "Sélect
             </Button>
           </div>
         </div>
-        <div className="p-3">
-          <div className="text-sm text-gray-500">
-            Période actuelle: {format(date.from, "dd/MM/yyyy", { locale: fr })} - {format(date.to, "dd/MM/yyyy", { locale: fr })}
+        {date?.from && date?.to && (
+          <div className="p-3">
+            <div className="text-sm text-gray-500">
+              Période actuelle: {format(date.from, "dd/MM/yyyy", { locale: fr })} - {format(date.to, "dd/MM/yyyy", { locale: fr })}
+            </div>
           </div>
-        </div>
+        )}
       </PopoverContent>
     </Popover>
   );

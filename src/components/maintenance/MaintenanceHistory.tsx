@@ -1,24 +1,20 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, Calendar } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InterventionTable } from '@/components/maintenance/InterventionTable';
-import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { addDays } from 'date-fns';
+import { DatePickerWithRange, type DateRange } from '@/components/ui/date-range-picker';
 
 export function MaintenanceHistory() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedBoat, setSelectedBoat] = useState('all');
-  const [dateRange, setDateRange] = useState({
-    from: addDays(new Date(), -30),
-    to: new Date()
-  });
+  const [dateRange, setDateRange] = useState<DateRange | undefined>();
 
   const { data: interventions = [], isLoading } = useQuery({
-    queryKey: ['interventions-history', dateRange],
+    queryKey: ['interventions-history', dateRange?.from, dateRange?.to],
     queryFn: async () => {
       let query = supabase
         .from('interventions')
@@ -29,11 +25,17 @@ export function MaintenanceHistory() {
         `)
         .order('completed_date', { ascending: false });
 
-      if (dateRange.from) {
-        query = query.gte('completed_date', dateRange.from.toISOString().split('T')[0]);
+      if (dateRange?.from) {
+        query = query.gte(
+          'completed_date',
+          dateRange.from.toISOString().split('T')[0]
+        );
       }
-      if (dateRange.to) {
-        query = query.lte('completed_date', dateRange.to.toISOString().split('T')[0]);
+      if (dateRange?.to) {
+        query = query.lte(
+          'completed_date',
+          dateRange.to.toISOString().split('T')[0]
+        );
       }
 
       const { data, error } = await query;
