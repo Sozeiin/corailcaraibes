@@ -434,7 +434,10 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
 
       console.log('📊 Résultat mise à jour stock:', { error });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur:', error);
+        throw error;
+      }
 
       setOperations(prev => 
         prev.map(op => 

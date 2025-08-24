@@ -46,35 +46,35 @@ export async function searchGlobalStockItems(searchCode: string): Promise<Global
       `);
 
     // Search by exact reference match first (case insensitive)
-    const { data: exactMatch } = await query
+    const { data: exactMatch, error: exactError } = await query
       .ilike('reference', trimmedCode)
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (exactMatch) {
+    if (exactMatch && !exactError) {
       return transformToGlobalStockItem(exactMatch);
     }
 
     // Search by partial reference match
     if (trimmedCode.length >= 3) {
-      const { data: partialRefMatch } = await query
+      const { data: partialRefMatch, error: partialError } = await query
         .ilike('reference', `%${trimmedCode}%`)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (partialRefMatch) {
+      if (partialRefMatch && !partialError) {
         return transformToGlobalStockItem(partialRefMatch);
       }
     }
 
     // Search by name containing the code
     if (trimmedCode.length >= 3) {
-      const { data: nameMatch } = await query
+      const { data: nameMatch, error: nameError } = await query
         .ilike('name', `%${trimmedCode}%`)
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (nameMatch) {
+      if (nameMatch && !nameError) {
         return transformToGlobalStockItem(nameMatch);
       }
     }
