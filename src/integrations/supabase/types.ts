@@ -2970,6 +2970,63 @@ export type Database = {
           },
         ]
       }
+      stock_reservations: {
+        Row: {
+          created_at: string
+          id: string
+          intervention_id: string | null
+          notes: string | null
+          quantity: number
+          released_at: string | null
+          reserved_at: string
+          reserved_by: string | null
+          status: string
+          stock_item_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intervention_id?: string | null
+          notes?: string | null
+          quantity?: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_by?: string | null
+          status?: string
+          stock_item_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intervention_id?: string | null
+          notes?: string | null
+          quantity?: number
+          released_at?: string | null
+          reserved_at?: string
+          reserved_by?: string | null
+          status?: string
+          stock_item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_reservations_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_reservations_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_contracts: {
         Row: {
           contract_number: string
