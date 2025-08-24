@@ -1968,7 +1968,6 @@ export type Database = {
       }
       order_items: {
         Row: {
-          base_id: string | null
           id: string
           order_id: string | null
           product_name: string
@@ -1979,7 +1978,6 @@ export type Database = {
           unit_price: number
         }
         Insert: {
-          base_id?: string | null
           id?: string
           order_id?: string | null
           product_name: string
@@ -1990,7 +1988,6 @@ export type Database = {
           unit_price?: number
         }
         Update: {
-          base_id?: string | null
           id?: string
           order_id?: string | null
           product_name?: string
@@ -2969,63 +2966,6 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      stock_reservations: {
-        Row: {
-          created_at: string
-          id: string
-          intervention_id: string | null
-          notes: string | null
-          quantity: number
-          released_at: string | null
-          reserved_at: string
-          reserved_by: string | null
-          status: string
-          stock_item_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          intervention_id?: string | null
-          notes?: string | null
-          quantity?: number
-          released_at?: string | null
-          reserved_at?: string
-          reserved_by?: string | null
-          status?: string
-          stock_item_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          intervention_id?: string | null
-          notes?: string | null
-          quantity?: number
-          released_at?: string | null
-          reserved_at?: string
-          reserved_by?: string | null
-          status?: string
-          stock_item_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "stock_reservations_intervention_id_fkey"
-            columns: ["intervention_id"]
-            isOneToOne: false
-            referencedRelation: "interventions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "stock_reservations_stock_item_id_fkey"
-            columns: ["stock_item_id"]
-            isOneToOne: false
-            referencedRelation: "stock_items"
             referencedColumns: ["id"]
           },
         ]

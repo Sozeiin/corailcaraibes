@@ -434,10 +434,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
 
       console.log('📊 Résultat mise à jour stock:', { error });
 
-      if (error) {
-        console.error('Erreur détaillée:', error.message, error.details, error.hint);
-        throw error;
-      }
+      if (error) throw error;
 
       setOperations(prev => 
         prev.map(op => 
@@ -458,14 +455,8 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         description: `${operation.stockItem.name}: ${operation.operation === 'add' ? '+' : '-'}${operation.quantity}`,
       });
 
-    } catch (error: any) {
-      console.error('Erreur complète:', {
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code,
-        fullError: error
-      });
+    } catch (error) {
+      console.error('Erreur:', error);
       setOperations(prev => 
         prev.map(op => 
           op.id === operationId 
@@ -476,7 +467,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       
       toast({
         title: 'Erreur',
-        description: error?.message || 'Impossible de mettre à jour le stock',
+        description: 'Impossible de mettre à jour le stock',
         variant: 'destructive'
       });
     }

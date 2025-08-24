@@ -148,7 +148,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   });
 
   useEffect(() => {
-    if (intervention?.id) {
+    if (intervention) {
       form.reset({
         title: intervention.title,
         description: intervention.description,
@@ -177,7 +177,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
   // Separate effect for handling existing parts to avoid infinite loop
   useEffect(() => {
-    if (intervention?.id && existingParts.length > 0) {
+    if (intervention && existingParts.length > 0) {
       setInterventionParts(existingParts);
     }
   }, [intervention, existingParts]);
@@ -214,7 +214,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
       let interventionId: string;
 
-      if (intervention?.id && intervention.id.trim() !== '') {
+      if (intervention && intervention.id && intervention.id.trim() !== '') {
         // Update existing intervention
         const { error } = await supabase
           .from('interventions')
@@ -255,6 +255,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
           part_name: part.partName,
           quantity: part.quantity,
           unit_cost: part.unitCost,
+          total_cost: part.totalCost,
           notes: part.notes || null
         }));
 
@@ -300,8 +301,8 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       }
 
       toast({
-        title: intervention?.id ? "Intervention modifiée" : "Intervention créée",
-        description: intervention?.id 
+        title: intervention ? "Intervention modifiée" : "Intervention créée",
+        description: intervention 
           ? "L'intervention a été mise à jour avec succès."
           : "La nouvelle intervention a été programmée."
       });
@@ -336,10 +337,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto" aria-describedby="intervention-dialog-description">
         <DialogHeader>
           <DialogTitle>
-            {intervention?.id ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
+            {intervention ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
           </DialogTitle>
           <p id="intervention-dialog-description" className="text-sm text-muted-foreground">
-            {intervention?.id ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
+            {intervention ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
           </p>
         </DialogHeader>
 
@@ -518,7 +519,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
                 disabled={isSubmitting}
                 className="bg-marine-600 hover:bg-marine-700"
               >
-                {isSubmitting ? 'Sauvegarde...' : (intervention?.id ? 'Modifier' : 'Créer')}
+                {isSubmitting ? 'Sauvegarde...' : (intervention ? 'Modifier' : 'Créer')}
               </Button>
             </div>
           </form>
