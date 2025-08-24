@@ -12,6 +12,7 @@ import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Task {
   id: string;
@@ -45,6 +46,7 @@ interface TaskDialogProps {
 export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }: TaskDialogProps) {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
   
   // Form state for new task creation
@@ -118,6 +120,7 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
         scheduled_time: '09:00'
       });
 
+      await queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
       onTaskCreated?.();
       onClose();
     } catch (error) {
@@ -246,7 +249,7 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={onClose}>Annuler</Button>
-              <Button onClick={handleCreateTask} disabled={isCreating}>
+              <Button onClick={handleCreateTask} disabled={isCreating || !user?.baseId}>
                 {isCreating ? 'Création...' : 'Créer la tâche'}
               </Button>
             </div>
