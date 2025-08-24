@@ -112,8 +112,7 @@ export function InterventionTable({
               <TableCell>
                 <div className="flex items-center gap-1 text-sm">
                   <User className="h-3 w-3" />
-                  {/* {intervention.profiles?.name || 'Non assigné'} */}
-                  Technicien
+                  {intervention.technician?.name || 'Non assigné'}
                 </div>
               </TableCell>
               <TableCell>

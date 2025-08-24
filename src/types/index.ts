@@ -151,6 +151,9 @@ export interface Intervention {
     name: string;
     model: string;
   };
+  technician?: {
+    name: string;
+  };
 }
 
 export interface ChecklistItem {

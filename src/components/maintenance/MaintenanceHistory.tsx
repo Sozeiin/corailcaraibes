@@ -43,6 +43,7 @@ export function MaintenanceHistory() {
         id: intervention.id,
         boatId: intervention.boat_id || '',
         technicianId: intervention.technician_id || '',
+        technician: intervention.profiles,
         title: intervention.title,
         description: intervention.description || '',
         status: intervention.status || 'scheduled',
