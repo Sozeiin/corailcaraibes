@@ -55,17 +55,6 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   const [codeToCreate, setCodeToCreate] = useState('');
   
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
-  
-  // Debug - Force les logs console en continu
-  console.log('🔍 StockScanner - État actuel:', {
-    userRole: user?.role,
-    userBaseId: user?.baseId,
-    canManageStock,
-    isScanning,
-    currentOperation,
-    stockItemsCount: stockItems.length,
-    timestamp: new Date().toISOString()
-  });
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
@@ -549,8 +538,6 @@ En attendant, utilisez la saisie manuelle ci-dessous.`;
     );
   }
 
-  console.log('🚨 SCANNER RENDU - Debug forcé:', new Date().toISOString());
-  
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Actions de scan */}
@@ -564,10 +551,7 @@ En attendant, utilisez la saisie manuelle ci-dessous.`;
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
-              onClick={() => {
-                console.log('🔥 BOUTON SCANNER CLIQUÉ - ENTRÉE');
-                startScan('add');
-              }} 
+              onClick={() => startScan('add')} 
               disabled={isScanning}
               className="w-full bg-green-600 hover:bg-green-700 text-sm"
               size="sm"
@@ -587,10 +571,7 @@ En attendant, utilisez la saisie manuelle ci-dessous.`;
           </CardHeader>
           <CardContent className="space-y-3">
             <Button 
-              onClick={() => {
-                console.log('🔥 BOUTON SCANNER CLIQUÉ - SORTIE');
-                startScan('remove');
-              }} 
+              onClick={() => startScan('remove')} 
               disabled={isScanning}
               className="w-full bg-red-600 hover:bg-red-700 text-sm"
               size="sm"
