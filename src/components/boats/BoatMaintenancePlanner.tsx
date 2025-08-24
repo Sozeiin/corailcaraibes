@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Calendar as CalendarIcon, 
@@ -28,7 +27,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: scheduledMaintenance, isLoading } = useQuery({
+  const { data: scheduledMaintenance, isLoading: isMaintenanceLoading } = useQuery({
     queryKey: ['scheduled-maintenance', boatId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -43,6 +42,21 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
           )
         `)
         .eq('boat_id', boatId)
+        .order('scheduled_date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const { data: scheduledInterventions, isLoading: isInterventionsLoading } = useQuery({
+    queryKey: ['scheduled-interventions', boatId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('interventions')
+        .select('*')
+        .eq('boat_id', boatId)
+        .eq('status', 'scheduled')
         .order('scheduled_date', { ascending: true });
 
       if (error) throw error;
@@ -97,6 +111,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance', boatId] });
+      queryClient.invalidateQueries({ queryKey: ['scheduled-interventions', boatId] });
       toast({
         title: "Intervention créée",
         description: "L'intervention de maintenance a été programmée avec succès.",
@@ -114,7 +129,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
   const getStatusBadge = (status: string, scheduledDate: string) => {
     const date = new Date(scheduledDate);
     const now = new Date();
-    const isOverdue = date < now && status === 'pending';
+    const isOverdue = date < now && ['pending', 'scheduled'].includes(status);
 
     if (isOverdue) {
       return <Badge className="bg-red-100 text-red-800">En retard</Badge>;
@@ -124,6 +139,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
       case 'pending':
         return <Badge className="bg-yellow-100 text-yellow-800">En attente</Badge>;
       case 'planned':
+      case 'scheduled':
         return <Badge className="bg-blue-100 text-blue-800">Planifiée</Badge>;
       case 'completed':
         return <Badge className="bg-green-100 text-green-800">Terminée</Badge>;
@@ -135,7 +151,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
   const getMaintenanceIcon = (status: string, scheduledDate: string) => {
     const date = new Date(scheduledDate);
     const now = new Date();
-    const isOverdue = date < now && status === 'pending';
+    const isOverdue = date < now && ['pending', 'scheduled'].includes(status);
 
     if (isOverdue) {
       return <AlertTriangle className="h-4 w-4 text-red-500" />;
@@ -145,24 +161,33 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
       case 'completed':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'planned':
+      case 'scheduled':
         return <Clock className="h-4 w-4 text-blue-500" />;
       default:
         return <Wrench className="h-4 w-4 text-gray-500" />;
     }
   };
-
-  if (isLoading) {
+  if (isMaintenanceLoading || isInterventionsLoading) {
     return <div>Chargement du planificateur...</div>;
   }
 
+  const combinedMaintenance = [
+    ...(scheduledMaintenance?.map(m => ({ ...m, type: 'maintenance', display_name: m.task_name })) || []),
+    ...(scheduledInterventions?.map(i => ({ ...i, type: 'intervention', display_name: i.title })) || []),
+  ].sort(
+    (a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime()
+  );
+
   const now = new Date();
-  const upcomingMaintenance = scheduledMaintenance?.filter(m => 
-    new Date(m.scheduled_date) >= now || m.status === 'pending'
-  ) || [];
-  
-  const overdueMaintenance = scheduledMaintenance?.filter(m => 
-    new Date(m.scheduled_date) < now && m.status === 'pending'
-  ) || [];
+  const upcomingMaintenance =
+    combinedMaintenance.filter(
+      m => new Date(m.scheduled_date) >= now || m.status === 'pending'
+    ) || [];
+
+  const overdueMaintenance =
+    combinedMaintenance.filter(
+      m => new Date(m.scheduled_date) < now && ['pending', 'scheduled'].includes(m.status)
+    ) || [];
 
   return (
     <div className="space-y-6">
@@ -170,7 +195,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
         <h2 className="text-2xl font-bold">Planificateur de maintenance</h2>
         <div className="flex items-center space-x-2">
           <Badge variant="outline">
-            {scheduledMaintenance?.length || 0} tâches programmées
+            {combinedMaintenance.length} tâches programmées
           </Badge>
         </div>
       </div>
@@ -187,24 +212,29 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
           <CardContent>
             <div className="space-y-3">
               {overdueMaintenance.map((maintenance) => (
-                <div key={maintenance.id} className="flex items-center justify-between p-3 bg-white rounded border">
+                <div
+                  key={`${maintenance.type}-${maintenance.id}`}
+                  className="flex items-center justify-between p-3 bg-white rounded border"
+                >
                   <div className="flex items-center space-x-3">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
                     <div>
-                      <p className="font-medium">{maintenance.task_name}</p>
+                      <p className="font-medium">{maintenance.display_name}</p>
                       <p className="text-sm text-muted-foreground">
                         Prévue le {new Date(maintenance.scheduled_date).toLocaleDateString()}
                       </p>
                     </div>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => createInterventionMutation.mutate(maintenance.id)}
-                    disabled={createInterventionMutation.isPending}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Planifier maintenant
-                  </Button>
+                  {maintenance.type === 'maintenance' && (
+                    <Button
+                      size="sm"
+                      onClick={() => createInterventionMutation.mutate(maintenance.id)}
+                      disabled={createInterventionMutation.isPending}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Planifier maintenant
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -230,11 +260,14 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
             ) : (
               <div className="space-y-4">
                 {upcomingMaintenance.slice(0, 5).map((maintenance) => (
-                  <div key={maintenance.id} className="flex items-center justify-between p-3 border rounded">
+                  <div
+                    key={`${maintenance.type}-${maintenance.id}`}
+                    className="flex items-center justify-between p-3 border rounded"
+                  >
                     <div className="flex items-center space-x-3">
                       {getMaintenanceIcon(maintenance.status, maintenance.scheduled_date)}
                       <div>
-                        <p className="font-medium">{maintenance.task_name}</p>
+                        <p className="font-medium">{maintenance.display_name}</p>
                         <p className="text-sm text-muted-foreground">
                           {new Date(maintenance.scheduled_date).toLocaleDateString('fr-FR', {
                             weekday: 'long',
@@ -247,7 +280,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
                     </div>
                     <div className="flex items-center space-x-2">
                       {getStatusBadge(maintenance.status, maintenance.scheduled_date)}
-                      {maintenance.status === 'pending' && !maintenance.intervention_id && (
+                      {maintenance.type === 'maintenance' && maintenance.status === 'pending' && !maintenance.intervention_id && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -281,7 +314,7 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
               locale={fr}
               className="rounded-md border"
               modifiers={{
-                maintenance: scheduledMaintenance?.map(m => new Date(m.scheduled_date)) || [],
+                maintenance: combinedMaintenance.map(m => new Date(m.scheduled_date)),
                 overdue: overdueMaintenance.map(m => new Date(m.scheduled_date))
               }}
               modifiersStyles={{
@@ -289,23 +322,34 @@ export const BoatMaintenancePlanner = ({ boatId, boatName }: BoatMaintenancePlan
                 overdue: { backgroundColor: '#ef4444', color: 'white' }
               }}
             />
-            
+
             {selectedDate && (
               <div className="mt-4 p-3 border rounded">
                 <p className="font-medium mb-2">
                   {format(selectedDate, 'PPP', { locale: fr })}
                 </p>
-                {scheduledMaintenance
-                  ?.filter(m => 
-                    new Date(m.scheduled_date).toDateString() === selectedDate.toDateString()
+                {combinedMaintenance
+                  .filter(
+                    m =>
+                      new Date(m.scheduled_date).toDateString() ===
+                      selectedDate.toDateString()
                   )
                   .map(maintenance => (
-                    <div key={maintenance.id} className="text-sm">
-                      <p className="font-medium">{maintenance.task_name}</p>
-                      {getStatusBadge(maintenance.status, maintenance.scheduled_date)}
+                    <div
+                      key={`${maintenance.type}-${maintenance.id}`}
+                      className="text-sm"
+                    >
+                      <p className="font-medium">{maintenance.display_name}</p>
+                      {getStatusBadge(
+                        maintenance.status,
+                        maintenance.scheduled_date
+                      )}
                     </div>
-                  )) || <p className="text-sm text-muted-foreground">Aucune maintenance prévue</p>
-                }
+                  )) || (
+                    <p className="text-sm text-muted-foreground">
+                      Aucune maintenance prévue
+                    </p>
+                  )}
               </div>
             )}
           </CardContent>
