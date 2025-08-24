@@ -62,7 +62,7 @@ const menuItems = [{
       url: '/maintenance'
     },
     {
-      title: 'Maintenance préventive',
+      title: 'Préventive',
       url: '/maintenance/preventive'
     },
     {
