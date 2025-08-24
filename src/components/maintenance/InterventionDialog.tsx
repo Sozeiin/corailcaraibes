@@ -268,7 +268,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         const reservationIds = interventionParts
           .filter(p => p.reservationId)
           .map(p => p.reservationId as string);
-        // Reservation update temporarily disabled until types are regenerated
+        
       }
 
       // Envoyer une notification au technicien si assigné
@@ -319,7 +319,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     const reservationIds = interventionParts
       .filter(p => p.reservationId && !p.id)
       .map(p => p.reservationId as string);
-    // Reservation cleanup temporarily disabled until types are regenerated
+    
     form.reset();
     setInterventionParts([]);
     onClose();

@@ -35,22 +35,22 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   const { user } = useAuth();
   const [stockSearchValue, setStockSearchValue] = useState('');
 
-  // Fetch available stock items
+  // Fetch available stock items  
   const { data: stockItems = [] } = useQuery({
     queryKey: ['stock-items-for-intervention'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stock_items')
-        .select('id,name,quantity,unit_price,stock_reservations(quantity)')
+        .select('id,name,quantity,unit_price')
         .eq('base_id', user?.baseId)
         .order('name');
 
       if (error) throw error;
       return (
-        data?.map(item => {
-          const reserved = (item as any).stock_reservations?.reduce((sum: number, r: any) => sum + r.quantity, 0) || 0;
-          return { ...item, quantity: item.quantity - reserved, available_quantity: item.quantity - reserved };
-        }) || []
+        data?.map(item => ({
+          ...item, 
+          available_quantity: item.quantity
+        })) || []
       ).filter(item => item.available_quantity > 0);
     }
   });
@@ -94,7 +94,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         return;
       }
       updatedParts[index].quantity = value;
-      // Reservation update temporarily disabled until types are regenerated
+      
     } else {
       updatedParts[index] = { ...updatedParts[index], [field]: value };
     }
@@ -107,7 +107,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   };
 
   const removePart = async (index: number) => {
-    // Reservation cleanup temporarily disabled until types are regenerated
+    
     const updatedParts = parts.filter((_, i) => i !== index);
     onPartsChange(updatedParts);
   };
@@ -131,7 +131,6 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                 value={stockSearchValue}
                 onChange={setStockSearchValue}
                 onSelect={async (item) => {
-                  // Stock reservation temporarily disabled until types are regenerated
                   const newPart: InterventionPart = {
                     stockItemId: item.id,
                     partName: item.name,
