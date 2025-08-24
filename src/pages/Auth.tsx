@@ -12,6 +12,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { secureStorage } from '@/lib/storage';
+import { PageShell } from '@/components/ui/page-shell';
+import { ResponsiveImage } from '@/components/ui/responsive-image';
 export default function Auth() {
   const {
     isAuthenticated
@@ -147,10 +149,10 @@ export default function Auth() {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
+  return <PageShell className="flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500">
       <Card className="w-full max-w-md rounded-lg">
         <CardHeader className="text-center">
-          <img src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
+          <ResponsiveImage className="mx-auto mb-4 aspect-square w-full max-w-[80px]" src={authLogo} alt="Corail Caraibes logo" />
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
@@ -261,5 +263,5 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>;
+    </PageShell>;
 }
