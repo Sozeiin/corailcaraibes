@@ -54,8 +54,18 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [codeToCreate, setCodeToCreate] = useState('');
   
-  // Debug logs for dialog state
-  console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
+  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
+  
+  // Debug - Force les logs console en continu
+  console.log('🔍 StockScanner - État actuel:', {
+    userRole: user?.role,
+    userBaseId: user?.baseId,
+    canManageStock,
+    isScanning,
+    currentOperation,
+    stockItemsCount: stockItems.length,
+    timestamp: new Date().toISOString()
+  });
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
@@ -74,7 +84,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   }, []);
 
   const startScan = async (operation: 'add' | 'remove') => {
-    console.log('🚀 DEBUT DU SCAN - Opération:', operation);
+    console.log('🚀 DEBUT DU SCAN - Opération:', operation, 'User:', user?.role);
     setCurrentOperation(operation);
     setIsScanning(true);
     
@@ -495,14 +505,6 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     setIsCreateDialogOpen(false);
   };
 
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
-
-  // Debug logs pour vérifier les permissions
-  console.log('StockScanner - User data:', { 
-    user: user, 
-    role: user?.role, 
-    canManageStock: canManageStock 
-  });
 
   if (!canManageStock) {
     console.log('StockScanner - Access denied, user cannot manage stock');
