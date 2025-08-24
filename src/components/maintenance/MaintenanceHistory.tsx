@@ -42,6 +42,7 @@ export function MaintenanceHistory() {
       return data.map(intervention => ({
         id: intervention.id,
         boatId: intervention.boat_id || '',
+        boat: intervention.boats,
         technicianId: intervention.technician_id || '',
         title: intervention.title,
         description: intervention.description || '',
