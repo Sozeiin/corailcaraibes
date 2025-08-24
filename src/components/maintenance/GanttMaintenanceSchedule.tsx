@@ -621,12 +621,13 @@ export function GanttMaintenanceSchedule() {
   const handleDeleteIntervention = async (intervention: Intervention) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer cette intervention ?')) {
       try {
+        await supabase.from('stock_reservations').delete().eq('intervention_id', intervention.id);
         await supabase.from('interventions').delete().eq('id', intervention.id);
         queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
         toast({ title: "Intervention supprimée avec succès" });
       } catch {
-        toast({ 
-          title: "Erreur", 
+        toast({
+          title: "Erreur",
           description: "Impossible de supprimer l'intervention",
           variant: "destructive" 
         });
