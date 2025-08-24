@@ -1968,6 +1968,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          base_id: string | null
           id: string
           order_id: string | null
           product_name: string
@@ -1978,6 +1979,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          base_id?: string | null
           id?: string
           order_id?: string | null
           product_name: string
@@ -1988,6 +1990,7 @@ export type Database = {
           unit_price?: number
         }
         Update: {
+          base_id?: string | null
           id?: string
           order_id?: string | null
           product_name?: string
