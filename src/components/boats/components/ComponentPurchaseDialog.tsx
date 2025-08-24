@@ -86,7 +86,6 @@ export function ComponentPurchaseDialog({ isOpen, onClose, componentId }: Compon
           purchase_date: data.purchaseDate?.toISOString().split('T')[0],
           unit_cost: data.unitCost,
           quantity: data.quantity,
-          total_cost: data.unitCost * data.quantity,
           warranty_months: data.warrantyMonths,
           invoice_reference: data.invoiceReference || null,
           installation_date: data.installationDate?.toISOString().split('T')[0] || null,
