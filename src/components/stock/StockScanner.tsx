@@ -217,10 +217,32 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     } catch (error) {
       console.error('❌ ERREUR SCANNER:', error);
       setIsScanning(false);
+      
+      let errorMessage = '';
+      let errorTitle = '';
+      
+      if (error.name === 'NotAllowedError') {
+        errorTitle = '🚫 Accès caméra refusé';
+        errorMessage = `Pour utiliser le scanner, vous devez autoriser l'accès à la caméra :
+        
+1. Cliquez sur l'icône 🔒 ou 📷 dans la barre d'adresse
+2. Autorisez l'accès à la caméra
+3. Rechargez la page si nécessaire
+
+En attendant, utilisez la saisie manuelle ci-dessous.`;
+      } else if (error.name === 'NotFoundError') {
+        errorTitle = '📷 Caméra non trouvée';
+        errorMessage = 'Aucune caméra n\'a été détectée sur votre appareil. Utilisez la saisie manuelle.';
+      } else {
+        errorTitle = 'Erreur Scanner';
+        errorMessage = `Impossible d'accéder à la caméra: ${error.message}`;
+      }
+      
       toast({
-        title: 'Erreur Scanner',
-        description: `Impossible d'accéder à la caméra: ${error.message}`,
-        variant: 'destructive'
+        title: errorTitle,
+        description: errorMessage,
+        variant: 'destructive',
+        duration: 8000
       });
     }
   };
