@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { IdleWarningModal } from '@/components/auth/IdleWarningModal';
 
+const DEFAULT_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
+
 interface User {
   id: string;
   email: string;
@@ -123,12 +125,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (profile) {
+        const baseId = profile.base_id || DEFAULT_BASE_ID;
+        if (!profile.base_id) {
+          await supabase
+            .from('profiles')
+            .update({ base_id: baseId })
+            .eq('id', profile.id);
+        }
         const userData = {
           id: profile.id,
           email: profile.email,
           name: profile.name,
           role: profile.role,
-          baseId: profile.base_id,
+          baseId,
           createdAt: profile.created_at
         };
         setUser(userData);
@@ -149,7 +158,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: authUser.email,
           name: authUser.email?.split('@')[0] || 'Utilisateur',
           role: 'technicien',
-          base_id: '550e8400-e29b-41d4-a716-446655440001'
+          base_id: DEFAULT_BASE_ID
         })
         .select()
         .maybeSingle();
@@ -160,12 +169,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       if (profile) {
+        const baseId = profile.base_id || DEFAULT_BASE_ID;
+        if (!profile.base_id) {
+          await supabase
+            .from('profiles')
+            .update({ base_id: baseId })
+            .eq('id', profile.id);
+        }
         const userData = {
           id: profile.id,
           email: profile.email,
           name: profile.name,
           role: profile.role,
-          baseId: profile.base_id,
+          baseId,
           createdAt: profile.created_at
         };
         setUser(userData);
