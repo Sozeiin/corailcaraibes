@@ -14,6 +14,7 @@ import { ArrowLeft, Search, Filter } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { calculateOilChangeStatus, getWorstOilChangeStatus } from '@/utils/engineMaintenanceUtils';
 import { countExpiredControls } from '@/utils/safetyControlUtils';
+import { AutoGrid } from '@/components/layout/AutoGrid';
 
 export const BoatsDashboard = () => {
   const { user } = useAuth();
@@ -265,7 +266,7 @@ export const BoatsDashboard = () => {
       <FleetBadgesLegend />
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <AutoGrid className="gap-6">
         {/* Main boats grid */}
         <div className="lg:col-span-2 space-y-4">
           {/* Filters */}
@@ -294,7 +295,7 @@ export const BoatsDashboard = () => {
           </div>
 
           {/* Boats grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <AutoGrid className="gap-4">
             {filteredBoats.map((boat) => (
               <BoatFleetCard
                 key={boat.id}
@@ -303,7 +304,7 @@ export const BoatsDashboard = () => {
                 onCreateIntervention={handleCreateIntervention}
               />
             ))}
-          </div>
+          </AutoGrid>
 
           {filteredBoats.length === 0 && (
             <div className="text-center py-12 text-muted-foreground">
@@ -316,7 +317,7 @@ export const BoatsDashboard = () => {
         <div className="lg:col-span-1">
           <MaintenanceAlertsPanel alerts={maintenanceAlerts} />
         </div>
-      </div>
+      </AutoGrid>
 
       {/* Intervention Dialog */}
       <InterventionDialog

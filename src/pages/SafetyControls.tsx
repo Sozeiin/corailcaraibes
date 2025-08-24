@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SafetyStatusIcon } from '@/components/boats/SafetyStatusIcon';
 import { SafetyStatusLegend } from '@/components/boats/SafetyStatusLegend';
+import { AutoGrid } from '@/components/layout/AutoGrid';
 
 export const SafetyControls = () => {
   const navigate = useNavigate();
@@ -124,7 +125,7 @@ export const SafetyControls = () => {
       ) : (
         <>
           <SafetyStatusLegend />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <AutoGrid className="gap-6">
             {filteredBoats.map(boat => {
               const base = bases.find((b: any) => b.id === boat.base_id);
               
@@ -162,7 +163,7 @@ export const SafetyControls = () => {
                 </Card>
               );
             })}
-          </div>
+          </AutoGrid>
         </>
       )}
     </div>

@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Container } from '@/components/layout/Container';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,9 +53,10 @@ export default function Settings() {
     ? tabFromUrl 
     : availableTabs[0]?.id || 'profile';
 
-  return (
-    <div className="container mx-auto py-6 px-4">
-      <div className="mb-6">
+    return (
+      <div className="py-6">
+        <Container>
+        <div className="mb-6">
         <div className="flex items-center gap-3 mb-2">
           <SettingsIcon className="h-8 w-8 text-primary" />
           <h1 className="text-3xl font-bold">Paramètres</h1>
@@ -74,25 +76,26 @@ export default function Settings() {
           ))}
         </TabsList>
 
-        {availableTabs.map((tab) => (
-          <TabsContent key={tab.id} value={tab.id}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <tab.icon className="h-5 w-5" />
-                  {tab.label}
-                </CardTitle>
-                <CardDescription>
-                  Configuration des paramètres {tab.label.toLowerCase()}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <tab.component />
-              </CardContent>
-            </Card>
-          </TabsContent>
-        ))}
-      </Tabs>
-    </div>
-  );
-}
+          {availableTabs.map((tab) => (
+            <TabsContent key={tab.id} value={tab.id}>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <tab.icon className="h-5 w-5" />
+                    {tab.label}
+                  </CardTitle>
+                  <CardDescription>
+                    Configuration des paramètres {tab.label.toLowerCase()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <tab.component />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          ))}
+        </Tabs>
+        </Container>
+      </div>
+    );
+  }
