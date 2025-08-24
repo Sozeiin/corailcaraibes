@@ -184,8 +184,18 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
 
   const onSubmit = async (data: InterventionFormData) => {
     setIsSubmitting(true);
-    
+
     try {
+      if (interventionParts.some(p => p.stockItemId && p.availableQuantity !== undefined && p.quantity > p.availableQuantity)) {
+        toast({
+          title: "Stock insuffisant",
+          description: "La quantité demandée dépasse le stock disponible",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       console.log('Intervention form data:', data);
       
       const interventionData = {
@@ -254,6 +264,16 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
           .insert(partsData);
 
         if (partsError) throw partsError;
+
+        const reservationIds = interventionParts
+          .filter(p => p.reservationId)
+          .map(p => p.reservationId as string);
+        if (reservationIds.length > 0) {
+          await supabase
+            .from('stock_reservations')
+            .update({ intervention_id: interventionId })
+            .in('id', reservationIds);
+        }
       }
 
       // Envoyer une notification au technicien si assigné
@@ -300,7 +320,13 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     }
   };
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    const reservationIds = interventionParts
+      .filter(p => p.reservationId && !p.id)
+      .map(p => p.reservationId as string);
+    if (reservationIds.length > 0) {
+      await supabase.from('stock_reservations').delete().in('id', reservationIds);
+    }
     form.reset();
     setInterventionParts([]);
     onClose();
