@@ -66,7 +66,7 @@ const menuItems = [{
       url: '/maintenance/preventive'
     },
     {
-      title: 'Planning Définitif',
+      title: 'Planning',
       url: '/maintenance/gantt'
     },
     {
