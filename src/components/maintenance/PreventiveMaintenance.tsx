@@ -9,87 +9,80 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ManualMaintenanceTable } from '@/components/maintenance/ManualMaintenanceTable';
 import { ScheduledMaintenanceTable } from '@/components/maintenance/ScheduledMaintenanceTable';
 import { MaintenanceManualDialog } from '@/components/maintenance/MaintenanceManualDialog';
-
 export function PreventiveMaintenance() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('manuals');
-
-  const { data: maintenanceManuals = [], isLoading: manualsLoading } = useQuery({
+  const {
+    data: maintenanceManuals = [],
+    isLoading: manualsLoading
+  } = useQuery({
     queryKey: ['maintenance-manuals'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('maintenance_manuals')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('maintenance_manuals').select(`
           *,
           boats(name, model),
           maintenance_manual_tasks(*)
-        `)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
+        `).eq('is_active', true).order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
 
       // Pour chaque manuel, récupérer les dernières interventions pour chaque tâche
-      const manualsWithLastInterventions = await Promise.all(
-        data.map(async (manual) => {
-          const tasksWithLastExecution = await Promise.all(
-            (manual.maintenance_manual_tasks || []).map(async (task) => {
-              // Rechercher la dernière intervention complétée pour cette tâche et ce bateau
-              const { data: lastIntervention } = await supabase
-                .from('interventions')
-                .select('completed_date, status')
-                .eq('boat_id', manual.boat_id)
-                .ilike('title', `%${task.task_name}%`)
-                .eq('status', 'completed')
-                .order('completed_date', { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-              return {
-                id: task.id,
-                name: task.task_name,
-                interval: task.interval_value,
-                unit: task.interval_unit,
-                description: task.description,
-                lastExecution: lastIntervention?.completed_date || null
-              };
-            })
-          );
-
+      const manualsWithLastInterventions = await Promise.all(data.map(async manual => {
+        const tasksWithLastExecution = await Promise.all((manual.maintenance_manual_tasks || []).map(async task => {
+          // Rechercher la dernière intervention complétée pour cette tâche et ce bateau
+          const {
+            data: lastIntervention
+          } = await supabase.from('interventions').select('completed_date, status').eq('boat_id', manual.boat_id).ilike('title', `%${task.task_name}%`).eq('status', 'completed').order('completed_date', {
+            ascending: false
+          }).limit(1).maybeSingle();
           return {
-            id: manual.id,
-            boatId: manual.boat_id,
-            boatName: manual.boats?.name || 'Non spécifié',
-            boatModel: manual.boat_model,
-            manufacturer: manual.manufacturer,
-            tasks: tasksWithLastExecution,
-            createdAt: manual.created_at
+            id: task.id,
+            name: task.task_name,
+            interval: task.interval_value,
+            unit: task.interval_unit,
+            description: task.description,
+            lastExecution: lastIntervention?.completed_date || null
           };
-        })
-      );
-
+        }));
+        return {
+          id: manual.id,
+          boatId: manual.boat_id,
+          boatName: manual.boats?.name || 'Non spécifié',
+          boatModel: manual.boat_model,
+          manufacturer: manual.manufacturer,
+          tasks: tasksWithLastExecution,
+          createdAt: manual.created_at
+        };
+      }));
       return manualsWithLastInterventions;
     }
   });
-
-  const { data: scheduledMaintenance = [], isLoading: scheduleLoading } = useQuery({
+  const {
+    data: scheduledMaintenance = [],
+    isLoading: scheduleLoading
+  } = useQuery({
     queryKey: ['scheduled-maintenance'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('scheduled_maintenance')
-        .select(`
+      const {
+        data,
+        error
+      } = await supabase.from('scheduled_maintenance').select(`
           *,
           boats(name, model),
           maintenance_manual_tasks(task_name, interval_value, interval_unit)
-        `)
-        .eq('status', 'pending')
-        .order('scheduled_date', { ascending: true });
-
+        `).eq('status', 'pending').order('scheduled_date', {
+        ascending: true
+      });
       if (error) throw error;
-
       return data.map(schedule => ({
         id: schedule.id,
         boatId: schedule.boat_id,
@@ -102,14 +95,11 @@ export function PreventiveMaintenance() {
       }));
     }
   });
-
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Maintenance préventive</h2>
+          
           <p className="text-gray-600 mt-1">
             Gestion des manuels constructeur et planning automatique
           </p>
@@ -135,35 +125,24 @@ export function PreventiveMaintenance() {
                 <div className="flex items-center space-x-4">
                   <div className="relative flex-1 max-w-md">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                    <Input
-                      placeholder="Rechercher un manuel..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+                    <Input placeholder="Rechercher un manuel..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10" />
                   </div>
                 </div>
-                {canManage && (
-                  <Button
-                    onClick={() => setIsManualDialogOpen(true)}
-                    className="bg-marine-600 hover:bg-marine-700"
-                  >
+                {canManage && <Button onClick={() => setIsManualDialogOpen(true)} className="bg-marine-600 hover:bg-marine-700">
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter un manuel
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </div>
 
-            <ManualMaintenanceTable
-              manuals={maintenanceManuals}
-              isLoading={manualsLoading}
-              canManage={canManage}
-              onManualUpdated={() => {
-                queryClient.invalidateQueries({ queryKey: ['maintenance-manuals'] });
-                queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
-              }}
-            />
+            <ManualMaintenanceTable manuals={maintenanceManuals} isLoading={manualsLoading} canManage={canManage} onManualUpdated={() => {
+            queryClient.invalidateQueries({
+              queryKey: ['maintenance-manuals']
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['scheduled-maintenance']
+            });
+          }} />
           </div>
         </TabsContent>
 
@@ -178,27 +157,26 @@ export function PreventiveMaintenance() {
               </p>
             </div>
 
-            <ScheduledMaintenanceTable
-              maintenances={scheduledMaintenance}
-              isLoading={scheduleLoading}
-              canManage={canManage}
-              onInterventionCreated={() => {
-                queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
-                queryClient.invalidateQueries({ queryKey: ['interventions'] });
-              }}
-            />
+            <ScheduledMaintenanceTable maintenances={scheduledMaintenance} isLoading={scheduleLoading} canManage={canManage} onInterventionCreated={() => {
+            queryClient.invalidateQueries({
+              queryKey: ['scheduled-maintenance']
+            });
+            queryClient.invalidateQueries({
+              queryKey: ['interventions']
+            });
+          }} />
           </div>
         </TabsContent>
       </Tabs>
 
-      <MaintenanceManualDialog
-        isOpen={isManualDialogOpen}
-        onClose={() => {
-          setIsManualDialogOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['maintenance-manuals'] });
-          queryClient.invalidateQueries({ queryKey: ['scheduled-maintenance'] });
-        }}
-      />
-    </div>
-  );
+      <MaintenanceManualDialog isOpen={isManualDialogOpen} onClose={() => {
+      setIsManualDialogOpen(false);
+      queryClient.invalidateQueries({
+        queryKey: ['maintenance-manuals']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['scheduled-maintenance']
+      });
+    }} />
+    </div>;
 }
