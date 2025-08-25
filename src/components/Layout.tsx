@@ -8,7 +8,6 @@ import { MobileQuickActions } from '@/components/mobile/MobileQuickActions';
 import { MobileOfflineBar } from '@/components/mobile/MobileOfflineBar';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { backgroundSyncService } from '@/services/backgroundSync';
-import { PageShell } from '@/components/layout/PageShell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -38,18 +37,16 @@ export const Layout = ({ children }: LayoutProps) => {
   return (
     <SidebarProvider defaultOpen={false}>
       <MobileOfflineBar />
-      <PageShell>
-        <div className="flex flex-col sm:flex-row w-full bg-slate-50">
-          <AppSidebar />
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            <Header />
-            <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
-              {children}
-            </main>
-          </div>
-          <MobileQuickActions />
+      <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <Header />
+          <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
+            {children}
+          </main>
         </div>
-      </PageShell>
+        <MobileQuickActions />
+      </div>
     </SidebarProvider>
   );
 };

@@ -35,22 +35,22 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   const { user } = useAuth();
   const [stockSearchValue, setStockSearchValue] = useState('');
 
-  // Fetch available stock items  
+  // Fetch available stock items
   const { data: stockItems = [] } = useQuery({
     queryKey: ['stock-items-for-intervention'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stock_items')
-        .select('id,name,quantity,unit_price')
+        .select('id,name,quantity,unit_price,stock_reservations(quantity)')
         .eq('base_id', user?.baseId)
         .order('name');
 
       if (error) throw error;
       return (
-        data?.map(item => ({
-          ...item, 
-          available_quantity: item.quantity
-        })) || []
+        data?.map(item => {
+          const reserved = (item as any).stock_reservations?.reduce((sum: number, r: any) => sum + r.quantity, 0) || 0;
+          return { ...item, quantity: item.quantity - reserved, available_quantity: item.quantity - reserved };
+        }) || []
       ).filter(item => item.available_quantity > 0);
     }
   });
@@ -94,7 +94,12 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         return;
       }
       updatedParts[index].quantity = value;
-      
+      if (updatedParts[index].reservationId) {
+        await supabase
+          .from('stock_reservations')
+          .update({ quantity: value })
+          .eq('id', updatedParts[index].reservationId);
+      }
     } else {
       updatedParts[index] = { ...updatedParts[index], [field]: value };
     }
@@ -107,7 +112,10 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   };
 
   const removePart = async (index: number) => {
-    
+    const part = parts[index];
+    if (part.reservationId) {
+      await supabase.from('stock_reservations').delete().eq('id', part.reservationId);
+    }
     const updatedParts = parts.filter((_, i) => i !== index);
     onPartsChange(updatedParts);
   };
@@ -131,6 +139,17 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                 value={stockSearchValue}
                 onChange={setStockSearchValue}
                 onSelect={async (item) => {
+                  const { data: reservation, error } = await supabase
+                    .from('stock_reservations')
+                    .insert({ stock_item_id: item.id, quantity: 1 })
+                    .select('id')
+                    .single();
+
+                  if (error) {
+                    console.error('Error reserving stock:', error);
+                    return;
+                  }
+
                   const newPart: InterventionPart = {
                     stockItemId: item.id,
                     partName: item.name,
@@ -138,6 +157,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                     unitCost: (item as any).unit_price || 0,
                     totalCost: (item as any).unit_price || 0,
                     availableQuantity: (item as any).available_quantity,
+                    reservationId: reservation.id,
                     notes: ''
                   };
 

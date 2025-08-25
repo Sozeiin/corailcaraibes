@@ -54,7 +54,8 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [codeToCreate, setCodeToCreate] = useState('');
   
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
+  // Debug logs for dialog state
+  console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
 
   const validateBarcodeFormat = useCallback((code: string): boolean => {
     if (!code || typeof code !== 'string') return false;
@@ -73,9 +74,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   }, []);
 
   const startScan = async (operation: 'add' | 'remove') => {
-    console.log('🚀 DEBUT DU SCAN - Opération:', operation, 'User:', user?.role);
-    console.log('📱 Navigator available:', !!navigator);
-    console.log('📷 getUserMedia available:', !!navigator?.mediaDevices?.getUserMedia);
+    console.log('🚀 DEBUT DU SCAN - Opération:', operation);
     setCurrentOperation(operation);
     setIsScanning(true);
     
@@ -206,32 +205,10 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     } catch (error) {
       console.error('❌ ERREUR SCANNER:', error);
       setIsScanning(false);
-      
-      let errorMessage = '';
-      let errorTitle = '';
-      
-      if (error.name === 'NotAllowedError') {
-        errorTitle = '🚫 Accès caméra refusé';
-        errorMessage = `Pour utiliser le scanner, vous devez autoriser l'accès à la caméra :
-        
-1. Cliquez sur l'icône 🔒 ou 📷 dans la barre d'adresse
-2. Autorisez l'accès à la caméra
-3. Rechargez la page si nécessaire
-
-En attendant, utilisez la saisie manuelle ci-dessous.`;
-      } else if (error.name === 'NotFoundError') {
-        errorTitle = '📷 Caméra non trouvée';
-        errorMessage = 'Aucune caméra n\'a été détectée sur votre appareil. Utilisez la saisie manuelle.';
-      } else {
-        errorTitle = 'Erreur Scanner';
-        errorMessage = `Impossible d'accéder à la caméra: ${error.message}`;
-      }
-      
       toast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: 'destructive',
-        duration: 8000
+        title: 'Erreur Scanner',
+        description: `Impossible d'accéder à la caméra: ${error.message}`,
+        variant: 'destructive'
       });
     }
   };
@@ -518,6 +495,14 @@ En attendant, utilisez la saisie manuelle ci-dessous.`;
     setIsCreateDialogOpen(false);
   };
 
+  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'technicien';
+
+  // Debug logs pour vérifier les permissions
+  console.log('StockScanner - User data:', { 
+    user: user, 
+    role: user?.role, 
+    canManageStock: canManageStock 
+  });
 
   if (!canManageStock) {
     console.log('StockScanner - Access denied, user cannot manage stock');

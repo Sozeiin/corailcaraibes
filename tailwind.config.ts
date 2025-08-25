@@ -11,9 +11,14 @@ export default {
 	],
 	prefix: "",
 	theme: {
-                container: { center: true, padding: { DEFAULT: '1rem', sm: '1.25rem', lg: '2rem' } },
-                screens: { sm: '640px', md: '768px', lg: '1024px', xl: '1280px', '2xl': '1536px' },
-                extend: {
+		container: {
+			center: true,
+			padding: '2rem',
+			screens: {
+				'2xl': '1400px'
+			}
+		},
+		extend: {
 			screens: {
 				'xs': '475px',
 			},
@@ -147,10 +152,5 @@ export default {
 			}
 		}
 	},
-        plugins: [
-                require('tailwindcss-animate'),
-                require('@tailwindcss/forms'),
-                require('@tailwindcss/line-clamp'),
-                require('@tailwindcss/aspect-ratio')
-        ],
+	plugins: [require("tailwindcss-animate")],
 } satisfies Config;
