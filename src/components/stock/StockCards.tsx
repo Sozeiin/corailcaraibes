@@ -1,8 +1,9 @@
 import React, { memo, useMemo } from 'react';
-import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus, Eye } from 'lucide-react';
+import { Edit, Package, AlertTriangle, Copy, Plus, Minus, Eye } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ResponsiveImage } from '@/components/ui/responsive-image';
 import { StockItem } from '@/types';
 import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
 
@@ -35,14 +36,14 @@ const StockCard = memo(({
   const isLowStock = item.quantity <= item.minThreshold;
   
   return (
-    <Card className={`transition-shadow hover:shadow-md ${isLowStock ? 'border-orange-200' : ''}`}>
+    <Card className={`max-w-full p-4 sm:p-6 transition-shadow hover:shadow-md ${isLowStock ? 'border-orange-200' : ''}`}>
       {item.photoUrl && (
         <div className="mb-4">
-          <img
+          <ResponsiveImage
+            className="rounded-t-lg"
+            aspect="video"
             src={item.photoUrl}
             alt={item.name}
-            className="w-full h-32 object-cover rounded-t-lg"
-            loading="lazy"
           />
         </div>
       )}
@@ -98,28 +99,27 @@ const StockCard = memo(({
           <div className="flex items-center gap-2 pt-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onEdit(item)}
-              className="flex-1"
+              className="flex-1 h-10 sm:h-11 px-4 sm:px-5 text-sm sm:text-base"
             >
-              <Edit className="h-4 w-4" />
+              <Edit className="size-4 sm:size-5" />
             </Button>
             {onDuplicate && (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onDuplicate(item)}
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm sm:text-base"
               >
-                <Copy className="h-4 w-4" />
+                <Copy className="size-4 sm:size-5" />
               </Button>
             )}
             {onViewDetails && (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => onViewDetails(item)}
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm sm:text-base"
               >
-                <Eye className="h-4 w-4" />
+                <Eye className="size-4 sm:size-5" />
               </Button>
             )}
           </div>
@@ -129,19 +129,19 @@ const StockCard = memo(({
           <div className="flex items-center gap-2 pt-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onUpdateQuantity(item.id, Math.max(0, item.quantity - 1))}
               disabled={item.quantity <= 0}
+              className="h-10 sm:h-11 px-4 sm:px-5 text-sm sm:text-base"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="size-4 sm:size-5" />
             </Button>
             <span className="flex-1 text-center text-sm">Ajuster stock</span>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+              className="h-10 sm:h-11 px-4 sm:px-5 text-sm sm:text-base"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="size-4 sm:size-5" />
             </Button>
           </div>
         )}
