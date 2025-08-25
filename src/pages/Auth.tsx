@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { secureStorage } from '@/lib/storage';
+import { PageShell } from '@/components/PageShell';
 export default function Auth() {
   const {
     isAuthenticated
@@ -147,7 +148,7 @@ export default function Auth() {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
+  return <PageShell className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
       <Card className="w-full max-w-md rounded-lg">
         <CardHeader className="text-center">
           <img src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
@@ -261,5 +262,5 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
-    </div>;
+    </PageShell>;
 }
