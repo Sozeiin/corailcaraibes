@@ -217,7 +217,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
                     <div className="flex justify-center my-1">
                       <div className="h-3 w-3">{getWeatherIcon(day.condition || '')}</div>
                     </div>
-                    <div className="text-[10px]">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
+                    <div className="text-[10px] mt-0.5">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
                   </div>;
             }) || []}
             </div>
