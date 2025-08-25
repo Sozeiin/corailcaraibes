@@ -268,12 +268,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         const reservationIds = interventionParts
           .filter(p => p.reservationId)
           .map(p => p.reservationId as string);
-        if (reservationIds.length > 0) {
-          await supabase
-            .from('stock_reservations')
-            .update({ intervention_id: interventionId })
-            .in('id', reservationIds);
-        }
+        // Stock reservations removed for simplicity
       }
 
       // Envoyer une notification au technicien si assigné
@@ -324,9 +319,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     const reservationIds = interventionParts
       .filter(p => p.reservationId && !p.id)
       .map(p => p.reservationId as string);
-    if (reservationIds.length > 0) {
-      await supabase.from('stock_reservations').delete().in('id', reservationIds);
-    }
+    // Stock reservations cleanup removed
     form.reset();
     setInterventionParts([]);
     onClose();

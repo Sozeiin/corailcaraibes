@@ -94,12 +94,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         return;
       }
       updatedParts[index].quantity = value;
-      if (updatedParts[index].reservationId) {
-        await supabase
-          .from('stock_reservations')
-          .update({ quantity: value })
-          .eq('id', updatedParts[index].reservationId);
-      }
+      // Stock reservation update removed for simplicity
     } else {
       updatedParts[index] = { ...updatedParts[index], [field]: value };
     }
@@ -113,9 +108,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
 
   const removePart = async (index: number) => {
     const part = parts[index];
-    if (part.reservationId) {
-      await supabase.from('stock_reservations').delete().eq('id', part.reservationId);
-    }
+    // Stock reservation cleanup removed
     const updatedParts = parts.filter((_, i) => i !== index);
     onPartsChange(updatedParts);
   };
@@ -139,17 +132,6 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                 value={stockSearchValue}
                 onChange={setStockSearchValue}
                 onSelect={async (item) => {
-                  const { data: reservation, error } = await supabase
-                    .from('stock_reservations')
-                    .insert({ stock_item_id: item.id, quantity: 1 })
-                    .select('id')
-                    .single();
-
-                  if (error) {
-                    console.error('Error reserving stock:', error);
-                    return;
-                  }
-
                   const newPart: InterventionPart = {
                     stockItemId: item.id,
                     partName: item.name,
@@ -157,7 +139,6 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                     unitCost: (item as any).unit_price || 0,
                     totalCost: (item as any).unit_price || 0,
                     availableQuantity: (item as any).available_quantity,
-                    reservationId: reservation.id,
                     notes: ''
                   };
 

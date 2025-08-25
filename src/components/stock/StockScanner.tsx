@@ -96,12 +96,12 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
 
       console.log('✅ Caméra obtenue, création interface...');
 
-      // Interface simple
+      // Interface optimisée avec zone de scan
       const overlay = document.createElement('div');
       overlay.id = 'scanner-overlay';
       overlay.style.cssText = `
         position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: black; z-index: 10000; display: flex; flex-direction: column;
+        background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column;
         align-items: center; justify-content: center; padding: 20px;
       `;
 
@@ -111,41 +111,66 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       video.playsInline = true;
       video.muted = true;
       video.style.cssText = `
-        width: 100%; max-width: 400px; height: 300px; 
-        border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
-        border-radius: 8px; object-fit: cover;
+        width: 100%; max-width: 350px; height: 250px; 
+        border: 2px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        border-radius: 12px; object-fit: cover; box-shadow: 0 0 20px rgba(255,255,255,0.3);
       `;
 
+      // Zone de scan visible
+      const scanZone = document.createElement('div');
+      scanZone.style.cssText = `
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 200px; height: 100px; border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        border-radius: 8px; pointer-events: none; z-index: 1;
+        background: ${operation === 'add' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+      `;
+
+      const videoContainer = document.createElement('div');
+      videoContainer.style.cssText = 'position: relative; display: inline-block;';
+      videoContainer.appendChild(video);
+      videoContainer.appendChild(scanZone);
+
       const title = document.createElement('h2');
-      title.textContent = operation === 'add' ? 'SCANNER POUR AJOUTER' : 'SCANNER POUR RETIRER';
+      title.textContent = operation === 'add' ? '📥 AJOUTER AU STOCK' : '📤 RETIRER DU STOCK';
       title.style.cssText = `
         color: ${operation === 'add' ? '#22c55e' : '#ef4444'}; 
-        margin-bottom: 20px; text-align: center; font-size: 18px;
+        margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: bold;
+      `;
+
+      const instruction = document.createElement('div');
+      instruction.textContent = 'Placez le code-barres dans la zone colorée';
+      instruction.style.cssText = `
+        color: #ccc; margin-bottom: 15px; text-align: center; font-size: 14px;
       `;
 
       const status = document.createElement('div');
       status.id = 'scan-status';
-      status.textContent = 'Prêt à scanner...';
+      status.textContent = '🔍 Recherche de codes-barres...';
       status.style.cssText = `
-        color: white; margin: 20px 0; text-align: center; 
-        font-size: 16px; font-weight: bold;
+        color: white; margin: 15px 0; text-align: center; 
+        font-size: 16px; font-weight: bold; min-height: 24px;
       `;
 
       const closeBtn = document.createElement('button');
-      closeBtn.textContent = 'FERMER';
+      closeBtn.textContent = '✕ FERMER';
       closeBtn.style.cssText = `
         padding: 12px 30px; background: #ef4444; color: white;
-        border: none; border-radius: 6px; font-size: 16px; 
-        font-weight: bold; cursor: pointer; margin-top: 20px;
+        border: none; border-radius: 8px; font-size: 16px; 
+        font-weight: bold; cursor: pointer; margin-top: 15px; transition: all 0.2s;
       `;
+      closeBtn.onmouseover = () => closeBtn.style.background = '#dc2626';
+      closeBtn.onmouseout = () => closeBtn.style.background = '#ef4444';
 
       overlay.appendChild(title);
-      overlay.appendChild(video);
+      overlay.appendChild(instruction);
+      overlay.appendChild(videoContainer);
       overlay.appendChild(status);
       overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
 
       let scanning = true;
+      
+      // Configuration optimisée du lecteur
       const codeReader = new BrowserMultiFormatReader();
 
       const cleanup = () => {
@@ -168,39 +193,40 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         });
       });
 
-      console.log('🔍 DEMARRAGE DECODAGE...');
-      status.textContent = 'Scanning en cours...';
+      console.log('🔍 DEMARRAGE DECODAGE OPTIMISE...');
+      status.textContent = '🔍 Scan en cours...';
 
-      // Décodage simple
-      const decode = async () => {
-        while (scanning) {
-          try {
-            const result = await codeReader.decodeOnceFromVideoDevice(undefined, video);
-            if (result && scanning) {
-              const code = result.getText().trim();
-              console.log('📷 CODE DETECTE:', code);
-              status.textContent = `Code détecté: ${code}`;
+      // Décodage continu optimisé
+      const startDecoding = () => {
+        codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
+          if (!scanning) return;
+          
+          if (result) {
+            const code = result.getText().trim();
+            console.log('📷 CODE DETECTE:', code);
+            
+            if (validateBarcodeFormat(code)) {
+              console.log('✅ CODE VALIDE:', code);
+              status.textContent = `✅ ${code}`;
+              scanning = false;
               
-              if (code && code.length >= 3) {
-                console.log('✅ CODE ACCEPTE:', code);
-                status.textContent = `✅ Code validé: ${code}`;
-                setTimeout(() => {
-                  cleanup();
-                  processScannedCode(code, operation);
-                }, 500);
-                return;
-              }
+              setTimeout(() => {
+                cleanup();
+                processScannedCode(code, operation);
+              }, 300);
+            } else {
+              status.textContent = `⚠️ Code invalide: ${code}`;
             }
-          } catch (error) {
-            if (scanning && error.name !== 'NotFoundException') {
+          } else if (error && error.name !== 'NotFoundException') {
+            if (scanning) {
               console.log('⚠️ Erreur scan:', error.name);
+              status.textContent = '🔍 Scan en cours...';
             }
           }
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
+        });
       };
 
-      decode();
+      startDecoding();
       
     } catch (error) {
       console.error('❌ ERREUR SCANNER:', error);
