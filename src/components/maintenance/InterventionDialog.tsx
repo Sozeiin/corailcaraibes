@@ -255,7 +255,6 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
           part_name: part.partName,
           quantity: part.quantity,
           unit_cost: part.unitCost,
-          total_cost: part.totalCost,
           notes: part.notes || null
         }));
 
