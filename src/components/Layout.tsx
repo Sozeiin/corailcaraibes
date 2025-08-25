@@ -8,17 +8,20 @@ import { MobileQuickActions } from '@/components/mobile/MobileQuickActions';
 import { MobileOfflineBar } from '@/components/mobile/MobileOfflineBar';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
 import { backgroundSyncService } from '@/services/backgroundSync';
-
 interface LayoutProps {
   children: React.ReactNode;
 }
-
-export const Layout = ({ children }: LayoutProps) => {
-  const { isAuthenticated } = useAuth();
-  const { isNative } = useMobileCapacitor();
+export const Layout = ({
+  children
+}: LayoutProps) => {
+  const {
+    isAuthenticated
+  } = useAuth();
+  const {
+    isNative
+  } = useMobileCapacitor();
   // Initialize offline sync (SQLite DB setup & auto-sync when back online)
   useOfflineSync();
-
   useEffect(() => {
     // Add mobile-specific classes
     if (isNative) {
@@ -34,19 +37,17 @@ export const Layout = ({ children }: LayoutProps) => {
   }
 
   // Pour les pages authentifiées, on affiche le layout complet
-  return (
-    <SidebarProvider defaultOpen={false}>
+  return <SidebarProvider defaultOpen={false}>
       <MobileOfflineBar />
       <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
-          <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6">
+          <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6 bg-slate-50">
             {children}
           </main>
         </div>
         <MobileQuickActions />
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
