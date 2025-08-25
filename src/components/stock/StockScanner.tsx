@@ -217,7 +217,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
             } else {
               status.textContent = `⚠️ Code invalide: ${code}`;
             }
-          } else if (error && error.name !== 'NotFoundException') {
+          } else if (error && !['NotFoundException', 'NotFoundException2'].includes(error.name)) {
             if (scanning) {
               console.log('⚠️ Erreur scan:', error.name);
               status.textContent = '🔍 Scan en cours...';
