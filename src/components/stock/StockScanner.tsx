@@ -73,30 +73,54 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     return !invalidPatterns.some(pattern => pattern.test(trimmedCode));
   }, []);
 
+  const enhanceImageForScanning = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Amélioration de contraste pour codes-barres endommagés
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      
+      // Augmenter le contraste
+      const factor = 1.5;
+      const intercept = 128 * (1 - factor);
+      
+      data[i] = Math.max(0, Math.min(255, data[i] * factor + intercept));     // R
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] * factor + intercept)); // G
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] * factor + intercept)); // B
+      
+      // Conversion binaire pour améliorer la lisibilité
+      if (brightness < 128) {
+        data[i] = data[i + 1] = data[i + 2] = 0; // Noir
+      } else {
+        data[i] = data[i + 1] = data[i + 2] = 255; // Blanc
+      }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+  }, []);
+
   const startScan = async (operation: 'add' | 'remove') => {
-    console.log('🚀 DEBUT DU SCAN - Opération:', operation);
+    console.log('🚀 DEBUT DU SCAN OPTIMISE - Opération:', operation);
     setCurrentOperation(operation);
     setIsScanning(true);
     
     try {
-      console.log('📱 Vérification du support caméra...');
-      
       if (!navigator.mediaDevices?.getUserMedia) {
         throw new Error('Caméra non supportée');
       }
 
-      console.log('📷 Demande d\'accès caméra...');
+      // Configuration caméra optimisée pour la qualité
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { min: 640, ideal: 1280 },
-          height: { min: 480, ideal: 720 }
+          width: { min: 720, ideal: 1920, max: 1920 },
+          height: { min: 480, ideal: 1080, max: 1080 },
+          frameRate: { ideal: 30, max: 60 }
         }
       });
 
-      console.log('✅ Caméra obtenue, création interface...');
-
-      // Interface optimisée avec zone de scan
+      // Interface améliorée avec feedback en temps réel
       const overlay = document.createElement('div');
       overlay.id = 'scanner-overlay';
       overlay.style.cssText = `
@@ -111,19 +135,32 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       video.playsInline = true;
       video.muted = true;
       video.style.cssText = `
-        width: 100%; max-width: 350px; height: 250px; 
-        border: 2px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
-        border-radius: 12px; object-fit: cover; box-shadow: 0 0 20px rgba(255,255,255,0.3);
+        width: 100%; max-width: 400px; height: 300px; 
+        border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        border-radius: 12px; object-fit: cover; 
+        box-shadow: 0 0 30px rgba(255,255,255,0.3);
+        filter: brightness(1.1) contrast(1.2);
       `;
 
-      // Zone de scan visible
+      // Zone de scan avec animation
       const scanZone = document.createElement('div');
       scanZone.style.cssText = `
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 200px; height: 100px; border: 3px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
+        width: 250px; height: 120px; border: 4px solid ${operation === 'add' ? '#22c55e' : '#ef4444'};
         border-radius: 8px; pointer-events: none; z-index: 1;
         background: ${operation === 'add' ? 'rgba(34, 197, 94, 0.1)' : 'rgba(239, 68, 68, 0.1)'};
+        animation: pulse 2s infinite;
       `;
+
+      // Ajouter animation CSS
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+        }
+      `;
+      document.head.appendChild(style);
 
       const videoContainer = document.createElement('div');
       videoContainer.style.cssText = 'position: relative; display: inline-block;';
@@ -138,17 +175,24 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       `;
 
       const instruction = document.createElement('div');
-      instruction.textContent = 'Placez le code-barres dans la zone colorée';
+      instruction.textContent = 'Placez le code-barres dans la zone. Tenez fermement pour les codes endommagés.';
       instruction.style.cssText = `
         color: #ccc; margin-bottom: 15px; text-align: center; font-size: 14px;
       `;
 
       const status = document.createElement('div');
       status.id = 'scan-status';
-      status.textContent = '🔍 Recherche de codes-barres...';
+      status.textContent = '🔍 Scanner ultra-rapide activé...';
       status.style.cssText = `
         color: white; margin: 15px 0; text-align: center; 
         font-size: 16px; font-weight: bold; min-height: 24px;
+      `;
+
+      const qualityIndicator = document.createElement('div');
+      qualityIndicator.id = 'quality-indicator';
+      qualityIndicator.style.cssText = `
+        color: #888; margin: 5px 0; text-align: center; 
+        font-size: 12px; min-height: 16px;
       `;
 
       const closeBtn = document.createElement('button');
@@ -165,12 +209,16 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       overlay.appendChild(instruction);
       overlay.appendChild(videoContainer);
       overlay.appendChild(status);
+      overlay.appendChild(qualityIndicator);
       overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
 
       let scanning = true;
+      let attemptCount = 0;
+      let lastScanTime = 0;
+      const scanCooldown = 80; // ms entre tentatives - plus rapide
       
-      // Configuration optimisée du lecteur
+      // Configuration optimisée du lecteur ZXing
       const codeReader = new BrowserMultiFormatReader();
 
       const cleanup = () => {
@@ -178,55 +226,111 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         scanning = false;
         stream.getTracks().forEach(track => track.stop());
         const overlayEl = document.getElementById('scanner-overlay');
+        const styleEl = document.querySelector('style');
         if (overlayEl) overlayEl.remove();
+        if (styleEl && styleEl.textContent?.includes('@keyframes pulse')) styleEl.remove();
         setIsScanning(false);
       };
 
       closeBtn.onclick = cleanup;
 
-      // Attendre vidéo prête
-      console.log('⏳ Attente vidéo prête...');
+      // Attendre que la vidéo soit prête
       await new Promise((resolve) => {
         video.addEventListener('loadedmetadata', () => {
-          console.log('✅ Vidéo prête');
           video.play().then(resolve);
         });
       });
 
-      console.log('🔍 DEMARRAGE DECODAGE OPTIMISE...');
-      status.textContent = '🔍 Scan en cours...';
+      console.log('🔍 DEMARRAGE DECODAGE ULTRA-OPTIMISE...');
+      status.textContent = '🔍 Scan ultra-rapide actif...';
 
-      // Décodage continu optimisé
-      const startDecoding = () => {
-        codeReader.decodeFromVideoDevice(undefined, video, (result, error) => {
-          if (!scanning) return;
+      // Canvas pour préprocessing
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Fonction de scan optimisée
+      const performAdvancedScan = () => {
+        if (!scanning) return;
+        
+        const now = Date.now();
+        if (now - lastScanTime < scanCooldown) {
+          requestAnimationFrame(performAdvancedScan);
+          return;
+        }
+        lastScanTime = now;
+        attemptCount++;
+
+        try {
+          // Capturer frame pour analyse
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // Zone de scan focalisée (crop central)
+          const cropX = canvas.width * 0.1;
+          const cropY = canvas.height * 0.3;
+          const cropWidth = canvas.width * 0.8;
+          const cropHeight = canvas.height * 0.4;
+
+          const croppedCanvas = document.createElement('canvas');
+          const croppedCtx = croppedCanvas.getContext('2d');
+          croppedCanvas.width = cropWidth;
+          croppedCanvas.height = cropHeight;
           
-          if (result) {
-            const code = result.getText().trim();
-            console.log('📷 CODE DETECTE:', code);
-            
-            if (validateBarcodeFormat(code)) {
-              console.log('✅ CODE VALIDE:', code);
-              status.textContent = `✅ ${code}`;
-              scanning = false;
-              
-              setTimeout(() => {
-                cleanup();
-                processScannedCode(code, operation);
-              }, 300);
-            } else {
-              status.textContent = `⚠️ Code invalide: ${code}`;
+          croppedCtx?.drawImage(
+            canvas, cropX, cropY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+          );
+
+          // Tentative 1: Image normale
+          try {
+            const result = codeReader.decodeFromCanvas(croppedCanvas);
+            if (scanning && result) {
+              const code = result.getText().trim();
+              console.log('📷 CODE DETECTE (normal):', code);
+              handleSuccessfulScan(code, status, cleanup, operation, attemptCount);
+              return;
             }
-          } else if (error && !['NotFoundException', 'NotFoundException2'].includes(error.name)) {
-            if (scanning) {
-              console.log('⚠️ Erreur scan:', error.name);
-              status.textContent = '🔍 Scan en cours...';
+          } catch (normalError) {
+            // Tentative 2: Image améliorée pour codes endommagés
+            if (scanning && croppedCtx) {
+              try {
+                enhanceImageForScanning(croppedCanvas, croppedCtx);
+                const enhancedResult = codeReader.decodeFromCanvas(croppedCanvas);
+                
+                if (scanning && enhancedResult) {
+                  const code = enhancedResult.getText().trim();
+                  console.log('📷 CODE DETECTE (amélioré):', code);
+                  handleSuccessfulScan(code, status, cleanup, operation, attemptCount);
+                  return;
+                }
+              } catch (enhancedError) {
+                // Continuer le scan si pas de résultat
+              }
             }
           }
-        });
+          
+          // Feedback utilisateur pour codes difficiles
+          if (attemptCount % 25 === 0) { // Toutes les 2 secondes environ
+            qualityIndicator.textContent = `💡 Conseil: Rapprochez/éloignez le code ou améliorez l'éclairage`;
+          }
+          if (attemptCount % 40 === 0) {
+            status.textContent = '🔍 Recherche intensive pour codes endommagés...';
+          }
+          
+          // Continuer le scan
+          if (scanning) {
+            requestAnimationFrame(performAdvancedScan);
+          }
+
+        } catch (error) {
+          console.error('Erreur capture frame:', error);
+          requestAnimationFrame(performAdvancedScan);
+        }
       };
 
-      startDecoding();
+      // Démarrer le scan optimisé
+      requestAnimationFrame(performAdvancedScan);
       
     } catch (error) {
       console.error('❌ ERREUR SCANNER:', error);
@@ -236,6 +340,23 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         description: `Impossible d'accéder à la caméra: ${error.message}`,
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleSuccessfulScan = (code: string, status: HTMLElement, cleanup: () => void, operation: 'add' | 'remove', attemptCount: number) => {
+    if (validateBarcodeFormat(code)) {
+      console.log(`✅ CODE VALIDE détecté en ${attemptCount} tentatives:`, code);
+      status.textContent = `✅ ${code} - Détecté en ${attemptCount} tentatives!`;
+      
+      setTimeout(() => {
+        cleanup();
+        processScannedCode(code, operation);
+      }, 500);
+    } else {
+      status.textContent = `⚠️ Code invalide: ${code}`;
+      setTimeout(() => {
+        status.textContent = '🔍 Scan ultra-rapide actif...';
+      }, 1000);
     }
   };
 
