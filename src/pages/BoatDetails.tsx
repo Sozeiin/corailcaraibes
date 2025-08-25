@@ -11,6 +11,7 @@ import { BoatMaintenancePlanner } from '@/components/boats/BoatMaintenancePlanne
 import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { BoatPurchaseHistory } from '@/components/boats/BoatPurchaseHistory';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { AutoGrid } from '@/components/layout/AutoGrid';
 const BoatDetails = () => {
   const {
     boatId
@@ -69,7 +70,7 @@ const BoatDetails = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <AutoGrid className="gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Modèle</p>
               <p className="text-lg">{boatWithBase.model}</p>
@@ -96,7 +97,7 @@ const BoatDetails = () => {
               <p className="text-sm font-medium text-muted-foreground">Base</p>
               <p className="text-lg">{boatWithBase.base?.name}</p>
             </div>
-          </div>
+          </AutoGrid>
         </CardContent>
       </Card>
 
@@ -143,8 +144,9 @@ const BoatDetails = () => {
         <TabsContent value="history" className="space-y-6">
           <BoatHistoryContent boatId={boatWithBase.id} />
         </TabsContent>
-      </Tabs>
-    </div>;
+        </Tabs>
+      </div>
+  );
 };
 
 export { BoatDetails };

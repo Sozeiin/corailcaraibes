@@ -9,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Stack } from '@/components/layout/Stack';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { SupplierDialog } from '@/components/suppliers/SupplierDialog';
@@ -180,7 +181,7 @@ export default function Suppliers() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <Stack className="p-6" gap="1.5rem">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -296,6 +297,6 @@ export default function Suppliers() {
         onClose={handleDetailsDialogClose}
         supplier={selectedSupplierForDetails}
       />
-    </div>
+    </Stack>
   );
 }

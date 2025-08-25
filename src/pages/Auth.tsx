@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import authLogo from '@/assets/auth-logo.png';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ResponsiveImage } from '@/components/layout/ResponsiveImage';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -150,7 +151,7 @@ export default function Auth() {
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-marine-500 to-ocean-500 p-4">
       <Card className="w-full max-w-md rounded-lg">
         <CardHeader className="text-center">
-          <img src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
+          <ResponsiveImage src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
           <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
@@ -260,6 +261,7 @@ export default function Auth() {
             </TabsContent>
           </Tabs>
         </CardContent>
-      </Card>
-    </div>;
+        </Card>
+      </div>
+  );
 }

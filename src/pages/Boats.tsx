@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
 import { BoatFilters } from '@/components/boats/BoatFilters';
 import { Boat } from '@/types';
+import { AutoGrid } from '@/components/layout/AutoGrid';
 const getStatusBadge = (status: string) => {
   const statusConfig = {
     available: {
@@ -210,19 +211,20 @@ export const Boats = () => {
                 </Button>}
             </div>
           </CardContent>
-        </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </Card> : <AutoGrid className="gap-6">
           {filteredBoats.map(boat => <BoatCard key={boat.id} boat={boat} onEdit={handleEdit} onDelete={handleDelete} onHistory={handleHistory} onMaintenance={handleMaintenance} />)}
-        </div>}
+        </AutoGrid>}
 
-      <BoatDialog 
-        isOpen={isDialogOpen} 
-        onClose={() => {
-          setIsDialogOpen(false);
-          setSelectedBoat(null);
-          // Rafraîchir les données après fermeture du dialog
-          refetchBoats();
-        }} 
-        boat={selectedBoat} 
-      />
-    </div>;
+        <BoatDialog
+          isOpen={isDialogOpen}
+          onClose={() => {
+            setIsDialogOpen(false);
+            setSelectedBoat(null);
+            // Rafraîchir les données après fermeture du dialog
+            refetchBoats();
+          }}
+          boat={selectedBoat}
+        />
+      </div>
+  );
 };
