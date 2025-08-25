@@ -5,7 +5,6 @@ import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake } from 'lucide-reac
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-
 interface WeatherWidgetData {
   location: string;
   temperature: number;
@@ -19,17 +18,21 @@ interface WeatherWidgetData {
     condition: string;
   }>;
 }
-
 interface WeatherWidgetProps {
   compact?: boolean;
 }
-
-const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
+const WeatherWidget: React.FC<WeatherWidgetProps> = ({
+  compact = false
+}) => {
   const [weather, setWeather] = useState<WeatherWidgetData | null>(null);
   const [loading, setLoading] = useState(false);
   const [location, setLocation] = useState<string>('');
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const {
+    toast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
 
   // Base-specific location configurations
   const baseLocations = {
@@ -39,7 +42,6 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
     // Default for unknown bases
     default: 'Paris, France'
   };
-
   const getWeatherIcon = (condition: string) => {
     const lowerCondition = condition.toLowerCase();
     if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) {
@@ -53,7 +55,6 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
     }
     return <Sun className="h-8 w-8 text-yellow-500" />;
   };
-
   const getLocationAndWeather = async () => {
     setLoading(true);
     try {
@@ -61,11 +62,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
       const baseId = user?.baseId;
       console.log('WeatherWidget: Current user baseId:', baseId);
       console.log('WeatherWidget: Available base locations:', baseLocations);
-      
-      const expectedLocation = baseId && baseLocations[baseId] 
-        ? baseLocations[baseId] 
-        : baseLocations.default;
-      
+      const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
       console.log('WeatherWidget: Expected location:', expectedLocation);
       setLocation(expectedLocation);
       await fetchWeatherByBaseId(baseId);
@@ -74,27 +71,28 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
       toast({
         title: "Erreur météo",
         description: "Impossible de récupérer les données météo",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);
     }
   };
-
   const fetchWeatherByBaseId = async (baseId?: string) => {
     console.log('WeatherWidget: fetchWeatherByBaseId called with baseId', baseId);
     try {
       console.log('WeatherWidget: Calling Supabase edge function with baseId...');
-      
-      const { data, error } = await supabase.functions.invoke('get-weather', {
-        body: { baseId }
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('get-weather', {
+        body: {
+          baseId
+        }
       });
-
       if (error) {
         console.error('WeatherWidget: Supabase function error:', error);
         throw error;
       }
-
       if (data) {
         console.log('WeatherWidget: Weather data received:', data);
         setWeather(data);
@@ -107,63 +105,51 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
       // En cas d'erreur, utiliser des données statiques adaptées à la base
       console.log('WeatherWidget: Error occurred, falling back to static data');
       const baseId = user?.baseId;
-      const fallbackLocation = baseId && baseLocations[baseId] 
-        ? baseLocations[baseId] 
-        : baseLocations.default;
-      
+      const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
       const staticWeather = {
         location: fallbackLocation,
         temperature: 18,
         condition: 'Partiellement nuageux',
         humidity: 65,
         windSpeed: 12,
-        forecast: [
-          {
-            date: 'Auj',
-            temp_max: 22,
-            temp_min: 14,
-            condition: 'Nuageux'
-          },
-          {
-            date: 'Dem',
-            temp_max: 25,
-            temp_min: 16,
-            condition: 'Ensoleillé'
-          },
-          {
-            date: 'Mer',
-            temp_max: 19,
-            temp_min: 13,
-            condition: 'Pluie'
-          }
-        ]
+        forecast: [{
+          date: 'Auj',
+          temp_max: 22,
+          temp_min: 14,
+          condition: 'Nuageux'
+        }, {
+          date: 'Dem',
+          temp_max: 25,
+          temp_min: 16,
+          condition: 'Ensoleillé'
+        }, {
+          date: 'Mer',
+          temp_max: 19,
+          temp_min: 13,
+          condition: 'Pluie'
+        }]
       };
       setWeather(staticWeather);
       setLocation('Données de démonstration - ' + fallbackLocation);
     }
   };
-
   useEffect(() => {
     console.log('WeatherWidget: useEffect triggered');
     console.log('WeatherWidget: Current user object:', user);
     getLocationAndWeather();
   }, [user]);
-
   if (loading) {
     if (compact) {
-      return (
-        <Card className="h-16">
+      return <Card className="h-16">
           <CardContent className="p-4 flex items-center justify-center">
             <div className="flex items-center gap-2">
               <RefreshCw className="h-4 w-4 animate-spin" />
               <span className="text-sm">Chargement météo...</span>
             </div>
           </CardContent>
-        </Card>
-      );
+        </Card>;
     }
-    return (
-      <Card>
+    return <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
             <RefreshCw className="h-5 w-5 animate-spin" />
@@ -173,25 +159,20 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
         <CardContent>
           <div className="text-center py-4">Chargement...</div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (!weather) {
     if (compact) {
-      return (
-        <Card className="h-16">
+      return <Card className="h-16">
           <CardContent className="p-4 flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Données météo non disponibles</span>
             <Button onClick={getLocationAndWeather} size="sm" variant="ghost">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </CardContent>
-        </Card>
-      );
+        </Card>;
     }
-    return (
-      <Card>
+    return <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Météo</CardTitle>
         </CardHeader>
@@ -204,13 +185,10 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
             </Button>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (compact) {
-    return (
-      <Card className="h-auto min-h-[5rem]">
+    return <Card className="h-auto h-auto ">
         <CardContent className="p-4 flex items-center justify-between w-full">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -232,49 +210,33 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
             
             <div className="flex items-center gap-2">
               {weather?.forecast?.map((day, index) => {
-                if (!day) return null;
-                const icon = getWeatherIcon(day.condition || '');
-                return (
-                  <div key={index} className="text-center text-xs">
+              if (!day) return null;
+              const icon = getWeatherIcon(day.condition || '');
+              return <div key={index} className="text-center text-xs">
                     <div className="font-medium text-[10px]">{day.date || ''}</div>
                     <div className="flex justify-center my-1">
                       <div className="h-3 w-3">{getWeatherIcon(day.condition || '')}</div>
                     </div>
                     <div className="text-[10px]">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
-                  </div>
-                );
-              }) || []}
+                  </div>;
+            }) || []}
             </div>
             
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={getLocationAndWeather}
-              disabled={loading}
-              className="h-8 w-8 p-0"
-            >
+            <Button variant="ghost" size="sm" onClick={getLocationAndWeather} disabled={loading} className="h-8 w-8 p-0">
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <Card>
+  return <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center justify-between">
           <span className="flex items-center gap-2">
             {getWeatherIcon(weather.condition)}
             Météo
           </span>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={getLocationAndWeather}
-            disabled={loading}
-          >
+          <Button variant="ghost" size="sm" onClick={getLocationAndWeather} disabled={loading}>
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </CardTitle>
@@ -300,20 +262,16 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({ compact = false }) => {
           <div className="text-sm font-medium mb-2">Prévisions 3 jours</div>
           <div className="grid grid-cols-3 gap-2 text-xs">
             {weather?.forecast?.map((day, index) => {
-              if (!day) return null;
-              return (
-                <div key={index} className="text-center p-2 bg-muted rounded">
+            if (!day) return null;
+            return <div key={index} className="text-center p-2 bg-muted rounded">
                   <div className="font-medium">{day.date || ''}</div>
                   <div className="my-1">{getWeatherIcon(day.condition || '')}</div>
                   <div>{day.temp_max || 0}°/{day.temp_min || 0}°</div>
-                </div>
-              );
-            }) || []}
+                </div>;
+          }) || []}
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default WeatherWidget;
