@@ -68,7 +68,7 @@ export const MobileDataManager = () => {
       const db = await sqliteService.getDatabase();
       
       // Clear all offline tables
-      const tables = ['offline_stock', 'offline_suppliers', 'offline_boat_components', 'offline_maintenance_tasks'];
+      const tables = ['offline_stock_items', 'offline_suppliers', 'offline_boat_components', 'offline_maintenance_tasks'];
       
       for (const table of tables) {
         await db.execute(`DELETE FROM ${table}`);
