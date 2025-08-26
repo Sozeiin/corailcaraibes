@@ -23,8 +23,16 @@ export class OfflineSyncManager {
       
       // Build query
       let query = (supabase as any).from(tableName).select('*');
-      
-      if (baseId) {
+
+      const baseFilteredTables = [
+        'boats',
+        'interventions',
+        'stock_items',
+        'orders',
+        'suppliers',
+        'boat_components'
+      ];
+      if (baseId && baseFilteredTables.includes(tableName)) {
         query = query.eq('base_id', baseId);
       }
       
