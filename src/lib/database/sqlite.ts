@@ -169,6 +169,81 @@ class SQLiteService {
         last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
       );`,
 
+      // Offline bases table
+      `CREATE TABLE IF NOT EXISTS offline_bases (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        location TEXT,
+        phone TEXT,
+        email TEXT,
+        manager TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Offline suppliers table
+      `CREATE TABLE IF NOT EXISTS offline_suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        contact_name TEXT,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        base_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Offline boat components table
+      `CREATE TABLE IF NOT EXISTS offline_boat_components (
+        id TEXT PRIMARY KEY,
+        boat_id TEXT,
+        name TEXT NOT NULL,
+        component_type TEXT,
+        status TEXT DEFAULT 'operational',
+        installation_date DATE,
+        last_service_date DATE,
+        base_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Offline maintenance tasks table
+      `CREATE TABLE IF NOT EXISTS offline_maintenance_tasks (
+        id TEXT PRIMARY KEY,
+        component_id TEXT,
+        title TEXT NOT NULL,
+        description TEXT,
+        frequency TEXT,
+        last_performed DATE,
+        next_due DATE,
+        base_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Sync conflicts table
+      `CREATE TABLE IF NOT EXISTS sync_conflicts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        table_name TEXT NOT NULL,
+        record_id TEXT NOT NULL,
+        local_data TEXT,
+        remote_data TEXT,
+        conflict_type TEXT NOT NULL,
+        resolution_strategy TEXT,
+        resolved INTEGER DEFAULT 0,
+        resolved_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
       // Pending changes queue
       `CREATE TABLE IF NOT EXISTS pending_changes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +262,7 @@ class SQLiteService {
     }
 
     // Initialize sync metadata
-    const syncTables = ['boats', 'interventions', 'stock_items', 'orders', 'order_items'];
+    const syncTables = ['boats', 'interventions', 'stock_items', 'orders', 'order_items', 'bases', 'suppliers', 'boat_components', 'maintenance_tasks'];
     for (const tableName of syncTables) {
       await this.db.run(
         `INSERT OR IGNORE INTO sync_metadata (table_name) VALUES (?)`,
@@ -214,37 +289,52 @@ class SQLiteService {
   async insert(table: string, data: any): Promise<string> {
     const db = await this.getDatabase();
     const id = data.id || this.generateUUID();
-    
-    const dataWithSync = {
+    const now = new Date().toISOString();
+    const tableName = `offline_${table}`;
+
+    const dataWithSync: any = {
       ...data,
       id,
       sync_status: 'pending',
-      last_modified: new Date().toISOString()
+      last_modified: now
     };
+
+    if (await this.hasColumn(tableName, 'created_at') && !('created_at' in dataWithSync)) {
+      dataWithSync.created_at = now;
+    }
+    if (await this.hasColumn(tableName, 'updated_at') && !('updated_at' in dataWithSync)) {
+      dataWithSync.updated_at = now;
+    }
 
     const columns = Object.keys(dataWithSync);
     const placeholders = columns.map(() => '?').join(', ');
     const values = Object.values(dataWithSync);
 
     await db.run(
-      `INSERT INTO offline_${table} (${columns.join(', ')}) VALUES (${placeholders})`,
+      `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${placeholders})`,
       values
     );
 
     // Add to pending changes queue
     await this.addPendingChange(table, id, 'INSERT', dataWithSync);
-    
+
     return id;
   }
 
   async update(table: string, id: string, data: any): Promise<void> {
     const db = await this.getDatabase();
-    
-    const dataWithSync = {
+    const now = new Date().toISOString();
+    const tableName = `offline_${table}`;
+
+    const dataWithSync: any = {
       ...data,
       sync_status: 'pending',
-      last_modified: new Date().toISOString()
+      last_modified: now
     };
+
+    if (await this.hasColumn(tableName, 'updated_at') && !('updated_at' in dataWithSync)) {
+      dataWithSync.updated_at = now;
+    }
 
     const setClause = Object.keys(dataWithSync)
       .map(key => `${key} = ?`)
@@ -252,7 +342,7 @@ class SQLiteService {
     const values = [...Object.values(dataWithSync), id];
 
     await db.run(
-      `UPDATE offline_${table} SET ${setClause} WHERE id = ?`,
+      `UPDATE ${tableName} SET ${setClause} WHERE id = ?`,
       values
     );
 
@@ -262,26 +352,28 @@ class SQLiteService {
 
   async delete(table: string, id: string): Promise<void> {
     const db = await this.getDatabase();
-    
+
     await db.run(`DELETE FROM offline_${table} WHERE id = ?`, [id]);
-    
+
     // Add to pending changes queue
     await this.addPendingChange(table, id, 'DELETE', { id });
   }
 
   async findAll(table: string, baseId?: string): Promise<any[]> {
     const db = await this.getDatabase();
-    
+
     let query = `SELECT * FROM offline_${table}`;
     let params: any[] = [];
-    
+
     if (baseId) {
       query += ' WHERE base_id = ?';
       params = [baseId];
     }
-    
-    query += ' ORDER BY created_at DESC';
-    
+
+    if (await this.hasColumn(`offline_${table}`, 'created_at')) {
+      query += ' ORDER BY created_at DESC';
+    }
+
     const result = await db.query(query, params);
     return result.values || [];
   }
@@ -324,11 +416,17 @@ class SQLiteService {
 
   async markSyncError(changeId: number, errorMessage: string): Promise<void> {
     const db = await this.getDatabase();
-    
+
     await db.run(
       `UPDATE pending_changes SET retry_count = retry_count + 1, error_message = ? WHERE id = ?`,
       [errorMessage, changeId]
     );
+  }
+
+  private async hasColumn(table: string, column: string): Promise<boolean> {
+    const db = await this.getDatabase();
+    const result = await db.query(`PRAGMA table_info(${table})`);
+    return result.values?.some((row: any) => row.name === column) ?? false;
   }
 
   private generateUUID(): string {
