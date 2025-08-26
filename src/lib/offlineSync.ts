@@ -9,7 +9,17 @@ export interface SyncOptions {
 
 export class OfflineSyncManager {
   private readonly defaultOptions: SyncOptions = {
-    tables: ['boats', 'interventions', 'stock_items', 'orders', 'suppliers', 'boat_components'],
+    tables: [
+      'bases',
+      'boats',
+      'interventions',
+      'stock_items',
+      'orders',
+      'order_items',
+      'suppliers',
+      'boat_components',
+      'maintenance_tasks'
+    ],
     conflictResolution: 'manual',
     batchSize: 50
   };
