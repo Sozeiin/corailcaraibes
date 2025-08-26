@@ -119,9 +119,9 @@ export const SupplierPriceForm: React.FC<SupplierPriceFormProps> = ({ order, onC
       }
 
       // 3. Advance workflow to order_confirmed
-      const { error: workflowError } = await supabase.rpc('advance_workflow_step', {
+      const { error: workflowError } = await supabase.rpc('advance_workflow_step' as any, {
         order_id_param: order.id,
-        new_status: 'order_confirmed',
+        new_status: 'ordered',
         user_id_param: user?.id,
         notes_param: negotiationNotes || 'Prix négociés et fournisseur sélectionné'
       });

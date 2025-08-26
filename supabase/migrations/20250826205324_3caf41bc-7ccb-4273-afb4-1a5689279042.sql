@@ -1,0 +1,2 @@
+-- Ajouter la fonction advance_workflow_step aux types exportés
+-- (Cette migration est pour régénérer les types)

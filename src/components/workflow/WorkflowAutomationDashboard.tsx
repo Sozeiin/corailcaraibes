@@ -57,8 +57,10 @@ export function WorkflowAutomationDashboard() {
         .eq('is_resolved', false)
         .order('triggered_at', { ascending: false });
       
-      if (error) throw error;
-      return data as WorkflowAlert[];
+      return (data || []).map((alert: any) => ({
+        ...alert,
+        step_status: alert.step_status || 'unknown'
+      })) as WorkflowAlert[];
     },
     enabled: !!user && (user.role === 'direction' || user.role === 'chef_base'),
     refetchInterval: 30000 // Refresh every 30 seconds
@@ -74,7 +76,11 @@ export function WorkflowAutomationDashboard() {
         .order('rule_name');
       
       if (error) throw error;
-      return data as AutomationRule[];
+      return (data || []).map((rule: any) => ({
+        ...rule,
+        from_status: rule.from_status || 'unknown',
+        to_status: rule.to_status || 'unknown'
+      })) as AutomationRule[];
     },
     enabled: !!user && user.role === 'direction'
   });

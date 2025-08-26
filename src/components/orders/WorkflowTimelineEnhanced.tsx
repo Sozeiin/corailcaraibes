@@ -58,7 +58,7 @@ export function WorkflowTimelineEnhanced({ orderId, onShippingClick }: WorkflowT
       return data.map(step => ({
         id: step.id,
         orderId: step.order_id,
-        stepStatus: step.step_status as WorkflowStatus,
+        stepStatus: (step as any).step_status as WorkflowStatus,
         stepNumber: step.step_number,
         stepName: step.step_name,
         stepDescription: step.step_description,

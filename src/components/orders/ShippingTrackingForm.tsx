@@ -53,10 +53,10 @@ export function ShippingTrackingForm({ order, onComplete }: ShippingTrackingForm
 
       if (orderError) throw orderError;
 
-      // 2. Advance workflow to shipping_antilles
-      const { error: workflowError } = await supabase.rpc('advance_workflow_step', {
+      // 2. Advance workflow to received
+      const { error: workflowError } = await supabase.rpc('advance_workflow_step' as any, {
         order_id_param: order.id,
-        new_status: 'shipping_antilles',
+        new_status: 'received',
         user_id_param: user?.id,
         notes_param: shippingNotes.trim() || `Expédition via ${carrier} - N° de suivi: ${trackingNumber}`
       });

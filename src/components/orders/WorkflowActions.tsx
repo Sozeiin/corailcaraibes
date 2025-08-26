@@ -41,14 +41,13 @@ export function WorkflowActions({
       newStatus: PurchaseWorkflowStatus;
       notes?: string;
     }) => {
-      const {
-        error
-      } = await supabase.rpc('advance_workflow_step', {
-        order_id_param: order.id,
-        new_status: newStatus,
-        user_id_param: user?.id,
-        notes_param: notesParam || null
-      });
+      const { error } = await supabase
+        .rpc('advance_workflow_step' as any, {
+          order_id_param: order.id,
+          new_status: newStatus,
+          user_id_param: user?.id,
+          notes_param: notesParam || null
+        });
       if (error) throw error;
     },
     onSuccess: () => {
