@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { sqliteService } from '@/lib/database/sqlite';
 import { useOfflineSync } from '@/hooks/useOfflineSync';
+import { Network } from '@capacitor/network';
+import { Preferences } from '@capacitor/preferences';
 
 interface UseOfflineDataOptions {
   table: string;
@@ -28,20 +30,40 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { syncStatus } = useOfflineSync();
-  
-  // Fallback si syncStatus n'est pas encore initialisé
-  const isOnline = syncStatus?.isOnline ?? true;
+
+  const getIsOnline = useCallback(async () => {
+    let networkOnline = true;
+    try {
+      const status = await Network.getStatus();
+      networkOnline = status.connected;
+    } catch (error) {
+      if (typeof navigator !== 'undefined') {
+        networkOnline = navigator.onLine;
+      }
+    }
+
+    let offlineMode = false;
+    try {
+      const pref = await Preferences.get({ key: 'offlineMode' });
+      offlineMode = pref.value === 'true';
+    } catch (error) {
+      console.warn('[useOfflineData] Error reading offlineMode preference:', error);
+    }
+
+    return (syncStatus?.isOnline ?? true) && networkOnline && !offlineMode;
+  }, [syncStatus?.isOnline]);
 
   const fetchData = useCallback(async () => {
+    const isOnline = await getIsOnline();
     console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}`);
     setLoading(true);
     setError(null);
-    
+
     try {
       let fetchedData: T[] = [];
-      
-      if (isOnline) {
-        console.log(`[useOfflineData] Fetching from Supabase for table: ${table}`);
+
+        if (isOnline) {
+          console.log(`[useOfflineData] Fetching from Supabase for table: ${table}`);
         // En ligne : récupérer de Supabase et synchroniser avec SQLite
         const queryBuilder = (supabase as any).from(table).select('*');
         
@@ -101,8 +123,8 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error(`[useOfflineData] Error fetching ${table}:`, err);
       
       // En cas d'erreur en ligne, essayer de récupérer depuis SQLite
-      if (isOnline) {
-        console.log(`[useOfflineData] Trying fallback to SQLite for ${table}`);
+        if (isOnline) {
+          console.log(`[useOfflineData] Trying fallback to SQLite for ${table}`);
         try {
           await sqliteService.initialize();
           const localData = await sqliteService.findAll(table, baseId);
@@ -120,21 +142,22 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       setLoading(false);
       console.log(`[useOfflineData] Fetch completed for ${table}`);
     }
-  }, [table, baseId, isOnline, ...dependencies]);
+    }, [table, baseId, getIsOnline, ...dependencies]);
 
-  const create = useCallback(async (item: Omit<T, 'id'>): Promise<string> => {
-    const newItem = {
-      ...item,
-      base_id: baseId,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    } as any;
+    const create = useCallback(async (item: Omit<T, 'id'>): Promise<string> => {
+      const isOnline = await getIsOnline();
+      const newItem = {
+        ...item,
+        base_id: baseId,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as any;
 
     try {
       let insertedData: any;
       
-      if (isOnline) {
-        // En ligne : créer dans Supabase
+        if (isOnline) {
+          // En ligne : créer dans Supabase
         const { data, error } = await (supabase as any)
           .from(table)
           .insert(newItem)
@@ -171,14 +194,15 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error creating item:', error);
       throw error;
     }
-  }, [table, baseId, isOnline]);
+    }, [table, baseId, getIsOnline]);
 
-  const update = useCallback(async (id: string, item: Partial<T>): Promise<void> => {
-    const updateData = { ...item, updated_at: new Date().toISOString() } as any;
+    const update = useCallback(async (id: string, item: Partial<T>): Promise<void> => {
+      const isOnline = await getIsOnline();
+      const updateData = { ...item, updated_at: new Date().toISOString() } as any;
 
     try {
-      if (isOnline) {
-        // En ligne : mettre à jour dans Supabase
+        if (isOnline) {
+          // En ligne : mettre à jour dans Supabase
         const { error } = await (supabase as any)
           .from(table)
           .update(updateData)
@@ -209,14 +233,15 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error updating item:', error);
       throw error;
     }
-  }, [table, isOnline]);
+    }, [table, getIsOnline]);
 
-  const remove = useCallback(async (id: string): Promise<void> => {
-    try {
-      console.log(`Attempting to delete ${table} with id:`, id);
-      
-      if (isOnline) {
-        // En ligne : supprimer de Supabase
+    const remove = useCallback(async (id: string): Promise<void> => {
+      const isOnline = await getIsOnline();
+      try {
+        console.log(`Attempting to delete ${table} with id:`, id);
+
+        if (isOnline) {
+          // En ligne : supprimer de Supabase
         const { error, data: deletedData } = await (supabase as any)
           .from(table)
           .delete()
@@ -247,7 +272,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       console.error('Error deleting item:', error);
       throw error;
     }
-  }, [table, isOnline]);
+    }, [table, getIsOnline]);
 
   useEffect(() => {
     fetchData();
