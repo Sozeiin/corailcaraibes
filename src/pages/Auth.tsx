@@ -151,7 +151,7 @@ export default function Auth() {
       <Card className="w-full max-w-md rounded-lg">
         <CardHeader className="text-center">
           <img src={authLogo} alt="Corail Caraibes logo" className="w-50 h-50 object-contain rounded-lg mx-auto mb-4" />
-          <CardTitle className="text-2xl">Corail Caraibes</CardTitle>
+        
           <CardDescription>Gestionnaire de flotte</CardDescription>
         </CardHeader>
         <CardContent>
