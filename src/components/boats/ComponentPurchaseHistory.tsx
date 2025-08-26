@@ -77,7 +77,10 @@ export function ComponentPurchaseHistory({ componentId, subComponentId, componen
     );
   }
 
-  const totalCost = purchaseHistory.reduce((sum, item) => sum + item.total_cost, 0);
+  const totalCost = purchaseHistory.reduce(
+    (sum, item) => sum + (item.total_cost ?? item.quantity * item.unit_cost),
+    0
+  );
 
   return (
     <Card>
@@ -140,7 +143,9 @@ export function ComponentPurchaseHistory({ componentId, subComponentId, componen
                       
                       <div className="flex items-center gap-2 font-medium">
                         <DollarSign className="h-4 w-4" />
-                        <span>Total: {purchase.total_cost.toFixed(2)} €</span>
+                        <span>
+                          Total: {(purchase.total_cost ?? purchase.quantity * purchase.unit_cost).toFixed(2)} €
+                        </span>
                       </div>
                     </div>
 
