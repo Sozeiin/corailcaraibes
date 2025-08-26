@@ -7,30 +7,26 @@ import { ArrowLeft, Shield, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { OilChangeStatusBadge } from '@/components/boats/OilChangeStatusBadge';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import type { EngineComponent } from '@/utils/engineMaintenanceUtils';
 
 export const BoatSafetyControls = () => {
   const { boatId } = useParams<{ boatId: string }>();
   const navigate = useNavigate();
 
-  // Fetch engine components for oil change badge
-  const { data: engineComponents = [] } = useQuery({
-    queryKey: ['boat-engines', boatId],
-    queryFn: async () => {
-      if (!boatId) return [];
-      const { data, error } = await supabase
-        .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
-        .eq('boat_id', boatId)
-        .ilike('component_type', '%moteur%');
-      
-      if (error) throw error;
-      return data as EngineComponent[];
-    },
-    enabled: !!boatId
+  const { data: components = [] } = useOfflineData<any>({
+    table: 'boat_components',
+    dependencies: [boatId]
   });
+
+  const engineComponents: EngineComponent[] = components
+    .filter((c: any) => c.boat_id === boatId && c.component_type?.toLowerCase().includes('moteur'))
+    .map((c: any) => ({
+      id: c.id,
+      component_name: c.component_name,
+      component_type: c.component_type,
+      current_engine_hours: c.current_engine_hours,
+      last_oil_change_hours: c.last_oil_change_hours
+    }));
 
   if (!boatId) {
     return (
