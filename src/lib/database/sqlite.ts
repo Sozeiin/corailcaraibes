@@ -262,7 +262,17 @@ class SQLiteService {
     }
 
     // Initialize sync metadata
-    const syncTables = ['boats', 'interventions', 'stock_items', 'orders', 'order_items', 'bases', 'suppliers', 'boat_components', 'maintenance_tasks'];
+    const syncTables = [
+      'boats',
+      'interventions',
+      'stock_items',
+      'orders',
+      'order_items',
+      'bases',
+      'suppliers',
+      'boat_components',
+      'maintenance_tasks'
+    ];
     for (const tableName of syncTables) {
       await this.db.run(
         `INSERT OR IGNORE INTO sync_metadata (table_name) VALUES (?)`,
