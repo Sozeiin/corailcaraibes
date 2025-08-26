@@ -9,10 +9,27 @@ export interface SyncOptions {
 
 export class OfflineSyncManager {
   private readonly defaultOptions: SyncOptions = {
-    tables: ['boats', 'interventions', 'stock_items', 'orders', 'suppliers', 'boat_components'],
+    tables: ['bases', 'boats', 'interventions', 'stock_items', 'orders', 'suppliers', 'boat_components'],
     conflictResolution: 'manual',
     batchSize: 50
   };
+
+  private readonly tablesWithBaseId = new Set([
+    'boats',
+    'interventions',
+    'stock_items',
+    'orders',
+    'suppliers'
+  ]);
+
+  private readonly tablesWithUpdatedAt = new Set([
+    'boats',
+    'interventions',
+    'stock_items',
+    'orders',
+    'suppliers',
+    'boat_components'
+  ]);
 
   async syncTableDown(tableName: string, baseId?: string): Promise<number> {
     let recordsProcessed = 0;
@@ -23,12 +40,12 @@ export class OfflineSyncManager {
       
       // Build query
       let query = (supabase as any).from(tableName).select('*');
-      
-      if (baseId) {
+
+      if (baseId && this.tablesWithBaseId.has(tableName)) {
         query = query.eq('base_id', baseId);
       }
-      
-      if (lastSync) {
+
+      if (lastSync && this.tablesWithUpdatedAt.has(tableName)) {
         query = query.gt('updated_at', new Date(lastSync).toISOString());
       }
       

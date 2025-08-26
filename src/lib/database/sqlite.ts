@@ -169,6 +169,59 @@ class SQLiteService {
         last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
       );`,
 
+      // Offline bases table
+      `CREATE TABLE IF NOT EXISTS offline_bases (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        location TEXT NOT NULL,
+        phone TEXT,
+        email TEXT,
+        manager TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Offline suppliers table
+      `CREATE TABLE IF NOT EXISTS offline_suppliers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        category TEXT,
+        address TEXT,
+        phone TEXT,
+        email TEXT,
+        base_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
+      // Offline boat components table
+      `CREATE TABLE IF NOT EXISTS offline_boat_components (
+        id TEXT PRIMARY KEY,
+        boat_id TEXT NOT NULL,
+        component_name TEXT NOT NULL,
+        component_type TEXT NOT NULL,
+        manufacturer TEXT,
+        model TEXT,
+        serial_number TEXT,
+        installation_date DATE,
+        last_maintenance_date DATE,
+        next_maintenance_date DATE,
+        maintenance_interval_days INTEGER,
+        status TEXT DEFAULT 'operational',
+        notes TEXT,
+        reference TEXT,
+        current_engine_hours INTEGER,
+        last_oil_change_hours INTEGER,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        sync_status TEXT DEFAULT 'pending',
+        last_modified DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+
       // Pending changes queue
       `CREATE TABLE IF NOT EXISTS pending_changes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -187,7 +240,7 @@ class SQLiteService {
     }
 
     // Initialize sync metadata
-    const syncTables = ['boats', 'interventions', 'stock_items', 'orders', 'order_items'];
+    const syncTables = ['bases', 'boats', 'interventions', 'stock_items', 'orders', 'order_items', 'suppliers', 'boat_components'];
     for (const tableName of syncTables) {
       await this.db.run(
         `INSERT OR IGNORE INTO sync_metadata (table_name) VALUES (?)`,
