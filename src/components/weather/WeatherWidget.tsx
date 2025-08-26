@@ -42,18 +42,18 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     // Default for unknown bases
     default: 'Paris, France'
   };
-  const getWeatherIcon = (condition: string) => {
+  const getWeatherIcon = (condition: string, size = "h-8 w-8") => {
     const lowerCondition = condition.toLowerCase();
     if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) {
-      return <CloudRain className="h-8 w-8 text-blue-500" />;
+      return <CloudRain className={`${size} text-blue-500`} />;
     }
     if (lowerCondition.includes('snow')) {
-      return <Snowflake className="h-8 w-8 text-blue-200" />;
+      return <Snowflake className={`${size} text-blue-200`} />;
     }
     if (lowerCondition.includes('cloud')) {
-      return <Cloud className="h-8 w-8 text-gray-500" />;
+      return <Cloud className={`${size} text-gray-500`} />;
     }
-    return <Sun className="h-8 w-8 text-yellow-500" />;
+    return <Sun className={`${size} text-yellow-500`} />;
   };
   const getLocationAndWeather = async () => {
     setLoading(true);
@@ -189,9 +189,9 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   }
   if (compact) {
     return <Card className="h-auto h-auto ">
-        <CardContent className="p-4 flex items-center justify-between w-full">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+        <CardContent className="p-2 flex items-center justify-between w-full">
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center gap-1">
               {getWeatherIcon(weather.condition)}
               <span className="text-sm font-medium">{weather.temperature}°C</span>
               <span className="text-xs text-muted-foreground">{weather.condition}</span>
@@ -201,27 +201,24 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
               {location}
             </div>
           </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-4 text-xs">
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 text-xs">
               <span>Humidité: {weather.humidity}%</span>
               <span>Vent: {weather.windSpeed} km/h</span>
             </div>
-            
+
             <div className="flex items-center gap-2">
               {weather?.forecast?.map((day, index) => {
               if (!day) return null;
-              const icon = getWeatherIcon(day.condition || '');
-              return <div key={index} className="text-center text-xs">
+              return <div key={index} className="flex flex-col items-center text-center text-xs">
                     <div className="font-medium text-[10px]">{day.date || ''}</div>
-                    <div className="flex justify-center my-1">
-                      <div className="h-3 w-3">{getWeatherIcon(day.condition || '')}</div>
-                    </div>
+                    <div className="my-1">{getWeatherIcon(day.condition || '', 'h-4 w-4')}</div>
                     <div className="text-[10px] mt-0.5">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
                   </div>;
             }) || []}
             </div>
-            
+
             <Button variant="ghost" size="sm" onClick={getLocationAndWeather} disabled={loading} className="h-8 w-8 p-0">
               <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
             </Button>
