@@ -2440,7 +2440,6 @@ export type Database = {
           step_description: string | null
           step_name: string
           step_number: number
-          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
           user_id: string | null
           user_name: string | null
         }
@@ -2456,7 +2455,6 @@ export type Database = {
           step_description?: string | null
           step_name: string
           step_number: number
-          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
           user_id?: string | null
           user_name?: string | null
         }
@@ -2472,7 +2470,6 @@ export type Database = {
           step_description?: string | null
           step_name?: string
           step_number?: number
-          step_status?: Database["public"]["Enums"]["purchase_workflow_status"]
           user_id?: string | null
           user_name?: string | null
         }
@@ -3482,7 +3479,6 @@ export type Database = {
           order_id: string
           resolved_at: string | null
           severity: string
-          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
           threshold_hours: number
           triggered_at: string
         }
@@ -3495,7 +3491,6 @@ export type Database = {
           order_id: string
           resolved_at?: string | null
           severity?: string
-          step_status: Database["public"]["Enums"]["purchase_workflow_status"]
           threshold_hours: number
           triggered_at?: string
         }
@@ -3508,7 +3503,6 @@ export type Database = {
           order_id?: string
           resolved_at?: string | null
           severity?: string
-          step_status?: Database["public"]["Enums"]["purchase_workflow_status"]
           threshold_hours?: number
           triggered_at?: string
         }
@@ -3518,36 +3512,30 @@ export type Database = {
         Row: {
           auto_delay_hours: number | null
           created_at: string
-          from_status: Database["public"]["Enums"]["purchase_workflow_status"]
           id: string
           is_active: boolean
           requires_approval: boolean
           rule_name: string
-          to_status: Database["public"]["Enums"]["purchase_workflow_status"]
           trigger_condition: string
           updated_at: string
         }
         Insert: {
           auto_delay_hours?: number | null
           created_at?: string
-          from_status: Database["public"]["Enums"]["purchase_workflow_status"]
           id?: string
           is_active?: boolean
           requires_approval?: boolean
           rule_name: string
-          to_status: Database["public"]["Enums"]["purchase_workflow_status"]
           trigger_condition: string
           updated_at?: string
         }
         Update: {
           auto_delay_hours?: number | null
           created_at?: string
-          from_status?: Database["public"]["Enums"]["purchase_workflow_status"]
           id?: string
           is_active?: boolean
           requires_approval?: boolean
           rule_name?: string
-          to_status?: Database["public"]["Enums"]["purchase_workflow_status"]
           trigger_condition?: string
           updated_at?: string
         }
@@ -3626,15 +3614,6 @@ export type Database = {
       add_order_items_to_stock: {
         Args: { order_id_param: string; selected_items?: Json }
         Returns: Json
-      }
-      advance_workflow_step: {
-        Args: {
-          new_status: Database["public"]["Enums"]["purchase_workflow_status"]
-          notes_param?: string
-          order_id_param: string
-          user_id_param?: string
-        }
-        Returns: undefined
       }
       calculate_next_maintenance_date: {
         Args: {
@@ -3792,9 +3771,8 @@ export type Database = {
         | "pending_approval"
         | "approved"
         | "supplier_search"
-        | "order_confirmed"
-        | "shipping_antilles"
-        | "received_scanned"
+        | "ordered"
+        | "received"
         | "completed"
         | "rejected"
         | "cancelled"
@@ -3975,9 +3953,8 @@ export const Constants = {
         "pending_approval",
         "approved",
         "supplier_search",
-        "order_confirmed",
-        "shipping_antilles",
-        "received_scanned",
+        "ordered",
+        "received",
         "completed",
         "rejected",
         "cancelled",

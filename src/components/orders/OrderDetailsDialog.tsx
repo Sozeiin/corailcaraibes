@@ -218,7 +218,7 @@ export function OrderDetailsDialog({ isOpen, onClose, order }: OrderDetailsDialo
                   )}
 
                   {/* Tracking Widget - show if order has been shipped */}
-                  {(orderDetails?.tracking_number || orderDetails?.carrier || order.status === 'shipping_antilles' || order.status === 'received_scanned' || order.status === 'completed') && (
+                  {(orderDetails?.tracking_number || orderDetails?.carrier || order.status === 'ordered' || order.status === 'received' || order.status === 'completed') && (
                     <>
                       <Separator />
                       <div>
