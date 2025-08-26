@@ -179,8 +179,8 @@ export function WorkflowTimelineEnhanced({ orderId, onShippingClick }: WorkflowT
             const isCompleted = !!step.completedAt;
             const isCurrent = !isCompleted && currentStep?.id === step.id;
             const isUpcoming = !isCompleted && !isCurrent;
-            const isShippingStep = step.stepStatus === 'shipping_antilles';
-            const canClickShipping = isShippingStep && (isCompleted || isCurrent) && onShippingClick;
+            // Pas de clics spéciaux pour l'instant
+            const canClickShipping = false;
             
             return (
               <div key={step.id} className="relative">

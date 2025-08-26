@@ -44,9 +44,8 @@ const getWorkflowProgress = (status: WorkflowStatus): { current: number; total: 
     'pending_approval',
     'approved', 
     'supplier_search',
-    'order_confirmed',
-    'shipping_antilles',
-    'received_scanned',
+    'ordered',
+    'received',
     'completed'
   ];
   
@@ -132,9 +131,8 @@ export function WorkflowStepsOverview({ currentStatus, className = '', onShippin
     { status: 'pending_approval', required: true },
     { status: 'approved', required: true },
     { status: 'supplier_search', required: true },
-    { status: 'order_confirmed', required: true },
-    { status: 'shipping_antilles', required: true },
-    { status: 'received_scanned', required: true },
+    { status: 'ordered', required: true },
+    { status: 'received', required: true },
     { status: 'completed', required: true }
   ];
   
@@ -162,8 +160,8 @@ export function WorkflowStepsOverview({ currentStatus, className = '', onShippin
           const isPassed = index < currentIndex;
           const isCurrent = index === currentIndex;
           const isBlocked = ['rejected', 'cancelled'].includes(currentStatus);
-          const isShippingStep = step.status === 'shipping_antilles';
-          const canClickShipping = isShippingStep && (isPassed || isCurrent) && onShippingClick;
+          // Pas de clics spéciaux pour l'instant
+          const canClickShipping = false;
           
           const stepConfig = WORKFLOW_STEPS[step.status] || { 
             label: step.status, 

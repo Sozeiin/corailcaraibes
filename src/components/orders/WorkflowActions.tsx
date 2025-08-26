@@ -10,8 +10,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
 import { WorkflowStatus } from '@/types/workflow';
-type PurchaseWorkflowStatus = 'draft' | 'pending_approval' | 'approved' | 'supplier_search' | 'order_confirmed' | 'shipping_antilles' | 'received_scanned' | 'completed' | 'rejected' | 'cancelled';
-import { CheckCircle, XCircle, Search, ShoppingCart, Ship, Settings } from 'lucide-react';
+type PurchaseWorkflowStatus = 'draft' | 'pending_approval' | 'approved' | 'supplier_search' | 'ordered' | 'received' | 'completed' | 'rejected' | 'cancelled';
+import { CheckCircle, CheckCircle2, XCircle, Search, ShoppingCart, Ship, Settings } from 'lucide-react';
 import { SupplierPriceForm } from './SupplierPriceForm';
 import { ShippingTrackingForm } from './ShippingTrackingForm';
 interface WorkflowActionsProps {
@@ -149,16 +149,34 @@ export function WorkflowActions({
           isSpecial: true
         });
       }
-      if (order.status === 'order_confirmed') {
+      if (order.status === 'supplier_search') {
         actions.push({
-          key: 'ship_antilles',
-          label: 'Expédier vers Antilles',
+          key: 'confirm_order',
+          label: 'Confirmer la commande',
           variant: 'default' as const,
-          icon: Ship,
-          newStatus: null as any,
-          // Special action for tracking
-          requiresNotes: false,
-          isSpecial: true
+          icon: ShoppingCart,
+          newStatus: 'ordered' as PurchaseWorkflowStatus,
+          requiresNotes: false
+        });
+      }
+      if (order.status === 'ordered') {
+        actions.push({
+          key: 'mark_received',
+          label: 'Marquer comme reçu',
+          variant: 'default' as const,
+          icon: CheckCircle,
+          newStatus: 'received' as PurchaseWorkflowStatus,
+          requiresNotes: false
+        });
+      }
+      if (order.status === 'received') {
+        actions.push({
+          key: 'complete_order',
+          label: 'Terminer la commande',
+          variant: 'default' as const,
+          icon: CheckCircle2,
+          newStatus: 'completed' as PurchaseWorkflowStatus,
+          requiresNotes: false
         });
       }
     }
@@ -177,14 +195,12 @@ export function WorkflowActions({
       }
       if (order.status === 'supplier_search') {
         actions.push({
-          key: 'configure_supplier',
-          label: 'Configurer fournisseur & prix',
+          key: 'confirm_order',
+          label: 'Confirmer la commande',
           variant: 'default' as const,
-          icon: Settings,
-          newStatus: null as any,
-          // Special action
-          requiresNotes: false,
-          isSpecial: true
+          icon: ShoppingCart,
+          newStatus: 'ordered' as PurchaseWorkflowStatus,
+          requiresNotes: false
         });
       }
     }
@@ -221,13 +237,6 @@ export function WorkflowActions({
         </Button>;
     }
 
-    // Special handling for shipping to Antilles
-    if (action.isSpecial && action.key === 'ship_antilles') {
-      return <Button variant={action.variant} className="flex items-center gap-2" onClick={() => setShowTrackingForm(true)}>
-          <Icon className="w-4 h-4" />
-          {action.label}
-        </Button>;
-    }
     return <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant={action.variant} className="flex items-center gap-2 text-xs">

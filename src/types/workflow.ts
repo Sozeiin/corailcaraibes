@@ -3,9 +3,8 @@ export type WorkflowStatus =
   | 'pending_approval' 
   | 'approved'
   | 'supplier_search'
-  | 'order_confirmed'
-  | 'shipping_antilles'
-  | 'received_scanned'
+  | 'ordered'
+  | 'received'
   | 'completed'
   | 'rejected'
   | 'cancelled'
@@ -48,9 +47,8 @@ export const WORKFLOW_STEPS: Record<WorkflowStatus, { label: string; color: stri
   pending_approval: { label: 'En attente d\'approbation', color: 'bg-yellow-100 text-yellow-800', icon: 'Clock' },
   approved: { label: 'Approuvé', color: 'bg-green-100 text-green-800', icon: 'CheckCircle' },
   supplier_search: { label: 'Recherche fournisseurs', color: 'bg-blue-100 text-blue-800', icon: 'Search' },
-  order_confirmed: { label: 'Commande confirmée', color: 'bg-purple-100 text-purple-800', icon: 'ShoppingCart' },
-  shipping_antilles: { label: 'Envoi Antilles', color: 'bg-orange-100 text-orange-800', icon: 'Ship' },
-  received_scanned: { label: 'Réception scannée', color: 'bg-teal-100 text-teal-800', icon: 'Scan' },
+  ordered: { label: 'Commande passée', color: 'bg-purple-100 text-purple-800', icon: 'ShoppingCart' },
+  received: { label: 'Réception confirmée', color: 'bg-teal-100 text-teal-800', icon: 'CheckCircle' },
   completed: { label: 'Terminé', color: 'bg-green-100 text-green-800', icon: 'CheckCircle2' },
   rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800', icon: 'XCircle' },
   cancelled: { label: 'Annulé', color: 'bg-gray-100 text-gray-800', icon: 'X' },

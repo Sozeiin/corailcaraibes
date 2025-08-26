@@ -53,7 +53,7 @@ export function OrderLinkDialog({
           )
         `)
         .eq('base_id', user?.baseId)
-        .in('status', ['draft', 'ordered'])
+        .in('status', ['ordered', 'supplier_search'])
         .or(
           `product_name.ilike.%${stockItemName}%,reference.ilike.%${stockItemName}%`,
           { foreignTable: 'order_items' }
