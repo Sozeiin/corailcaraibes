@@ -1,6 +1,6 @@
-export type WorkflowStatus = 
+export type WorkflowStatus =
   | 'draft'
-  | 'pending_approval' 
+  | 'pending_approval'
   | 'approved'
   | 'supplier_search'
   | 'ordered'
@@ -12,6 +12,24 @@ export type WorkflowStatus =
   | 'pending'
   | 'confirmed'
   | 'delivered';
+
+export const PURCHASE_WORKFLOW_STATUSES: WorkflowStatus[] = [
+  'draft',
+  'pending_approval',
+  'approved',
+  'supplier_search',
+  'ordered',
+  'received',
+  'completed',
+  'rejected',
+  'cancelled'
+];
+
+export const LEGACY_WORKFLOW_STATUSES: WorkflowStatus[] = [
+  'pending',
+  'confirmed',
+  'delivered'
+];
 
 export interface WorkflowStep {
   id: string;

@@ -10,8 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
 import { WorkflowStatus } from '@/types/workflow';
-type PurchaseWorkflowStatus = 'draft' | 'pending_approval' | 'approved' | 'supplier_search' | 'ordered' | 'received' | 'completed' | 'rejected' | 'cancelled';
-import { CheckCircle, CheckCircle2, XCircle, Search, ShoppingCart, Ship, Settings } from 'lucide-react';
+import { CheckCircle, CheckCircle2, XCircle, Search, ShoppingCart, Settings } from 'lucide-react';
 import { SupplierPriceForm } from './SupplierPriceForm';
 import { ShippingTrackingForm } from './ShippingTrackingForm';
 interface WorkflowActionsProps {
@@ -38,7 +37,7 @@ export function WorkflowActions({
       newStatus,
       notes: notesParam
     }: {
-      newStatus: PurchaseWorkflowStatus;
+      newStatus: WorkflowStatus;
       notes?: string;
     }) => {
       const { error } = await supabase
@@ -94,14 +93,14 @@ export function WorkflowActions({
         label: 'Soumettre pour approbation',
         variant: 'default' as const,
         icon: CheckCircle,
-        newStatus: 'pending_approval' as PurchaseWorkflowStatus,
+        newStatus: 'pending_approval' as WorkflowStatus,
         requiresNotes: false
       }, {
         key: 'start_supplier_search',
         label: 'Commande directe (recherche fournisseur)',
         variant: 'outline' as const,
         icon: Search,
-        newStatus: 'supplier_search' as PurchaseWorkflowStatus,
+        newStatus: 'supplier_search' as WorkflowStatus,
         requiresNotes: false
       });
     }
@@ -114,14 +113,14 @@ export function WorkflowActions({
           label: 'Approuver',
           variant: 'default' as const,
           icon: CheckCircle,
-          newStatus: 'approved' as PurchaseWorkflowStatus,
+          newStatus: 'approved' as WorkflowStatus,
           requiresNotes: false
         }, {
           key: 'reject',
           label: 'Rejeter',
           variant: 'destructive' as const,
           icon: XCircle,
-          newStatus: 'rejected' as PurchaseWorkflowStatus,
+          newStatus: 'rejected' as WorkflowStatus,
           requiresNotes: true,
           useRejectionReason: true
         });
@@ -132,7 +131,7 @@ export function WorkflowActions({
           label: 'Recherche fournisseurs',
           variant: 'default' as const,
           icon: Search,
-          newStatus: 'supplier_search' as PurchaseWorkflowStatus,
+          newStatus: 'supplier_search' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -154,7 +153,7 @@ export function WorkflowActions({
           label: 'Confirmer la commande',
           variant: 'default' as const,
           icon: ShoppingCart,
-          newStatus: 'ordered' as PurchaseWorkflowStatus,
+          newStatus: 'ordered' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -164,7 +163,7 @@ export function WorkflowActions({
           label: 'Marquer comme reçu',
           variant: 'default' as const,
           icon: CheckCircle,
-          newStatus: 'received' as PurchaseWorkflowStatus,
+          newStatus: 'received' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -174,7 +173,7 @@ export function WorkflowActions({
           label: 'Terminer la commande',
           variant: 'default' as const,
           icon: CheckCircle2,
-          newStatus: 'completed' as PurchaseWorkflowStatus,
+          newStatus: 'completed' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -188,7 +187,7 @@ export function WorkflowActions({
           label: 'Recherche fournisseurs',
           variant: 'default' as const,
           icon: Search,
-          newStatus: 'supplier_search' as PurchaseWorkflowStatus,
+          newStatus: 'supplier_search' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -198,7 +197,7 @@ export function WorkflowActions({
           label: 'Confirmer la commande',
           variant: 'default' as const,
           icon: ShoppingCart,
-          newStatus: 'ordered' as PurchaseWorkflowStatus,
+          newStatus: 'ordered' as WorkflowStatus,
           requiresNotes: false
         });
       }
@@ -211,7 +210,7 @@ export function WorkflowActions({
         label: 'Annuler',
         variant: 'outline' as const,
         icon: XCircle,
-        newStatus: 'cancelled' as PurchaseWorkflowStatus,
+        newStatus: 'cancelled' as WorkflowStatus,
         requiresNotes: true
       });
     }

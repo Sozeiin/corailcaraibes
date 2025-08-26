@@ -8,7 +8,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, X, Upload, ExternalLink, Clock, CheckCircle, XCircle, Truck, Ship } from 'lucide-react';
+import { Plus, X, Upload, ExternalLink } from 'lucide-react';
+import * as Icons from 'lucide-react';
+import { getStatusLabel, getStatusColor, getStatusIcon } from '@/lib/workflowUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductAutocomplete } from './ProductAutocomplete';
@@ -37,23 +39,6 @@ const urgencyColors = {
   urgent: 'bg-red-100 text-red-800'
 };
 
-const statusLabels = {
-  pending_approval: 'En attente d\'approbation',
-  supplier_requested: 'Demande effectuée auprès du fournisseur',
-  shipping_mainland: 'Commande en cours de livraison - Métropole',
-  shipping_antilles: 'Commande en cours d\'envoi - Antilles',
-  delivered: 'Livrée',
-  cancelled: 'Annulée'
-};
-
-const statusIcons = {
-  pending_approval: Clock,
-  supplier_requested: CheckCircle,
-  shipping_mainland: Truck,
-  shipping_antilles: Ship,
-  delivered: CheckCircle,
-  cancelled: XCircle
-};
 
 export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseRequestDialogProps) {
   const { user } = useAuth();
@@ -284,7 +269,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
     mutation.mutate(submitData);
   };
 
-  const StatusIcon = order ? statusIcons[order.status as keyof typeof statusIcons] : null;
+  const StatusIcon = order ? Icons[getStatusIcon(order.status) as keyof typeof Icons] : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -297,10 +282,10 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
               </DialogTitle>
               {order && (
                 <div className="flex items-center gap-2 mt-2">
-                  {StatusIcon && <StatusIcon className="h-4 w-4" />}
-                  <span className="text-sm text-muted-foreground">
-                    {statusLabels[order.status as keyof typeof statusLabels]}
-                  </span>
+                  {StatusIcon && <StatusIcon className="h-4 w-4 text-muted-foreground" />}
+                  <Badge className={getStatusColor(order.status)}>
+                    {getStatusLabel(order.status)}
+                  </Badge>
                 </div>
               )}
             </div>
@@ -468,7 +453,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
           </div>
 
           {/* Tracking URL - Only for direction and certain statuses */}
-          {user?.role === 'direction' && order && ['shipping_mainland', 'shipping_antilles'].includes(order.status) && (
+          {user?.role === 'direction' && order && order.status === 'ordered' && (
             <div>
               <Label htmlFor="tracking">URL de suivi transporteur</Label>
               <div className="flex gap-2">
