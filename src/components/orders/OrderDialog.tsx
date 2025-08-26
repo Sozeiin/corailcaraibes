@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Order, Supplier, Base } from '@/types';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { CreateStockItemDialog } from './CreateStockItemDialog';
+import { isWorkflowStatus } from '@/lib/workflowUtils';
 
 interface OrderDialogProps {
   isOpen: boolean;
@@ -161,10 +162,11 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
 
   const onSubmit = async (data: OrderFormData) => {
     setIsSubmitting(true);
-    
+
     try {
       const totalAmount = calculateTotal(data.items);
-      
+      const isPurchaseRequest = order?.isPurchaseRequest || isWorkflowStatus(data.status);
+
       const orderData = {
         order_number: data.orderNumber,
         supplier_id: data.supplierId || null,
@@ -173,7 +175,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         order_date: data.orderDate,
         delivery_date: data.deliveryDate || null,
         total_amount: totalAmount,
-        is_purchase_request: data.status === 'pending_approval',
+        is_purchase_request: isPurchaseRequest,
         requested_by: user?.id || null
       };
 
