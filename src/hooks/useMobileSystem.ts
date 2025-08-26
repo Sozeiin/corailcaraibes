@@ -179,9 +179,9 @@ export const useMobileSystem = () => {
       
       // Clear all offline tables
       const tables = [
-        'offline_stock', 
-        'offline_suppliers', 
-        'offline_boat_components', 
+        'offline_stock_items',
+        'offline_suppliers',
+        'offline_boat_components',
         'offline_maintenance_tasks',
         'pending_changes',
         'sync_conflicts'
@@ -300,7 +300,7 @@ export const useMobileSystem = () => {
       const db = await sqliteService.getDatabase();
       
       // Count total records
-      const tables = ['offline_stock', 'offline_suppliers', 'offline_boat_components', 'offline_maintenance_tasks'];
+      const tables = ['offline_stock_items', 'offline_suppliers', 'offline_boat_components', 'offline_maintenance_tasks'];
       let totalRecords = 0;
       
       for (const table of tables) {
