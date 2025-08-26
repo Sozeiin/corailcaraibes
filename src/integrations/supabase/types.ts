@@ -3704,6 +3704,14 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      link_stock_scan_to_order: {
+        Args: {
+          order_id_param: string
+          quantity_received_param: number
+          stock_item_id_param: string
+        }
+        Returns: Json
+      }
       process_workflow_automation: {
         Args: Record<PropertyKey, never>
         Returns: undefined

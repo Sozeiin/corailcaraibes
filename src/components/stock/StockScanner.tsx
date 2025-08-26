@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 import { StockItemAutocomplete } from './StockItemAutocomplete';
+import { OrderLinkDialog } from './OrderLinkDialog';
 import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@/lib/stockUtils';
 
 interface StockScannerProps {
@@ -53,6 +54,8 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   const [operations, setOperations] = useState<ScannedOperation[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [codeToCreate, setCodeToCreate] = useState('');
+  const [isOrderLinkDialogOpen, setIsOrderLinkDialogOpen] = useState(false);
+  const [pendingLinkOperation, setPendingLinkOperation] = useState<ScannedOperation | null>(null);
   
   // Debug logs for dialog state
   console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
@@ -602,6 +605,12 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         description: `${operation.stockItem.name}: ${operation.operation === 'add' ? '+' : '-'}${operation.quantity}`,
       });
 
+      // Proposer de lier à une commande si c'est une entrée de stock
+      if (operation.operation === 'add') {
+        setPendingLinkOperation(operation);
+        setIsOrderLinkDialogOpen(true);
+      }
+
     } catch (error) {
       console.error('Erreur:', error);
       setOperations(prev => 
@@ -849,6 +858,20 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         scannedCode={codeToCreate}
         onItemCreated={handleItemCreated}
       />
+
+      {/* Dialog de liaison à une commande */}
+      {pendingLinkOperation && (
+        <OrderLinkDialog
+          isOpen={isOrderLinkDialogOpen}
+          onClose={() => {
+            setIsOrderLinkDialogOpen(false);
+            setPendingLinkOperation(null);
+          }}
+          stockItemId={pendingLinkOperation.stockItem.id}
+          stockItemName={pendingLinkOperation.stockItem.name}
+          quantityReceived={pendingLinkOperation.quantity}
+        />
+      )}
     </div>
   );
 }
