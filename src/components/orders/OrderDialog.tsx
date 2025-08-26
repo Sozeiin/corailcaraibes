@@ -29,6 +29,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Order, Supplier, Base } from '@/types';
+import { PURCHASE_WORKFLOW_STATUSES, LEGACY_WORKFLOW_STATUSES } from '@/types/workflow';
+import { getStatusLabel } from '@/lib/workflowUtils';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { CreateStockItemDialog } from './CreateStockItemDialog';
 
@@ -311,21 +313,16 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {/* Workflow moderne */}
-                          <SelectItem value="draft">Brouillon</SelectItem>
-                          <SelectItem value="pending_approval">Demande d'achat (nécessite approbation)</SelectItem>
-                          <SelectItem value="approved">Approuvé (direction)</SelectItem>
-                          <SelectItem value="supplier_search">Recherche fournisseur</SelectItem>
-                          <SelectItem value="order_confirmed">Commande confirmée</SelectItem>
-                          <SelectItem value="shipping_antilles">Envoi vers Antilles</SelectItem>
-                          <SelectItem value="received_scanned">Réception scannée</SelectItem>
-                          <SelectItem value="completed">Terminé</SelectItem>
-                          {/* Statuts legacy */}
-                          <SelectItem value="pending">Ancienne - En attente</SelectItem>
-                          <SelectItem value="confirmed">Ancienne - Confirmée</SelectItem>
-                          <SelectItem value="delivered">Ancienne - Livrée</SelectItem>
-                          <SelectItem value="cancelled">Annulée</SelectItem>
-                          <SelectItem value="rejected">Rejetée</SelectItem>
+                          {PURCHASE_WORKFLOW_STATUSES.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {getStatusLabel(status)}
+                            </SelectItem>
+                          ))}
+                          {LEGACY_WORKFLOW_STATUSES.map((status) => (
+                            <SelectItem key={status} value={status}>
+                              {getStatusLabel(status)}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
