@@ -17,7 +17,6 @@ import { ProductAutocomplete } from './ProductAutocomplete';
 import { PhotoUpload } from './PhotoUpload';
 import { Order, OrderItem } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { isWorkflowStatus } from '@/lib/workflowUtils';
 
 interface PurchaseRequestDialogProps {
   isOpen: boolean;
@@ -247,8 +246,6 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       return;
     }
 
-    const isPurchaseRequest = order?.isPurchaseRequest || isWorkflowStatus(order?.status || 'pending_approval');
-
     const submitData = {
       boat_id: formData.boatId === 'none' ? null : formData.boatId,
       urgency_level: formData.urgencyLevel,
@@ -256,7 +253,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       tracking_url: formData.trackingUrl || null,
       photos: formData.photos,
       order_number: isEditing ? order?.orderNumber : `REQ-${Date.now().toString().slice(-6)}`,
-      is_purchase_request: isPurchaseRequest,
+      is_purchase_request: order?.isPurchaseRequest ?? true,
       status: isEditing ? order?.status : 'pending_approval',
       requested_by: user?.id,
       base_id: user?.baseId,

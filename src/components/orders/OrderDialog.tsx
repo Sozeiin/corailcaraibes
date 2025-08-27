@@ -33,7 +33,6 @@ import { PURCHASE_WORKFLOW_STATUSES, LEGACY_WORKFLOW_STATUSES } from '@/types/wo
 import { getStatusLabel } from '@/lib/workflowUtils';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { CreateStockItemDialog } from './CreateStockItemDialog';
-import { isWorkflowStatus } from '@/lib/workflowUtils';
 
 interface OrderDialogProps {
   isOpen: boolean;
@@ -45,6 +44,7 @@ interface OrderFormData {
   orderNumber: string;
   supplierId: string;
   baseId: string;
+  isPurchaseRequest: boolean;
   status: string;
   orderDate: string;
   deliveryDate: string;
@@ -68,6 +68,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
       orderNumber: '',
       supplierId: '',
       baseId: '',
+      isPurchaseRequest: false,
         status: 'draft',
       orderDate: new Date().toISOString().split('T')[0],
       deliveryDate: '',
@@ -133,6 +134,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         orderNumber: order.orderNumber,
         supplierId: order.supplierId,
         baseId: order.baseId,
+        isPurchaseRequest: order.isPurchaseRequest ?? false,
         status: order.status,
         orderDate: order.orderDate.split('T')[0],
         deliveryDate: order.deliveryDate ? order.deliveryDate.split('T')[0] : '',
@@ -150,6 +152,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         orderNumber,
         supplierId: '',
         baseId: user?.role === 'direction' ? '' : (user?.baseId || ''),
+        isPurchaseRequest: false,
         status: 'draft',
         orderDate: new Date().toISOString().split('T')[0],
         deliveryDate: '',
@@ -167,7 +170,6 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
 
     try {
       const totalAmount = calculateTotal(data.items);
-      const isPurchaseRequest = order?.isPurchaseRequest || isWorkflowStatus(data.status);
 
       const orderData = {
         order_number: data.orderNumber,
@@ -177,7 +179,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         order_date: data.orderDate,
         delivery_date: data.deliveryDate || null,
         total_amount: totalAmount,
-        is_purchase_request: isPurchaseRequest,
+        is_purchase_request: data.isPurchaseRequest,
         requested_by: user?.id || null
       };
 
@@ -255,7 +257,15 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
     : bases.filter(base => base.id === user?.baseId);
 
   const watchedItems = form.watch('items');
+  const isPurchaseRequest = form.watch('isPurchaseRequest');
+  const statusOptions = isPurchaseRequest ? PURCHASE_WORKFLOW_STATUSES : LEGACY_WORKFLOW_STATUSES;
   const totalAmount = calculateTotal(watchedItems);
+
+  useEffect(() => {
+    if (!statusOptions.includes(form.getValues('status'))) {
+      form.setValue('status', statusOptions[0]);
+    }
+  }, [isPurchaseRequest, form, statusOptions]);
 
   const handleCreateStockItem = (productName: string) => {
     setNewProductName(productName);
@@ -302,36 +312,56 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                 )}
               />
 
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Statut / Type de commande</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner le statut" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {PURCHASE_WORKFLOW_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {getStatusLabel(status)}
-                            </SelectItem>
-                          ))}
-                          {LEGACY_WORKFLOW_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {getStatusLabel(status)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="isPurchaseRequest"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type de commande</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value === 'true')}
+                      value={field.value ? 'true' : 'false'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner le type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="false">Commande classique</SelectItem>
+                        <SelectItem value="true">Demande d'achat</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
+
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Statut</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner le statut" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {statusOptions.map((status) => (
+                        <SelectItem key={status} value={status}>
+                          {getStatusLabel(status)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
