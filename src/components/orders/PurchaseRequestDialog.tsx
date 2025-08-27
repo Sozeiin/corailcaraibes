@@ -50,7 +50,6 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState({
-    orderNumber: order?.orderNumber || '',
     boatId: order?.boatId || 'none',
     urgencyLevel: (order?.urgencyLevel || 'normal') as 'low' | 'normal' | 'high' | 'urgent',
     requestNotes: order?.requestNotes || '',
