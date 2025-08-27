@@ -17,11 +17,6 @@ import { ProductAutocomplete } from './ProductAutocomplete';
 import { PhotoUpload } from './PhotoUpload';
 import { Order, OrderItem } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import {
-  WorkflowStatus,
-  PURCHASE_WORKFLOW_STATUSES,
-  LEGACY_WORKFLOW_STATUSES,
-} from '@/types/workflow';
 
 interface PurchaseRequestDialogProps {
   isOpen: boolean;
@@ -96,8 +91,10 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
   }, [isOpen, order?.id]);
 
   const isEditing = !!order;
-  const canEdit = user?.role === 'direction' || user?.role === 'chef_base' || (order && order.requestedBy === user?.id && order.status === 'pending_approval');
-  const includeLegacyStatus = order ? LEGACY_WORKFLOW_STATUSES.includes(order.status) : false;
+  const canEdit =
+    user?.role === 'direction' ||
+    user?.role === 'chef_base' ||
+    (order && order.requestedBy === user?.id && order.status === 'pending_approval');
 
   // Fetch boats for selection
   const { data: boats = [] } = useQuery({
@@ -251,13 +248,6 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       return;
     }
 
-    const isPurchaseRequest =
-      order?.isPurchaseRequest ||
-      PURCHASE_WORKFLOW_STATUSES.includes(
-        ((order?.status || 'pending_approval') as WorkflowStatus)
-      ) ||
-      includeLegacyStatus;
-
     const submitData = {
       boat_id: formData.boatId === 'none' ? null : formData.boatId,
       urgency_level: formData.urgencyLevel,
@@ -265,15 +255,13 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       tracking_url: formData.trackingUrl || null,
       photos: formData.photos,
       order_number: isEditing ? order?.orderNumber : `REQ-${Date.now().toString().slice(-6)}`,
-      is_purchase_request: isPurchaseRequest,
+      is_purchase_request: true,
       status: isEditing ? order?.status : 'pending_approval',
       requested_by: user?.id,
       base_id: user?.baseId,
       order_date: new Date().toISOString().split('T')[0],
       total_amount: items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0)
     };
-
-    
 
     mutation.mutate(submitData);
   };
