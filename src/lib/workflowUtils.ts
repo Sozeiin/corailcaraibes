@@ -1,4 +1,9 @@
-import { WorkflowStatus, WORKFLOW_STEPS } from '@/types/workflow';
+import {
+  WorkflowStatus,
+  WORKFLOW_STEPS,
+  PURCHASE_WORKFLOW_STATUSES,
+  LEGACY_WORKFLOW_STATUSES,
+} from '@/types/workflow';
 
 // Utilitaires centralisés pour la gestion du workflow
 
@@ -21,10 +26,13 @@ export const isWorkflowStatus = (status: string): status is WorkflowStatus => {
   return status in WORKFLOW_STEPS;
 };
 
-export const getWorkflowStatusList = () => {
+export const getWorkflowStatusList = (includeLegacy = false) => {
+  const statuses = includeLegacy
+    ? [...PURCHASE_WORKFLOW_STATUSES, ...LEGACY_WORKFLOW_STATUSES]
+    : PURCHASE_WORKFLOW_STATUSES;
   return [
     { value: 'all', label: 'Tous les statuts' },
-    ...Object.entries(WORKFLOW_STEPS).map(([value, { label }]) => ({ value, label }))
+    ...statuses.map((value) => ({ value, label: WORKFLOW_STEPS[value].label })),
   ];
 };
 

@@ -29,8 +29,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Order, Supplier, Base } from '@/types';
-import { PURCHASE_WORKFLOW_STATUSES, LEGACY_WORKFLOW_STATUSES } from '@/types/workflow';
-import { getStatusLabel } from '@/lib/workflowUtils';
+import { LEGACY_WORKFLOW_STATUSES } from '@/types/workflow';
+import { getWorkflowStatusList } from '@/lib/workflowUtils';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { CreateStockItemDialog } from './CreateStockItemDialog';
 import { isWorkflowStatus } from '@/lib/workflowUtils';
@@ -126,6 +126,11 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
     },
     enabled: isOpen
   });
+
+  const includeLegacyStatuses = order ? LEGACY_WORKFLOW_STATUSES.includes(order.status) : false;
+  const workflowStatuses = getWorkflowStatusList(includeLegacyStatuses).filter(
+    (status) => status.value !== 'all'
+  );
 
   useEffect(() => {
     if (order) {
@@ -315,14 +320,9 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {PURCHASE_WORKFLOW_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {getStatusLabel(status)}
-                            </SelectItem>
-                          ))}
-                          {LEGACY_WORKFLOW_STATUSES.map((status) => (
-                            <SelectItem key={status} value={status}>
-                              {getStatusLabel(status)}
+                          {workflowStatuses.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
                             </SelectItem>
                           ))}
                         </SelectContent>

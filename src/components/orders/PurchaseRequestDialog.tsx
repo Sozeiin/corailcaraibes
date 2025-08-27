@@ -17,7 +17,11 @@ import { ProductAutocomplete } from './ProductAutocomplete';
 import { PhotoUpload } from './PhotoUpload';
 import { Order, OrderItem } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { isWorkflowStatus } from '@/lib/workflowUtils';
+import {
+  WorkflowStatus,
+  PURCHASE_WORKFLOW_STATUSES,
+  LEGACY_WORKFLOW_STATUSES,
+} from '@/types/workflow';
 
 interface PurchaseRequestDialogProps {
   isOpen: boolean;
@@ -94,6 +98,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
 
   const isEditing = !!order;
   const canEdit = user?.role === 'direction' || user?.role === 'chef_base' || (order && order.requestedBy === user?.id && order.status === 'pending_approval');
+  const includeLegacyStatus = order ? LEGACY_WORKFLOW_STATUSES.includes(order.status) : false;
 
   // Fetch boats for selection
   const { data: boats = [] } = useQuery({
@@ -247,7 +252,12 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
       return;
     }
 
-    const isPurchaseRequest = order?.isPurchaseRequest || isWorkflowStatus(order?.status || 'pending_approval');
+    const isPurchaseRequest =
+      order?.isPurchaseRequest ||
+      PURCHASE_WORKFLOW_STATUSES.includes(
+        ((order?.status || 'pending_approval') as WorkflowStatus)
+      ) ||
+      includeLegacyStatus;
 
     const submitData = {
       boat_id: formData.boatId === 'none' ? null : formData.boatId,
