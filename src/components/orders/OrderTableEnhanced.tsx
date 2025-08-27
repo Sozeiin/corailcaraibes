@@ -21,7 +21,7 @@ import { Order } from '@/types';
 import { formatCurrency } from '@/lib/utils';
 import { WorkflowActions } from '@/components/orders/WorkflowActions';
 import { WorkflowStatusIndicator } from '@/components/orders/WorkflowStatusIndicator';
-import { getStatusColor, getStatusLabel } from '@/lib/workflowUtils';
+import { getStatusColor, getStatusLabel, isWorkflowStatus } from '@/lib/workflowUtils';
 import { AddToStockButton } from '@/components/orders/AddToStockButton';
 import { WorkflowStatus } from '@/types/workflow';
 import { useAuth } from '@/contexts/AuthContext';
@@ -116,9 +116,9 @@ export function OrderTableEnhanced({
               </TableCell>
               
               <TableCell>
-                {order.isPurchaseRequest ? (
-                  <WorkflowStatusIndicator 
-                    status={order.status as WorkflowStatus} 
+                {isWorkflowStatus(order.status) ? (
+                  <WorkflowStatusIndicator
+                    status={order.status as WorkflowStatus}
                     showIcon={true}
                     showProgress={!showCompactView}
                     size={showCompactView ? 'sm' : 'md'}
@@ -160,10 +160,10 @@ export function OrderTableEnhanced({
                 </TableCell>
               )}
               
-              {user?.role === 'direction' && order.isPurchaseRequest && (
+              {user?.role === 'direction' && isWorkflowStatus(order.status) && (
                 <TableCell>
-                  <WorkflowActions 
-                    order={order} 
+                  <WorkflowActions
+                    order={order}
                     onOrderUpdate={onOrderUpdate}
                   />
                 </TableCell>
