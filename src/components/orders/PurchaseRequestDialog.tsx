@@ -10,14 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, X, Upload, ExternalLink } from 'lucide-react';
 import * as Icons from 'lucide-react';
-import { getStatusLabel, getStatusColor, getStatusIcon } from '@/lib/workflowUtils';
+import { getStatusLabel, getStatusColor, getStatusIcon, isWorkflowStatus } from '@/lib/workflowUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { PhotoUpload } from './PhotoUpload';
 import { Order, OrderItem } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { isWorkflowStatus } from '@/lib/workflowUtils';
 
 interface PurchaseRequestDialogProps {
   isOpen: boolean;

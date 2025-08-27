@@ -30,10 +30,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Order, Supplier, Base } from '@/types';
 import { PURCHASE_WORKFLOW_STATUSES, LEGACY_WORKFLOW_STATUSES } from '@/types/workflow';
-import { getStatusLabel } from '@/lib/workflowUtils';
+import { getStatusLabel, isWorkflowStatus } from '@/lib/workflowUtils';
 import { ProductAutocomplete } from './ProductAutocomplete';
 import { CreateStockItemDialog } from './CreateStockItemDialog';
-import { isWorkflowStatus } from '@/lib/workflowUtils';
 
 interface OrderDialogProps {
   isOpen: boolean;

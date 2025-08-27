@@ -1,4 +1,4 @@
-import { WorkflowStatus, WORKFLOW_STEPS } from '@/types/workflow';
+import { WorkflowStatus, WORKFLOW_STEPS, PURCHASE_WORKFLOW_STATUSES } from '@/types/workflow';
 
 // Utilitaires centralisés pour la gestion du workflow
 
@@ -17,9 +17,8 @@ export const getStatusIcon = (status: string): string => {
   return WORKFLOW_STEPS[workflowStatus]?.icon || 'Circle';
 };
 
-export const isWorkflowStatus = (status: string): status is WorkflowStatus => {
-  return status in WORKFLOW_STEPS;
-};
+export const isWorkflowStatus = (status: string): status is WorkflowStatus =>
+  PURCHASE_WORKFLOW_STATUSES.includes(status as WorkflowStatus);
 
 export const getWorkflowStatusList = () => {
   return [
