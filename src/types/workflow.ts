@@ -75,3 +75,150 @@ export const WORKFLOW_STEPS: Record<WorkflowStatus, { label: string; color: stri
   confirmed: { label: 'Confirmée', color: 'bg-blue-100 text-blue-800', icon: 'CheckCircle' },
   delivered: { label: 'Livrée', color: 'bg-green-100 text-green-800', icon: 'CheckCircle2' }
 };
+
+export interface WorkflowAction {
+  key: string;
+  label: string;
+  variant: 'default' | 'outline' | 'destructive';
+  icon: string;
+  newStatus: WorkflowStatus | null;
+  requiresNotes?: boolean;
+  useRejectionReason?: boolean;
+  isSpecial?: boolean;
+  roles: ('all' | 'direction' | 'chef_base')[];
+}
+
+export const WORKFLOW_ACTIONS: Record<WorkflowStatus, WorkflowAction[]> = {
+  draft: [
+    {
+      key: 'submit_for_approval',
+      label: 'Soumettre pour approbation',
+      variant: 'default',
+      icon: 'CheckCircle',
+      newStatus: 'pending_approval',
+      roles: ['all']
+    },
+    {
+      key: 'start_supplier_search',
+      label: 'Commande directe (recherche fournisseur)',
+      variant: 'outline',
+      icon: 'Search',
+      newStatus: 'supplier_search',
+      roles: ['all']
+    }
+  ],
+  pending_approval: [
+    {
+      key: 'approve',
+      label: 'Approuver',
+      variant: 'default',
+      icon: 'CheckCircle',
+      newStatus: 'approved',
+      roles: ['direction']
+    },
+    {
+      key: 'reject',
+      label: 'Rejeter',
+      variant: 'destructive',
+      icon: 'XCircle',
+      newStatus: 'rejected',
+      requiresNotes: true,
+      useRejectionReason: true,
+      roles: ['direction']
+    }
+  ],
+  approved: [
+    {
+      key: 'start_supplier_search',
+      label: 'Recherche fournisseurs',
+      variant: 'default',
+      icon: 'Search',
+      newStatus: 'supplier_search',
+      roles: ['direction', 'chef_base']
+    }
+  ],
+  supplier_search: [
+    {
+      key: 'configure_supplier',
+      label: 'Configurer fournisseur & prix',
+      variant: 'default',
+      icon: 'Settings',
+      newStatus: null,
+      isSpecial: true,
+      roles: ['direction']
+    },
+    {
+      key: 'confirm_order',
+      label: 'Confirmer la commande',
+      variant: 'default',
+      icon: 'ShoppingCart',
+      newStatus: 'ordered',
+      roles: ['direction', 'chef_base']
+    }
+  ],
+  ordered: [
+    {
+      key: 'mark_received',
+      label: 'Marquer comme reçu',
+      variant: 'default',
+      icon: 'CheckCircle',
+      newStatus: 'received',
+      roles: ['direction']
+    }
+  ],
+  received: [
+    {
+      key: 'complete_order',
+      label: 'Terminer la commande',
+      variant: 'default',
+      icon: 'CheckCircle2',
+      newStatus: 'completed',
+      roles: ['direction']
+    }
+  ],
+  completed: [],
+  rejected: [],
+  cancelled: [],
+  // Legacy statuses
+  pending: [],
+  confirmed: [],
+  delivered: []
+};
+
+export const CANCEL_ACTION: WorkflowAction = {
+  key: 'cancel',
+  label: 'Annuler',
+  variant: 'outline',
+  icon: 'XCircle',
+  newStatus: 'cancelled',
+  requiresNotes: true,
+  roles: ['direction', 'chef_base']
+};
+
+export const NON_CANCELLABLE_STATUSES: WorkflowStatus[] = [
+  'completed',
+  'rejected',
+  'cancelled'
+];
+
+export const getNextPossibleActions = (
+  currentStatus: WorkflowStatus,
+  userRole: string
+): WorkflowStatus[] => {
+  const actions = WORKFLOW_ACTIONS[currentStatus] || [];
+  const next = actions
+    .filter(action =>
+      action.newStatus &&
+      (action.roles.includes('all') || action.roles.includes(userRole as any))
+    )
+    .map(action => action.newStatus as WorkflowStatus);
+
+  if (
+    !NON_CANCELLABLE_STATUSES.includes(currentStatus) &&
+    ['direction', 'chef_base'].includes(userRole)
+  ) {
+    next.push('cancelled');
+  }
+
+  return next;
+};

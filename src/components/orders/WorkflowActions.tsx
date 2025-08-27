@@ -9,7 +9,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
-import { WorkflowStatus } from '@/types/workflow';
+import {
+  WorkflowStatus,
+  WORKFLOW_ACTIONS,
+  LEGACY_WORKFLOW_STATUSES,
+  CANCEL_ACTION,
+  NON_CANCELLABLE_STATUSES,
+  WorkflowAction
+} from '@/types/workflow';
 import { CheckCircle, CheckCircle2, XCircle, Search, ShoppingCart, Settings } from 'lucide-react';
 import { SupplierPriceForm } from './SupplierPriceForm';
 import { ShippingTrackingForm } from './ShippingTrackingForm';
@@ -74,148 +81,44 @@ export function WorkflowActions({
     }
   });
 
-  // Déterminer les actions disponibles selon le statut actuel et le rôle de l'utilisateur
-  const getAvailableActions = () => {
-    const actions = [];
-    if (!user) return actions;
+  const iconMap = {
+    CheckCircle,
+    CheckCircle2,
+    XCircle,
+    Search,
+    ShoppingCart,
+    Settings
+  } as const;
 
-    // Skip workflow actions for legacy statuses that don't support new workflow
-    const legacyStatuses = ['pending', 'confirmed', 'delivered'];
-    if (legacyStatuses.includes(order.status)) {
-      return actions;
+  const getAvailableActions = (): WorkflowAction[] => {
+    if (!user) return [];
+
+    if (LEGACY_WORKFLOW_STATUSES.includes(order.status as WorkflowStatus)) {
+      return [];
     }
 
-    // Actions pour commandes en brouillon
-    if (order.status === 'draft') {
-      // Pour tous les utilisateurs : ils peuvent choisir entre demande d'achat ou commande directe
-      actions.push({
-        key: 'submit_for_approval',
-        label: 'Soumettre pour approbation',
-        variant: 'default' as const,
-        icon: CheckCircle,
-        newStatus: 'pending_approval' as WorkflowStatus,
-        requiresNotes: false
-      }, {
-        key: 'start_supplier_search',
-        label: 'Commande directe (recherche fournisseur)',
-        variant: 'outline' as const,
-        icon: Search,
-        newStatus: 'supplier_search' as WorkflowStatus,
-        requiresNotes: false
-      });
+    const actionsForStatus = WORKFLOW_ACTIONS[order.status as WorkflowStatus] || [];
+    const filtered = actionsForStatus.filter(action => {
+      if (action.roles.includes('all')) return true;
+      if (action.roles.includes(user.role)) {
+        if (user.role === 'chef_base' && order.baseId !== user.baseId) {
+          return false;
+        }
+        return true;
+      }
+      return false;
+    });
+
+    if (
+      (user.role === 'direction' || (user.role === 'chef_base' && order.baseId === user.baseId)) &&
+      !NON_CANCELLABLE_STATUSES.includes(order.status as WorkflowStatus)
+    ) {
+      filtered.push(CANCEL_ACTION);
     }
 
-    // Actions pour la direction
-    if (user.role === 'direction') {
-      if (order.status === 'pending_approval') {
-        actions.push({
-          key: 'approve',
-          label: 'Approuver',
-          variant: 'default' as const,
-          icon: CheckCircle,
-          newStatus: 'approved' as WorkflowStatus,
-          requiresNotes: false
-        }, {
-          key: 'reject',
-          label: 'Rejeter',
-          variant: 'destructive' as const,
-          icon: XCircle,
-          newStatus: 'rejected' as WorkflowStatus,
-          requiresNotes: true,
-          useRejectionReason: true
-        });
-      }
-      if (order.status === 'approved') {
-        actions.push({
-          key: 'start_supplier_search',
-          label: 'Recherche fournisseurs',
-          variant: 'default' as const,
-          icon: Search,
-          newStatus: 'supplier_search' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-      if (order.status === 'supplier_search') {
-        actions.push({
-          key: 'configure_supplier',
-          label: 'Configurer fournisseur & prix',
-          variant: 'default' as const,
-          icon: Settings,
-          newStatus: null as any,
-          // Special action
-          requiresNotes: false,
-          isSpecial: true
-        });
-      }
-      if (order.status === 'supplier_search') {
-        actions.push({
-          key: 'confirm_order',
-          label: 'Confirmer la commande',
-          variant: 'default' as const,
-          icon: ShoppingCart,
-          newStatus: 'ordered' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-      if (order.status === 'ordered') {
-        actions.push({
-          key: 'mark_received',
-          label: 'Marquer comme reçu',
-          variant: 'default' as const,
-          icon: CheckCircle,
-          newStatus: 'received' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-      if (order.status === 'received') {
-        actions.push({
-          key: 'complete_order',
-          label: 'Terminer la commande',
-          variant: 'default' as const,
-          icon: CheckCircle2,
-          newStatus: 'completed' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-    }
-
-    // Actions pour chef de base (similaires à direction mais limitées à leur base)
-    if (user.role === 'chef_base' && order.baseId === user.baseId) {
-      if (order.status === 'approved') {
-        actions.push({
-          key: 'start_supplier_search',
-          label: 'Recherche fournisseurs',
-          variant: 'default' as const,
-          icon: Search,
-          newStatus: 'supplier_search' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-      if (order.status === 'supplier_search') {
-        actions.push({
-          key: 'confirm_order',
-          label: 'Confirmer la commande',
-          variant: 'default' as const,
-          icon: ShoppingCart,
-          newStatus: 'ordered' as WorkflowStatus,
-          requiresNotes: false
-        });
-      }
-    }
-
-    // Action d'annulation disponible pour direction et chef de base
-    if ((user.role === 'direction' || user.role === 'chef_base' && order.baseId === user.baseId) && !['completed', 'rejected', 'cancelled'].includes(order.status)) {
-      actions.push({
-        key: 'cancel',
-        label: 'Annuler',
-        variant: 'outline' as const,
-        icon: XCircle,
-        newStatus: 'cancelled' as WorkflowStatus,
-        requiresNotes: true
-      });
-    }
-    return actions;
+    return filtered;
   };
+
   const availableActions = getAvailableActions();
   if (availableActions.length === 0) {
     return null;
@@ -223,9 +126,9 @@ export function WorkflowActions({
   const ActionButton = ({
     action
   }: {
-    action: any;
+    action: WorkflowAction;
   }) => {
-    const Icon = action.icon;
+    const Icon = iconMap[action.icon as keyof typeof iconMap];
 
     // Special handling for supplier configuration
     if (action.isSpecial && action.key === 'configure_supplier') {

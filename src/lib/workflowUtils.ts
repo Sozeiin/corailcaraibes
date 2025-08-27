@@ -1,4 +1,4 @@
-import { WorkflowStatus, WORKFLOW_STEPS } from '@/types/workflow';
+import { WorkflowStatus, WORKFLOW_STEPS, getNextPossibleActions } from '@/types/workflow';
 
 // Utilitaires centralisés pour la gestion du workflow
 
@@ -28,25 +28,8 @@ export const getWorkflowStatusList = () => {
   ];
 };
 
-export const getNextPossibleActions = (currentStatus: WorkflowStatus, userRole: string): WorkflowStatus[] => {
-  const actions: Record<WorkflowStatus, WorkflowStatus[]> = {
-    draft: ['pending_approval'],
-    pending_approval: userRole === 'direction' ? ['approved', 'rejected'] : [],
-    approved: ['supplier_search'],
-    supplier_search: ['ordered'],
-    ordered: ['received'],
-    received: ['completed'],
-    completed: [],
-    rejected: [],
-    cancelled: [],
-    // Legacy statuses - limited actions
-    pending: ['confirmed', 'cancelled'],
-    confirmed: ['delivered', 'cancelled'],
-    delivered: []
-  };
 
-  return actions[currentStatus] || [];
-};
+export { getNextPossibleActions };
 
 export const canUserModifyStatus = (currentStatus: WorkflowStatus, userRole: string, baseId?: string, orderBaseId?: string): boolean => {
   if (userRole === 'direction') return true;
