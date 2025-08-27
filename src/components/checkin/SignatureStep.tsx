@@ -51,24 +51,20 @@ export function SignatureStep({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <div className="flex-1">
-          <SignaturePad
-            title="Signature Technicien"
-            description={`Signature du technicien confirmant l'état du bateau lors du ${type === 'checkin' ? 'check-in' : 'check-out'}`}
-            onSignature={onTechnicianSignature}
-            required={true}
-          />
-        </div>
+      <div className="space-y-6">
+        <SignaturePad
+          title="Signature Technicien"
+          description={`Signature du technicien confirmant l'état du bateau lors du ${type === 'checkin' ? 'check-in' : 'check-out'}`}
+          onSignature={onTechnicianSignature}
+          required={true}
+        />
 
-        <div className="flex-1">
-          <SignaturePad
-            title="Signature Client"
-            description={`Signature du client confirmant l'accord sur l'état du bateau`}
-            onSignature={onCustomerSignature}
-            required={true}
-          />
-        </div>
+        <SignaturePad
+          title="Signature Client"
+          description={`Signature du client confirmant l'accord sur l'état du bateau`}
+          onSignature={onCustomerSignature}
+          required={true}
+        />
       </div>
 
       {isLoading && (

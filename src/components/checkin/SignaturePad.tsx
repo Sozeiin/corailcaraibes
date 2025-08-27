@@ -50,18 +50,18 @@ export function SignaturePad({ title, description, onSignature, required = true 
         <p className="text-sm text-muted-foreground">{description}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="border-2 border-dashed border-border rounded-lg bg-muted/50 overflow-hidden">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg bg-gray-50 overflow-hidden">
           <SignatureCanvas
             ref={sigPadRef}
             canvasProps={{
-              className: 'signature-canvas w-full h-32 sm:h-40 md:h-48 cursor-crosshair',
+              className: 'signature-canvas w-full h-40 sm:h-48 md:h-56 cursor-crosshair',
               style: { 
                 touchAction: 'none',
                 maxWidth: '100%',
                 width: '100%'
               }
             }}
-            backgroundColor="hsl(var(--muted) / 0.5)"
+            backgroundColor="white"
             onEnd={handleEnd}
           />
         </div>
