@@ -269,7 +269,7 @@ export function PurchaseRequestDialog({ isOpen, onClose, order }: PurchaseReques
     mutation.mutate(submitData);
   };
 
-  const StatusIcon = order ? Icons[getStatusIcon(order.status) as keyof typeof Icons] : null;
+  const StatusIcon = order ? Icons[getStatusIcon(order.status) as keyof typeof Icons] as React.ComponentType<any> : null;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
