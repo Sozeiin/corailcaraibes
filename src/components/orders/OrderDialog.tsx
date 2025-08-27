@@ -63,12 +63,14 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
   const [createStockDialogOpen, setCreateStockDialogOpen] = useState(false);
   const [newProductName, setNewProductName] = useState('');
 
+  const defaultIsPurchaseRequest = order?.isPurchaseRequest ?? false;
+
   const form = useForm<OrderFormData>({
     defaultValues: {
       orderNumber: '',
       supplierId: '',
       baseId: '',
-        status: 'draft',
+      status: defaultIsPurchaseRequest ? 'draft' : 'pending',
       orderDate: new Date().toISOString().split('T')[0],
       deliveryDate: '',
       items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
@@ -155,13 +157,13 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
         orderNumber,
         supplierId: '',
         baseId: user?.role === 'direction' ? '' : (user?.baseId || ''),
-        status: 'draft',
+        status: defaultIsPurchaseRequest ? 'draft' : 'pending',
         orderDate: new Date().toISOString().split('T')[0],
         deliveryDate: '',
         items: [{ productName: '', reference: '', quantity: 1, unitPrice: 0 }]
       });
     }
-  }, [order, form, user]);
+  }, [order, form, user, defaultIsPurchaseRequest]);
 
   const calculateTotal = (items: any[]) => {
     return items.reduce((total, item) => total + (item.quantity * item.unitPrice), 0);
