@@ -239,7 +239,7 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
           : "La nouvelle commande a été créée avec succès."
       });
 
-      onClose();
+      handleClose();
     } catch (error) {
       console.error('Error saving order:', error);
       toast({
