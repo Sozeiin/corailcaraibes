@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Order } from '@/types';
 import { WorkflowStatus } from '@/types/workflow';
+import { isWorkflowStatus } from '@/lib/workflowUtils';
 import { CheckCircle, CheckCircle2, XCircle, Search, ShoppingCart, Settings } from 'lucide-react';
 import { SupplierPriceForm } from './SupplierPriceForm';
 import { ShippingTrackingForm } from './ShippingTrackingForm';
@@ -79,9 +80,8 @@ export function WorkflowActions({
     const actions = [];
     if (!user) return actions;
 
-    // Skip workflow actions for legacy statuses that don't support new workflow
-    const legacyStatuses = ['pending', 'confirmed', 'delivered'];
-    if (legacyStatuses.includes(order.status)) {
+    // Skip workflow actions for orders not using the new workflow
+    if (!isWorkflowStatus(order.status)) {
       return actions;
     }
 

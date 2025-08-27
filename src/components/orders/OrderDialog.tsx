@@ -172,7 +172,9 @@ export function OrderDialog({ isOpen, onClose, order }: OrderDialogProps) {
 
     try {
       const totalAmount = calculateTotal(data.items);
-      const isPurchaseRequest = order?.isPurchaseRequest || isWorkflowStatus(data.status);
+      const isPurchaseRequest = order && isWorkflowStatus(order.status)
+        ? order.isPurchaseRequest
+        : isWorkflowStatus(data.status);
 
       const orderData = {
         order_number: data.orderNumber,
