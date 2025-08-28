@@ -35,7 +35,7 @@ export function OrderLinkDialog({
 
   // Récupérer les commandes en cours qui pourraient correspondre
   const { data: potentialOrders, isLoading } = useQuery({
-    queryKey: ['potential-orders', stockItemName],
+    queryKey: ['potential-orders', stockItemId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
@@ -49,22 +49,20 @@ export function OrderLinkDialog({
             id,
             product_name,
             quantity,
-            reference
+            reference,
+            stock_item_id
           )
         `)
         .eq('base_id', user?.baseId)
         .in('status', ['ordered', 'supplier_search'])
-        .or(
-          `product_name.ilike.%${stockItemName}%,reference.ilike.%${stockItemName}%`,
-          { foreignTable: 'order_items' }
-        )
+        .eq('stock_item_id', stockItemId, { foreignTable: 'order_items' })
         .order('created_at', { ascending: false })
         .limit(5);
 
       if (error) throw error;
       return data || [];
     },
-    enabled: isOpen && !!stockItemName,
+    enabled: isOpen && !!stockItemId,
   });
 
   const handleLinkToOrder = async (orderId: string) => {
