@@ -55,7 +55,7 @@ export function OrderLinkDialog({
         `)
         .eq('base_id', user?.baseId)
         .in('status', ['ordered', 'supplier_search'])
-        .eq('stock_item_id', stockItemId, { foreignTable: 'order_items' })
+        .eq('order_items.stock_item_id', stockItemId)
         .order('created_at', { ascending: false })
         .limit(5);
 
