@@ -1,6 +1,5 @@
 
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -28,7 +27,7 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: Array<'direction' | 'chef_base' | 'technicien'> }) {
   const { isAuthenticated, loading, session, user } = useAuth();
   
   // Show loading spinner while auth is initializing
@@ -47,7 +46,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!session || !user || !isAuthenticated) {
     return <Navigate to="/auth" replace />;
   }
-  
+
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/maintenance" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -159,7 +162,7 @@ function AppRoutes() {
       <Route
         path="/maintenance/preventive"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
             <MaintenancePreventive />
           </ProtectedRoute>
         }

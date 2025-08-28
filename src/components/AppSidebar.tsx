@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, Shield, ChevronDown } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -63,7 +63,8 @@ const menuItems = [{
     },
     {
       title: 'Préventive',
-      url: '/maintenance/preventive'
+      url: '/maintenance/preventive',
+      roles: ['direction', 'chef_base']
     },
     {
       title: 'Planning',
@@ -112,7 +113,14 @@ export function AppSidebar() {
     };
     fetchBaseName();
   }, [user?.baseId, user?.role]);
-  const filteredMenuItems = menuItems.filter(item => user && item.roles.includes(user.role));
+  const filteredMenuItems = menuItems
+    .filter(item => user && item.roles.includes(user.role))
+    .map(item => ({
+      ...item,
+      subItems: item.subItems?.filter(subItem =>
+        !subItem.roles || (user && subItem.roles.includes(user.role))
+      )
+    }));
 
   const handleNavClick = () => {
     if (isMobile) {
@@ -129,7 +137,7 @@ export function AppSidebar() {
     setOpenSubMenus(prev => ({ ...prev, [title]: open }));
   };
 
-  const isSubItemActive = (subItems: Array<{url: string}>) => {
+  const isSubItemActive = (subItems: Array<{url: string; roles?: string[] }>) => {
     return subItems.some(subItem => location.pathname === subItem.url);
   };
   return (
