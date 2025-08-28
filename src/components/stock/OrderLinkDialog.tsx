@@ -22,40 +22,35 @@ interface OrderLinkDialogProps {
   quantityReceived: number;
 }
 
-export function OrderLinkDialog({ 
-  isOpen, 
-  onClose, 
-  stockItemId, 
-  stockItemName, 
-  quantityReceived 
+export function OrderLinkDialog({
+  isOpen,
+  onClose,
+  stockItemId,
+  stockItemName,
+  quantityReceived
 }: OrderLinkDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLinking, setIsLinking] = useState(false);
 
-  // Récupérer les commandes en cours qui pourraient correspondre
-  const { data: potentialOrders, isLoading } = useQuery({
-    queryKey: ['potential-orders', stockItemId],
+  // Récupérer les demandes d'approvisionnement correspondantes
+  const { data: potentialRequests, isLoading } = useQuery({
+    queryKey: ['potential-requests', stockItemId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('orders')
+        .from('supply_requests')
         .select(`
           id,
-          order_number,
+          request_number,
           status,
           created_at,
-          supplier:suppliers(name),
-          order_items!inner(
-            id,
-            product_name,
-            quantity,
-            reference,
-            stock_item_id
-          )
+          supplier_name,
+          item_name,
+          quantity_needed
         `)
         .eq('base_id', user?.baseId)
-        .in('status', ['ordered', 'supplier_search'])
-        .eq('order_items.stock_item_id', stockItemId)
+        .in('status', ['ordered', 'shipped'])
+        .eq('stock_item_id', stockItemId)
         .order('created_at', { ascending: false })
         .limit(5);
 
@@ -65,12 +60,12 @@ export function OrderLinkDialog({
     enabled: isOpen && !!stockItemId,
   });
 
-  const handleLinkToOrder = async (orderId: string) => {
+  const handleLinkToOrder = async (requestId: string) => {
     setIsLinking(true);
     try {
       const { data, error } = await supabase.rpc('link_stock_scan_to_order', {
         stock_item_id_param: stockItemId,
-        order_id_param: orderId,
+        order_id_param: requestId,
         quantity_received_param: quantityReceived
       });
 
@@ -122,26 +117,25 @@ export function OrderLinkDialog({
 
           {isLoading ? (
             <div className="text-center py-4">Recherche des commandes...</div>
-          ) : potentialOrders && potentialOrders.length > 0 ? (
+          ) : potentialRequests && potentialRequests.length > 0 ? (
             <div className="space-y-3">
-              <h3 className="font-medium">Commandes correspondantes possibles :</h3>
-              {potentialOrders.map((order: any) => (
-                <Card key={order.id} className="p-3">
+              <h3 className="font-medium">Demandes correspondantes possibles :</h3>
+              {potentialRequests.map((request: any) => (
+                <Card key={request.id} className="p-3">
                   <CardContent className="p-0">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <span className="font-medium">{order.order_number}</span>
-                        <Badge 
-                          variant={order.status === 'ordered' ? 'default' : 'secondary'}
+                        <span className="font-medium">{request.request_number}</span>
+                        <Badge
+                          variant={request.status === 'ordered' ? 'default' : 'secondary'}
                           className="ml-2"
                         >
-                          {order.status === 'draft' ? 'Brouillon' : 
-                           order.status === 'ordered' ? 'Commandé' : order.status}
+                          {request.status}
                         </Badge>
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => handleLinkToOrder(order.id)}
+                        onClick={() => handleLinkToOrder(request.id)}
                         disabled={isLinking}
                         className="flex items-center gap-1"
                       >
@@ -149,22 +143,15 @@ export function OrderLinkDialog({
                         Lier
                       </Button>
                     </div>
-                    
-                    {order.supplier && (
+
+                    {request.supplier_name && (
                       <p className="text-sm text-muted-foreground mb-2">
-                        Fournisseur: {order.supplier.name}
+                        Fournisseur: {request.supplier_name}
                       </p>
                     )}
-                    
+
                     <div className="text-xs text-muted-foreground">
-                      Articles commandés:
-                      <ul className="ml-2 mt-1">
-                        {order.order_items.map((item: any) => (
-                          <li key={item.id}>
-                            • {item.product_name} (Qté: {item.quantity})
-                          </li>
-                        ))}
-                      </ul>
+                      Article demandé: {request.item_name} (Qté: {request.quantity_needed})
                     </div>
                   </CardContent>
                 </Card>
@@ -184,7 +171,7 @@ export function OrderLinkDialog({
             <Button variant="outline" onClick={onClose}>
               Fermer
             </Button>
-            {potentialOrders && potentialOrders.length === 0 && (
+            {potentialRequests && potentialRequests.length === 0 && (
               <Button onClick={onClose} className="flex items-center gap-1">
                 <Check className="h-3 w-3" />
                 Continuer sans liaison
