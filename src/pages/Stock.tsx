@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Plus, Search, AlertTriangle, FileSpreadsheet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export default function Stock() {
   const { user } = useAuth();
@@ -37,8 +38,19 @@ export default function Stock() {
   const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('create') === '1') {
+      setEditingItem(null);
+      setIsDialogOpen(true);
+      navigate('/stock', { replace: true });
+    }
+  }, [location.search, navigate]);
 
   const {
     data: rawStockItems = [],
