@@ -2427,62 +2427,6 @@ export type Database = {
           },
         ]
       }
-      purchase_workflow_steps: {
-        Row: {
-          auto_completed: boolean | null
-          completed_at: string | null
-          created_at: string | null
-          duration_minutes: number | null
-          id: string
-          notes: string | null
-          order_id: string
-          started_at: string | null
-          step_description: string | null
-          step_name: string
-          step_number: number
-          user_id: string | null
-          user_name: string | null
-        }
-        Insert: {
-          auto_completed?: boolean | null
-          completed_at?: string | null
-          created_at?: string | null
-          duration_minutes?: number | null
-          id?: string
-          notes?: string | null
-          order_id: string
-          started_at?: string | null
-          step_description?: string | null
-          step_name: string
-          step_number: number
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Update: {
-          auto_completed?: boolean | null
-          completed_at?: string | null
-          created_at?: string | null
-          duration_minutes?: number | null
-          id?: string
-          notes?: string | null
-          order_id?: string
-          started_at?: string | null
-          step_description?: string | null
-          step_name?: string
-          step_number?: number
-          user_id?: string | null
-          user_name?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchase_workflow_steps_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       purchasing_templates: {
         Row: {
           category: string | null
@@ -2523,57 +2467,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      purchasing_workflows: {
-        Row: {
-          approval_history: Json
-          created_at: string
-          created_by: string
-          current_step: string
-          id: string
-          order_id: string
-          steps: Json
-          updated_at: string
-          workflow_type: string
-        }
-        Insert: {
-          approval_history?: Json
-          created_at?: string
-          created_by: string
-          current_step?: string
-          id?: string
-          order_id: string
-          steps?: Json
-          updated_at?: string
-          workflow_type?: string
-        }
-        Update: {
-          approval_history?: Json
-          created_at?: string
-          created_by?: string
-          current_step?: string
-          id?: string
-          order_id?: string
-          steps?: Json
-          updated_at?: string
-          workflow_type?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "purchasing_workflows_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "purchasing_workflows_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -3331,6 +3224,87 @@ export type Database = {
           },
         ]
       }
+      supply_requests: {
+        Row: {
+          base_id: string
+          boat_id: string | null
+          carrier: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          item_name: string
+          item_reference: string | null
+          photo_url: string | null
+          purchase_price: number | null
+          quantity_needed: number
+          rejection_reason: string | null
+          request_number: string
+          requested_by: string
+          shipped_at: string | null
+          status: string
+          stock_item_id: string | null
+          supplier_name: string | null
+          tracking_number: string | null
+          updated_at: string
+          urgency_level: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          base_id: string
+          boat_id?: string | null
+          carrier?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name: string
+          item_reference?: string | null
+          photo_url?: string | null
+          purchase_price?: number | null
+          quantity_needed?: number
+          rejection_reason?: string | null
+          request_number: string
+          requested_by: string
+          shipped_at?: string | null
+          status?: string
+          stock_item_id?: string | null
+          supplier_name?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          urgency_level?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          base_id?: string
+          boat_id?: string | null
+          carrier?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_name?: string
+          item_reference?: string | null
+          photo_url?: string | null
+          purchase_price?: number | null
+          quantity_needed?: number
+          rejection_reason?: string | null
+          request_number?: string
+          requested_by?: string
+          shipped_at?: string | null
+          status?: string
+          stock_item_id?: string | null
+          supplier_name?: string | null
+          tracking_number?: string | null
+          updated_at?: string
+          urgency_level?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: []
+      }
       weather_adjustment_rules: {
         Row: {
           action: string
@@ -3469,122 +3443,6 @@ export type Database = {
         }
         Relationships: []
       }
-      workflow_alerts: {
-        Row: {
-          alert_message: string
-          alert_type: string
-          created_at: string
-          id: string
-          is_resolved: boolean
-          order_id: string
-          resolved_at: string | null
-          severity: string
-          threshold_hours: number
-          triggered_at: string
-        }
-        Insert: {
-          alert_message: string
-          alert_type: string
-          created_at?: string
-          id?: string
-          is_resolved?: boolean
-          order_id: string
-          resolved_at?: string | null
-          severity?: string
-          threshold_hours: number
-          triggered_at?: string
-        }
-        Update: {
-          alert_message?: string
-          alert_type?: string
-          created_at?: string
-          id?: string
-          is_resolved?: boolean
-          order_id?: string
-          resolved_at?: string | null
-          severity?: string
-          threshold_hours?: number
-          triggered_at?: string
-        }
-        Relationships: []
-      }
-      workflow_automation_rules: {
-        Row: {
-          auto_delay_hours: number | null
-          created_at: string
-          id: string
-          is_active: boolean
-          requires_approval: boolean
-          rule_name: string
-          trigger_condition: string
-          updated_at: string
-        }
-        Insert: {
-          auto_delay_hours?: number | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          requires_approval?: boolean
-          rule_name: string
-          trigger_condition: string
-          updated_at?: string
-        }
-        Update: {
-          auto_delay_hours?: number | null
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          requires_approval?: boolean
-          rule_name?: string
-          trigger_condition?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      workflow_notifications: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_sent: boolean | null
-          message: string
-          notification_type: string
-          order_id: string
-          recipient_user_id: string
-          sent_at: string | null
-          title: string
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_sent?: boolean | null
-          message: string
-          notification_type: string
-          order_id: string
-          recipient_user_id: string
-          sent_at?: string | null
-          title: string
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_sent?: boolean | null
-          message?: string
-          notification_type?: string
-          order_id?: string
-          recipient_user_id?: string
-          sent_at?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "workflow_notifications_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
     }
     Views: {
       purchasing_analytics: {
@@ -3648,6 +3506,10 @@ export type Database = {
         Returns: string
       }
       generate_stock_reference: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_supply_request_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

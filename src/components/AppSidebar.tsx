@@ -35,7 +35,7 @@ const menuItems = [{
   roles: ['direction', 'chef_base']
 }, {
   title: 'Commandes',
-  url: '/orders',
+  url: '/supply-requests',
   icon: ShoppingCart,
   roles: ['direction', 'chef_base']
 }, {

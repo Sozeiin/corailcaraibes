@@ -14,6 +14,7 @@ import { BoatSafetyControls } from "./pages/BoatSafetyControls";
 import { SafetyControls } from "./pages/SafetyControls";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
+import SupplyRequests from "./pages/SupplyRequests";
 import Stock from "./pages/Stock";
 import StockScanner from "./pages/StockScanner";
 import Maintenance from "./pages/Maintenance";
@@ -120,6 +121,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Orders />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/supply-requests"
+        element={
+          <ProtectedRoute>
+            <SupplyRequests />
           </ProtectedRoute>
         }
       />
