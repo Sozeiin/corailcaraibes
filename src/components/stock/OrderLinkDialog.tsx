@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,6 @@ export function OrderLinkDialog({
 }: OrderLinkDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isLinking, setIsLinking] = useState(false);
   const queryClient = useQueryClient();
 
   // Récupérer les demandes d'approvisionnement correspondantes
@@ -61,9 +60,8 @@ export function OrderLinkDialog({
     enabled: isOpen && !!stockItemId,
   });
 
-  const handleLinkToOrder = async (requestId: string) => {
-    setIsLinking(true);
-    try {
+  const linkMutation = useMutation({
+    mutationFn: async (requestId: string) => {
       const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
         stock_item_id_param: stockItemId,
         request_id_param: requestId,
@@ -73,28 +71,32 @@ export function OrderLinkDialog({
       if (error) throw error;
 
       const result = data as { success: boolean; request_number?: string; error?: string };
-
-      if (result?.success) {
-        await queryClient.invalidateQueries({ queryKey: ['supply-requests'], exact: false });
-        await queryClient.invalidateQueries({ queryKey: ['stock'], exact: false });
-        toast({
-          title: 'Liaison réussie',
-          description: `Stock lié à la demande ${result.request_number}`,
-        });
-        onClose();
-      } else {
+      if (!result?.success) {
         throw new Error(result?.error || 'Erreur lors de la liaison');
       }
-    } catch (error) {
+      return result;
+    },
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({ queryKey: ['supply-requests'], exact: false });
+      await queryClient.invalidateQueries({ queryKey: ['stock'], exact: false });
+      toast({
+        title: 'Liaison réussie',
+        description: `Stock lié à la demande ${result.request_number}`,
+      });
+      onClose();
+    },
+    onError: (error) => {
       console.error('Erreur liaison demande:', error);
       toast({
         title: 'Erreur',
         description: 'Impossible de lier le stock à cette demande',
         variant: 'destructive'
       });
-    } finally {
-      setIsLinking(false);
     }
+  });
+
+  const handleLinkToOrder = (requestId: string) => {
+    linkMutation.mutate(requestId);
   };
 
   return (
@@ -139,7 +141,7 @@ export function OrderLinkDialog({
                       <Button
                         size="sm"
                         onClick={() => handleLinkToOrder(request.id)}
-                        disabled={isLinking}
+                        disabled={linkMutation.isPending}
                         className="flex items-center gap-1"
                       >
                         <Check className="h-3 w-3" />
