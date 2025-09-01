@@ -69,18 +69,14 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           body: { baseId, lat, lon }
         });
         if (error) {
-          console.error('WeatherWidget: Supabase function error:', error);
           throw error;
         }
         if (data) {
-          console.log('WeatherWidget: Weather data received:', data);
           setWeather(data);
         } else {
           throw new Error('No data received from weather function');
         }
       } catch (error) {
-        console.error('WeatherWidget: Error in fetchWeather:', error);
-        console.log('WeatherWidget: Error occurred, falling back to static data');
         const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
         const staticWeather = {
           location: 'Données de démonstration - ' + fallbackLocation,
@@ -108,26 +104,23 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
             );
             await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
             return;
-          } catch (geoError) {
-            console.error('WeatherWidget: Geolocation error:', geoError);
+          } catch {
+            // ignore geolocation errors and fall back to base location
           }
         }
         const baseId = user?.baseId;
         await fetchWeather({ baseId });
-      } catch (error) {
-        console.error('Error fetching weather:', error);
+      } catch {
         toast({
           title: "Erreur météo",
           description: "Impossible de récupérer les données météo",
-          variant: "destructive"
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
       }
     };
   useEffect(() => {
-    console.log('WeatherWidget: useEffect triggered');
-    console.log('WeatherWidget: Current user object:', user);
     getLocationAndWeather();
   }, [user]);
   if (loading) {
@@ -180,7 +173,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       </Card>;
   }
   if (compact) {
-    return <Card className="h-auto h-auto ">
+    return <Card className="h-auto">
         <CardContent className="p-2 flex items-center justify-between w-full">
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-center gap-1">
