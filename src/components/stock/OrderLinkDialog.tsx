@@ -35,7 +35,7 @@ export function OrderLinkDialog({
 
   // Récupérer les demandes d'approvisionnement correspondantes
   const { data: potentialRequests, isLoading } = useQuery({
-    queryKey: ['potential-requests', stockItemId],
+    queryKey: ['potential-requests', stockItemId, stockItemName],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('supply_requests')
@@ -50,7 +50,7 @@ export function OrderLinkDialog({
         `)
         .eq('base_id', user?.baseId)
         .in('status', ['ordered', 'shipped'])
-        .eq('stock_item_id', stockItemId)
+        .ilike('item_name', stockItemName)
         .order('created_at', { ascending: false })
         .limit(5);
 
