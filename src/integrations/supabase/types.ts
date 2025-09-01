@@ -957,6 +957,7 @@ export type Database = {
       checklist_items: {
         Row: {
           category: string | null
+          display_order: number | null
           id: string
           is_required: boolean | null
           name: string
@@ -965,6 +966,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          display_order?: number | null
           id?: string
           is_required?: boolean | null
           name: string
@@ -973,6 +975,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          display_order?: number | null
           id?: string
           is_required?: boolean | null
           name?: string

@@ -22,9 +22,9 @@ export interface SupplyRequest {
   item_reference?: string;
   description?: string;
   quantity_needed: number;
-  urgency_level: 'low' | 'normal' | 'high' | 'urgent';
+  urgency_level: string; // Changed from union type to string
   photo_url?: string;
-  status: 'pending' | 'approved' | 'ordered' | 'shipped' | 'received' | 'completed' | 'rejected';
+  status: string; // Changed from union type to string 
   validated_at?: string;
   validated_by?: string;
   rejection_reason?: string;

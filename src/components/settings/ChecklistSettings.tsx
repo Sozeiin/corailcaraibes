@@ -8,15 +8,232 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Save, X, CheckSquare, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Plus, Edit, Save, X, CheckSquare, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import {
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+
+// Component for individual sortable checklist item
+const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, handleDelete, updateMutation, deleteMutation }: any) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'ok': return 'default';
+      case 'needs_repair': return 'destructive';
+      case 'not_checked': return 'secondary';
+      default: return 'outline';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'ok': return 'OK';
+      case 'needs_repair': return 'À réparer';
+      case 'not_checked': return 'Non vérifié';
+      default: return status;
+    }
+  };
+
+  const ChecklistItemForm = ({ item, onSave, onCancel }: any) => {
+    const [formData, setFormData] = useState({
+      name: item?.name || '',
+      category: item?.category || '',
+      is_required: item?.is_required || false,
+      status: item?.status || 'not_checked',
+      notes: item?.notes || ''
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      onSave(formData);
+    };
+
+    return (
+      <form onSubmit={handleSubmit} className="space-y-4 bg-muted/50 p-4 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="name">Nom de l'élément *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="status">Statut par défaut</Label>
+            <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="not_checked">Non vérifié</SelectItem>
+                <SelectItem value="ok">OK</SelectItem>
+                <SelectItem value="needs_repair">À réparer</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="required"
+            checked={formData.is_required}
+            onCheckedChange={(checked) => setFormData({ ...formData, is_required: checked })}
+          />
+          <Label htmlFor="required">Élément obligatoire</Label>
+        </div>
+
+        <div>
+          <Label htmlFor="notes">Notes</Label>
+          <Textarea
+            id="notes"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            rows={3}
+          />
+        </div>
+
+        <div className="flex gap-2">
+          <Button type="submit" disabled={updateMutation.isPending}>
+            <Save className="h-4 w-4 mr-2" />
+            {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Sauvegarder'}
+          </Button>
+          <Button type="button" variant="outline" onClick={onCancel}>
+            <X className="h-4 w-4 mr-2" />
+            Annuler
+          </Button>
+        </div>
+      </form>
+    );
+  };
+
+  if (editingItem?.id === item.id) {
+    return (
+      <div ref={setNodeRef} style={style} className="mb-4">
+        <ChecklistItemForm
+          item={item}
+          onSave={handleSave}
+          onCancel={() => setEditingItem(null)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex justify-between items-start p-4 border rounded-lg mb-4 bg-background transition-shadow ${
+        isDragging ? 'shadow-lg opacity-50' : 'hover:shadow-sm'
+      }`}
+    >
+      <div className="flex items-start gap-3 flex-1">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 mb-2">
+            <h4 className="font-medium">{item.name}</h4>
+            <Badge variant={getStatusBadgeVariant(item.status)}>
+              {getStatusLabel(item.status)}
+            </Badge>
+            {item.is_required && (
+              <Badge variant="outline">Obligatoire</Badge>
+            )}
+          </div>
+          {item.notes && (
+            <p className="text-sm text-muted-foreground">{item.notes}</p>
+          )}
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setEditingItem(item)}
+        >
+          <Edit className="h-4 w-4" />
+        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Cette action ne peut pas être annulée. Cela supprimera définitivement l'élément "{item.name}" de la checklist.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={() => handleDelete(item.id)}>
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
+  );
+};
 
 export function ChecklistSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const { data: checklistItems = [], isLoading } = useQuery({
     queryKey: ['checklist-items'],
@@ -25,6 +242,7 @@ export function ChecklistSettings() {
         .from('checklist_items')
         .select('*')
         .order('category', { ascending: true })
+        .order('display_order', { ascending: true })
         .order('name', { ascending: true });
       
       if (error) throw error;
@@ -119,10 +337,73 @@ export function ChecklistSettings() {
     }
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
-      deleteMutation.mutate(id);
+  // Update display order mutation for drag & drop
+  const updateOrderMutation = useMutation({
+    mutationFn: async (updates: { id: string; display_order: number; category: string }[]) => {
+      setIsSaving(true);
+      const promises = updates.map(({ id, display_order }) =>
+        supabase
+          .from('checklist_items')
+          .update({ display_order })
+          .eq('id', id)
+      );
+      
+      await Promise.all(promises);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['checklist-items'] });
+      setIsSaving(false);
+      toast({
+        title: "Ordre mis à jour",
+        description: "L'ordre des éléments a été sauvegardé.",
+      });
+    },
+    onError: (error: any) => {
+      setIsSaving(false);
+      console.error('Erreur lors de la mise à jour de l\'ordre:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder l'ordre des éléments.",
+        variant: "destructive"
+      });
     }
+  });
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const activeItem = checklistItems.find(item => item.id === active.id);
+    const overItem = checklistItems.find(item => item.id === over.id);
+
+    if (!activeItem || !overItem || activeItem.category !== overItem.category) {
+      return;
+    }
+
+    const category = activeItem.category;
+    const categoryItems = checklistItems.filter(item => item.category === category);
+    const activeIndex = categoryItems.findIndex(item => item.id === active.id);
+    const overIndex = categoryItems.findIndex(item => item.id === over.id);
+
+    if (activeIndex !== overIndex) {
+      const reorderedItems = arrayMove(categoryItems, activeIndex, overIndex);
+      
+      // Update display_order for all items in the category
+      const updates = reorderedItems.map((item, index) => ({
+        id: item.id,
+        display_order: index + 1,
+        category: category
+      }));
+
+      updateOrderMutation.mutate(updates);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -286,57 +567,41 @@ export function ChecklistSettings() {
       <div className="space-y-6">
         {Object.entries(groupedItems).map(([category, items]: [string, any]) => (
           <Card key={category}>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">{category}</CardTitle>
+              {isSaving && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sauvegarde en cours...
+                </div>
+              )}
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {items.map((item: any) => (
-                  <div key={item.id}>
-                    {editingItem?.id === item.id ? (
-                      <ChecklistItemForm
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={items.map((item: any) => item.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-0">
+                    {items.map((item: any) => (
+                      <SortableChecklistItem
+                        key={item.id}
                         item={item}
-                        onSave={handleSave}
-                        onCancel={() => setEditingItem(null)}
+                        editingItem={editingItem}
+                        setEditingItem={setEditingItem}
+                        handleSave={handleSave}
+                        handleDelete={handleDelete}
+                        updateMutation={updateMutation}
+                        deleteMutation={deleteMutation}
                       />
-                    ) : (
-                      <div className="flex justify-between items-start p-4 border rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-medium">{item.name}</h4>
-                            <Badge variant={getStatusBadgeVariant(item.status)}>
-                              {getStatusLabel(item.status)}
-                            </Badge>
-                            {item.is_required && (
-                              <Badge variant="outline">Obligatoire</Badge>
-                            )}
-                          </div>
-                          {item.notes && (
-                            <p className="text-sm text-muted-foreground">{item.notes}</p>
-                          )}
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setEditingItem(item)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
+                </SortableContext>
+              </DndContext>
             </CardContent>
           </Card>
         ))}
