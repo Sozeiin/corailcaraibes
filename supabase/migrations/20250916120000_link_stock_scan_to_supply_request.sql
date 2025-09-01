@@ -14,11 +14,18 @@ BEGIN
   SELECT sr.*, s.id AS supplier_id
   INTO request_record
   FROM public.supply_requests sr
-  LEFT JOIN public.suppliers s ON s.name = sr.supplier_name
+  LEFT JOIN public.suppliers s ON s.name = sr.supplier_name AND s.base_id = sr.base_id
   WHERE sr.id = request_id_param;
 
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'Demande non trouvée');
+  END IF;
+
+  -- Create supplier if it doesn't exist
+  IF request_record.supplier_name IS NOT NULL AND request_record.supplier_id IS NULL THEN
+    INSERT INTO public.suppliers (name, base_id)
+    VALUES (request_record.supplier_name, request_record.base_id)
+    RETURNING id INTO request_record.supplier_id;
   END IF;
 
   -- Mark request as completed and link stock item
@@ -44,7 +51,7 @@ BEGIN
       stock_item_id_param,
       request_record.supplier_id,
       CURRENT_DATE,
-      0,
+      COALESCE(request_record.purchase_price, 0),
       quantity_received_param,
       12,
       'Lié manuellement via scan - Demande: ' || request_record.request_number

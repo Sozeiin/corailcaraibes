@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -7,11 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, Package, Truck } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SupplyRequest } from '@/pages/SupplyRequests';
+import { SupplierAutocomplete } from '@/components/suppliers/SupplierAutocomplete';
 
 interface FormData {
   status: string;
@@ -280,10 +280,17 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="supplier_name">Fournisseur *</Label>
-                      <Input
-                        id="supplier_name"
-                        {...form.register('supplier_name', { required: true })}
-                        placeholder="Nom du fournisseur"
+                      <Controller
+                        name="supplier_name"
+                        control={form.control}
+                        rules={{ required: true }}
+                        render={({ field }) => (
+                          <SupplierAutocomplete
+                            value={field.value}
+                            onChange={field.onChange}
+                            placeholder="Rechercher un fournisseur..."
+                          />
+                        )}
                       />
                     </div>
                   </div>
