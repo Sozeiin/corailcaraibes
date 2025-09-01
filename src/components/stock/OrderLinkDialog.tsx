@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ export function OrderLinkDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   const [isLinking, setIsLinking] = useState(false);
+  const queryClient = useQueryClient();
 
   // Récupérer les demandes d'approvisionnement correspondantes
   const { data: potentialRequests, isLoading } = useQuery({
@@ -74,6 +75,8 @@ export function OrderLinkDialog({
       const result = data as { success: boolean; request_number?: string; error?: string };
 
       if (result?.success) {
+        await queryClient.invalidateQueries({ queryKey: ['supply-requests'], exact: false });
+        await queryClient.invalidateQueries({ queryKey: ['stock'], exact: false });
         toast({
           title: 'Liaison réussie',
           description: `Stock lié à la demande ${result.request_number}`,
