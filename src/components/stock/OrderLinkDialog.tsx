@@ -63,30 +63,30 @@ export function OrderLinkDialog({
   const handleLinkToOrder = async (requestId: string) => {
     setIsLinking(true);
     try {
-      const { data, error } = await supabase.rpc('link_stock_scan_to_order', {
+      const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
         stock_item_id_param: stockItemId,
-        order_id_param: requestId,
+        request_id_param: requestId,
         quantity_received_param: quantityReceived
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; order_number?: string; error?: string };
+      const result = data as { success: boolean; request_number?: string; error?: string };
 
       if (result?.success) {
         toast({
           title: 'Liaison réussie',
-          description: `Stock lié à la commande ${result.order_number}`,
+          description: `Stock lié à la demande ${result.request_number}`,
         });
         onClose();
       } else {
         throw new Error(result?.error || 'Erreur lors de la liaison');
       }
     } catch (error) {
-      console.error('Erreur liaison commande:', error);
+      console.error('Erreur liaison demande:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de lier le stock à cette commande',
+        description: 'Impossible de lier le stock à cette demande',
         variant: 'destructive'
       });
     } finally {
@@ -100,7 +100,7 @@ export function OrderLinkDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Link className="h-5 w-5" />
-            Lier le scan à une commande
+            Lier le scan à une demande
           </DialogTitle>
         </DialogHeader>
 
@@ -116,7 +116,7 @@ export function OrderLinkDialog({
           </div>
 
           {isLoading ? (
-            <div className="text-center py-4">Recherche des commandes...</div>
+            <div className="text-center py-4">Recherche des demandes...</div>
           ) : potentialRequests && potentialRequests.length > 0 ? (
             <div className="space-y-3">
               <h3 className="font-medium">Demandes correspondantes possibles :</h3>
@@ -160,9 +160,9 @@ export function OrderLinkDialog({
           ) : (
             <div className="text-center py-6 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Aucune commande correspondante trouvée</p>
+              <p>Aucune demande correspondante trouvée</p>
               <p className="text-sm mt-1">
-                L'article a été ajouté au stock sans liaison à une commande
+                L'article a été ajouté au stock sans liaison à une demande
               </p>
             </div>
           )}
