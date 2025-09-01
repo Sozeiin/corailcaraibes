@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake } from 'lucide-react';
+import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake, CloudLightning } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -43,6 +43,14 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   };
   const getWeatherIcon = (condition: string, size = "h-8 w-8") => {
     const lowerCondition = condition.toLowerCase();
+    if (
+      lowerCondition.includes('thunder') ||
+      lowerCondition.includes('storm') ||
+      lowerCondition.includes('orage') ||
+      lowerCondition.includes('tempête')
+    ) {
+      return <CloudLightning className={`${size} text-yellow-500`} />;
+    }
     if (
       lowerCondition.includes('rain') ||
       lowerCondition.includes('drizzle') ||
