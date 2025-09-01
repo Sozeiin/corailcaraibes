@@ -1,10 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, RefreshCw, Cloud, Sun, CloudRain, Snowflake, CloudLightning } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+
+const BASE_LOCATIONS: Record<string, string> = {
+  '550e8400-e29b-41d4-a716-446655440001': 'Le Marin, Martinique',
+  '550e8400-e29b-41d4-a716-446655440002': 'Pointe-à-Pitre, Guadeloupe',
+  '1491c828-a935-491b-87bd-c402fc4cebc1': 'Paris, France (Métropole)',
+  default: 'Paris, France',
+};
 interface WeatherWidgetData {
   location: string;
   temperature: number;
@@ -33,14 +40,6 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     user
   } = useAuth();
 
-  // Base-specific location configurations
-  const baseLocations = {
-    '550e8400-e29b-41d4-a716-446655440001': 'Le Marin, Martinique',
-    '550e8400-e29b-41d4-a716-446655440002': 'Pointe-à-Pitre, Guadeloupe',
-    '1491c828-a935-491b-87bd-c402fc4cebc1': 'Paris, France (Métropole)',
-    // Default for unknown bases
-    default: 'Paris, France'
-  };
   const getWeatherIcon = (condition: string, size = "h-8 w-8") => {
     const lowerCondition = condition.toLowerCase();
     if (
@@ -71,66 +70,67 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     }
     return <Sun className={`${size} text-yellow-500`} />;
   };
-    const fetchWeather = async ({ baseId, lat, lon }: { baseId?: string; lat?: number; lon?: number }) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { baseId, lat, lon }
-        });
-        if (error) {
-          throw error;
-        }
-        if (data) {
-          setWeather(data);
-        } else {
-          throw new Error('No data received from weather function');
-        }
-      } catch (error) {
-        const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
-        const staticWeather = {
-          location: 'Données de démonstration - ' + fallbackLocation,
-          temperature: 18,
-          condition: 'Partiellement nuageux',
-          humidity: 65,
-          windSpeed: 12,
-          forecast: [
-            { date: 'Auj', temp_max: 22, temp_min: 14, condition: 'Nuageux' },
-            { date: 'Dem', temp_max: 25, temp_min: 16, condition: 'Ensoleillé' },
-            { date: 'Mer', temp_max: 19, temp_min: 13, condition: 'Pluie' }
-          ]
-        };
-        setWeather(staticWeather);
+  const fetchWeather = useCallback(async ({ baseId, lat, lon }: { baseId?: string; lat?: number; lon?: number }) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-weather', {
+        body: { baseId, lat, lon }
+      });
+      if (error) {
+        throw error;
       }
-    };
+      if (data) {
+        setWeather(data);
+      } else {
+        throw new Error('No data received from weather function');
+      }
+    } catch (error) {
+      const fallbackLocation = baseId && BASE_LOCATIONS[baseId] ? BASE_LOCATIONS[baseId] : BASE_LOCATIONS.default;
+      const staticWeather = {
+        location: 'Données de démonstration - ' + fallbackLocation,
+        temperature: 18,
+        condition: 'Partiellement nuageux',
+        humidity: 65,
+        windSpeed: 12,
+        forecast: [
+          { date: 'Auj', temp_max: 22, temp_min: 14, condition: 'Nuageux' },
+          { date: 'Dem', temp_max: 25, temp_min: 16, condition: 'Ensoleillé' },
+          { date: 'Mer', temp_max: 19, temp_min: 13, condition: 'Pluie' }
+        ]
+      };
+      setWeather(staticWeather);
+    }
+  }, []);
 
-    const getLocationAndWeather = async () => {
-      setLoading(true);
-      try {
-        if (navigator.geolocation) {
-          try {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-              navigator.geolocation.getCurrentPosition(resolve, reject)
-            );
-            await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
-            return;
-          } catch {
-            // ignore geolocation errors and fall back to base location
-          }
+  const getLocationAndWeather = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (navigator.geolocation) {
+        try {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+            navigator.geolocation.getCurrentPosition(resolve, reject)
+          );
+          await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
+          return;
+        } catch {
+          // ignore geolocation errors and fall back to base location
         }
-        const baseId = user?.baseId;
-        await fetchWeather({ baseId });
-      } catch {
-        toast({
-          title: "Erreur météo",
-          description: "Impossible de récupérer les données météo",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
       }
-    };
+      const baseId = user?.baseId;
+      await fetchWeather({ baseId });
+    } catch {
+      toast({
+        title: "Erreur météo",
+        description: "Impossible de récupérer les données météo",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchWeather, toast, user]);
+
   useEffect(() => {
     getLocationAndWeather();
-  }, [user]);
+  }, [getLocationAndWeather]);
   if (loading) {
     if (compact) {
       return <Card className="h-16">
