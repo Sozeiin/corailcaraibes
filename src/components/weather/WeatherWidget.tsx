@@ -83,7 +83,11 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       } catch (error) {
         console.error('WeatherWidget: Error in fetchWeather:', error);
         console.log('WeatherWidget: Error occurred, falling back to static data');
-        const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
+        const fallbackLocation = baseId && baseLocations[baseId]
+          ? baseLocations[baseId]
+          : lat !== undefined && lon !== undefined
+            ? `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`
+            : baseLocations.default;
         const staticWeather = {
           location: fallbackLocation,
           temperature: 18,
@@ -104,16 +108,16 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
     const getLocationAndWeather = async () => {
       setLoading(true);
       try {
-        if (navigator.geolocation) {
-          try {
+        try {
+          if (navigator?.geolocation) {
             const position = await new Promise<GeolocationPosition>((resolve, reject) =>
               navigator.geolocation.getCurrentPosition(resolve, reject)
             );
             await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
             return;
-          } catch (geoError) {
-            console.error('WeatherWidget: Geolocation error:', geoError);
           }
+        } catch (geoError) {
+          console.error('WeatherWidget: Geolocation error:', geoError);
         }
         const baseId = user?.baseId;
         const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
