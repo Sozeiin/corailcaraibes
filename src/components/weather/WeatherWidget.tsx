@@ -44,95 +44,92 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   };
   const getWeatherIcon = (condition: string, size = "h-8 w-8") => {
     const lowerCondition = condition.toLowerCase();
-    if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) {
+    if (
+      lowerCondition.includes('rain') ||
+      lowerCondition.includes('drizzle') ||
+      lowerCondition.includes('pluie') ||
+      lowerCondition.includes('bruine')
+    ) {
       return <CloudRain className={`${size} text-blue-500`} />;
     }
-    if (lowerCondition.includes('snow')) {
+    if (lowerCondition.includes('snow') || lowerCondition.includes('neige')) {
       return <Snowflake className={`${size} text-blue-200`} />;
     }
-    if (lowerCondition.includes('cloud')) {
+    if (
+      lowerCondition.includes('cloud') ||
+      lowerCondition.includes('nuage') ||
+      lowerCondition.includes('couvert')
+    ) {
       return <Cloud className={`${size} text-gray-500`} />;
     }
     return <Sun className={`${size} text-yellow-500`} />;
   };
-  const getLocationAndWeather = async () => {
-    setLoading(true);
-    try {
-      // Use base-specific location based on user's base
-      const baseId = user?.baseId;
-      console.log('WeatherWidget: Current user baseId:', baseId);
-      console.log('WeatherWidget: Available base locations:', baseLocations);
-      const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
-      console.log('WeatherWidget: Expected location:', expectedLocation);
-      setLocation(expectedLocation);
-      await fetchWeatherByBaseId(baseId);
-    } catch (error) {
-      console.error('Error fetching weather:', error);
-      toast({
-        title: "Erreur météo",
-        description: "Impossible de récupérer les données météo",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-  const fetchWeatherByBaseId = async (baseId?: string) => {
-    console.log('WeatherWidget: fetchWeatherByBaseId called with baseId', baseId);
-    try {
-      console.log('WeatherWidget: Calling Supabase edge function with baseId...');
-      const {
-        data,
-        error
-      } = await supabase.functions.invoke('get-weather', {
-        body: {
-          baseId
+    const fetchWeather = async ({ baseId, lat, lon }: { baseId?: string; lat?: number; lon?: number }) => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-weather', {
+          body: { baseId, lat, lon }
+        });
+        if (error) {
+          console.error('WeatherWidget: Supabase function error:', error);
+          throw error;
         }
-      });
-      if (error) {
-        console.error('WeatherWidget: Supabase function error:', error);
-        throw error;
+        if (data) {
+          console.log('WeatherWidget: Weather data received:', data);
+          setWeather(data);
+          setLocation(data.location);
+        } else {
+          throw new Error('No data received from weather function');
+        }
+      } catch (error) {
+        console.error('WeatherWidget: Error in fetchWeather:', error);
+        console.log('WeatherWidget: Error occurred, falling back to static data');
+        const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
+        const staticWeather = {
+          location: fallbackLocation,
+          temperature: 18,
+          condition: 'Partiellement nuageux',
+          humidity: 65,
+          windSpeed: 12,
+          forecast: [
+            { date: 'Auj', temp_max: 22, temp_min: 14, condition: 'Nuageux' },
+            { date: 'Dem', temp_max: 25, temp_min: 16, condition: 'Ensoleillé' },
+            { date: 'Mer', temp_max: 19, temp_min: 13, condition: 'Pluie' }
+          ]
+        };
+        setWeather(staticWeather);
+        setLocation('Données de démonstration - ' + fallbackLocation);
       }
-      if (data) {
-        console.log('WeatherWidget: Weather data received:', data);
-        setWeather(data);
-        setLocation(data.location);
-      } else {
-        throw new Error('No data received from weather function');
+    };
+
+    const getLocationAndWeather = async () => {
+      setLoading(true);
+      try {
+        if (navigator.geolocation) {
+          try {
+            const position = await new Promise<GeolocationPosition>((resolve, reject) =>
+              navigator.geolocation.getCurrentPosition(resolve, reject)
+            );
+            await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
+            return;
+          } catch (geoError) {
+            console.error('WeatherWidget: Geolocation error:', geoError);
+          }
+        }
+        const baseId = user?.baseId;
+        const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
+        setLocation(expectedLocation);
+        await fetchWeather({ baseId });
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+        toast({
+          title: "Erreur météo",
+          description: "Impossible de récupérer les données météo",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('WeatherWidget: Error in fetchWeatherByBaseId:', error);
-      // En cas d'erreur, utiliser des données statiques adaptées à la base
-      console.log('WeatherWidget: Error occurred, falling back to static data');
-      const baseId = user?.baseId;
-      const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
-      const staticWeather = {
-        location: fallbackLocation,
-        temperature: 18,
-        condition: 'Partiellement nuageux',
-        humidity: 65,
-        windSpeed: 12,
-        forecast: [{
-          date: 'Auj',
-          temp_max: 22,
-          temp_min: 14,
-          condition: 'Nuageux'
-        }, {
-          date: 'Dem',
-          temp_max: 25,
-          temp_min: 16,
-          condition: 'Ensoleillé'
-        }, {
-          date: 'Mer',
-          temp_max: 19,
-          temp_min: 13,
-          condition: 'Pluie'
-        }]
-      };
-      setWeather(staticWeather);
-      setLocation('Données de démonstration - ' + fallbackLocation);
-    }
-  };
+    };
   useEffect(() => {
     console.log('WeatherWidget: useEffect triggered');
     console.log('WeatherWidget: Current user object:', user);
