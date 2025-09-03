@@ -6,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Edit, Save, X, Mail, User, Building, Trash2 } from 'lucide-react';
+import { Users, Edit, Save, X, Mail, User, Building, Trash2, Settings } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { UserPermissions } from './UserPermissions';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,6 +16,7 @@ export function UserSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [expandedPermissions, setExpandedPermissions] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -270,6 +272,19 @@ export function UserSettings() {
                         <Edit className="h-4 w-4 mr-2" />
                         Modifier
                       </Button>
+                      
+                      {user.role === 'technicien' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setExpandedPermissions(
+                            expandedPermissions === user.id ? null : user.id
+                          )}
+                        >
+                          <Settings className="h-4 w-4 mr-2" />
+                          Permissions
+                        </Button>
+                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button
@@ -302,6 +317,16 @@ export function UserSettings() {
                       </AlertDialog>
                     </div>
                   </div>
+                </div>
+              )}
+              
+              {expandedPermissions === user.id && (
+                <div className="mt-4 pt-4 border-t">
+                  <UserPermissions 
+                    userId={user.id}
+                    userName={user.name}
+                    userRole={user.role}
+                  />
                 </div>
               )}
             </CardContent>

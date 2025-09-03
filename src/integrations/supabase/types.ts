@@ -3308,6 +3308,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_permissions: {
+        Row: {
+          created_at: string
+          granted: boolean
+          granted_at: string
+          granted_by: string | null
+          id: string
+          page_permission: Database["public"]["Enums"]["page_permission"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          granted?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          page_permission: Database["public"]["Enums"]["page_permission"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          granted?: boolean
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          page_permission?: Database["public"]["Enums"]["page_permission"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weather_adjustment_rules: {
         Row: {
           action: string
@@ -3520,6 +3553,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_user_page_permissions: {
+        Args: { user_id_param: string }
+        Returns: {
+          granted: boolean
+          page_permission: Database["public"]["Enums"]["page_permission"]
+        }[]
+      }
       get_user_role: {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_role"]
@@ -3544,6 +3584,13 @@ export type Database = {
         Args: { "": unknown }
         Returns: unknown
       }
+      has_page_permission: {
+        Args: {
+          page_param: Database["public"]["Enums"]["page_permission"]
+          user_id_param: string
+        }
+        Returns: boolean
+      }
       initialize_purchase_workflow: {
         Args: { order_id_param: string }
         Returns: undefined
@@ -3551,14 +3598,6 @@ export type Database = {
       link_stock_scan_to_order: {
         Args: {
           order_id_param: string
-          quantity_received_param: number
-          stock_item_id_param: string
-        }
-        Returns: Json
-      }
-      link_stock_scan_to_supply_request: {
-        Args: {
-          request_id_param: string
           quantity_received_param: number
           stock_item_id_param: string
         }
@@ -3639,6 +3678,20 @@ export type Database = {
         | "received_scanned"
         | "completed"
         | "rejected"
+      page_permission:
+        | "dashboard"
+        | "boats"
+        | "safety_controls"
+        | "suppliers"
+        | "orders"
+        | "stock"
+        | "stock_scanner"
+        | "maintenance"
+        | "maintenance_gantt"
+        | "maintenance_history"
+        | "maintenance_preventive"
+        | "notifications"
+        | "supply_requests"
       purchase_workflow_status:
         | "draft"
         | "pending_approval"
@@ -3820,6 +3873,21 @@ export const Constants = {
         "received_scanned",
         "completed",
         "rejected",
+      ],
+      page_permission: [
+        "dashboard",
+        "boats",
+        "safety_controls",
+        "suppliers",
+        "orders",
+        "stock",
+        "stock_scanner",
+        "maintenance",
+        "maintenance_gantt",
+        "maintenance_history",
+        "maintenance_preventive",
+        "notifications",
+        "supply_requests",
       ],
       purchase_workflow_status: [
         "draft",

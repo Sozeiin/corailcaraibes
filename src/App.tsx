@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
+import { PermissionGate } from "@/components/auth/PermissionGate";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
 import { Boats } from "./pages/Boats";
@@ -67,7 +68,9 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <PermissionGate page="dashboard">
+              <Dashboard />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -75,7 +78,9 @@ function AppRoutes() {
         path="/boats/dashboard"
         element={
           <ProtectedRoute>
-            <BoatsDashboard />
+            <PermissionGate page="boats">
+              <BoatsDashboard />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -83,7 +88,9 @@ function AppRoutes() {
         path="/boats"
         element={
           <ProtectedRoute>
-            <Boats />
+            <PermissionGate page="boats">
+              <Boats />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -91,7 +98,9 @@ function AppRoutes() {
         path="/boats/:boatId"
         element={
           <ProtectedRoute>
-            <BoatDetails />
+            <PermissionGate page="boats">
+              <BoatDetails />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -99,7 +108,9 @@ function AppRoutes() {
         path="/safety-controls"
         element={
           <ProtectedRoute>
-            <SafetyControls />
+            <PermissionGate page="safety_controls">
+              <SafetyControls />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -107,7 +118,9 @@ function AppRoutes() {
         path="/boats/:boatId/safety-controls"
         element={
           <ProtectedRoute>
-            <BoatSafetyControls />
+            <PermissionGate page="safety_controls">
+              <BoatSafetyControls />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -115,7 +128,9 @@ function AppRoutes() {
         path="/suppliers"
         element={
           <ProtectedRoute>
-            <Suppliers />
+            <PermissionGate page="suppliers">
+              <Suppliers />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -123,7 +138,9 @@ function AppRoutes() {
         path="/orders"
         element={
           <ProtectedRoute>
-            <Orders />
+            <PermissionGate page="orders">
+              <Orders />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -131,7 +148,9 @@ function AppRoutes() {
         path="/supply-requests"
         element={
           <ProtectedRoute>
-            <SupplyRequests />
+            <PermissionGate page="supply_requests">
+              <SupplyRequests />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -139,7 +158,9 @@ function AppRoutes() {
         path="/stock"
         element={
           <ProtectedRoute>
-            <Stock />
+            <PermissionGate page="stock">
+              <Stock />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -147,7 +168,9 @@ function AppRoutes() {
         path="/stock/scanner"
         element={
           <ProtectedRoute>
-            <StockScanner />
+            <PermissionGate page="stock_scanner">
+              <StockScanner />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -155,7 +178,9 @@ function AppRoutes() {
         path="/maintenance"
         element={
           <ProtectedRoute>
-            <Maintenance />
+            <PermissionGate page="maintenance">
+              <Maintenance />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -163,7 +188,9 @@ function AppRoutes() {
         path="/maintenance/preventive"
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
-            <MaintenancePreventive />
+            <PermissionGate page="maintenance_preventive">
+              <MaintenancePreventive />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -171,7 +198,9 @@ function AppRoutes() {
         path="/maintenance/gantt"
         element={
           <ProtectedRoute>
-            <MaintenanceGantt />
+            <PermissionGate page="maintenance_gantt">
+              <MaintenanceGantt />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -179,7 +208,9 @@ function AppRoutes() {
         path="/maintenance/history"
         element={
           <ProtectedRoute>
-            <MaintenanceHistory />
+            <PermissionGate page="maintenance_history">
+              <MaintenanceHistory />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -187,14 +218,16 @@ function AppRoutes() {
         path="/notifications"
         element={
           <ProtectedRoute>
-            <Notifications />
+            <PermissionGate page="notifications">
+              <Notifications />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
       <Route
         path="/settings"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
             <Settings />
           </ProtectedRoute>
         }
