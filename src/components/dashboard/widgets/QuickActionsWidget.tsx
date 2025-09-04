@@ -30,7 +30,7 @@ export const QuickActionsWidget = ({ config }: WidgetProps) => {
         {
           label: 'Voir Rapports',
           icon: FileText,
-          onClick: () => navigate('/analytics'),
+          onClick: () => navigate('/rapports'),
           variant: 'outline' as const,
         },
         {
@@ -70,6 +70,12 @@ export const QuickActionsWidget = ({ config }: WidgetProps) => {
           label: 'Planning',
           icon: Calendar,
           onClick: () => navigate('/planning'),
+          variant: 'outline' as const,
+        },
+        {
+          label: 'Voir Rapports',
+          icon: FileText,
+          onClick: () => navigate('/rapports'),
           variant: 'outline' as const,
         },
       ];

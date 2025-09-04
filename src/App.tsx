@@ -23,6 +23,7 @@ import MaintenanceGantt from "./pages/MaintenanceGantt";
 import MaintenanceHistory from "./pages/MaintenanceHistory";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import Reports from "./pages/Reports";
 
 import NotFound from "./pages/NotFound";
 
@@ -229,6 +230,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
             <Settings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/rapports"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
+            <Reports />
           </ProtectedRoute>
         }
       />
