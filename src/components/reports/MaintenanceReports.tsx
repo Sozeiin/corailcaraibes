@@ -10,12 +10,15 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface MaintenanceReportsProps {
+  data: any;
   dateRange: DateRange | undefined;
   isDirection: boolean;
   isChefBase: boolean;
 }
 
-export function MaintenanceReports({ dateRange, isDirection, isChefBase }: MaintenanceReportsProps) {
+export function MaintenanceReports({ data, dateRange, isDirection, isChefBase }: MaintenanceReportsProps) {
+  if (!data) return <div className="text-center p-8">Aucune donnée disponible</div>;
+  const stats = data;
   const { user } = useAuth();
 
   const { data: maintenanceStats, isLoading } = useQuery({

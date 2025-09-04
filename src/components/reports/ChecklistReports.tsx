@@ -1,65 +1,22 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { DateRange } from '@/components/ui/date-range-picker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { ChecklistReportData } from '@/hooks/useReportsData';
 
 interface ChecklistReportsProps {
+  data: ChecklistReportData | undefined;
   dateRange: DateRange | undefined;
   isDirection: boolean;
   isChefBase: boolean;
 }
 
-export function ChecklistReports({ dateRange, isDirection, isChefBase }: ChecklistReportsProps) {
-  const { user } = useAuth();
-
-  const { data: checklistStats, isLoading } = useQuery({
-    queryKey: ['checklist-reports', dateRange, user?.baseId],
-    queryFn: async () => {
-      const from = dateRange?.from?.toISOString() || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-      const to = dateRange?.to?.toISOString() || new Date().toISOString();
-
-      // This would need to be adapted based on your checklist data structure
-      // For now, I'll create a mock structure that represents typical checklist data
-      
-      return {
-        totalChecklists: 156,
-        completedChecklists: 142,
-        checkInCount: 78,
-        checkOutCount: 78,
-        averageTime: 45, // minutes
-        boatUtilization: [
-          { boatName: 'Navire 1', checkIns: 12, checkOuts: 12, hours: 96 },
-          { boatName: 'Navire 2', checkIns: 8, checkOuts: 8, hours: 64 },
-          { boatName: 'Navire 3', checkIns: 15, checkOuts: 15, hours: 120 },
-        ],
-        monthlyTrend: [
-          { month: 'Jan 2024', checkIns: 45, checkOuts: 43 },
-          { month: 'Fév 2024', checkIns: 52, checkOuts: 50 },
-          { month: 'Mar 2024', checkIns: 48, checkOuts: 47 },
-        ]
-      };
-    },
-    enabled: !!user
-  });
-
-  if (isLoading) {
-    return <div className="text-center p-8">Chargement des données...</div>;
+export function ChecklistReports({ data, dateRange, isDirection, isChefBase }: ChecklistReportsProps) {
+  if (!data) {
+    return <div className="text-center p-8">Aucune donnée disponible pour cette période.</div>;
   }
 
-  const stats = checklistStats || {
-    totalChecklists: 0,
-    completedChecklists: 0,
-    checkInCount: 0,
-    checkOutCount: 0,
-    averageTime: 0,
-    boatUtilization: [],
-    monthlyTrend: []
-  };
+  const stats = data;
 
   const completionRate = stats.totalChecklists > 0 ? (stats.completedChecklists / stats.totalChecklists) * 100 : 0;
 
@@ -156,7 +113,7 @@ export function ChecklistReports({ dateRange, isDirection, isChefBase }: Checkli
                 <div className="text-right">
                   <p className="text-lg font-semibold">{boat.hours}h</p>
                   <Badge variant="outline">
-                    {boat.checkIns === boat.checkOuts ? 'Équilibré' : 'Déséquilibré'}
+                    {boat.balance === 'equilibre' ? 'Équilibré' : 'Déséquilibré'}
                   </Badge>
                 </div>
               </div>

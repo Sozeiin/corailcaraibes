@@ -8,12 +8,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Package, Euro, Ship, TrendingUp } from 'lucide-react';
 
 interface OperationalReportsProps {
+  data: any;
   dateRange: DateRange | undefined;
   isDirection: boolean;
   isChefBase: boolean;
 }
 
-export function OperationalReports({ dateRange, isDirection, isChefBase }: OperationalReportsProps) {
+export function OperationalReports({ data, dateRange, isDirection, isChefBase }: OperationalReportsProps) {
+  if (!data) return <div className="text-center p-8">Aucune donnée disponible</div>;
   const { user } = useAuth();
 
   const { data: operationalStats, isLoading } = useQuery({

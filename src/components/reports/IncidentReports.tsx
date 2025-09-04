@@ -8,12 +8,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { AlertTriangle, Shield, Wrench } from 'lucide-react';
 
 interface IncidentReportsProps {
+  data: any;
   dateRange: DateRange | undefined;
   isDirection: boolean;
   isChefBase: boolean;
 }
 
-export function IncidentReports({ dateRange, isDirection, isChefBase }: IncidentReportsProps) {
+export function IncidentReports({ data, dateRange, isDirection, isChefBase }: IncidentReportsProps) {
+  if (!data) return <div className="text-center p-8">Aucune donnée disponible</div>;
   const { user } = useAuth();
 
   const { data: incidentStats, isLoading } = useQuery({

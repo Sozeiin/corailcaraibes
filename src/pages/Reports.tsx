@@ -8,6 +8,8 @@ import { MaintenanceReports } from '@/components/reports/MaintenanceReports';
 import { ChecklistReports } from '@/components/reports/ChecklistReports';
 import { IncidentReports } from '@/components/reports/IncidentReports';
 import { OperationalReports } from '@/components/reports/OperationalReports';
+import { useReportsData } from '@/hooks/useReportsData';
+import { exportReportToPDF, exportReportToExcel } from '@/lib/reportExports';
 import { 
   FileText, 
   Wrench, 
@@ -15,8 +17,9 @@ import {
   AlertTriangle, 
   BarChart, 
   Download,
-  Filter,
-  Calendar
+  RefreshCw,
+  Calendar,
+  FileSpreadsheet
 } from 'lucide-react';
 import { DateRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
@@ -29,13 +32,31 @@ export default function Reports() {
     to: new Date(),
   });
 
-  const exportReport = (type: string) => {
-    // Implementation for exporting reports
-    console.log(`Exporting ${type} report for period:`, dateRange);
+  const { data: reportsData, isLoading, refetch } = useReportsData(dateRange);
+
+  const exportReport = (format: 'pdf' | 'excel') => {
+    if (!reportsData) return;
+    
+    if (format === 'pdf') {
+      exportReportToPDF(activeTab, reportsData, dateRange);
+    } else {
+      exportReportToExcel(activeTab, reportsData, dateRange);
+    }
   };
 
   const isDirection = user?.role === 'direction';
   const isChefBase = user?.role === 'chef_base';
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="h-8 w-8 animate-spin" />
+          <span className="ml-2 text-lg">Chargement des données...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -53,9 +74,28 @@ export default function Reports() {
             onDateChange={(range) => setDateRange(range)}
             placeholder="Sélectionner une période"
           />
-          <Button onClick={() => exportReport(activeTab)} className="flex items-center gap-2">
-            <Download className="h-4 w-4" />
-            Exporter
+          <Button 
+            onClick={() => refetch()} 
+            variant="outline" 
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Actualiser
+          </Button>
+          <Button 
+            onClick={() => exportReport('pdf')} 
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" />
+            PDF
+          </Button>
+          <Button 
+            onClick={() => exportReport('excel')} 
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Excel
           </Button>
         </div>
       </div>
@@ -82,6 +122,7 @@ export default function Reports() {
 
         <TabsContent value="maintenance" className="space-y-4">
           <MaintenanceReports 
+            data={reportsData?.maintenance}
             dateRange={dateRange} 
             isDirection={isDirection}
             isChefBase={isChefBase}
@@ -90,6 +131,7 @@ export default function Reports() {
 
         <TabsContent value="checklists" className="space-y-4">
           <ChecklistReports 
+            data={reportsData?.checklists}
             dateRange={dateRange} 
             isDirection={isDirection}
             isChefBase={isChefBase}
@@ -98,6 +140,7 @@ export default function Reports() {
 
         <TabsContent value="incidents" className="space-y-4">
           <IncidentReports 
+            data={reportsData?.incidents}
             dateRange={dateRange} 
             isDirection={isDirection}
             isChefBase={isChefBase}
@@ -106,6 +149,7 @@ export default function Reports() {
 
         <TabsContent value="operational" className="space-y-4">
           <OperationalReports 
+            data={reportsData?.operational}
             dateRange={dateRange} 
             isDirection={isDirection}
             isChefBase={isChefBase}
