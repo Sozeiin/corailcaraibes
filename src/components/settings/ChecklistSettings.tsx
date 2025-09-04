@@ -330,15 +330,27 @@ export function ChecklistSettings() {
       const { data: usageCheck, error: usageError } = await supabase
         .from('boat_checklist_items')
         .select('item_id')
-        .eq('item_id', id)
-        .limit(1);
+        .eq('item_id', id);
       
       if (usageError) throw usageError;
       
+      // If item is used, delete the references first (cascade deletion)
       if (usageCheck && usageCheck.length > 0) {
-        throw new Error('ITEM_IN_USE');
+        console.log(`Item is used in ${usageCheck.length} checklists, performing cascade deletion`);
+        
+        // Delete all references in boat_checklist_items first
+        const { error: deleteReferencesError } = await supabase
+          .from('boat_checklist_items')
+          .delete()
+          .eq('item_id', id);
+
+        if (deleteReferencesError) {
+          console.error('Error deleting references:', deleteReferencesError);
+          throw deleteReferencesError;
+        }
       }
       
+      // Now delete the checklist item itself
       const { error } = await supabase
         .from('checklist_items')
         .delete()
@@ -350,7 +362,7 @@ export function ChecklistSettings() {
       queryClient.invalidateQueries({ queryKey: ['checklist-items'] });
       toast({
         title: "Élément supprimé",
-        description: "L'élément de checklist a été supprimé."
+        description: "L'élément de checklist a été supprimé avec succès."
       });
     },
     onError: (error: any) => {
@@ -451,9 +463,35 @@ export function ChecklistSettings() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     console.log('handleDelete called with id:', id);
     console.log('canManageChecklists:', canManageChecklists);
+    
+    // Check usage count before showing confirmation
+    const { data: usageCheck } = await supabase
+      .from('boat_checklist_items')
+      .select('item_id')
+      .eq('item_id', id);
+    
+    const usageCount = usageCheck?.length || 0;
+    
+    if (usageCount > 0) {
+      const confirmed = window.confirm(
+        `Attention ! Cet élément est utilisé dans ${usageCount} checklist(s) bateau.\n\n` +
+        `En le supprimant, il sera retiré de toutes ces checklists existantes.\n\n` +
+        `Voulez-vous vraiment continuer ?`
+      );
+      
+      if (!confirmed) {
+        return;
+      }
+    } else {
+      const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer cet élément ?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    
     deleteMutation.mutate(id);
   };
 
