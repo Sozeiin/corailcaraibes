@@ -121,26 +121,17 @@ export function useReportsData(dateRange: DateRange | undefined) {
         ),
 
         // Planning activities data (for check-in/check-out)
-        user?.role === 'direction' 
-          ? supabase
-              .from('planning_activities')
-              .select(`
-                id, activity_type, status, scheduled_start, scheduled_end,
-                actual_start, actual_end, boat_id, base_id,
-                boats(name, base_id)
-              `)
-              .gte('scheduled_start', from)
-              .lte('scheduled_start', to)
-          : supabase
-              .from('planning_activities')
-              .select(`
-                id, activity_type, status, scheduled_start, scheduled_end,
-                actual_start, actual_end, boat_id, base_id,
-                boats!inner(name, base_id)
-              `)
-              .gte('scheduled_start', from)
-              .lte('scheduled_start', to)
-              .eq('base_id', user?.baseId!),
+        buildQuery(
+          supabase
+            .from('planning_activities')
+            .select(`
+              id, activity_type, status, scheduled_start, scheduled_end,
+              actual_start, actual_end, boat_id, base_id,
+              boats(name, base_id)
+            `)
+            .gte('scheduled_start', from)
+            .lte('scheduled_start', to)
+        ),
 
         // Boats data
         buildQuery(
@@ -295,6 +286,19 @@ function processMaintenanceData(interventions: any[], technicians: any[]): Maint
 }
 
 function processChecklistData(activities: any[], boats: any[]): ChecklistReportData {
+  if (!activities || activities.length === 0) {
+    return {
+      totalChecklists: 0,
+      completedChecklists: 0,
+      checkInCount: 0,
+      checkOutCount: 0,
+      averageTime: 0,
+      completionRate: 0,
+      boatUtilization: [],
+      monthlyTrend: []
+    };
+  }
+
   // Filter only rental activities for check-in/check-out data
   const rentalActivities = activities.filter(a => a.activity_type === 'rental');
   
@@ -302,7 +306,7 @@ function processChecklistData(activities: any[], boats: any[]): ChecklistReportD
   const completed = rentalActivities.filter(a => a.status === 'completed').length;
   
   // Check-ins: activities that have started
-  const checkIns = rentalActivities.filter(a => a.actual_start || a.status === 'in_progress').length;
+  const checkIns = rentalActivities.filter(a => a.actual_start || a.status === 'in_progress' || a.status === 'completed').length;
   // Check-outs: activities that have ended
   const checkOuts = rentalActivities.filter(a => a.actual_end || a.status === 'completed').length;
 
@@ -321,7 +325,7 @@ function processChecklistData(activities: any[], boats: any[]): ChecklistReportD
   const boatUsage = new Map();
   rentalActivities.forEach(activity => {
     const boatId = activity.boat_id;
-    const boatName = activity.boats?.name || 'Bateau inconnu';
+    const boatName = activity.boats?.name || boats.find(b => b.id === activity.boat_id)?.name || 'Bateau inconnu';
     
     if (!boatUsage.has(boatId)) {
       boatUsage.set(boatId, {
@@ -334,15 +338,15 @@ function processChecklistData(activities: any[], boats: any[]): ChecklistReportD
     
     const usage = boatUsage.get(boatId);
     
-    if (activity.actual_start) {
+    if (activity.actual_start || activity.status === 'in_progress' || activity.status === 'completed') {
       usage.checkIns++;
     }
     
-    if (activity.actual_end) {
+    if (activity.actual_end || activity.status === 'completed') {
       usage.checkOuts++;
       // Calculate hours based on actual rental duration
       const start = new Date(activity.actual_start || activity.scheduled_start);
-      const end = new Date(activity.actual_end);
+      const end = new Date(activity.actual_end || activity.scheduled_end);
       const hours = Math.max(0.5, (end.getTime() - start.getTime()) / (1000 * 60 * 60));
       usage.hours += Math.round(hours * 10) / 10;
     }
@@ -365,7 +369,7 @@ function processChecklistData(activities: any[], boats: any[]): ChecklistReportD
     }
     const data = monthlyData.get(month);
     
-    if (activity.actual_start || activity.status === 'in_progress') {
+    if (activity.actual_start || activity.status === 'in_progress' || activity.status === 'completed') {
       data.checkIns++;
     }
     if (activity.actual_end || activity.status === 'completed') {
@@ -392,38 +396,56 @@ function processChecklistData(activities: any[], boats: any[]): ChecklistReportD
 }
 
 function processIncidentData(interventions: any[], boats: any[]): IncidentReportData {
+  if (!interventions || interventions.length === 0) {
+    return {
+      totalIncidents: 0,
+      resolvedIncidents: 0,
+      pendingIncidents: 0,
+      totalBoats: boats?.length || 0,
+      availableBoats: boats?.filter(b => b.status === 'available').length || 0,
+      maintenanceBoats: boats?.filter(b => b.status === 'maintenance').length || 0,
+      severityData: [],
+      incidentTypes: [],
+      recentIncidents: []
+    };
+  }
+
   const urgentInterventions = interventions.filter(i => i.priority === 'urgent');
   const resolved = urgentInterventions.filter(i => i.status === 'completed').length;
   const pending = urgentInterventions.filter(i => i.status !== 'completed').length;
 
-  const available = boats.filter(b => b.status === 'available').length;
-  const maintenance = boats.filter(b => b.status === 'maintenance').length;
+  const available = boats?.filter(b => b.status === 'available').length || 0;
+  const maintenance = boats?.filter(b => b.status === 'maintenance').length || 0;
 
   const severityData = [
-    { name: 'Résolus', value: resolved, color: 'hsl(var(--success))' },
-    { name: 'En attente', value: pending, color: 'hsl(var(--destructive))' }
-  ];
+    { name: 'Résolus', value: resolved, color: 'hsl(142 71% 45%)' },
+    { name: 'En attente', value: pending, color: 'hsl(0 84% 60%)' }
+  ].filter(item => item.value > 0);
 
   const typeCount = new Map();
   urgentInterventions.forEach(intervention => {
     // Simple categorization based on common maintenance types
-    const type = intervention.title?.includes('moteur') ? 'Moteur' :
-                 intervention.title?.includes('électrique') ? 'Électrique' :
-                 intervention.title?.includes('coque') ? 'Coque' : 'Autre';
+    const title = intervention.title?.toLowerCase() || '';
+    const type = title.includes('moteur') ? 'Moteur' :
+                 title.includes('électrique') || title.includes('electric') ? 'Électrique' :
+                 title.includes('coque') || title.includes('hull') ? 'Coque' :
+                 title.includes('pompe') || title.includes('pump') ? 'Pompe' :
+                 title.includes('hélice') || title.includes('propeller') ? 'Hélice' : 'Autre';
     typeCount.set(type, (typeCount.get(type) || 0) + 1);
   });
 
   const incidentTypes = Array.from(typeCount.entries()).map(([type, count]) => ({
     type,
-    count
+    count: count as number
   }));
 
   const recentIncidents = urgentInterventions
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5)
     .map(intervention => ({
       id: intervention.id,
       title: intervention.title || 'Intervention urgente',
-      boat: intervention.boats?.name || 'Bateau inconnu',
+      boat: intervention.boats?.name || boats?.find(b => b.id === intervention.boat_id)?.name || 'Bateau inconnu',
       date: new Date(intervention.created_at).toLocaleDateString('fr-FR'),
       status: intervention.status,
       priority: intervention.priority
@@ -433,7 +455,7 @@ function processIncidentData(interventions: any[], boats: any[]): IncidentReport
     totalIncidents: urgentInterventions.length,
     resolvedIncidents: resolved,
     pendingIncidents: pending,
-    totalBoats: boats.length,
+    totalBoats: boats?.length || 0,
     availableBoats: available,
     maintenanceBoats: maintenance,
     severityData,
