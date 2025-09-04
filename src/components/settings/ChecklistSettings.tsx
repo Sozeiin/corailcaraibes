@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Plus, Edit, Save, X, CheckSquare, Trash2, GripVertical, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DndContext,
   closestCenter,
@@ -33,7 +34,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Component for individual sortable checklist item
-const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, handleDelete, updateMutation, deleteMutation }: any) => {
+const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, handleDelete, updateMutation, deleteMutation, canManageChecklists }: any) => {
   const {
     attributes,
     listeners,
@@ -188,24 +189,28 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
           variant="outline"
           size="sm"
           onClick={() => setEditingItem(item)}
+          disabled={!canManageChecklists}
         >
           <Edit className="h-4 w-4" />
         </Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            </Button>
-          </AlertDialogTrigger>
+        {canManageChecklists && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              </Button>
+            </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
               <AlertDialogDescription>
                 Cette action ne peut pas être annulée. Cela supprimera définitivement l'élément "{item.name}" de la checklist.
+                <br /><br />
+                <strong>Attention :</strong> Si cet élément est utilisé dans des checklists existantes, la suppression échouera.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -216,6 +221,12 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        )}
+        {!canManageChecklists && (
+          <Button variant="outline" size="sm" disabled title="Permission insuffisante">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -224,9 +235,13 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
 export function ChecklistSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Only direction and chef_base can manage checklists
+  const canManageChecklists = user?.role === 'direction' || user?.role === 'chef_base';
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -306,6 +321,19 @@ export function ChecklistSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      // First check if the item is used in any boat checklists
+      const { data: usageCheck, error: usageError } = await supabase
+        .from('boat_checklist_items')
+        .select('id')
+        .eq('item_id', id)
+        .limit(1);
+      
+      if (usageError) throw usageError;
+      
+      if (usageCheck && usageCheck.length > 0) {
+        throw new Error('ITEM_IN_USE');
+      }
+      
       const { error } = await supabase
         .from('checklist_items')
         .delete()
@@ -320,10 +348,26 @@ export function ChecklistSettings() {
         description: "L'élément de checklist a été supprimé."
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Erreur lors de la suppression:', error);
+      
+      let title = "Erreur de suppression";
+      let description = "Impossible de supprimer l'élément.";
+      
+      if (error.message === 'ITEM_IN_USE') {
+        title = "Suppression impossible";
+        description = "Cet élément est utilisé dans des checklists existantes. Supprimez d'abord les checklists associées.";
+      } else if (error.code === '23503') {
+        title = "Suppression impossible";
+        description = "Cet élément est référencé dans d'autres données. Vérifiez les dépendances.";
+      } else if (error.message?.includes('permission')) {
+        title = "Permission refusée";
+        description = "Vous n'avez pas les permissions nécessaires pour supprimer cet élément.";
+      }
+      
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'élément.",
+        title,
+        description,
         variant: "destructive"
       });
     }
@@ -541,7 +585,7 @@ export function ChecklistSettings() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Configuration des checklists</h3>
-        <Button onClick={() => setIsCreating(true)} disabled={isCreating}>
+        <Button onClick={() => setIsCreating(true)} disabled={isCreating || !canManageChecklists}>
           <Plus className="h-4 w-4 mr-2" />
           Nouvel élément
         </Button>
@@ -588,16 +632,17 @@ export function ChecklistSettings() {
                 >
                   <div className="space-y-0">
                     {items.map((item: any) => (
-                      <SortableChecklistItem
-                        key={item.id}
-                        item={item}
-                        editingItem={editingItem}
-                        setEditingItem={setEditingItem}
-                        handleSave={handleSave}
-                        handleDelete={handleDelete}
-                        updateMutation={updateMutation}
-                        deleteMutation={deleteMutation}
-                      />
+                       <SortableChecklistItem
+                         key={item.id}
+                         item={item}
+                         editingItem={editingItem}
+                         setEditingItem={setEditingItem}
+                         handleSave={handleSave}
+                         handleDelete={handleDelete}
+                         updateMutation={updateMutation}
+                         deleteMutation={deleteMutation}
+                         canManageChecklists={canManageChecklists}
+                       />
                     ))}
                   </div>
                 </SortableContext>
