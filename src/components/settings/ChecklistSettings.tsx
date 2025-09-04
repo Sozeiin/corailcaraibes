@@ -324,7 +324,7 @@ export function ChecklistSettings() {
       // First check if the item is used in any boat checklists
       const { data: usageCheck, error: usageError } = await supabase
         .from('boat_checklist_items')
-        .select('id')
+        .select('item_id')
         .eq('item_id', id)
         .limit(1);
       
