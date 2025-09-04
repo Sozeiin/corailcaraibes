@@ -292,6 +292,62 @@ export type Database = {
         }
         Relationships: []
       }
+      boat_documents: {
+        Row: {
+          boat_id: string
+          category: string | null
+          created_at: string | null
+          description: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          id: string
+          original_name: string
+          storage_path: string
+          updated_at: string | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          boat_id: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name: string
+          file_size: number
+          file_type: string
+          id?: string
+          original_name: string
+          storage_path: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          boat_id?: string
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          original_name?: string
+          storage_path?: string
+          updated_at?: string | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_documents_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boat_rentals: {
         Row: {
           base_id: string | null

@@ -4,12 +4,13 @@ import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Settings, Wrench, History, BarChart3, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Settings, Wrench, History, BarChart3, ShoppingCart, FileText } from 'lucide-react';
 import { BoatComponentsManager } from '@/components/boats/BoatComponentsManager';
 import { BoatHistoryContent } from '@/components/boats/BoatHistoryContent';
 import { BoatMaintenancePlanner } from '@/components/boats/BoatMaintenancePlanner';
 import { BoatDashboard } from '@/components/boats/BoatDashboard';
 import { BoatPurchaseHistory } from '@/components/boats/BoatPurchaseHistory';
+import { BoatDocumentsManager } from '@/components/boats/BoatDocumentsManager';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 const BoatDetails = () => {
   const {
@@ -101,7 +102,7 @@ const BoatDetails = () => {
       </Card>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dashboard" className="flex items-center space-x-2">
             <BarChart3 className="h-4 w-4" />
             <span>Home</span>
@@ -117,6 +118,10 @@ const BoatDetails = () => {
           <TabsTrigger value="purchases" className="flex items-center space-x-2">
             <ShoppingCart className="h-4 w-4" />
             <span>Achats</span>
+          </TabsTrigger>
+          <TabsTrigger value="documents" className="flex items-center space-x-2">
+            <FileText className="h-4 w-4" />
+            <span>Documents</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="flex items-center space-x-2">
             <History className="h-4 w-4" />
@@ -138,6 +143,10 @@ const BoatDetails = () => {
 
         <TabsContent value="purchases" className="space-y-6">
           <BoatPurchaseHistory boatId={boatWithBase.id} boatName={boatWithBase.name} />
+        </TabsContent>
+
+        <TabsContent value="documents" className="space-y-6">
+          <BoatDocumentsManager boatId={boatWithBase.id} boatName={boatWithBase.name} />
         </TabsContent>
 
         <TabsContent value="history" className="space-y-6">
