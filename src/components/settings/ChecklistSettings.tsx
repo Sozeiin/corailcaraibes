@@ -242,6 +242,9 @@ export function ChecklistSettings() {
   
   // Only direction and chef_base can manage checklists
   const canManageChecklists = user?.role === 'direction' || user?.role === 'chef_base';
+  
+  console.log('ChecklistSettings - User role:', user?.role);
+  console.log('ChecklistSettings - Can manage checklists:', canManageChecklists);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -321,6 +324,8 @@ export function ChecklistSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
+      console.log('deleteMutation called with id:', id);
+      
       // First check if the item is used in any boat checklists
       const { data: usageCheck, error: usageError } = await supabase
         .from('boat_checklist_items')
@@ -447,6 +452,8 @@ export function ChecklistSettings() {
   };
 
   const handleDelete = (id: string) => {
+    console.log('handleDelete called with id:', id);
+    console.log('canManageChecklists:', canManageChecklists);
     deleteMutation.mutate(id);
   };
 
