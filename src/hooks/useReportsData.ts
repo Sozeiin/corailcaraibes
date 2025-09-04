@@ -120,31 +120,27 @@ export function useReportsData(dateRange: DateRange | undefined) {
             .lte('created_at', to)
         ),
 
-        // Checklists data
+        // Planning activities data (for check-in/check-out)
         user?.role === 'direction' 
           ? supabase
-              .from('boat_checklists')
+              .from('planning_activities')
               .select(`
-                id, checklist_date, overall_status, 
-                signature_date, created_at,
-                boat_id,
-                boats(name, base_id),
-                boat_checklist_items(id, status)
+                id, activity_type, status, scheduled_start, scheduled_end,
+                actual_start, actual_end, boat_id, base_id,
+                boats(name, base_id)
               `)
-              .gte('checklist_date', from.split('T')[0])
-              .lte('checklist_date', to.split('T')[0])
+              .gte('scheduled_start', from)
+              .lte('scheduled_start', to)
           : supabase
-              .from('boat_checklists')
+              .from('planning_activities')
               .select(`
-                id, checklist_date, overall_status, 
-                signature_date, created_at,
-                boat_id,
-                boats!inner(name, base_id),
-                boat_checklist_items(id, status)
+                id, activity_type, status, scheduled_start, scheduled_end,
+                actual_start, actual_end, boat_id, base_id,
+                boats!inner(name, base_id)
               `)
-              .gte('checklist_date', from.split('T')[0])
-              .lte('checklist_date', to.split('T')[0])
-              .eq('boats.base_id', user?.baseId!),
+              .gte('scheduled_start', from)
+              .lte('scheduled_start', to)
+              .eq('base_id', user?.baseId!),
 
         // Boats data
         buildQuery(
@@ -298,27 +294,34 @@ function processMaintenanceData(interventions: any[], technicians: any[]): Maint
   };
 }
 
-function processChecklistData(checklists: any[], boats: any[]): ChecklistReportData {
-  const total = checklists.length;
-  const completed = checklists.filter(c => c.overall_status === 'ok').length;
+function processChecklistData(activities: any[], boats: any[]): ChecklistReportData {
+  // Filter only rental activities for check-in/check-out data
+  const rentalActivities = activities.filter(a => a.activity_type === 'rental');
   
-  // Calculate check-ins and check-outs based on signature presence
-  const checkOuts = checklists.filter(c => c.signature_date).length;
-  const checkIns = total - checkOuts;
+  const total = rentalActivities.length;
+  const completed = rentalActivities.filter(a => a.status === 'completed').length;
+  
+  // Check-ins: activities that have started
+  const checkIns = rentalActivities.filter(a => a.actual_start || a.status === 'in_progress').length;
+  // Check-outs: activities that have ended
+  const checkOuts = rentalActivities.filter(a => a.actual_end || a.status === 'completed').length;
 
-  // Calculate average time based on checklist items completion
-  const averageTime = checklists.length > 0 
-    ? checklists.reduce((sum, c) => {
-        const items = c.boat_checklist_items || [];
-        return sum + (items.length * 3); // Assume 3 minutes per item
-      }, 0) / checklists.length 
+  // Calculate average time based on actual duration
+  const completedRentals = rentalActivities.filter(a => a.actual_start && a.actual_end);
+  const averageTime = completedRentals.length > 0 
+    ? completedRentals.reduce((sum, a) => {
+        const start = new Date(a.actual_start);
+        const end = new Date(a.actual_end);
+        const duration = (end.getTime() - start.getTime()) / (1000 * 60); // minutes
+        return sum + duration;
+      }, 0) / completedRentals.length 
     : 0;
 
-  // Boat utilization based on real data
+  // Boat utilization based on real rental data
   const boatUsage = new Map();
-  checklists.forEach(checklist => {
-    const boatId = checklist.boat_id;
-    const boatName = checklist.boats?.name || 'Bateau inconnu';
+  rentalActivities.forEach(activity => {
+    const boatId = activity.boat_id;
+    const boatName = activity.boats?.name || 'Bateau inconnu';
     
     if (!boatUsage.has(boatId)) {
       boatUsage.set(boatId, {
@@ -330,15 +333,18 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
     }
     
     const usage = boatUsage.get(boatId);
-    if (checklist.signature_date) {
-      usage.checkOuts++;
-      // Calculate hours based on checklist duration
-      const checklistDate = new Date(checklist.checklist_date);
-      const signatureDate = new Date(checklist.signature_date);
-      const hours = Math.max(1, (signatureDate.getTime() - checklistDate.getTime()) / (1000 * 60 * 60));
-      usage.hours += Math.round(hours * 10) / 10;
-    } else {
+    
+    if (activity.actual_start) {
       usage.checkIns++;
+    }
+    
+    if (activity.actual_end) {
+      usage.checkOuts++;
+      // Calculate hours based on actual rental duration
+      const start = new Date(activity.actual_start || activity.scheduled_start);
+      const end = new Date(activity.actual_end);
+      const hours = Math.max(0.5, (end.getTime() - start.getTime()) / (1000 * 60 * 60));
+      usage.hours += Math.round(hours * 10) / 10;
     }
   });
 
@@ -347,10 +353,10 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
     balance: Math.abs(boat.checkIns - boat.checkOuts) <= 1 ? 'equilibre' as const : 'desequilibre' as const
   }));
 
-  // Monthly trend with better data processing
+  // Monthly trend
   const monthlyData = new Map();
-  checklists.forEach(checklist => {
-    const month = new Date(checklist.checklist_date).toLocaleDateString('fr-FR', { 
+  rentalActivities.forEach(activity => {
+    const month = new Date(activity.scheduled_start).toLocaleDateString('fr-FR', { 
       year: 'numeric', 
       month: 'short' 
     });
@@ -358,10 +364,12 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
       monthlyData.set(month, { checkIns: 0, checkOuts: 0 });
     }
     const data = monthlyData.get(month);
-    if (checklist.signature_date) {
-      data.checkOuts++;
-    } else {
+    
+    if (activity.actual_start || activity.status === 'in_progress') {
       data.checkIns++;
+    }
+    if (activity.actual_end || activity.status === 'completed') {
+      data.checkOuts++;
     }
   });
 
