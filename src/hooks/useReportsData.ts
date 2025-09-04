@@ -89,6 +89,14 @@ export function useReportsData(dateRange: DateRange | undefined) {
       const from = dateRange?.from?.toISOString() || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const to = dateRange?.to?.toISOString() || new Date().toISOString();
 
+      // Build queries based on user role
+      const baseFilter = user?.role === 'direction' ? {} : { base_id: user?.baseId };
+
+      // Helper to build queries with role-based filtering
+      const buildQuery = (query: any) => {
+        return user?.role === 'direction' ? query : query.eq('base_id', user?.baseId!);
+      };
+
       // Parallel data fetching for all report types
       const [
         interventionsData,
@@ -99,62 +107,78 @@ export function useReportsData(dateRange: DateRange | undefined) {
         profilesData
       ] = await Promise.all([
         // Maintenance data
-        supabase
-          .from('interventions')
-          .select(`
-            id, status, priority, created_at, completed_at, 
-            estimated_duration, actual_duration,
-            boat_id, technician_id,
-            boats(name),
-            profiles!interventions_technician_id_fkey(name)
-          `)
-          .gte('created_at', from)
-          .lte('created_at', to)
-          .eq(user?.role === 'direction' ? 'id' : 'base_id', user?.role === 'direction' ? user.id : user?.baseId),
+        buildQuery(
+          supabase
+            .from('interventions')
+            .select(`
+              id, status, priority, created_at, completed_at, 
+              boat_id, technician_id, title, description,
+              boats(name, base_id),
+              profiles!interventions_technician_id_fkey(name)
+            `)
+            .gte('created_at', from)
+            .lte('created_at', to)
+        ),
 
         // Checklists data
-        supabase
-          .from('boat_checklists')
-          .select(`
-            id, checklist_date, overall_status, 
-            signature_date, created_at,
-            boat_id,
-            boats(name),
-            boat_checklist_items(id, status)
-          `)
-          .gte('checklist_date', from.split('T')[0])
-          .lte('checklist_date', to.split('T')[0])
-          .eq(user?.role === 'direction' ? 'id' : 'boats.base_id', user?.role === 'direction' ? user.id : user?.baseId),
+        user?.role === 'direction' 
+          ? supabase
+              .from('boat_checklists')
+              .select(`
+                id, checklist_date, overall_status, 
+                signature_date, created_at,
+                boat_id,
+                boats(name, base_id),
+                boat_checklist_items(id, status)
+              `)
+              .gte('checklist_date', from.split('T')[0])
+              .lte('checklist_date', to.split('T')[0])
+          : supabase
+              .from('boat_checklists')
+              .select(`
+                id, checklist_date, overall_status, 
+                signature_date, created_at,
+                boat_id,
+                boats!inner(name, base_id),
+                boat_checklist_items(id, status)
+              `)
+              .gte('checklist_date', from.split('T')[0])
+              .lte('checklist_date', to.split('T')[0])
+              .eq('boats.base_id', user?.baseId!),
 
         // Boats data
-        supabase
-          .from('boats')
-          .select('id, name, status, base_id')
-          .eq(user?.role === 'direction' ? 'id' : 'base_id', user?.role === 'direction' ? user.id : user?.baseId),
+        buildQuery(
+          supabase
+            .from('boats')
+            .select('id, name, status, base_id')
+        ),
 
         // Stock data
-        supabase
-          .from('stock_items')
-          .select('id, name, category, quantity, min_threshold, unit_price, last_updated')
-          .eq(user?.role === 'direction' ? 'id' : 'base_id', user?.role === 'direction' ? user.id : user?.baseId),
+        buildQuery(
+          supabase
+            .from('stock_items')
+            .select('id, name, category, quantity, min_threshold, unit_price, last_updated')
+        ),
 
         // Orders data
-        supabase
-          .from('orders')
-          .select(`
-            id, order_number, status, created_at, total_amount,
-            order_items(quantity, unit_price, total_price)
-          `)
-          .gte('created_at', from)
-          .lte('created_at', to)
-          .eq(user?.role === 'direction' ? 'id' : 'base_id', user?.role === 'direction' ? user.id : user?.baseId),
+        buildQuery(
+          supabase
+            .from('orders')
+            .select(`
+              id, order_number, status, created_at, total_amount,
+              order_items(quantity, unit_price, total_price)
+            `)
+            .gte('created_at', from)
+            .lte('created_at', to)
+        ),
 
         // Technicians data
-        supabase
-          .from('profiles')
-          .select('id, name, role')
-          .eq('role', 'technicien')
-          .eq(user?.role === 'direction' ? 'id' : 'base_id', user?.role === 'direction' ? user.id : user?.baseId)
+        buildQuery(
+          supabase
+            .from('profiles')
+            .select('id, name, role')
+            .eq('role', 'technicien')
+        )
       ]);
 
       return {
@@ -234,32 +258,40 @@ function processMaintenanceData(interventions: any[], technicians: any[]): Maint
 
   const monthlyTrend = Array.from(monthlyData.entries()).map(([month, interventions]) => ({
     month,
-    interventions
+    interventions: interventions as number
   }));
 
-  // Technician performance
+  // Technician performance - only calculate if we have technicians data
   const technicianPerformance = technicians.map(tech => {
     const techInterventions = interventions.filter(i => i.technician_id === tech.id);
     const techCompleted = techInterventions.filter(i => i.status === 'completed');
+    
+    // Calculate average duration from created_at to completed_at
     const avgDuration = techCompleted.length > 0 
-      ? techCompleted.reduce((sum, i) => sum + (i.actual_duration || 0), 0) / techCompleted.length 
+      ? techCompleted.reduce((sum, i) => {
+          if (i.completed_at && i.created_at) {
+            const duration = new Date(i.completed_at).getTime() - new Date(i.created_at).getTime();
+            return sum + (duration / (1000 * 60 * 60)); // Convert to hours
+          }
+          return sum;
+        }, 0) / techCompleted.length 
       : 0;
 
     return {
-      name: tech.name,
+      name: tech.name || 'Technicien inconnu',
       totalInterventions: techInterventions.length,
       completedInterventions: techCompleted.length,
-      averageDuration: Math.round(avgDuration),
-      completionRate: techInterventions.length > 0 ? (techCompleted.length / techInterventions.length) * 100 : 0
+      averageDuration: Math.round(avgDuration * 10) / 10, // Round to 1 decimal
+      completionRate: techInterventions.length > 0 ? Math.round((techCompleted.length / techInterventions.length) * 100) : 0
     };
-  });
+  }).filter(tech => tech.totalInterventions > 0); // Only show technicians with interventions
 
   return {
     totalInterventions: total,
     completedInterventions: completed,
     inProgressInterventions: inProgress,
     pendingInterventions: pending,
-    completionRate: total > 0 ? (completed / total) * 100 : 0,
+    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     statusDistribution,
     monthlyTrend,
     technicianPerformance
@@ -270,14 +302,19 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
   const total = checklists.length;
   const completed = checklists.filter(c => c.overall_status === 'ok').length;
   
-  // Calculate check-ins and check-outs (assuming checklist with signature_date is a check-out)
+  // Calculate check-ins and check-outs based on signature presence
   const checkOuts = checklists.filter(c => c.signature_date).length;
   const checkIns = total - checkOuts;
 
-  // Calculate average time (mock for now, would need duration tracking)
-  const averageTime = 35; // minutes
+  // Calculate average time based on checklist items completion
+  const averageTime = checklists.length > 0 
+    ? checklists.reduce((sum, c) => {
+        const items = c.boat_checklist_items || [];
+        return sum + (items.length * 3); // Assume 3 minutes per item
+      }, 0) / checklists.length 
+    : 0;
 
-  // Boat utilization
+  // Boat utilization based on real data
   const boatUsage = new Map();
   checklists.forEach(checklist => {
     const boatId = checklist.boat_id;
@@ -295,18 +332,22 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
     const usage = boatUsage.get(boatId);
     if (checklist.signature_date) {
       usage.checkOuts++;
+      // Calculate hours based on checklist duration
+      const checklistDate = new Date(checklist.checklist_date);
+      const signatureDate = new Date(checklist.signature_date);
+      const hours = Math.max(1, (signatureDate.getTime() - checklistDate.getTime()) / (1000 * 60 * 60));
+      usage.hours += Math.round(hours * 10) / 10;
     } else {
       usage.checkIns++;
     }
-    usage.hours += 8; // Assuming 8 hours per checklist
   });
 
   const boatUtilization = Array.from(boatUsage.values()).map(boat => ({
     ...boat,
-    balance: boat.checkIns === boat.checkOuts ? 'equilibre' as const : 'desequilibre' as const
+    balance: Math.abs(boat.checkIns - boat.checkOuts) <= 1 ? 'equilibre' as const : 'desequilibre' as const
   }));
 
-  // Monthly trend
+  // Monthly trend with better data processing
   const monthlyData = new Map();
   checklists.forEach(checklist => {
     const month = new Date(checklist.checklist_date).toLocaleDateString('fr-FR', { 
@@ -335,8 +376,8 @@ function processChecklistData(checklists: any[], boats: any[]): ChecklistReportD
     completedChecklists: completed,
     checkInCount: checkIns,
     checkOutCount: checkOuts,
-    averageTime,
-    completionRate: total > 0 ? (completed / total) * 100 : 0,
+    averageTime: Math.round(averageTime),
+    completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
     boatUtilization,
     monthlyTrend
   };
