@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChecklistCategory } from './ChecklistCategory';
 import type { ChecklistItem } from '@/hooks/useChecklistData';
+import { useCategoriesOrder } from '@/hooks/useCategoriesOrder';
 import { MessageSquare, AlertTriangle, CheckCircle, Clock, TestTube, ChevronDown } from 'lucide-react';
 
 interface ChecklistInspectionProps {
@@ -28,6 +29,8 @@ export function ChecklistInspection({
   overallStatus,
   isComplete,
 }: ChecklistInspectionProps) {
+  const { sortCategories } = useCategoriesOrder();
+  
   // Group items by category
   const categorizedItems = checklistItems.reduce((acc, item) => {
     if (!acc[item.category]) {
@@ -36,6 +39,10 @@ export function ChecklistInspection({
     acc[item.category].push(item);
     return acc;
   }, {} as Record<string, ChecklistItem[]>);
+  
+  // Get categories in the correct order
+  const categories = [...new Set(checklistItems.map(item => item.category).filter(Boolean))];
+  const orderedCategories = sortCategories(categories);
 
   const getStatusBadge = () => {
     const statusConfig = {
@@ -189,15 +196,18 @@ export function ChecklistInspection({
       </Card>
 
       {/* Checklist Items by Category */}
-      {Object.entries(categorizedItems).map(([category, items]) => (
-        <ChecklistCategory
-          key={category}
-          category={category}
-          items={items}
-          onItemStatusChange={onItemStatusChange}
-          onItemNotesChange={onItemNotesChange}
-        />
-      ))}
+      {orderedCategories.map((category) => {
+        const items = categorizedItems[category] || [];
+        return (
+          <ChecklistCategory
+            key={category}
+            category={category}
+            items={items}
+            onItemStatusChange={onItemStatusChange}
+            onItemNotesChange={onItemNotesChange}
+          />
+        );
+      })}
 
       {/* General Notes */}
       <Card>

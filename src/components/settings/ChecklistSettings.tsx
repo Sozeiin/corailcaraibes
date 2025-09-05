@@ -9,7 +9,9 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Save, X, CheckSquare, Trash2, GripVertical, Loader2, RotateCcw } from 'lucide-react';
+import { Plus, Edit, Save, X, CheckSquare, Trash2, GripVertical, Loader2, Settings } from 'lucide-react';
+import { CategoryOrderDialog } from './CategoryOrderDialog';
+import { useCategoriesOrder } from '@/hooks/useCategoriesOrder';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -239,7 +241,8 @@ export function ChecklistSettings() {
   const [editingItem, setEditingItem] = useState<any>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [categoriesOrder, setCategoriesOrder] = useState<string[]>([]);
+  const [categoryOrderDialogOpen, setCategoryOrderDialogOpen] = useState(false);
+  const { categoriesOrder, saveOrder, sortCategories, updateOrderWithNewCategories } = useCategoriesOrder();
   
   // Only direction and chef_base can manage checklists
   const canManageChecklists = user?.role === 'direction' || user?.role === 'chef_base';
@@ -523,87 +526,11 @@ export function ChecklistSettings() {
   };
 
   const categories = [...new Set(checklistItems.map(item => item.category).filter(Boolean))];
-
-  // Load categories order from localStorage
+  
+  // Update categories order when categories change
   useEffect(() => {
-    const savedOrder = localStorage.getItem('checklist_categories_order');
-    if (savedOrder) {
-      try {
-        const parsedOrder = JSON.parse(savedOrder);
-        setCategoriesOrder(parsedOrder);
-      } catch (error) {
-        console.error('Error parsing categories order:', error);
-      }
-    }
-  }, []);
-
-  // Save categories order to localStorage
-  const saveCategoriesOrder = (newOrder: string[]) => {
-    setCategoriesOrder(newOrder);
-    localStorage.setItem('checklist_categories_order', JSON.stringify(newOrder));
-  };
-
-  // Get ordered categories
-  const getOrderedCategories = () => {
-    const currentCategories = [...new Set(checklistItems.map(item => item.category).filter(Boolean))];
-    
-    // If no saved order, return alphabetical order
-    if (categoriesOrder.length === 0) {
-      return currentCategories.sort();
-    }
-    
-    // Merge saved order with new categories
-    const orderedCategories: string[] = [];
-    
-    // Add categories in saved order
-    categoriesOrder.forEach(cat => {
-      if (currentCategories.includes(cat)) {
-        orderedCategories.push(cat);
-      }
-    });
-    
-    // Add new categories at the end
-    currentCategories.forEach(cat => {
-      if (!orderedCategories.includes(cat)) {
-        orderedCategories.push(cat);
-      }
-    });
-    
-    return orderedCategories;
-  };
-
-  // Reset categories order to alphabetical
-  const resetCategoriesOrder = () => {
-    localStorage.removeItem('checklist_categories_order');
-    setCategoriesOrder([]);
-    toast({
-      title: "Ordre réinitialisé",
-      description: "L'ordre des catégories a été réinitialisé par ordre alphabétique."
-    });
-  };
-
-  // Handle category drag end
-  const handleCategoryDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) {
-      return;
-    }
-
-    const orderedCategories = getOrderedCategories();
-    const activeIndex = orderedCategories.findIndex(cat => cat === active.id);
-    const overIndex = orderedCategories.findIndex(cat => cat === over.id);
-
-    if (activeIndex !== overIndex) {
-      const newOrder = arrayMove(orderedCategories, activeIndex, overIndex);
-      saveCategoriesOrder(newOrder);
-      
-      toast({
-        title: "Ordre des catégories mis à jour",
-        description: "Le nouvel ordre a été sauvegardé."
-      });
-    }
-  };
+    updateOrderWithNewCategories(categories);
+  }, [categories, updateOrderWithNewCategories]);
 
   const ChecklistItemForm = ({ item, onSave, onCancel }: any) => {
     const [formData, setFormData] = useState({
@@ -708,7 +635,7 @@ export function ChecklistSettings() {
     return acc;
   }, {});
 
-  const orderedCategories = getOrderedCategories();
+  const orderedCategories = sortCategories(categories);
 
   return (
     <div className="space-y-6">
@@ -718,11 +645,11 @@ export function ChecklistSettings() {
           <Button
             variant="outline"
             size="sm"
-            onClick={resetCategoriesOrder}
-            title="Réinitialiser l'ordre des catégories"
+            onClick={() => setCategoryOrderDialogOpen(true)}
+            title="Organiser l'ordre des catégories"
           >
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Réinitialiser ordre
+            <Settings className="h-4 w-4 mr-2" />
+            Organiser catégories
           </Button>
           <Button onClick={() => setIsCreating(true)} disabled={isCreating || !canManageChecklists}>
             <Plus className="h-4 w-4 mr-2" />
@@ -748,96 +675,67 @@ export function ChecklistSettings() {
         </Card>
       )}
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleCategoryDragEnd}
-      >
-        <SortableContext
-          items={orderedCategories}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-6">
-            {orderedCategories.map((category) => {
-              const items = groupedItems[category] || [];
-              const CategoryCard = ({ category, items }: { category: string; items: any[] }) => {
-                const {
-                  attributes,
-                  listeners,
-                  setNodeRef,
-                  transform,
-                  transition,
-                  isDragging,
-                } = useSortable({ id: category });
-
-                const style = {
-                  transform: CSS.Transform.toString(transform),
-                  transition,
-                };
-
-                return (
-                  <div
-                    ref={setNodeRef}
-                    style={style}
-                    className={isDragging ? 'opacity-50' : ''}
-                  >
-                    <Card>
-                      <CardHeader className="flex flex-row items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div
-                            {...attributes}
-                            {...listeners}
-                            className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            <GripVertical className="h-4 w-4" />
-                          </div>
-                          <CardTitle className="text-lg">{category}</CardTitle>
-                        </div>
-                        {isSaving && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Sauvegarde en cours...
-                          </div>
-                        )}
-                      </CardHeader>
-                      <CardContent>
-                        <DndContext
-                          sensors={sensors}
-                          collisionDetection={closestCenter}
-                          onDragEnd={handleDragEnd}
-                        >
-                          <SortableContext
-                            items={items.map((item: any) => item.id)}
-                            strategy={verticalListSortingStrategy}
-                          >
-                            <div className="space-y-0">
-                              {items.map((item: any) => (
-                                 <SortableChecklistItem
-                                   key={item.id}
-                                   item={item}
-                                   editingItem={editingItem}
-                                   setEditingItem={setEditingItem}
-                                   handleSave={handleSave}
-                                   handleDelete={handleDelete}
-                                   updateMutation={updateMutation}
-                                   deleteMutation={deleteMutation}
-                                   canManageChecklists={canManageChecklists}
-                                 />
-                              ))}
-                            </div>
-                          </SortableContext>
-                        </DndContext>
-                      </CardContent>
-                    </Card>
+      <div className="space-y-6">
+        {orderedCategories.map((category) => {
+          const items = groupedItems[category] || [];
+          
+          return (
+            <Card key={category}>
+              <CardHeader>
+                <CardTitle className="text-lg">{category}</CardTitle>
+                {isSaving && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Sauvegarde en cours...
                   </div>
-                );
-              };
+                )}
+              </CardHeader>
+              <CardContent>
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={items.map((item: any) => item.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-0">
+                      {items.map((item: any) => (
+                         <SortableChecklistItem
+                           key={item.id}
+                           item={item}
+                           editingItem={editingItem}
+                           setEditingItem={setEditingItem}
+                           handleSave={handleSave}
+                           handleDelete={handleDelete}
+                           updateMutation={updateMutation}
+                           deleteMutation={deleteMutation}
+                           canManageChecklists={canManageChecklists}
+                         />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
-              return <CategoryCard key={category} category={category} items={items} />;
-            })}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <CategoryOrderDialog
+        open={categoryOrderDialogOpen}
+        onOpenChange={setCategoryOrderDialogOpen}
+        categories={categories}
+        currentOrder={categoriesOrder}
+        onSaveOrder={(order) => {
+          saveOrder(order);
+          toast({
+            title: "Ordre des catégories mis à jour",
+            description: "Le nouvel ordre a été sauvegardé et sera appliqué partout dans l'application."
+          });
+        }}
+      />
     </div>
   );
 }
