@@ -173,27 +173,43 @@ export default function Stock() {
   };
 
   const confirmDelete = async () => {
-    if (deleteItem) {
-      setIsDeleting(true);
-      try {
-        await removeItem(deleteItem.id);
-        toast({
-          title: "Article supprimé",
-          description: "L'article a été supprimé avec succès.",
-        });
-        setIsDeleteDialogOpen(false);
-        setDeleteItem(null);
-        refetchStock(); // Force refresh after deletion
-      } catch (error) {
-        console.error('Erreur lors de la suppression:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de supprimer l'article.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsDeleting(false);
+    if (!deleteItem) return;
+    
+    setIsDeleting(true);
+    try {
+      console.log('Starting deletion process for item:', deleteItem.id);
+      
+      await removeItem(deleteItem.id);
+      
+      toast({
+        title: "Article supprimé",
+        description: `L'article "${deleteItem.name}" a été supprimé avec succès.`,
+      });
+      
+      setIsDeleteDialogOpen(false);
+      setDeleteItem(null);
+      
+      // Force refresh after successful deletion
+      await refetchStock();
+      
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      
+      let errorMessage = "Impossible de supprimer l'article.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
       }
+      
+      toast({
+        title: "Erreur de suppression",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      
+      // Ne pas fermer la dialog en cas d'erreur pour permettre de réessayer
+    } finally {
+      setIsDeleting(false);
     }
   };
 

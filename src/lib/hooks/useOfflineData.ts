@@ -237,41 +237,73 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
 
     const remove = useCallback(async (id: string): Promise<void> => {
       const isOnline = await getIsOnline();
+      
       try {
-        console.log(`Attempting to delete ${table} with id:`, id);
+        console.log(`[useOfflineData] Attempting to delete ${table} with id:`, id);
 
         if (isOnline) {
+          // Vérifier d'abord que l'utilisateur est authentifié
+          const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+          if (authError || !currentUser) {
+            throw new Error('Utilisateur non authentifié. Veuillez vous reconnecter.');
+          }
+          
+          console.log(`[useOfflineData] User authenticated, proceeding with delete`);
+          
           // En ligne : supprimer de Supabase
-        const { error, data: deletedData } = await (supabase as any)
-          .from(table)
-          .delete()
-          .eq('id', id);
-        
-        console.log('Delete result:', { error, deletedData });
-        
-        if (error) {
-          console.error('Supabase delete error:', error);
-          throw error;
-        }
-        
-        // Synchroniser avec SQLite
-        try {
+          const { error, data: deletedData } = await (supabase as any)
+            .from(table)
+            .delete()
+            .eq('id', id);
+          
+          console.log(`[useOfflineData] Delete result:`, { error, deletedData });
+          
+          if (error) {
+            console.error(`[useOfflineData] Supabase delete error:`, error);
+            
+            // Gestion spécifique des erreurs RLS
+            if (error.code === 'PGRST116' || error.message?.includes('row-level security')) {
+              throw new Error('Vous n\'avez pas les permissions pour supprimer cet article.');
+            } else if (error.code === '42501' || error.message?.includes('permission denied')) {
+              throw new Error('Accès refusé. Vérifiez vos permissions.');
+            } else if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
+              throw new Error('Session expirée. Veuillez vous reconnecter.');
+            }
+            
+            throw new Error(`Erreur lors de la suppression: ${error.message}`);
+          }
+          
+          console.log(`[useOfflineData] Successfully deleted from Supabase`);
+          
+          // Synchroniser avec SQLite
+          try {
+            await sqliteService.initialize();
+            await sqliteService.delete(table, id);
+            console.log(`[useOfflineData] Successfully deleted from SQLite`);
+          } catch (syncError) {
+            console.warn(`[useOfflineData] SQLite sync error:`, syncError);
+          }
+        } else {
+          // Hors ligne : supprimer de SQLite avec marquage pour sync ultérieure
+          console.log(`[useOfflineData] Offline mode: marking for deletion in SQLite`);
           await sqliteService.initialize();
           await sqliteService.delete(table, id);
-        } catch (syncError) {
-          console.warn('Erreur lors de la synchronisation avec SQLite:', syncError);
         }
-      } else {
-        // Hors ligne : supprimer de SQLite
-        await sqliteService.initialize();
-        await sqliteService.delete(table, id);
+        
+        // Mettre à jour l'état local seulement si la suppression a réussi
+        setData(prev => prev.filter(record => record.id !== id));
+        console.log(`[useOfflineData] Successfully removed item from local state`);
+        
+      } catch (error) {
+        console.error(`[useOfflineData] Error deleting item:`, error);
+        
+        // Re-lancer l'erreur avec un message plus explicite
+        if (error instanceof Error) {
+          throw error;
+        } else {
+          throw new Error('Erreur inconnue lors de la suppression de l\'article');
+        }
       }
-      
-      setData(prev => prev.filter(record => record.id !== id));
-    } catch (error) {
-      console.error('Error deleting item:', error);
-      throw error;
-    }
     }, [table, getIsOnline]);
 
   useEffect(() => {
