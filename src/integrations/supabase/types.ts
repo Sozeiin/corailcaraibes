@@ -2701,6 +2701,152 @@ export type Database = {
         }
         Relationships: []
       }
+      shipment_items: {
+        Row: {
+          created_at: string | null
+          destination_base_id: string
+          id: string
+          package_id: string | null
+          product_label: string | null
+          qty: number
+          received_qty: number
+          shipment_id: string
+          sku: string
+          source_base_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          destination_base_id: string
+          id?: string
+          package_id?: string | null
+          product_label?: string | null
+          qty?: number
+          received_qty?: number
+          shipment_id: string
+          sku: string
+          source_base_id: string
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string | null
+          destination_base_id?: string
+          id?: string
+          package_id?: string | null
+          product_label?: string | null
+          qty?: number
+          received_qty?: number
+          shipment_id?: string
+          sku?: string
+          source_base_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_items_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_packages: {
+        Row: {
+          created_at: string | null
+          id: string
+          package_code: string
+          shipment_id: string
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          package_code: string
+          shipment_id: string
+          tenant_id?: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          package_code?: string
+          shipment_id?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_packages_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipments: {
+        Row: {
+          carrier: string | null
+          created_at: string | null
+          created_by: string
+          destination_base_id: string
+          id: string
+          notes: string | null
+          source_base_id: string
+          status: string
+          tenant_id: string
+          tracking_number: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          carrier?: string | null
+          created_at?: string | null
+          created_by?: string
+          destination_base_id: string
+          id?: string
+          notes?: string | null
+          source_base_id: string
+          status?: string
+          tenant_id?: string
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          carrier?: string | null
+          created_at?: string | null
+          created_by?: string
+          destination_base_id?: string
+          id?: string
+          notes?: string | null
+          source_base_id?: string
+          status?: string
+          tenant_id?: string
+          tracking_number?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipments_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_source_base_id_fkey"
+            columns: ["source_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_item_quotes: {
         Row: {
           attachment_url: string | null
@@ -2838,6 +2984,73 @@ export type Database = {
             columns: ["last_supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          actor: string
+          base_id: string
+          id: string
+          movement_type: string
+          notes: string | null
+          package_id: string | null
+          qty: number
+          scan_event_id: string | null
+          shipment_id: string | null
+          sku: string
+          tenant_id: string
+          ts: string | null
+        }
+        Insert: {
+          actor?: string
+          base_id: string
+          id?: string
+          movement_type: string
+          notes?: string | null
+          package_id?: string | null
+          qty: number
+          scan_event_id?: string | null
+          shipment_id?: string | null
+          sku: string
+          tenant_id?: string
+          ts?: string | null
+        }
+        Update: {
+          actor?: string
+          base_id?: string
+          id?: string
+          movement_type?: string
+          notes?: string | null
+          package_id?: string | null
+          qty?: number
+          scan_event_id?: string | null
+          shipment_id?: string | null
+          sku?: string
+          tenant_id?: string
+          ts?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_shipment_id_fkey"
+            columns: ["shipment_id"]
+            isOneToOne: false
+            referencedRelation: "shipments"
             referencedColumns: ["id"]
           },
         ]
@@ -3561,6 +3774,15 @@ export type Database = {
       }
     }
     Functions: {
+      add_item_by_scan: {
+        Args: {
+          p_package_code?: string
+          p_qty?: number
+          p_shipment_id: string
+          p_sku: string
+        }
+        Returns: string
+      }
       add_order_items_to_stock: {
         Args: { order_id_param: string; selected_items?: Json }
         Returns: Json
@@ -3584,6 +3806,16 @@ export type Database = {
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      create_shipment: {
+        Args: {
+          p_carrier?: string
+          p_destination_base_id: string
+          p_notes?: string
+          p_source_base_id: string
+          p_tracking_number?: string
+        }
+        Returns: string
       }
       evaluate_weather_for_maintenance: {
         Args: { base_id_param: string; maintenance_date: string }
@@ -3659,9 +3891,31 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_shipped: {
+        Args: { p_shipment_id: string }
+        Returns: boolean
+      }
+      pack_shipment: {
+        Args: { p_shipment_id: string }
+        Returns: boolean
+      }
       process_workflow_automation: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      receive_scan: {
+        Args: {
+          p_package_code?: string
+          p_qty: number
+          p_scan_event_id?: string
+          p_shipment_id: string
+          p_sku: string
+        }
+        Returns: string
+      }
+      reconcile_shipment: {
+        Args: { p_shipment_id: string }
+        Returns: string
       }
       refresh_purchasing_analytics: {
         Args: Record<PropertyKey, never>
