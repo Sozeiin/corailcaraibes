@@ -14,6 +14,8 @@ import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialo
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useDeleteStockItem, useUpdateStockQuantity } from '@/hooks/useStockMutations';
+import { useRealtimeStockUpdates } from '@/hooks/useRealtimeUpdates';
 
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
@@ -56,9 +58,14 @@ export default function Stock() {
     data: rawStockItems = [],
     loading: isLoading,
     update: updateItem,
-    remove: removeItem,
     refetch: refetchStock
   } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
+
+  // Use mutations and realtime updates
+  const deleteStockMutation = useDeleteStockItem();
+  const updateQuantityMutation = useUpdateStockQuantity();
+  useRealtimeStockUpdates();
+
 
   const stockItems: StockItem[] = rawStockItems.map((item: any) => ({
     id: item.id,
@@ -136,14 +143,7 @@ export default function Stock() {
   };
 
   const handleUpdateQuantity = async (itemId: string, newQuantity: number) => {
-    try {
-      await updateItem(itemId, {
-        quantity: newQuantity,
-        last_updated: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la quantité:', error);
-    }
+    updateQuantityMutation.mutate({ itemId, quantity: newQuantity });
   };
 
   const handleDialogClose = () => {
@@ -175,42 +175,13 @@ export default function Stock() {
   const confirmDelete = async () => {
     if (!deleteItem) return;
     
-    setIsDeleting(true);
-    try {
-      console.log('Starting deletion process for item:', deleteItem.id);
-      
-      await removeItem(deleteItem.id);
-      
-      toast({
-        title: "Article supprimé",
-        description: `L'article "${deleteItem.name}" a été supprimé avec succès.`,
-      });
-      
-      setIsDeleteDialogOpen(false);
-      setDeleteItem(null);
-      
-      // Force refresh after successful deletion
-      await refetchStock();
-      
-    } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
-      
-      let errorMessage = "Impossible de supprimer l'article.";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
+    // Use the mutation instead of direct removal
+    deleteStockMutation.mutate(deleteItem.id, {
+      onSuccess: () => {
+        setIsDeleteDialogOpen(false);
+        setDeleteItem(null);
       }
-      
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
-      
-      // Ne pas fermer la dialog en cas d'erreur pour permettre de réessayer
-    } finally {
-      setIsDeleting(false);
-    }
+    });
   };
 
   const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
@@ -337,10 +308,10 @@ export default function Stock() {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
               <AlertDialogAction
                 onClick={confirmDelete}
-                disabled={isDeleting}
+                disabled={deleteStockMutation.isPending}
                 className="bg-red-600 hover:bg-red-700"
               >
-                {isDeleting ? 'Suppression...' : 'Supprimer'}
+                {deleteStockMutation.isPending ? 'Suppression...' : 'Supprimer'}
               </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

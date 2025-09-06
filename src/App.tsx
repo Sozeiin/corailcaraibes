@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
+import { GlobalRealtimeProvider } from "@/components/GlobalRealtimeProvider";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -258,10 +259,16 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <Layout>
-    <AppRoutes />
-    <Sonner />
-  </Layout>
+  <QueryClientProvider client={queryClient}>
+    <AuthProvider>
+      <GlobalRealtimeProvider>
+        <Layout>
+          <AppRoutes />
+          <Sonner />
+        </Layout>
+      </GlobalRealtimeProvider>
+    </AuthProvider>
+  </QueryClientProvider>
 );
 
 export default App;

@@ -15,6 +15,8 @@ import { useCategoriesOrder } from '@/hooks/useCategoriesOrder';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useDeleteChecklistItem } from '@/hooks/useChecklistMutations';
+import { useRealtimeChecklistUpdates } from '@/hooks/useRealtimeUpdates';
 import {
   DndContext,
   closestCenter,
@@ -347,73 +349,11 @@ export function ChecklistSettings() {
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      console.log('deleteMutation called with id:', id);
-      
-      // First check if the item is used in any boat checklists
-      const { data: usageCheck, error: usageError } = await supabase
-        .from('boat_checklist_items')
-        .select('item_id')
-        .eq('item_id', id);
-      
-      if (usageError) throw usageError;
-      
-      // If item is used, delete the references first (cascade deletion)
-      if (usageCheck && usageCheck.length > 0) {
-        console.log(`Item is used in ${usageCheck.length} checklists, performing cascade deletion`);
-        
-        // Delete all references in boat_checklist_items first
-        const { error: deleteReferencesError } = await supabase
-          .from('boat_checklist_items')
-          .delete()
-          .eq('item_id', id);
-
-        if (deleteReferencesError) {
-          console.error('Error deleting references:', deleteReferencesError);
-          throw deleteReferencesError;
-        }
-      }
-      
-      // Now delete the checklist item itself
-      const { error } = await supabase
-        .from('checklist_items')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklist-items'] });
-      toast({
-        title: "Élément supprimé",
-        description: "L'élément de checklist a été supprimé avec succès."
-      });
-    },
-    onError: (error: any) => {
-      console.error('Erreur lors de la suppression:', error);
-      
-      let title = "Erreur de suppression";
-      let description = "Impossible de supprimer l'élément.";
-      
-      if (error.message === 'ITEM_IN_USE') {
-        title = "Suppression impossible";
-        description = "Cet élément est utilisé dans des checklists existantes. Supprimez d'abord les checklists associées.";
-      } else if (error.code === '23503') {
-        title = "Suppression impossible";
-        description = "Cet élément est référencé dans d'autres données. Vérifiez les dépendances.";
-      } else if (error.message?.includes('permission')) {
-        title = "Permission refusée";
-        description = "Vous n'avez pas les permissions nécessaires pour supprimer cet élément.";
-      }
-      
-      toast({
-        title,
-        description,
-        variant: "destructive"
-      });
-    }
-  });
+  // Use the standardized delete mutation
+  const deleteMutation = useDeleteChecklistItem();
+  
+  // Use realtime updates
+  useRealtimeChecklistUpdates();
 
   const handleSave = (itemData: any) => {
     if (isCreating) {
@@ -492,32 +432,14 @@ export function ChecklistSettings() {
     console.log('handleDelete called with id:', id);
     console.log('canManageChecklists:', canManageChecklists);
     
-    // Check usage count before showing confirmation
-    const { data: usageCheck } = await supabase
-      .from('boat_checklist_items')
-      .select('item_id')
-      .eq('item_id', id);
-    
-    const usageCount = usageCheck?.length || 0;
-    
-    if (usageCount > 0) {
-      const confirmed = window.confirm(
-        `Attention ! Cet élément est utilisé dans ${usageCount} checklist(s) bateau.\n\n` +
-        `En le supprimant, il sera retiré de toutes ces checklists existantes.\n\n` +
-        `Voulez-vous vraiment continuer ?`
-      );
-      
-      if (!confirmed) {
-        return;
-      }
-    } else {
-      const confirmed = window.confirm('Êtes-vous sûr de vouloir supprimer cet élément ?');
-      if (!confirmed) {
-        return;
-      }
-    }
-    
+    // Use the standardized mutation - it handles usage checking internally
     deleteMutation.mutate(id);
+  };
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'ok':
+        return 'default';
   };
 
   const getStatusBadgeVariant = (status: string) => {
@@ -756,8 +678,6 @@ export function ChecklistSettings() {
             title: "Ordre des catégories mis à jour",
             description: "Le nouvel ordre a été sauvegardé et sera appliqué partout dans l'application."
           });
-        }}
-      />
     </div>
   );
 }
