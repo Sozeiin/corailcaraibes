@@ -102,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('Subject: Rapport', type);
 
     const emailResponse = await resend.emails.send({
-      from: "Marina Reports <service.technique@corail.corailapp.fr>",
+      from: "Corail caraibes <service.technique@corail.corailapp.fr>",
       to: [recipientEmail],
       subject: `Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'} - ${boatName}`,
       html: htmlReport,
