@@ -53,6 +53,13 @@ export type Database = {
             referencedRelation: "bases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "alerts_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       api_logs: {
@@ -409,6 +416,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "boat_rentals_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "boat_rentals_boat_id_fkey"
             columns: ["boat_id"]
             isOneToOne: false
@@ -674,6 +688,13 @@ export type Database = {
             referencedRelation: "bases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "boats_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bulk_purchase_campaigns: {
@@ -767,6 +788,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_purchase_distributions_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -920,6 +948,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_campaign_base_distributions_base_id"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -1470,6 +1505,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "interventions_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "interventions_boat_id_fkey"
             columns: ["boat_id"]
             isOneToOne: false
@@ -1663,6 +1705,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "logistics_receipts_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "logistics_receipts_received_by_fkey"
             columns: ["received_by"]
             isOneToOne: false
@@ -1813,10 +1862,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "logistics_shipments_base_destination_id_fkey"
+            columns: ["base_destination_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "logistics_shipments_base_origin_id_fkey"
             columns: ["base_origin_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logistics_shipments_base_origin_id_fkey"
+            columns: ["base_origin_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -2183,6 +2246,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_boat_id_fkey"
             columns: ["boat_id"]
             isOneToOne: false
@@ -2293,6 +2363,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_activities_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -2416,6 +2493,13 @@ export type Database = {
             referencedRelation: "bases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "planning_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_audit_log: {
@@ -2482,6 +2566,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2839,10 +2930,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "shipments_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "shipments_source_base_id_fkey"
             columns: ["source_base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipments_source_base_id_fkey"
+            columns: ["source_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
         ]
@@ -2980,6 +3085,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "stock_items_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "stock_items_last_supplier_id_fkey"
             columns: ["last_supplier_id"]
             isOneToOne: false
@@ -3037,6 +3149,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -3494,6 +3613,13 @@ export type Database = {
             referencedRelation: "bases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "suppliers_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supply_requests: {
@@ -3750,6 +3876,24 @@ export type Database = {
       }
     }
     Views: {
+      bases_public: {
+        Row: {
+          id: string | null
+          location: string | null
+          name: string | null
+        }
+        Insert: {
+          id?: string | null
+          location?: string | null
+          name?: string | null
+        }
+        Update: {
+          id?: string | null
+          location?: string | null
+          name?: string | null
+        }
+        Relationships: []
+      }
       purchasing_analytics: {
         Row: {
           avg_order_value: number | null
@@ -3768,6 +3912,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
         ]
