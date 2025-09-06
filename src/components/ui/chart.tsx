@@ -2,6 +2,7 @@ import * as React from "react"
 import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@/lib/utils"
+import { safeRemoveChild, safeAppendChild } from "@/lib/domUtils"
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
@@ -82,7 +83,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     if (!existingStyle) {
       existingStyle = document.createElement('style');
       existingStyle.id = styleId;
-      document.head.appendChild(existingStyle);
+      safeAppendChild(document.head, existingStyle);
     }
     
     const cssRules = Object.entries(THEMES)
@@ -104,9 +105,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     existingStyle.textContent = cssRules;
     
     return () => {
-      if (existingStyle && existingStyle.parentNode) {
-        existingStyle.parentNode.removeChild(existingStyle);
-      }
+      safeRemoveChild(existingStyle);
     };
   }, [id, colorConfig]);
 

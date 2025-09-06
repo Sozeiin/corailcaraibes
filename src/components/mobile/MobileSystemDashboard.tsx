@@ -23,6 +23,7 @@ import {
 import { useMobileSystem } from '@/hooks/useMobileSystem';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
 import { MobileDataManager } from '@/components/mobile/MobileDataManager';
+import { safeAppendChild } from '@/lib/domUtils';
 
 export const MobileSystemDashboard = () => {
   const { status, actions, isInitialized, isInitializing } = useMobileSystem();
@@ -61,10 +62,17 @@ export const MobileSystemDashboard = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = `mobile-diagnostics-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    
+    try {
+      const cleanup = safeAppendChild(document.body, a);
+      a.click();
+      cleanup();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      URL.revokeObjectURL(url);
+      throw error;
+    }
   };
 
   if (!isNative) {

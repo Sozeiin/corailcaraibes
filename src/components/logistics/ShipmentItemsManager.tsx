@@ -27,6 +27,7 @@ import {
   Camera
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { safeRemoveChild } from '@/lib/domUtils';
 
 interface ShipmentItemsManagerProps {
   shipment: any;
@@ -262,12 +263,8 @@ export function ShipmentItemsManager({ shipment, isOpen, onClose }: ShipmentItem
           }
         }
         stream.getTracks().forEach(track => track.stop());
-        if (overlay.parentNode) {
-          document.body.removeChild(overlay);
-        }
-        if (style.parentNode) {
-          document.head.removeChild(style);
-        }
+        safeRemoveChild(overlay);
+        safeRemoveChild(style);
         setIsScanning(false);
       };
 

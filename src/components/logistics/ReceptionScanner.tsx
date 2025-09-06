@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { searchGlobalStockItems, createLocalStockCopy } from '@/lib/stockUtils';
+import { safeRemoveChild, safeRemoveById } from '@/lib/domUtils';
 
 interface ReceptionOperation {
   id: number;
@@ -281,12 +282,8 @@ export function ReceptionScanner() {
           }
         }
         stream.getTracks().forEach(track => track.stop());
-        if (overlay.parentNode) {
-          document.body.removeChild(overlay);
-        }
-        if (style.parentNode) {
-          document.head.removeChild(style);
-        }
+        safeRemoveChild(overlay);
+        safeRemoveChild(style);
         setIsScanning(false);
       };
 

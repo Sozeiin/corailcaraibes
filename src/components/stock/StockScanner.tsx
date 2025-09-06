@@ -24,6 +24,7 @@ import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 import { StockItemAutocomplete } from './StockItemAutocomplete';
 import { OrderLinkDialog } from './OrderLinkDialog';
 import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@/lib/stockUtils';
+import { safeRemoveChild, safeRemoveById, safeRemoveBySelector } from '@/lib/domUtils';
 
 interface StockScannerProps {
   stockItems: any[];
@@ -228,10 +229,14 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         console.log('🧹 NETTOYAGE SCANNER');
         scanning = false;
         stream.getTracks().forEach(track => track.stop());
-        const overlayEl = document.getElementById('scanner-overlay');
-        const styleEl = document.querySelector('style');
-        if (overlayEl) overlayEl.remove();
-        if (styleEl && styleEl.textContent?.includes('@keyframes pulse')) styleEl.remove();
+        safeRemoveById('scanner-overlay');
+        // Remove style element that contains pulse animation safely
+        const styleElements = document.querySelectorAll('style');
+        styleElements.forEach(styleEl => {
+          if (styleEl.textContent?.includes('@keyframes pulse')) {
+            safeRemoveChild(styleEl);
+          }
+        });
         setIsScanning(false);
       };
 

@@ -16,6 +16,7 @@ import {
   AlertCircle,
   XCircle
 } from 'lucide-react';
+import { safeRemoveChild, safeAppendChild } from '@/lib/domUtils';
 
 interface BoatChecklistHistoryProps {
   boatId: string;
@@ -158,10 +159,17 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
         const link = document.createElement('a');
         link.href = url;
         link.download = `checklist-${type}-${customerName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.html`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        
+        try {
+          const cleanup = safeAppendChild(document.body, link);
+          link.click();
+          cleanup();
+          URL.revokeObjectURL(url);
+        } catch (error) {
+          console.error('Download error:', error);
+          URL.revokeObjectURL(url);
+          throw error;
+        }
         
         toast({
           title: '📄 Rapport téléchargé',

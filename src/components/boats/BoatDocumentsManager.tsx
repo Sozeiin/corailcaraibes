@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Upload, Download, Trash2, Camera, Search, Plus, Eye } from 'lucide-react';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { safeRemoveChild, safeAppendChild } from '@/lib/domUtils';
 
 interface BoatDocument {
   id: string;
@@ -184,10 +185,17 @@ export const BoatDocumentsManager: React.FC<BoatDocumentsManagerProps> = ({ boat
       const a = window.document.createElement('a');
       a.href = url;
       a.download = document.original_name;
-      window.document.body.appendChild(a);
-      a.click();
-      window.document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      
+      try {
+        const cleanup = safeAppendChild(window.document.body, a);
+        a.click();
+        cleanup();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download error:', error);
+        URL.revokeObjectURL(url);
+        throw error;
+      }
     } catch (error: any) {
       toast({
         title: 'Erreur de téléchargement',
