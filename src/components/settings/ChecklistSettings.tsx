@@ -36,7 +36,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 // Component for individual sortable checklist item
-const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, handleDelete, updateMutation, deleteMutation, canManageChecklists }: any) => {
+const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, handleDelete, updateMutation, deleteMutation, canManageChecklists, allItems }: any) => {
   const {
     attributes,
     listeners,
@@ -78,6 +78,9 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
       notes: item?.notes || ''
     });
 
+    // Get unique categories from existing items
+    const categories = [...new Set(allItems?.map((i: any) => i.category).filter(Boolean))];
+
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       onSave(formData);
@@ -85,7 +88,7 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
 
     return (
       <form onSubmit={handleSubmit} className="space-y-4 bg-muted/50 p-4 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="name">Nom de l'élément *</Label>
             <Input
@@ -94,6 +97,24 @@ const SortableChecklistItem = ({ item, editingItem, setEditingItem, handleSave, 
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
             />
+          </div>
+          <div>
+            <Label htmlFor="category">Catégorie *</Label>
+            <Select 
+              value={formData.category} 
+              onValueChange={(value) => setFormData({ ...formData, category: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner une catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category: string) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <Label htmlFor="status">Statut par défaut</Label>
@@ -701,7 +722,7 @@ export function ChecklistSettings() {
                     strategy={verticalListSortingStrategy}
                   >
                     <div className="space-y-0">
-                      {items.map((item: any) => (
+                       {items.map((item: any) => (
                          <SortableChecklistItem
                            key={item.id}
                            item={item}
@@ -712,8 +733,9 @@ export function ChecklistSettings() {
                            updateMutation={updateMutation}
                            deleteMutation={deleteMutation}
                            canManageChecklists={canManageChecklists}
+                           allItems={checklistItems}
                          />
-                      ))}
+                       ))}
                     </div>
                   </SortableContext>
                 </DndContext>
