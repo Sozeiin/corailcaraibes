@@ -264,7 +264,7 @@ function generateHTMLReport(checklist: any, boatName: string, customerName: stri
 
       <div class="footer">
         <p>Rapport généré automatiquement le ${new Date().toLocaleString('fr-FR')}</p>
-        <p>Marina Management System</p>
+        <p>Corail Caraibes</p>
       </div>
     </body>
     </html>
