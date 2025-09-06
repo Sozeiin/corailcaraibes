@@ -678,6 +678,8 @@ export function ChecklistSettings() {
             title: "Ordre des catégories mis à jour",
             description: "Le nouvel ordre a été sauvegardé et sera appliqué partout dans l'application."
           });
+        }}
+      />
     </div>
   );
 }

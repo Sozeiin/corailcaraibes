@@ -84,7 +84,7 @@ const menuItems = [{
   title: 'Paramètres',
   url: '/settings',
   icon: Settings,
-  roles: ['direction', 'chef_base']
+  roles: ['direction', 'chef_base', 'technicien']
 }];
 export function AppSidebar() {
   const location = useLocation();

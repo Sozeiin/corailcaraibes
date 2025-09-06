@@ -240,7 +240,7 @@ function AppRoutes() {
       <Route
         path="/settings"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
+          <ProtectedRoute>
             <Settings />
           </ProtectedRoute>
         }
