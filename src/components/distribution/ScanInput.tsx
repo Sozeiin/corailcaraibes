@@ -3,20 +3,45 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Scan, Camera, Keyboard } from 'lucide-react';
+import { Scan, Camera } from 'lucide-react';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ScanInputProps {
-  onScan: (value: string) => void;
+  onScan: (value: string, qty: number) => void;
   disabled?: boolean;
   placeholder?: string;
 }
 
-export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou saisir une référence" }: ScanInputProps) {
+export function ScanInput({
+  onScan,
+  disabled = false,
+  placeholder = "Scanner ou saisir une référence"
+}: ScanInputProps) {
   const [inputValue, setInputValue] = useState('');
+  const [quantity, setQuantity] = useState(1);
   const [isCameraMode, setIsCameraMode] = useState(false);
+  const [filteredItems, setFilteredItems] = useState<any[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { isNative } = useMobileCapacitor();
+  const { user } = useAuth();
+
+  // Récupérer les articles du stock pour l'autocomplétion
+  const { data: stockItems = [] } = useQuery({
+    queryKey: ['stock-items-scan', user?.baseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stock_items')
+        .select('id, name, reference')
+        .eq('base_id', user?.baseId)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.baseId
+  });
 
   // Auto-focus input when component mounts or mode changes
   useEffect(() => {
@@ -25,11 +50,39 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
     }
   }, [isCameraMode]);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    if (value.length >= 2) {
+      const search = value.toLowerCase();
+      const matches = stockItems
+        .filter((item: any) =>
+          item.reference?.toLowerCase().includes(search) ||
+          item.name.toLowerCase().includes(search)
+        )
+        .slice(0, 5);
+      setFilteredItems(matches);
+    } else {
+      setFilteredItems([]);
+    }
+  };
+
+  const handleSelect = (item: any) => {
+    if (disabled) return;
+    onScan(item.reference, quantity);
+    setInputValue('');
+    setQuantity(1);
+    setFilteredItems([]);
+  };
+
   const handleInputSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !disabled) {
-      onScan(inputValue.trim());
+      onScan(inputValue.trim(), quantity);
       setInputValue('');
+      setQuantity(1);
+      setFilteredItems([]);
     }
   };
 
@@ -100,18 +153,40 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
           <div className="space-y-2">
             <Label htmlFor="scanInput">Référence de l'article</Label>
             <div className="flex gap-2">
-              <Input
-                id="scanInput"
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={placeholder}
-                disabled={disabled}
-                className="flex-1"
-                autoComplete="off"
-                autoFocus
-              />
+              <div className="relative flex-1">
+                <Input
+                  id="scanInput"
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={placeholder}
+                  disabled={disabled}
+                  className="w-full"
+                  autoComplete="off"
+                  autoFocus
+                />
+                {filteredItems.length > 0 && (
+                  <Card className="absolute z-50 top-full left-0 right-0 mt-1 max-h-60 overflow-auto">
+                    <div className="p-1">
+                      {filteredItems.map((item: any) => (
+                        <Button
+                          key={item.id}
+                          type="button"
+                          variant="ghost"
+                          className="w-full justify-start p-2 h-auto"
+                          onClick={() => handleSelect(item)}
+                        >
+                          <div className="flex flex-col text-left">
+                            <span className="text-sm font-medium">{item.name}</span>
+                            <span className="text-xs text-muted-foreground">{item.reference}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </Card>
+                )}
+              </div>
               {isNative && (
                 <Button
                   type="button"
@@ -125,10 +200,23 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
               )}
             </div>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label htmlFor="quantity">Quantité</Label>
+            <Input
+              id="quantity"
+              type="number"
+              min={1}
+              value={quantity}
+              onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
+              disabled={disabled}
+              className="w-24"
+            />
+          </div>
+
           <div className="flex gap-2">
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={!inputValue.trim() || disabled}
               className="flex-1 sm:flex-none sm:min-w-32"
             >

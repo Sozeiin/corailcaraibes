@@ -128,7 +128,7 @@ export function ReceptionTab() {
     }
   });
 
-  const handleScan = (value: string) => {
+  const handleScan = (value: string, qty: number) => {
     // Déterminer si c'est un scan de colis ou d'article
     if (value.includes('|')) {
       // Format QR colis: shipment_id|package_code
@@ -159,7 +159,7 @@ export function ReceptionTab() {
         receiveScanMutation.mutate({
           shipmentId: reception.selectedShipment.id,
           sku: value,
-          qty: 1,
+          qty: qty || 1,
           packageCode: reception.openPackage?.package_code
         });
       } else {

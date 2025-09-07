@@ -241,7 +241,7 @@ export function PreparationTab() {
     createShipmentMutation.mutate(formData);
   };
 
-  const handleScan = (sku: string) => {
+  const handleScan = (sku: string, qty: number) => {
     if (!packageCode.trim()) {
       toast({
         title: 'Colis non défini',
@@ -250,7 +250,7 @@ export function PreparationTab() {
       });
       return;
     }
-    addItemMutation.mutate({ sku, qty: 1, packageCode });
+    addItemMutation.mutate({ sku, qty, packageCode });
   };
 
   const canShip = currentShipment?.status === 'packed' && 
