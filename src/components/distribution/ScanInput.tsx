@@ -9,6 +9,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+interface StockItem {
+  id: string;
+  name: string;
+  reference: string | null;
+}
+
 interface ScanInputProps {
   onScan: (value: string, qty: number) => void;
   disabled?: boolean;
@@ -23,13 +29,13 @@ export function ScanInput({
   const [inputValue, setInputValue] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [isCameraMode, setIsCameraMode] = useState(false);
-  const [filteredItems, setFilteredItems] = useState<any[]>([]);
+  const [filteredItems, setFilteredItems] = useState<StockItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const { isNative } = useMobileCapacitor();
   const { user } = useAuth();
 
   // Récupérer les articles du stock pour l'autocomplétion
-  const { data: stockItems = [] } = useQuery({
+  const { data: stockItems = [] } = useQuery<StockItem[]>({
     queryKey: ['stock-items-scan', user?.baseId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -57,7 +63,7 @@ export function ScanInput({
     if (value.length >= 2) {
       const search = value.toLowerCase();
       const matches = stockItems
-        .filter((item: any) =>
+        .filter((item) =>
           item.reference?.toLowerCase().includes(search) ||
           item.name.toLowerCase().includes(search)
         )
@@ -68,7 +74,7 @@ export function ScanInput({
     }
   };
 
-  const handleSelect = (item: any) => {
+  const handleSelect = (item: StockItem) => {
     if (disabled) return;
     onScan(item.reference, quantity);
     setInputValue('');
@@ -169,7 +175,7 @@ export function ScanInput({
                 {filteredItems.length > 0 && (
                   <Card className="absolute z-50 top-full left-0 right-0 mt-1 max-h-60 overflow-auto">
                     <div className="p-1">
-                      {filteredItems.map((item: any) => (
+                      {filteredItems.map((item) => (
                         <Button
                           key={item.id}
                           type="button"
