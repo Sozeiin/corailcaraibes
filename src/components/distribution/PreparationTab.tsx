@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,9 +11,9 @@ import { toast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScanInput } from '@/components/distribution/ScanInput';
-import { ItemsList } from '@/components/distribution/ItemsList';
+import { PackagesList } from '@/components/distribution/PackagesList';
 import { useAuth } from '@/contexts/AuthContext';
-import { Package, Plus, Send, QrCode } from 'lucide-react';
+import { Package, Plus, Send } from 'lucide-react';
 
 interface ShipmentFormData {
   sourceBaseId: string;
@@ -64,7 +64,6 @@ export function PreparationTab() {
     notes: ''
   });
   const [packageCode, setPackageCode] = useState('');
-  const [showPackageInput, setShowPackageInput] = useState(false);
 
   // Fetch bases for selection
   const { data: bases = [] } = useQuery({
@@ -84,12 +83,29 @@ export function PreparationTab() {
     queryKey: ['shipment-items', currentShipment?.id],
     queryFn: async () => {
       if (!currentShipment?.id) return [];
-      
+
       const { data, error } = await supabase
         .from('shipment_items')
         .select('*')
         .eq('shipment_id', currentShipment.id);
-      
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!currentShipment?.id
+  });
+
+  // Fetch shipment packages
+  const { data: packages = [], refetch: refetchPackages } = useQuery({
+    queryKey: ['shipment-packages', currentShipment?.id],
+    queryFn: async () => {
+      if (!currentShipment?.id) return [];
+
+      const { data, error } = await supabase
+        .from('shipment_packages')
+        .select('*')
+        .eq('shipment_id', currentShipment.id);
+
       if (error) throw error;
       return data;
     },
@@ -149,9 +165,10 @@ export function PreparationTab() {
     },
     onSuccess: () => {
       refetchItems();
+      refetchPackages();
       toast({
         title: 'Article ajouté',
-        description: 'L\'article a été ajouté à l\'expédition.'
+        description: 'L\'article a été ajouté au colis.'
       });
     },
     onError: (error) => {
@@ -177,8 +194,8 @@ export function PreparationTab() {
     onSuccess: () => {
       setCurrentShipment(prev => prev ? { ...prev, status: 'packed' } : null);
       toast({
-        title: 'Colis fermé',
-        description: 'Le colis est prêt pour l\'expédition.'
+        title: 'Préparation terminée',
+        description: 'Tous les colis sont prêts pour l\'expédition.'
       });
     }
   });
@@ -225,21 +242,15 @@ export function PreparationTab() {
   };
 
   const handleScan = (sku: string) => {
-    addItemMutation.mutate({ sku, qty: 1, packageCode: packageCode || undefined });
-  };
-
-  const handlePackageCodeSubmit = () => {
     if (!packageCode.trim()) {
       toast({
-        title: 'Erreur',
-        description: 'Veuillez saisir un code de colis.',
+        title: 'Colis non défini',
+        description: 'Veuillez saisir un code de colis avant de scanner.',
         variant: 'destructive'
       });
       return;
     }
-    
-    packShipmentMutation.mutate();
-    setShowPackageInput(false);
+    addItemMutation.mutate({ sku, qty: 1, packageCode });
   };
 
   const canShip = currentShipment?.status === 'packed' && 
@@ -373,45 +384,35 @@ export function PreparationTab() {
 
           {currentShipment.status === 'draft' && (
             <>
-              <ScanInput onScan={handleScan} disabled={addItemMutation.isPending} />
-              
-              <ItemsList 
-                items={shipmentItems}
-                onQuantityChange={(itemId, newQty) => {
-                  // TODO: Implement quantity update
-                }}
-                showPackageCode
-              />
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="packageCode">Code du colis en cours</Label>
+                  <Input
+                    id="packageCode"
+                    value={packageCode}
+                    onChange={(e) => setPackageCode(e.target.value)}
+                    placeholder="Ex: G27"
+                  />
+                </div>
+                <div>
+                  <ScanInput
+                    onScan={handleScan}
+                    disabled={addItemMutation.isPending || !packageCode.trim()}
+                  />
+                </div>
+              </div>
+
+              <PackagesList packages={packages} items={shipmentItems} />
 
               <Separator />
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                {!showPackageInput ? (
-                  <Button
-                    onClick={() => setShowPackageInput(true)}
-                    disabled={shipmentItems.length === 0}
-                    variant="outline"
-                  >
-                    <QrCode className="w-4 h-4 mr-2" />
-                    Fermer le colis
-                  </Button>
-                ) : (
-                  <div className="flex gap-2 flex-1">
-                    <Input
-                      value={packageCode}
-                      onChange={(e) => setPackageCode(e.target.value)}
-                      placeholder="Code du colis (ex: G27)"
-                      className="flex-1"
-                    />
-                    <Button onClick={handlePackageCodeSubmit} disabled={packShipmentMutation.isPending}>
-                      Valider
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowPackageInput(false)}>
-                      Annuler
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <Button
+                onClick={() => packShipmentMutation.mutate()}
+                disabled={packShipmentMutation.isPending || shipmentItems.length === 0}
+                className="w-full sm:w-auto"
+              >
+                Terminer la préparation
+              </Button>
             </>
           )}
 
@@ -419,10 +420,10 @@ export function PreparationTab() {
             <div className="space-y-4">
               <div className="bg-green-50 dark:bg-green-950 p-4 rounded-lg">
                 <p className="text-green-800 dark:text-green-200 font-medium">
-                  ✅ Colis fermé et prêt pour l'expédition
+                  ✅ Préparation terminée
                 </p>
                 <p className="text-green-600 dark:text-green-400 text-sm mt-1">
-                  {shipmentItems.length} article(s) dans ce colis
+                  {packages.length} colis - {shipmentItems.length} article(s)
                 </p>
               </div>
 
