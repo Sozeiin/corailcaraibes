@@ -89,6 +89,7 @@ export function ReceptionTab() {
     },
     onSuccess: () => {
       refetchShipments();
+      queryClient.invalidateQueries({ queryKey: ['stock-items'] });
       toast({
         title: 'Article reçu',
         description: 'L\'article a été ajouté au stock de destination.'
