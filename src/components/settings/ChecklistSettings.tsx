@@ -436,37 +436,6 @@ export function ChecklistSettings() {
     deleteMutation.mutate(id);
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'ok':
-        return 'default';
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'ok':
-        return 'default';
-      case 'needs_repair':
-        return 'destructive';
-      case 'not_checked':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'ok':
-        return 'OK';
-      case 'needs_repair':
-        return 'À réparer';
-      case 'not_checked':
-        return 'Non vérifié';
-      default:
-        return status;
-    }
-  };
 
   const categories = [...new Set(checklistItems.map(item => item.category).filter(Boolean))];
   
