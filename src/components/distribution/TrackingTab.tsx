@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { Search, Package, Truck, ExternalLink, Download, QrCode } from 'lucide-react';
+import { Search, Package, Truck, ExternalLink, Download } from 'lucide-react';
+import { ItemsList } from '@/components/distribution/ItemsList';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -150,10 +150,6 @@ export function TrackingTab() {
     }
   };
 
-  const generateQRCode = (shipmentId: string, packageCode: string) => {
-    return `${shipmentId}|${packageCode}`;
-  };
-
   const handlePrintLabel = (shipmentId: string, packageCode: string) => {
     // TODO: Implement PDF generation
     console.log('Impression étiquette:', { shipmentId, packageCode });
@@ -227,66 +223,27 @@ export function TrackingTab() {
         {shipmentDetails?.packages && shipmentDetails.packages.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Colis et étiquettes</CardTitle>
+              <CardTitle>Colis expédiés</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-4">
                 {shipmentDetails.packages.map((pkg) => (
-                  <div key={pkg.id} className="border rounded-lg p-4 space-y-3">
+                  <div key={pkg.id} className="border rounded-lg p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-semibold">Colis {pkg.package_code}</h4>
-                      <QrCode className="w-5 h-5 text-muted-foreground" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePrintLabel(selectedShipment.id, pkg.package_code)}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Étiquette
+                      </Button>
                     </div>
-                    
-                    <div className="text-sm">
-                      <p className="text-muted-foreground">QR Code Data:</p>
-                      <p className="font-mono text-xs break-all">
-                        {generateQRCode(selectedShipment.id, pkg.package_code)}
-                      </p>
-                    </div>
-
-                    <div className="text-sm">
-                      <p className="text-muted-foreground">Articles:</p>
-                      <p className="font-medium">
-                        {shipmentDetails.items?.filter(item => item.package_id === pkg.id).length || 0} article(s)
-                      </p>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePrintLabel(selectedShipment.id, pkg.package_code)}
-                      className="w-full"
-                    >
-                      <Download className="w-4 h-4 mr-2" />
-                      Imprimer étiquette
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {shipmentDetails?.items && shipmentDetails.items.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Articles expédiés</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {shipmentDetails.items.map((item) => (
-                  <div key={item.id} className="flex justify-between items-center p-3 border rounded">
-                    <div>
-                      <p className="font-medium">{item.product_label || item.sku}</p>
-                      <p className="text-sm text-muted-foreground">SKU: {item.sku}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-medium">Qté: {item.qty}</p>
-                      {item.received_qty !== undefined && (
-                        <p className="text-sm text-muted-foreground">Reçu: {item.received_qty}</p>
-                      )}
-                    </div>
+                    <ItemsList
+                      items={shipmentDetails.items?.filter(item => item.package_id === pkg.id) || []}
+                      readOnly
+                    />
                   </div>
                 ))}
               </div>

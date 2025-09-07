@@ -24,7 +24,7 @@ export default function Distribution() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="preparation" className="flex items-center gap-1 sm:gap-2">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Préparer & scanner</span>
+            <span className="hidden sm:inline">Préparer</span>
             <span className="sm:hidden">Préparer</span>
           </TabsTrigger>
           <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2">
@@ -44,10 +44,10 @@ export default function Distribution() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Préparation et scan des expéditions
+                Préparation des expéditions
               </CardTitle>
               <CardDescription>
-                Créez un envoi, scannez les articles et préparez les colis pour l'expédition
+                Créez un envoi, scannez les articles et organisez-les dans des colis
               </CardDescription>
             </CardHeader>
             <CardContent>
