@@ -200,16 +200,16 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                      {boatId && boatComponents.length > 0 && (
                        <div>
                          <Label>Composant</Label>
-                         <Select 
-                           value={part.componentId || ''} 
-                           onValueChange={(value) => updatePart(index, 'componentId', value || undefined)}
-                           disabled={disabled}
-                         >
-                           <SelectTrigger>
-                             <SelectValue placeholder="Sélectionner un composant" />
-                           </SelectTrigger>
-                           <SelectContent>
-                             <SelectItem value="">Aucun composant</SelectItem>
+                          <Select 
+                            value={part.componentId || 'none'} 
+                            onValueChange={(value) => updatePart(index, 'componentId', value === 'none' ? undefined : value)}
+                            disabled={disabled}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner un composant" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">Aucun composant</SelectItem>
                              {boatComponents.map((component) => (
                                <SelectItem key={component.id} value={component.id}>
                                  {component.component_name} ({component.component_type})
