@@ -131,7 +131,7 @@ function AppRoutes() {
         path="/distribution"
         element={
           <ProtectedRoute>
-            <PermissionGate page="stock">
+            <PermissionGate page="distribution">
               <Distribution />
             </PermissionGate>
           </ProtectedRoute>

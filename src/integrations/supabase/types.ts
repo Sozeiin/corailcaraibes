@@ -4147,6 +4147,7 @@ export type Database = {
         | "orders"
         | "stock"
         | "stock_scanner"
+        | "distribution"
         | "maintenance"
         | "maintenance_gantt"
         | "maintenance_history"
@@ -4343,6 +4344,7 @@ export const Constants = {
         "orders",
         "stock",
         "stock_scanner",
+        "distribution",
         "maintenance",
         "maintenance_gantt",
         "maintenance_history",

@@ -10,6 +10,7 @@ export type PagePermission =
   | 'orders'
   | 'stock'
   | 'stock_scanner'
+  | 'distribution'
   | 'maintenance'
   | 'maintenance_gantt'
   | 'maintenance_history'
@@ -25,6 +26,7 @@ export const PAGE_PERMISSIONS: Record<PagePermission, string> = {
   orders: 'Commandes',
   stock: 'Stock',
   stock_scanner: 'Scanner stock',
+  distribution: 'Distribution',
   maintenance: 'Maintenance',
   maintenance_gantt: 'Planning Gantt',
   maintenance_history: 'Historique maintenance',
