@@ -46,7 +46,7 @@ export const Header = () => {
           <div className="w-5 h-5 sm:w-6 sm:h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <span className="text-white font-bold text-xs lg:text-sm">CC</span>
           </div>
-          <h1 className="text-xs sm:text-lg lg:text-xl font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
+          <h1 className="text-xs sm:text-lg lg:text-xl h1-responsive font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
         </div>
       </div>
 
