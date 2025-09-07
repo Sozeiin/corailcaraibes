@@ -37,14 +37,16 @@ export const Layout = ({
   }
 
   // Pour les pages authentifiées, on affiche le layout complet
-  return <SidebarProvider defaultOpen={false}>
+  return <SidebarProvider defaultOpen={!isNative}>
       <MobileOfflineBar />
-      <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50 md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl mx-auto px-4 md:px-6 lg:px-8">
+      <div className="min-h-screen flex flex-col lg:flex-row w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
-          <main className="flex-1 overflow-y-auto p-2 md:p-4 lg:p-6 bg-slate-50">
-            {children}
+          <main className="flex-1 overflow-y-auto p-4 lg:p-6 xl:p-8 bg-background">
+            <div className="max-w-none mx-auto">
+              {children}
+            </div>
           </main>
         </div>
         <MobileQuickActions />
