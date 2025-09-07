@@ -39,11 +39,11 @@ export const Layout = ({
   // Pour les pages authentifiées, on affiche le layout complet
   return <SidebarProvider defaultOpen={false}>
       <MobileOfflineBar />
-      <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50">
+      <div className="min-h-screen flex flex-col sm:flex-row w-full bg-slate-50 md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl mx-auto px-4 md:px-6 lg:px-8">
         <AppSidebar />
         <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <Header />
-          <main className="flex-1 overflow-y-auto p-2 sm:p-4 lg:p-6 bg-slate-50">
+          <main className="flex-1 overflow-y-auto p-2 md:p-4 lg:p-6 bg-slate-50">
             {children}
           </main>
         </div>
