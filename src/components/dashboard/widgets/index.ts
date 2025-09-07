@@ -42,7 +42,7 @@ export const AVAILABLE_WIDGETS: Widget[] = [
   {
     id: 'quick-actions',
     type: 'quick-actions',
-    ,
+    title: 'Actions Rapides',
     description: 'Boutons d\'accès rapide aux fonctionnalités principales',
     icon: 'Zap',
     component: QuickActionsWidget,
