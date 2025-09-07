@@ -81,8 +81,12 @@ export function ChecklistInspection({
     const total = checklistItems.length;
     const checked = checklistItems.filter(item => item.status !== 'not_checked').length;
     const needsRepair = checklistItems.filter(item => item.status === 'needs_repair').length;
+    const mandatory = checklistItems.filter(item => item.isRequired).length;
+    const mandatoryCompleted = checklistItems.filter(item => 
+      item.isRequired && (item.status === 'ok' || item.status === 'needs_repair')
+    ).length;
     
-    return { total, checked, needsRepair };
+    return { total, checked, needsRepair, mandatory, mandatoryCompleted };
   };
 
   const stats = getCompletionStats();
@@ -164,7 +168,7 @@ export function ChecklistInspection({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-4 text-center">
+          <div className="grid grid-cols-4 gap-4 text-center">
             <div>
               <div className="text-2xl font-bold text-primary">{stats.checked}</div>
               <div className="text-sm text-muted-foreground">Vérifiés</div>
@@ -172,6 +176,10 @@ export function ChecklistInspection({
             <div>
               <div className="text-2xl font-bold text-orange-600">{stats.needsRepair}</div>
               <div className="text-sm text-muted-foreground">À réparer</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-red-600">{stats.mandatoryCompleted}/{stats.mandatory}</div>
+              <div className="text-sm text-muted-foreground">Obligatoires</div>
             </div>
             <div>
               <div className="text-2xl font-bold text-muted-foreground">{stats.total - stats.checked}</div>
@@ -235,13 +243,16 @@ export function ChecklistInspection({
 
       {/* Completion Warning */}
       {!isComplete && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-red-200 bg-red-50">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 text-orange-800">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm">
-                Veuillez vérifier tous les éléments avant de passer à l'étape suivante.
-              </span>
+            <div className="flex items-center gap-2 text-red-800">
+              <AlertTriangle className="h-4 w-4" />
+              <div>
+                <div className="font-medium text-sm">Éléments obligatoires manquants</div>
+                <div className="text-sm">
+                  {stats.mandatory - stats.mandatoryCompleted} élément(s) obligatoire(s) doivent être vérifiés (OK ou Problème) avant de continuer.
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

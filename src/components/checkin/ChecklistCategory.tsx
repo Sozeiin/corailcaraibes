@@ -106,12 +106,12 @@ export function ChecklistCategory({
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2 flex-1">
                     {item.isRequired && (
-                      <Star className="h-3 w-3 text-orange-500" />
+                      <Star className="h-3 w-3 text-red-500 fill-red-500" />
                     )}
                     <span className="font-medium text-sm">{item.name}</span>
                     {item.isRequired && (
-                      <Badge variant="outline" className="text-xs">
-                        Obligatoire
+                      <Badge variant="destructive" className="text-xs bg-red-100 text-red-800 border-red-300">
+                        OBLIGATOIRE
                       </Badge>
                     )}
                   </div>
@@ -120,17 +120,28 @@ export function ChecklistCategory({
                       variant={item.status === 'ok' ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => onItemStatusChange(item.id, 'ok')}
-                      className={`h-8 px-2 ${item.status === 'ok' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                      className={`h-8 px-3 ${item.status === 'ok' ? 'bg-green-500 hover:bg-green-600' : ''}`}
                     >
-                      <CheckCircle className="h-3 w-3" />
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      OK
                     </Button>
                     <Button
                       variant={item.status === 'needs_repair' ? 'destructive' : 'outline'}
                       size="sm"
                       onClick={() => onItemStatusChange(item.id, 'needs_repair')}
-                      className="h-8 px-2"
+                      className="h-8 px-3"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 mr-1" />
+                      Problème
+                    </Button>
+                    <Button
+                      variant={item.status === 'not_checked' ? 'secondary' : 'outline'}
+                      size="sm"
+                      onClick={() => onItemStatusChange(item.id, 'not_checked')}
+                      className={`h-8 px-3 ${item.status === 'not_checked' ? 'bg-amber-100 text-amber-800 border-amber-300' : ''}`}
+                    >
+                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      Non vérifié
                     </Button>
                     <Button
                       variant="ghost"
@@ -138,7 +149,7 @@ export function ChecklistCategory({
                       onClick={() => toggleItemExpansion(item.id)}
                       className="h-8 px-2"
                     >
-                      <AlertTriangle className="h-3 w-3" />
+                      📝
                     </Button>
                   </div>
                 </div>

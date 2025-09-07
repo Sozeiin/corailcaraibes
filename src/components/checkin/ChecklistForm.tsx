@@ -18,6 +18,7 @@ import { useSignatureUpload } from '@/hooks/useSignatureUpload';
 import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSteps } from './ChecklistSteps';
 import { ChecklistInspection } from './ChecklistInspection';
+import { ChecklistReviewStep } from './ChecklistReviewStep';
 import { SignatureStep } from './SignatureStep';
 import { EmailStep } from './EmailStep';
 import { useCreateIntervention } from '@/hooks/useCreateIntervention';
@@ -37,7 +38,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [generalNotes, setGeneralNotes] = useState('');
   const [overallStatus, setOverallStatus] = useState<'ok' | 'needs_attention' | 'major_issues'>('ok');
-  const [currentStep, setCurrentStep] = useState<'checklist' | 'signatures' | 'email'>('checklist');
+  const [currentStep, setCurrentStep] = useState<'checklist' | 'review' | 'signatures' | 'email'>('checklist');
   const [technicianSignature, setTechnicianSignature] = useState<string>('');
   const [customerSignature, setCustomerSignature] = useState<string>('');
   const [customerEmail, setCustomerEmail] = useState(rentalData?.customerEmail || '');
@@ -113,6 +114,14 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const isStepComplete = (step: string) => {
     switch (step) {
       case 'checklist':
+        // Vérifie que tous les éléments obligatoires sont OK ou needs_repair
+        const mandatoryItems = checklistItems.filter(item => item.isRequired);
+        const mandatoryCompleted = mandatoryItems.every(item => 
+          item.status === 'ok' || item.status === 'needs_repair'
+        );
+        return mandatoryCompleted;
+      case 'review':
+        // Tous les éléments doivent être vérifiés (pas de 'not_checked')
         return checklistItems.every(item => item.status !== 'not_checked');
       case 'signatures':
         return technicianSignature && customerSignature;
@@ -127,28 +136,67 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     return isStepComplete(currentStep);
   };
 
-  const handleNextStep = () => {
-    if (!canProceedToNext()) {
-      toast({
-        title: 'Étape incomplète',
-        description: 'Veuillez compléter toutes les vérifications requises.',
-        variant: 'destructive',
-      });
-      return;
-    }
+  const shouldShowReviewStep = () => {
+    // Affiche l'étape de revérification s'il y a des éléments non vérifiés
+    return checklistItems.some(item => item.status === 'not_checked');
+  };
 
-    const steps = ['checklist', 'signatures', 'email'] as const;
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
+  const getNextStep = () => {
+    const hasUnverified = shouldShowReviewStep();
+    
+    switch (currentStep) {
+      case 'checklist':
+        return hasUnverified ? 'review' : 'signatures';
+      case 'review':
+        return 'signatures';
+      case 'signatures':
+        return 'email';
+      default:
+        return 'email';
     }
   };
 
+  const handleNextStep = () => {
+    if (!canProceedToNext()) {
+      const mandatoryIncomplete = checklistItems.filter(item => 
+        item.isRequired && item.status === 'not_checked'
+      );
+      
+      if (mandatoryIncomplete.length > 0) {
+        toast({
+          title: 'Éléments obligatoires manquants',
+          description: `${mandatoryIncomplete.length} élément(s) obligatoire(s) doivent être vérifiés avant de continuer.`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Étape incomplète',
+          description: 'Veuillez compléter toutes les vérifications requises.',
+          variant: 'destructive',
+        });
+      }
+      return;
+    }
+
+    const nextStep = getNextStep();
+    setCurrentStep(nextStep);
+  };
+
   const handlePreviousStep = () => {
-    const steps = ['checklist', 'signatures', 'email'] as const;
-    const currentIndex = steps.indexOf(currentStep);
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
+    const hasUnverified = shouldShowReviewStep();
+    
+    switch (currentStep) {
+      case 'review':
+        setCurrentStep('checklist');
+        break;
+      case 'signatures':
+        setCurrentStep(hasUnverified ? 'review' : 'checklist');
+        break;
+      case 'email':
+        setCurrentStep('signatures');
+        break;
+      default:
+        break;
     }
   };
 
@@ -416,7 +464,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     );
   }
 
-  const isComplete = isStepComplete('checklist') && isStepComplete('signatures') && isStepComplete('email');
+  const isComplete = isStepComplete('checklist') && isStepComplete('review') && isStepComplete('signatures') && isStepComplete('email');
 
   return (
     <Card>
@@ -442,6 +490,14 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             onGeneralNotesChange={setGeneralNotes}
             overallStatus={overallStatus}
             isComplete={isStepComplete('checklist')}
+          />
+        )}
+
+        {currentStep === 'review' && (
+          <ChecklistReviewStep
+            checklistItems={checklistItems}
+            onItemStatusChange={handleItemStatusChange}
+            onItemNotesChange={handleItemNotesChange}
           />
         )}
 
