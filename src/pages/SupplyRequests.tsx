@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Package, Clock, CheckCircle, XCircle, Truck, Eye } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { SupplyRequestDialog } from '@/components/supply/SupplyRequestDialog';
 import { SupplyRequestDetailsDialog } from '@/components/supply/SupplyRequestDetailsDialog';
 import { SupplyRequestFilters } from '@/components/supply/SupplyRequestFilters';
@@ -43,7 +42,6 @@ export interface SupplyRequest {
 
 export default function SupplyRequests() {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -55,15 +53,16 @@ export default function SupplyRequests() {
 
   // Fetch supply requests
   const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ['supply-requests', statusFilter, urgencyFilter, searchTerm],
+    queryKey: ['supply-requests', user?.role, user?.baseId, statusFilter, urgencyFilter, searchTerm],
+    enabled: !!user,
     queryFn: async () => {
       let query = supabase
         .from('supply_requests')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (user?.role !== 'direction') {
-        query = query.eq('base_id', user?.baseId);
+      if (user?.role !== 'direction' && user?.baseId) {
+        query = query.eq('base_id', user.baseId);
       }
 
       if (statusFilter !== 'all') {
@@ -80,7 +79,31 @@ export default function SupplyRequests() {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+
+      const requests = data || [];
+
+      const requesterIds = Array.from(
+        new Set(requests.map((r) => r.requested_by).filter(Boolean))
+      );
+
+      let requesterMap: Record<string, string> = {};
+      if (requesterIds.length > 0) {
+        const { data: profiles, error: profileError } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', requesterIds);
+
+        if (!profileError && profiles) {
+          requesterMap = Object.fromEntries(
+            profiles.map((p: any) => [p.id, p.name])
+          );
+        }
+      }
+
+      return requests.map((r: any) => ({
+        ...r,
+        requester: { name: requesterMap[r.requested_by] || '' },
+      }));
     },
   });
 
@@ -212,7 +235,7 @@ export default function SupplyRequests() {
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                  Demandé par: Utilisateur
+                  Demandé par: {request.requester?.name || 'N/A'}
                 </div>
 
                 <div className="text-xs text-muted-foreground">
