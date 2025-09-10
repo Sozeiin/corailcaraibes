@@ -420,86 +420,85 @@ export function SupplierQuotesHistory({ supplier }: SupplierQuotesHistoryProps) 
 
       {/* Quotes Table */}
       {quotes.length > 0 ? (
-        <div className="overflow-x-auto">
-          <Table className="min-w-[800px]">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="min-w-[200px]">Article</TableHead>
-              <TableHead className="min-w-[120px]">Référence devis</TableHead>
-              <TableHead className="min-w-[100px]">Prix unitaire</TableHead>
-              <TableHead className="min-w-[80px]">Qté min</TableHead>
-              <TableHead className="min-w-[90px]">Date</TableHead>
-              <TableHead className="min-w-[90px]">Validité</TableHead>
-              <TableHead className="min-w-[70px]">Délai</TableHead>
-              <TableHead className="min-w-[100px]">Statut</TableHead>
-              <TableHead className="text-right min-w-[120px]">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {quotes.map((quote) => (
-              <TableRow key={quote.id}>
-                <TableCell>
-                  <div>
-                    <div className="font-medium">{quote.stock_item.name}</div>
-                    {quote.stock_item.reference && (
-                      <div className="text-sm text-muted-foreground">
-                        Ref: {quote.stock_item.reference}
+        <div className="overflow-x-hidden">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Article</TableHead>
+                <TableHead className="hidden sm:table-cell">Référence devis</TableHead>
+                <TableHead>Prix unitaire</TableHead>
+                <TableHead className="hidden md:table-cell">Qté min</TableHead>
+                <TableHead className="hidden lg:table-cell">Date</TableHead>
+                <TableHead className="hidden lg:table-cell">Validité</TableHead>
+                <TableHead className="hidden xl:table-cell">Délai</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead className="text-right hidden sm:table-cell">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {quotes.map((quote) => (
+                <TableRow key={quote.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{quote.stock_item.name}</div>
+                      {quote.stock_item.reference && (
+                        <div className="text-sm text-muted-foreground">
+                          Ref: {quote.stock_item.reference}
+                        </div>
+                      )}
+                      {quote.stock_item.category && (
+                        <Badge variant="outline" className="text-xs">
+                          {quote.stock_item.category}
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell">
+                    {quote.quote_number || '-'}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {quote.unit_price.toFixed(2)} {quote.currency}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{quote.minimum_quantity}</TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {new Date(quote.quote_date).toLocaleDateString('fr-FR')}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {quote.validity_date
+                      ? new Date(quote.validity_date).toLocaleDateString('fr-FR')
+                      : '-'}
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell">{quote.delivery_days} j.</TableCell>
+                  <TableCell>{getStatusBadge(quote.status)}</TableCell>
+                  <TableCell className="text-right hidden sm:table-cell">
+                    {quote.status === 'received' && (
+                      <div className="flex justify-end space-x-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateQuoteStatusMutation.mutate({
+                            quoteId: quote.id,
+                            status: 'selected'
+                          })}
+                        >
+                          <CheckCircle className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateQuoteStatusMutation.mutate({
+                            quoteId: quote.id,
+                            status: 'rejected'
+                          })}
+                        >
+                          <XCircle className="h-3 w-3" />
+                        </Button>
                       </div>
                     )}
-                    {quote.stock_item.category && (
-                      <Badge variant="outline" className="text-xs">
-                        {quote.stock_item.category}
-                      </Badge>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {quote.quote_number || '-'}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {quote.unit_price.toFixed(2)} {quote.currency}
-                </TableCell>
-                <TableCell>{quote.minimum_quantity}</TableCell>
-                <TableCell>
-                  {new Date(quote.quote_date).toLocaleDateString('fr-FR')}
-                </TableCell>
-                <TableCell>
-                  {quote.validity_date 
-                    ? new Date(quote.validity_date).toLocaleDateString('fr-FR')
-                    : '-'
-                  }
-                </TableCell>
-                <TableCell>{quote.delivery_days} j.</TableCell>
-                <TableCell>{getStatusBadge(quote.status)}</TableCell>
-                <TableCell className="text-right">
-                  {quote.status === 'received' && (
-                    <div className="flex justify-end space-x-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateQuoteStatusMutation.mutate({ 
-                          quoteId: quote.id, 
-                          status: 'selected' 
-                        })}
-                      >
-                        <CheckCircle className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => updateQuoteStatusMutation.mutate({ 
-                          quoteId: quote.id, 
-                          status: 'rejected' 
-                        })}
-                      >
-                        <XCircle className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
           </Table>
         </div>
       ) : (
