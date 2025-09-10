@@ -4042,6 +4042,14 @@ export type Database = {
         }
         Returns: Json
       }
+      link_stock_scan_to_supply_request: {
+        Args: {
+          stock_item_id_param: string
+          request_id_param: string
+          quantity_received_param: number
+        }
+        Returns: Json
+      }
       mark_shipped: {
         Args: { p_shipment_id: string }
         Returns: boolean

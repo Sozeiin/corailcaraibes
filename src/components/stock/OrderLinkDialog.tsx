@@ -61,12 +61,12 @@ export function OrderLinkDialog({
     enabled: isOpen && !!stockItemId,
   });
 
-  const handleLinkToOrder = async (requestId: string) => {
+  const handleLinkToRequest = async (requestId: string) => {
     setIsLinking(true);
     try {
-      const { data, error } = await supabase.rpc('link_stock_scan_to_order', {
+      const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
         stock_item_id_param: stockItemId,
-        order_id_param: requestId,
+        request_id_param: requestId,
         quantity_received_param: quantityReceived
       });
 
@@ -138,7 +138,7 @@ export function OrderLinkDialog({
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => handleLinkToOrder(request.id)}
+                        onClick={() => handleLinkToRequest(request.id)}
                         disabled={isLinking}
                         className="flex items-center gap-1"
                       >
