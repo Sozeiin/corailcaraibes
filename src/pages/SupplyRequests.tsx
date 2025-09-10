@@ -52,62 +52,99 @@ export default function SupplyRequests() {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch supply requests
-  const { data: requests = [], isLoading, refetch } = useQuery({
-    queryKey: ['supply-requests', statusFilter, urgencyFilter, searchTerm],
+  const { data: requests = [], isLoading, refetch, error } = useQuery({
+    queryKey: ['supply-requests', statusFilter, urgencyFilter, searchTerm, user?.baseId],
     queryFn: async () => {
-      let query = supabase
-        .from('supply_requests')
-        .select(`
-          *,
-          boat:boats(name),
-          requester:profiles!supply_requests_requested_by_fkey(name)
-        `)
-        .order('created_at', { ascending: false });
+      console.log('Fetching supply requests for user:', { role: user?.role, baseId: user?.baseId });
+      
+      try {
+        // Simplified query without problematic foreign key join
+        let query = supabase
+          .from('supply_requests')
+          .select(`
+            *,
+            boat:boats(name)
+          `)
+          .order('created_at', { ascending: false });
 
-      if (user?.role !== 'direction') {
-        query = query.eq('base_id', user?.baseId);
-      }
-
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter);
-      }
-
-      if (urgencyFilter !== 'all') {
-        query = query.eq('urgency_level', urgencyFilter);
-      }
-
-      if (searchTerm) {
-        query = query.or(`item_name.ilike.%${searchTerm}%,request_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      const requests = data || [];
-
-      const requesterIds = Array.from(
-        new Set(requests.map((r) => r.requested_by).filter(Boolean))
-      );
-
-      let requesterMap: Record<string, string> = {};
-      if (requesterIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', requesterIds);
-
-        if (profiles) {
-          requesterMap = Object.fromEntries(
-            profiles.map((p: any) => [p.id, p.name])
-          );
+        // Apply base filter for non-direction users
+        if (user?.role !== 'direction' && user?.baseId) {
+          query = query.eq('base_id', user.baseId);
+          console.log('Filtering by base_id:', user.baseId);
         }
-      }
 
-      return requests.map((r: any) => ({
-        ...r,
-        requester: { name: requesterMap[r.requested_by] || '' },
-      }));
+        // Apply status filter
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter);
+        }
+
+        // Apply urgency filter
+        if (urgencyFilter !== 'all') {
+          query = query.eq('urgency_level', urgencyFilter);
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+          query = query.or(`item_name.ilike.%${searchTerm}%,request_number.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+        }
+
+        const { data: requests, error } = await query;
+        
+        if (error) {
+          console.error('Error fetching supply requests:', error);
+          throw error;
+        }
+
+        console.log('Raw supply requests fetched:', requests?.length || 0);
+
+        if (!requests || requests.length === 0) {
+          return [];
+        }
+
+        // Get unique requester IDs
+        const requesterIds = Array.from(
+          new Set(requests.map((r) => r.requested_by).filter(Boolean))
+        );
+
+        console.log('Requester IDs found:', requesterIds);
+
+        // Fetch profiles separately with error handling
+        let requesterMap: Record<string, string> = {};
+        if (requesterIds.length > 0) {
+          try {
+            const { data: profiles, error: profilesError } = await supabase
+              .from('profiles')
+              .select('id, name')
+              .in('id', requesterIds);
+
+            if (profilesError) {
+              console.warn('Error fetching profiles:', profilesError);
+            } else if (profiles) {
+              requesterMap = Object.fromEntries(
+                profiles.map((p: any) => [p.id, p.name || 'Utilisateur inconnu'])
+              );
+              console.log('Profiles loaded:', Object.keys(requesterMap).length);
+            }
+          } catch (profilesError) {
+            console.warn('Failed to fetch profiles:', profilesError);
+          }
+        }
+
+        // Map requests with profile data
+        const enrichedRequests = requests.map((r: any) => ({
+          ...r,
+          requester: { name: requesterMap[r.requested_by] || 'Utilisateur inconnu' },
+        }));
+
+        console.log('Final enriched requests:', enrichedRequests.length);
+        return enrichedRequests;
+
+      } catch (error) {
+        console.error('Supply requests query failed:', error);
+        throw error;
+      }
     },
+    enabled: !!user, // Only run when user is loaded
   });
 
   const getStatusBadgeVariant = (status: string) => {
