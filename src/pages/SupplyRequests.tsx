@@ -85,24 +85,32 @@ export default function SupplyRequests() {
       const requesterIds = Array.from(
         new Set(requests.map((r) => r.requested_by).filter(Boolean))
       );
+      const boatIds = Array.from(
+        new Set(requests.map((r) => r.boat_id).filter(Boolean))
+      );
 
-      let requesterMap: Record<string, string> = {};
-      if (requesterIds.length > 0) {
-        const { data: profiles, error: profileError } = await supabase
-          .from('profiles')
-          .select('id, name')
-          .in('id', requesterIds);
+      const [profilesRes, boatsRes] = await Promise.all([
+        requesterIds.length
+          ? supabase.from('profiles').select('id, name').in('id', requesterIds)
+          : Promise.resolve({ data: [] as any[], error: null }),
+        boatIds.length
+          ? supabase.from('boats').select('id, name').in('id', boatIds)
+          : Promise.resolve({ data: [] as any[], error: null }),
+      ]);
 
-        if (!profileError && profiles) {
-          requesterMap = Object.fromEntries(
-            profiles.map((p: any) => [p.id, p.name])
-          );
-        }
-      }
+      const requesterMap: Record<string, string> = Object.fromEntries(
+        (profilesRes.data || []).map((p: any) => [p.id, p.name])
+      );
+      const boatMap: Record<string, string> = Object.fromEntries(
+        (boatsRes.data || []).map((b: any) => [b.id, b.name])
+      );
 
       return requests.map((r: any) => ({
         ...r,
-        requester: { name: requesterMap[r.requested_by] || '' },
+        requester: r.requested_by
+          ? { name: requesterMap[r.requested_by] || '' }
+          : undefined,
+        boat: r.boat_id ? { name: boatMap[r.boat_id] || '' } : undefined,
       }));
     },
   });
