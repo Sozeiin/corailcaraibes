@@ -21,9 +21,9 @@ export interface SupplyRequest {
   item_reference?: string;
   description?: string;
   quantity_needed: number;
-  urgency_level: string; // Changed from union type to string
+  urgency_level: string;
   photo_url?: string;
-  status: string; // Changed from union type to string 
+  status: string;
   validated_at?: string;
   validated_by?: string;
   rejection_reason?: string;
@@ -36,7 +36,6 @@ export interface SupplyRequest {
   stock_item_id?: string;
   created_at: string;
   updated_at: string;
-  boat?: { name: string };
   requester?: { name: string };
 }
 
@@ -58,13 +57,10 @@ export default function SupplyRequests() {
       console.log('Fetching supply requests for user:', { role: user?.role, baseId: user?.baseId });
       
       try {
-        // Simplified query without problematic foreign key join
+        // Simplified query - remove boat join since there's no foreign key relationship
         let query = supabase
           .from('supply_requests')
-          .select(`
-            *,
-            boat:boats(name)
-          `)
+          .select('*')
           .order('created_at', { ascending: false });
 
         // Apply base filter for non-direction users

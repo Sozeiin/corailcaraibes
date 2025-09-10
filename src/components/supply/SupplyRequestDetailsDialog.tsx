@@ -134,10 +134,10 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
                 </div>
               )}
 
-              {request.boat && (
+              {request.boat_id && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Bateau concerné</label>
-                  <p className="font-medium">{request.boat.name}</p>
+                  <p className="font-medium">ID: {request.boat_id}</p>
                 </div>
               )}
 
