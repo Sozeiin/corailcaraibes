@@ -32,8 +32,8 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
         currentSupplier = supplier;
       }
 
-      // Get all suppliers who have supplied this item
-      const { data: supplierHistory, error } = await supabase
+      // Get all suppliers who have supplied this item through orders
+      const { data: orderItems, error: orderError } = await supabase
         .from('order_items')
         .select(`
           orders (
@@ -54,15 +54,35 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
         .eq('stock_item_id', stockItem.id)
         .not('orders.supplier_id', 'is', null);
 
-      if (error) throw error;
+      if (orderError) throw orderError;
+
+      // Get suppliers from direct purchase history
+      const { data: purchaseHistory, error: purchaseError } = await supabase
+        .from('component_purchase_history')
+        .select(`
+          purchase_date,
+          supplier:suppliers (
+            id,
+            name,
+            email,
+            phone,
+            address,
+            category
+          )
+        `)
+        .eq('stock_item_id', stockItem.id)
+        .not('supplier_id', 'is', null);
+
+      if (purchaseError) throw purchaseError;
 
       // Process supplier history
       const supplierMap = new Map();
-      supplierHistory?.forEach(item => {
+
+      orderItems?.forEach(item => {
         if (item.orders?.suppliers) {
           const supplier = item.orders.suppliers;
           const supplierId = supplier.id;
-          
+
           if (!supplierMap.has(supplierId)) {
             supplierMap.set(supplierId, {
               ...supplier,
@@ -75,7 +95,7 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
 
           const existing = supplierMap.get(supplierId);
           existing.totalOrders++;
-          
+
           if (item.orders.status === 'delivered') {
             existing.deliveredOrders++;
           }
@@ -83,9 +103,38 @@ export function SupplierHistory({ stockItem }: SupplierHistoryProps) {
           if (item.orders.order_date < existing.firstOrder) {
             existing.firstOrder = item.orders.order_date;
           }
-          
+
           if (item.orders.order_date > existing.lastOrder) {
             existing.lastOrder = item.orders.order_date;
+          }
+        }
+      });
+
+      purchaseHistory?.forEach(item => {
+        if (item.supplier) {
+          const supplier = item.supplier;
+          const supplierId = supplier.id;
+
+          if (!supplierMap.has(supplierId)) {
+            supplierMap.set(supplierId, {
+              ...supplier,
+              firstOrder: item.purchase_date,
+              lastOrder: item.purchase_date,
+              totalOrders: 0,
+              deliveredOrders: 0
+            });
+          }
+
+          const existing = supplierMap.get(supplierId);
+          existing.totalOrders++;
+          existing.deliveredOrders++;
+
+          if (item.purchase_date < existing.firstOrder) {
+            existing.firstOrder = item.purchase_date;
+          }
+
+          if (item.purchase_date > existing.lastOrder) {
+            existing.lastOrder = item.purchase_date;
           }
         }
       });
