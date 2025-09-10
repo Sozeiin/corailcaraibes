@@ -111,8 +111,9 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
         return data.map(item => ({
           id: item.id,
           boatId: item.boat_id,
-          componentName: item.component_name,
-          componentType: item.component_type,
+          // Ensure we always have a string for componentName to prevent runtime errors
+          componentName: item.component_name || '',
+          componentType: item.component_type || '',
           manufacturer: item.manufacturer,
           model: item.model,
           serialNumber: item.serial_number,
@@ -121,7 +122,7 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
           lastMaintenanceDate: item.last_maintenance_date,
           nextMaintenanceDate: item.next_maintenance_date,
           maintenanceIntervalDays: item.maintenance_interval_days,
-          status: item.status,
+          status: item.status || '',
           notes: item.notes,
           createdAt: item.created_at,
           updatedAt: item.updated_at
@@ -138,16 +139,17 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
   const filteredComponents = useMemo(() => {
     console.log('Filtering components with filters:', filters);
     let filtered = [...components];
+    const safeString = (value: string | null | undefined) => value || '';
 
     // Apply search filter
     if (filters.search.trim()) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(component =>
-        component.componentName.toLowerCase().includes(searchLower) ||
-        component.componentType.toLowerCase().includes(searchLower) ||
-        (component.manufacturer && component.manufacturer.toLowerCase().includes(searchLower)) ||
-        (component.model && component.model.toLowerCase().includes(searchLower)) ||
-        (component.serialNumber && component.serialNumber.toLowerCase().includes(searchLower))
+        safeString(component.componentName).toLowerCase().includes(searchLower) ||
+        safeString(component.componentType).toLowerCase().includes(searchLower) ||
+        safeString(component.manufacturer).toLowerCase().includes(searchLower) ||
+        safeString(component.model).toLowerCase().includes(searchLower) ||
+        safeString(component.serialNumber).toLowerCase().includes(searchLower)
       );
     }
 
@@ -164,22 +166,22 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     // Apply sorting
     switch (filters.sortBy) {
       case 'name':
-        filtered.sort((a, b) => a.componentName.localeCompare(b.componentName));
+        filtered.sort((a, b) => safeString(a.componentName).localeCompare(safeString(b.componentName)));
         break;
       case 'name_desc':
-        filtered.sort((a, b) => b.componentName.localeCompare(a.componentName));
+        filtered.sort((a, b) => safeString(b.componentName).localeCompare(safeString(a.componentName)));
         break;
       case 'type':
-        filtered.sort((a, b) => a.componentType.localeCompare(b.componentType));
+        filtered.sort((a, b) => safeString(a.componentType).localeCompare(safeString(b.componentType)));
         break;
       case 'status':
-        filtered.sort((a, b) => a.status.localeCompare(b.status));
+        filtered.sort((a, b) => safeString(a.status).localeCompare(safeString(b.status)));
         break;
       case 'maintenance':
         filtered.sort((a, b) => a.maintenanceIntervalDays - b.maintenanceIntervalDays);
         break;
       default:
-        filtered.sort((a, b) => a.componentName.localeCompare(b.componentName));
+        filtered.sort((a, b) => safeString(a.componentName).localeCompare(safeString(b.componentName)));
     }
 
     console.log(`Filtered ${filtered.length} components from ${components.length} total`);
