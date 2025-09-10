@@ -59,7 +59,11 @@ export default function SupplyRequests() {
     queryFn: async () => {
       let query = supabase
         .from('supply_requests')
-        .select('*')
+        .select(`
+          *,
+          boat:boats(name),
+          requester:profiles!supply_requests_requested_by_fkey(name)
+        `)
         .order('created_at', { ascending: false });
 
       if (user?.role !== 'direction') {
@@ -212,7 +216,7 @@ export default function SupplyRequests() {
                 )}
 
                 <div className="text-xs text-muted-foreground">
-                  Demandé par: Utilisateur
+                  Demandé par: {request.requester?.name || 'N/A'}
                 </div>
 
                 <div className="text-xs text-muted-foreground">
