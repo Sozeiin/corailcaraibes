@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -439,10 +439,14 @@ export function ChecklistSettings() {
 
   const categories = [...new Set(checklistItems.map(item => item.category).filter(Boolean))];
   
-  // Update categories order when categories change
+  // Stabilize categories array to prevent unnecessary re-renders
+  const stableCategories = useMemo(() => categories.sort(), [JSON.stringify(categories.sort())]);
+  
   useEffect(() => {
-    updateOrderWithNewCategories(categories);
-  }, [categories, updateOrderWithNewCategories]);
+    if (stableCategories.length > 0) {
+      updateOrderWithNewCategories(stableCategories);
+    }
+  }, [stableCategories, updateOrderWithNewCategories]);
 
   const ChecklistItemForm = ({ item, onSave, onCancel }: any) => {
     const [formData, setFormData] = useState({

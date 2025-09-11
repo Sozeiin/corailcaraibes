@@ -115,39 +115,40 @@ export function ChecklistCategory({
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="grid grid-cols-2 gap-1 w-20">
                     <Button
                       variant={item.status === 'ok' ? 'default' : 'outline'}
-                      size="sm"
+                      size="icon"
                       onClick={() => onItemStatusChange(item.id, 'ok')}
-                      className={`h-8 px-3 ${item.status === 'ok' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                      className={`h-7 w-7 ${item.status === 'ok' ? 'bg-green-500 hover:bg-green-600' : ''}`}
+                      title="OK"
                     >
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      OK
+                      <CheckCircle className="h-3 w-3" />
                     </Button>
                     <Button
                       variant={item.status === 'needs_repair' ? 'destructive' : 'outline'}
-                      size="sm"
+                      size="icon"
                       onClick={() => onItemStatusChange(item.id, 'needs_repair')}
-                      className="h-8 px-3"
+                      className="h-7 w-7"
+                      title="Problème"
                     >
-                      <X className="h-3 w-3 mr-1" />
-                      Problème
+                      <X className="h-3 w-3" />
                     </Button>
                     <Button
                       variant={item.status === 'not_checked' ? 'secondary' : 'outline'}
-                      size="sm"
+                      size="icon"
                       onClick={() => onItemStatusChange(item.id, 'not_checked')}
-                      className={`h-8 px-3 ${item.status === 'not_checked' ? 'bg-amber-100 text-amber-800 border-amber-300' : ''}`}
+                      className={`h-7 w-7 ${item.status === 'not_checked' ? 'bg-amber-100 text-amber-800 border-amber-300' : ''}`}
+                      title="Non vérifié"
                     >
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                      Non vérifié
+                      <AlertTriangle className="h-3 w-3" />
                     </Button>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="icon"
                       onClick={() => toggleItemExpansion(item.id)}
-                      className="h-8 px-2"
+                      className="h-7 w-7"
+                      title="Annotations"
                     >
                       📝
                     </Button>

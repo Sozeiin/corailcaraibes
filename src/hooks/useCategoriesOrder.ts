@@ -38,12 +38,19 @@ export function useCategoriesOrder() {
 
   // Update order with new categories if they don't exist
   const updateOrderWithNewCategories = (categories: string[]) => {
+    if (categories.length === 0) return;
+    
     const currentOrder = categoriesOrder.length > 0 ? categoriesOrder : [];
     const newCategories = categories.filter(cat => !currentOrder.includes(cat));
     
+    // Only save if there are actually new categories to add
     if (newCategories.length > 0) {
-      const updatedOrder = [...currentOrder.filter(cat => categories.includes(cat)), ...newCategories.sort()];
+      const existingOrderedCategories = currentOrder.filter(cat => categories.includes(cat));
+      const updatedOrder = [...existingOrderedCategories, ...newCategories.sort()];
       saveOrder(updatedOrder);
+    } else if (currentOrder.length === 0 && categories.length > 0) {
+      // Initial setup - save all categories in alphabetical order
+      saveOrder([...categories].sort());
     }
   };
 
