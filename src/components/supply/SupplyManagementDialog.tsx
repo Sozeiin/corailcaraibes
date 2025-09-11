@@ -33,6 +33,112 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
   const queryClient = useQueryClient();
   const [action, setAction] = useState<'approve' | 'reject' | 'order' | 'ship' | null>(null);
 
+  // Function to create purchase history entry
+  const createPurchaseHistoryEntry = async (supplyRequest: SupplyRequest, purchasePrice: number, supplierName: string) => {
+    try {
+      // Get supplier ID from name
+      const { data: suppliers, error: supplierError } = await supabase
+        .from('suppliers')
+        .select('id')
+        .ilike('name', supplierName)
+        .limit(1);
+
+      if (supplierError) {
+        console.warn('Could not find supplier:', supplierError);
+      }
+
+      const supplierId = suppliers?.[0]?.id;
+
+      // Find or create stock item
+      let stockItemId = supplyRequest.stock_item_id;
+      
+      if (!stockItemId) {
+        // Try to find existing stock item by name and base
+        const { data: existingStockItems } = await supabase
+          .from('stock_items')
+          .select('id')
+          .eq('name', supplyRequest.item_name)
+          .eq('base_id', supplyRequest.base_id)
+          .limit(1);
+
+        if (existingStockItems && existingStockItems.length > 0) {
+          stockItemId = existingStockItems[0].id;
+        } else {
+          // Create new stock item
+          const { data: newStockItem, error: stockError } = await supabase
+            .from('stock_items')
+            .insert({
+              name: supplyRequest.item_name,
+              reference: supplyRequest.item_reference,
+              category: 'Approvisionnement',
+              quantity: 0, // Will be updated when received
+              min_threshold: 1,
+              unit: 'pièce',
+              base_id: supplyRequest.base_id,
+            })
+            .select('id')
+            .single();
+
+          if (stockError) {
+            console.error('Error creating stock item:', stockError);
+            return;
+          }
+          stockItemId = newStockItem.id;
+        }
+
+        // Update supply request with stock_item_id
+        await supabase
+          .from('supply_requests')
+          .update({ stock_item_id: stockItemId })
+          .eq('id', supplyRequest.id);
+      }
+
+      // Create purchase history entry
+      const purchaseHistoryData: any = {
+        stock_item_id: stockItemId,
+        supplier_id: supplierId,
+        purchase_date: new Date().toISOString().split('T')[0],
+        unit_cost: purchasePrice,
+        quantity: supplyRequest.quantity_needed,
+        total_cost: purchasePrice * supplyRequest.quantity_needed,
+        warranty_months: 12, // Default warranty
+        notes: `Achat via demande d'approvisionnement ${supplyRequest.request_number}`,
+      };
+
+      // If linked to a boat, add component relationship
+      if (supplyRequest.boat_id) {
+        // Try to find a matching component based on item name
+        const { data: components } = await supabase
+          .from('boat_components')
+          .select('id')
+          .eq('boat_id', supplyRequest.boat_id)
+          .ilike('component_name', `%${supplyRequest.item_name}%`)
+          .limit(1);
+
+        if (components && components.length > 0) {
+          purchaseHistoryData.component_id = components[0].id;
+        }
+      }
+
+      const { error: purchaseError } = await supabase
+        .from('component_purchase_history')
+        .insert(purchaseHistoryData);
+
+      if (purchaseError) {
+        console.error('Error creating purchase history:', purchaseError);
+        toast({
+          title: "Avertissement",
+          description: "La demande a été mise à jour mais l'historique d'achat n'a pas pu être créé.",
+          variant: "destructive",
+        });
+      } else {
+        console.log('Purchase history entry created successfully');
+      }
+    } catch (error) {
+      console.error('Error in createPurchaseHistoryEntry:', error);
+    }
+  };
+
   const form = useForm<FormData>({
     defaultValues: {
       status: '',
@@ -44,7 +150,7 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
     },
   });
 
-  // Update supply request mutation
+  // Update supply request mutation with purchase history creation
   const updateMutation = useMutation({
     mutationFn: async (data: Partial<FormData> & { id: string }) => {
       const updateData: any = {
@@ -65,12 +171,18 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
         updateData.shipped_at = new Date().toISOString();
       }
 
-      const { error } = await supabase
+      // Update supply request first
+      const { error: updateError } = await supabase
         .from('supply_requests')
         .update(updateData)
         .eq('id', data.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // If status is 'ordered' and we have purchase details, create purchase history entry
+      if (data.status === 'ordered' && data.purchase_price && data.supplier_name && request) {
+        await createPurchaseHistoryEntry(request, data.purchase_price, data.supplier_name);
+      }
     },
     onSuccess: () => {
       toast({
