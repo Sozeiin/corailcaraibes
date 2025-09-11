@@ -42,7 +42,7 @@ export interface SupplyRequest {
 
 export default function SupplyRequests() {
   const { user } = useAuth();
-  
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isManagementDialogOpen, setIsManagementDialogOpen] = useState(false);
@@ -58,7 +58,11 @@ export default function SupplyRequests() {
     queryFn: async () => {
       let query = supabase
         .from('supply_requests')
-        .select('*')
+        .select(`
+          *,
+          boat:boats(name),
+          requester:profiles!supply_requests_requested_by_fkey(name)
+        `)
         .order('created_at', { ascending: false });
 
       if (user?.role !== 'direction' && user?.baseId) {
@@ -79,39 +83,7 @@ export default function SupplyRequests() {
 
       const { data, error } = await query;
       if (error) throw error;
-
-      const requests = data || [];
-
-      const requesterIds = Array.from(
-        new Set(requests.map((r) => r.requested_by).filter(Boolean))
-      );
-      const boatIds = Array.from(
-        new Set(requests.map((r) => r.boat_id).filter(Boolean))
-      );
-
-      const [profilesRes, boatsRes] = await Promise.all([
-        requesterIds.length
-          ? supabase.from('profiles').select('id, name').in('id', requesterIds)
-          : Promise.resolve({ data: [] as any[], error: null }),
-        boatIds.length
-          ? supabase.from('boats').select('id, name').in('id', boatIds)
-          : Promise.resolve({ data: [] as any[], error: null }),
-      ]);
-
-      const requesterMap: Record<string, string> = Object.fromEntries(
-        (profilesRes.data || []).map((p: any) => [p.id, p.name])
-      );
-      const boatMap: Record<string, string> = Object.fromEntries(
-        (boatsRes.data || []).map((b: any) => [b.id, b.name])
-      );
-
-      return requests.map((r: any) => ({
-        ...r,
-        requester: r.requested_by
-          ? { name: requesterMap[r.requested_by] || '' }
-          : undefined,
-        boat: r.boat_id ? { name: boatMap[r.boat_id] || '' } : undefined,
-      }));
+      return data || [];
     },
   });
 
