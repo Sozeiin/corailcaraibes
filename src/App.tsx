@@ -28,6 +28,9 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 
 import NotFound from "./pages/NotFound";
+import TechnicianPointage from "./pages/TechnicianPointage";
+import BasePointage from "./pages/BasePointage";
+import TimeRulesPage from "./pages/TimeRulesPage";
 
 const queryClient = new QueryClient();
 
@@ -250,6 +253,30 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
             <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/t/pointage"
+        element={
+          <ProtectedRoute allowedRoles={['technicien']}>
+            <TechnicianPointage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/b/pointage"
+        element={
+          <ProtectedRoute allowedRoles={['chef_base']}>
+            <BasePointage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/d/time-rules"
+        element={
+          <ProtectedRoute allowedRoles={['direction']}>
+            <TimeRulesPage />
           </ProtectedRoute>
         }
       />
