@@ -136,18 +136,21 @@ export type Database = {
           checklist_id: string
           item_id: string
           notes: string | null
+          photo_url: string | null
           status: Database["public"]["Enums"]["checklist_status"] | null
         }
         Insert: {
           checklist_id: string
           item_id: string
           notes?: string | null
+          photo_url?: string | null
           status?: Database["public"]["Enums"]["checklist_status"] | null
         }
         Update: {
           checklist_id?: string
           item_id?: string
           notes?: string | null
+          photo_url?: string | null
           status?: Database["public"]["Enums"]["checklist_status"] | null
         }
         Relationships: [

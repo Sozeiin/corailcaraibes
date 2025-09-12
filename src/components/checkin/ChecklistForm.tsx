@@ -44,6 +44,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [customerEmail, setCustomerEmail] = useState(rentalData?.customerEmail || '');
   const [sendEmailReport, setSendEmailReport] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [tempChecklistId] = useState(`temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
   // Queries and mutations
   const { data: fetchedItems, isLoading: itemsLoading, error: itemsError } = useChecklistItems();
@@ -66,6 +67,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           isRequired: item.is_required,
           status: 'not_checked' as const,
           notes: '',
+          photoUrl: '',
         }))
       );
     }
@@ -107,6 +109,13 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     console.log('📝 [DEBUG] Changement notes item:', itemId, notes);
     setChecklistItems(prev => prev.map(item => 
       item.id === itemId ? { ...item, notes } : item
+    ));
+  };
+
+  const handleItemPhotoChange = (itemId: string, photoUrl: string | null) => {
+    console.log('📷 [DEBUG] Changement photo item:', itemId, photoUrl);
+    setChecklistItems(prev => prev.map(item => 
+      item.id === itemId ? { ...item, photoUrl: photoUrl || '' } : item
     ));
   };
 
@@ -486,10 +495,12 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             checklistItems={checklistItems}
             onItemStatusChange={handleItemStatusChange}
             onItemNotesChange={handleItemNotesChange}
+            onItemPhotoChange={handleItemPhotoChange}
             generalNotes={generalNotes}
             onGeneralNotesChange={setGeneralNotes}
             overallStatus={overallStatus}
             isComplete={isStepComplete('checklist')}
+            checklistId={tempChecklistId}
           />
         )}
 
@@ -498,6 +509,8 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             checklistItems={checklistItems}
             onItemStatusChange={handleItemStatusChange}
             onItemNotesChange={handleItemNotesChange}
+            onItemPhotoChange={handleItemPhotoChange}
+            checklistId={tempChecklistId}
           />
         )}
 

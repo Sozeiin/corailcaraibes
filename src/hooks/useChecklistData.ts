@@ -9,6 +9,7 @@ export interface ChecklistItem {
   isRequired: boolean;
   status: 'ok' | 'needs_repair' | 'not_checked';
   notes?: string;
+  photoUrl?: string;
 }
 
 export interface BoatRental {
@@ -111,6 +112,7 @@ export function useCreateChecklist() {
           item_id: item.id,
           status: item.status,
           notes: item.notes || null,
+          photo_url: item.photoUrl || null,
         }));
 
       if (itemsToInsert.length === 0) {

@@ -10,12 +10,16 @@ interface ChecklistReviewStepProps {
   checklistItems: ChecklistItem[];
   onItemStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
   onItemNotesChange: (itemId: string, notes: string) => void;
+  onItemPhotoChange?: (itemId: string, photoUrl: string | null) => void;
+  checklistId?: string;
 }
 
 export function ChecklistReviewStep({
   checklistItems,
   onItemStatusChange,
   onItemNotesChange,
+  onItemPhotoChange,
+  checklistId,
 }: ChecklistReviewStepProps) {
   // Filtre uniquement les éléments non vérifiés
   const unverifiedItems = checklistItems.filter(item => item.status === 'not_checked');

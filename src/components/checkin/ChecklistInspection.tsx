@@ -14,20 +14,24 @@ interface ChecklistInspectionProps {
   checklistItems: ChecklistItem[];
   onItemStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
   onItemNotesChange: (itemId: string, notes: string) => void;
+  onItemPhotoChange: (itemId: string, photoUrl: string | null) => void;
   generalNotes: string;
   onGeneralNotesChange: (notes: string) => void;
   overallStatus: 'ok' | 'needs_attention' | 'major_issues';
   isComplete: boolean;
+  checklistId?: string;
 }
 
 export function ChecklistInspection({
   checklistItems,
   onItemStatusChange,
   onItemNotesChange,
+  onItemPhotoChange,
   generalNotes,
   onGeneralNotesChange,
   overallStatus,
   isComplete,
+  checklistId,
 }: ChecklistInspectionProps) {
   const { sortCategories } = useCategoriesOrder();
   
@@ -213,6 +217,8 @@ export function ChecklistInspection({
             items={items}
             onItemStatusChange={onItemStatusChange}
             onItemNotesChange={onItemNotesChange}
+            onItemPhotoChange={onItemPhotoChange}
+            checklistId={checklistId}
           />
         );
       })}

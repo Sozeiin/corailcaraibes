@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown, CheckCircle, X, AlertTriangle, Star } from 'lucide-react';
+import { ChecklistPhotoCapture } from './ChecklistPhotoCapture';
 
 interface ChecklistItem {
   id: string;
@@ -12,6 +13,7 @@ interface ChecklistItem {
   isRequired: boolean;
   status: 'ok' | 'needs_repair' | 'not_checked';
   notes?: string;
+  photoUrl?: string;
 }
 
 interface ChecklistCategoryProps {
@@ -19,13 +21,17 @@ interface ChecklistCategoryProps {
   items: ChecklistItem[];
   onItemStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
   onItemNotesChange: (itemId: string, notes: string) => void;
+  onItemPhotoChange: (itemId: string, photoUrl: string | null) => void;
+  checklistId?: string;
 }
 
 export function ChecklistCategory({ 
   category, 
   items, 
   onItemStatusChange, 
-  onItemNotesChange 
+  onItemNotesChange,
+  onItemPhotoChange,
+  checklistId
 }: ChecklistCategoryProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
@@ -115,7 +121,7 @@ export function ChecklistCategory({
                       </Badge>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-1 w-20">
+                  <div className="grid grid-cols-3 gap-1 w-32">
                     <Button
                       variant={item.status === 'ok' ? 'default' : 'outline'}
                       size="icon"
@@ -143,14 +149,20 @@ export function ChecklistCategory({
                     >
                       <AlertTriangle className="h-3 w-3" />
                     </Button>
+                    <ChecklistPhotoCapture
+                      photoUrl={item.photoUrl || null}
+                      onPhotoChange={(photoUrl) => onItemPhotoChange(item.id, photoUrl)}
+                      checklistId={checklistId}
+                      itemId={item.id}
+                    />
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => toggleItemExpansion(item.id)}
-                      className="h-7 w-7"
+                      className="h-7 w-7 col-span-2"
                       title="Annotations"
                     >
-                      📝
+                      📝 Notes
                     </Button>
                   </div>
                 </div>
