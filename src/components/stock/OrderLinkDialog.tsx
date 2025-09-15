@@ -64,9 +64,9 @@ export function OrderLinkDialog({
   const handleLinkToRequest = async (requestId: string) => {
     setIsLinking(true);
     try {
-      const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
+      const { data, error } = await supabase.rpc('link_stock_scan_to_order', {
         stock_item_id_param: stockItemId,
-        request_id_param: requestId,
+        order_id_param: requestId,
         quantity_received_param: quantityReceived
       });
 

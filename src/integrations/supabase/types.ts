@@ -4045,6 +4045,10 @@ export type Database = {
         }
         Returns: Json
       }
+      link_stock_scan_to_supply_request: {
+        Args: { scan_data: Json; supply_request_id: string }
+        Returns: Json
+      }
       mark_shipped: {
         Args: { p_shipment_id: string }
         Returns: boolean
@@ -4156,6 +4160,7 @@ export type Database = {
         | "maintenance_preventive"
         | "notifications"
         | "supply_requests"
+        | "distribution"
       purchase_workflow_status:
         | "draft"
         | "pending_approval"
@@ -4352,6 +4357,7 @@ export const Constants = {
         "maintenance_preventive",
         "notifications",
         "supply_requests",
+        "distribution",
       ],
       purchase_workflow_status: [
         "draft",
