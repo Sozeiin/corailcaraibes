@@ -16,7 +16,8 @@ export type PagePermission =
   | 'maintenance_history'
   | 'maintenance_preventive'
   | 'notifications'
-  | 'supply_requests';
+  | 'supply_requests'
+  | 'boat_preparation';
 
 export const PAGE_PERMISSIONS: Record<PagePermission, string> = {
   dashboard: 'Tableau de bord',
@@ -32,7 +33,8 @@ export const PAGE_PERMISSIONS: Record<PagePermission, string> = {
   maintenance_history: 'Historique maintenance',
   maintenance_preventive: 'Maintenance préventive',
   notifications: 'Notifications',
-  supply_requests: 'Demandes approvisionnement'
+  supply_requests: 'Demandes approvisionnement',
+  boat_preparation: 'Préparation des bateaux'
 };
 
 export function usePermissions() {

@@ -358,6 +358,70 @@ export type Database = {
           },
         ]
       }
+      boat_preparation_checklists: {
+        Row: {
+          anomalies_count: number | null
+          boat_id: string
+          completion_date: string | null
+          created_at: string | null
+          id: string
+          items: Json
+          planning_activity_id: string | null
+          status: string | null
+          technician_id: string | null
+          template_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          anomalies_count?: number | null
+          boat_id: string
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          items?: Json
+          planning_activity_id?: string | null
+          status?: string | null
+          technician_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          anomalies_count?: number | null
+          boat_id?: string
+          completion_date?: string | null
+          created_at?: string | null
+          id?: string
+          items?: Json
+          planning_activity_id?: string | null
+          status?: string | null
+          technician_id?: string | null
+          template_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_preparation_checklists_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_preparation_checklists_planning_activity_id_fkey"
+            columns: ["planning_activity_id"]
+            isOneToOne: false
+            referencedRelation: "planning_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_preparation_checklists_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "preparation_checklist_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boat_rentals: {
         Row: {
           base_id: string | null
@@ -2505,6 +2569,117 @@ export type Database = {
           },
         ]
       }
+      preparation_anomalies: {
+        Row: {
+          auto_maintenance_created: boolean | null
+          created_at: string | null
+          description: string
+          id: string
+          intervention_id: string | null
+          item_name: string
+          photo_url: string | null
+          preparation_id: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: string | null
+        }
+        Insert: {
+          auto_maintenance_created?: boolean | null
+          created_at?: string | null
+          description: string
+          id?: string
+          intervention_id?: string | null
+          item_name: string
+          photo_url?: string | null
+          preparation_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Update: {
+          auto_maintenance_created?: boolean | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          intervention_id?: string | null
+          item_name?: string
+          photo_url?: string | null
+          preparation_id?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preparation_anomalies_intervention_id_fkey"
+            columns: ["intervention_id"]
+            isOneToOne: false
+            referencedRelation: "interventions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preparation_anomalies_preparation_id_fkey"
+            columns: ["preparation_id"]
+            isOneToOne: false
+            referencedRelation: "boat_preparation_checklists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preparation_checklist_templates: {
+        Row: {
+          base_id: string | null
+          boat_model: string | null
+          category: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_active: boolean | null
+          items: Json
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          base_id?: string | null
+          boat_model?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          items?: Json
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          base_id?: string | null
+          boat_model?: string | null
+          category?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          items?: Json
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preparation_checklist_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preparation_checklist_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_audit_log: {
         Row: {
           action: string
@@ -4119,6 +4294,7 @@ export type Database = {
         | "travel"
         | "break"
         | "emergency"
+        | "preparation"
       alert_severity: "info" | "warning" | "error"
       alert_type: "stock" | "maintenance" | "document" | "system"
       boat_status: "available" | "rented" | "maintenance" | "out_of_service"
@@ -4313,6 +4489,7 @@ export const Constants = {
         "travel",
         "break",
         "emergency",
+        "preparation",
       ],
       alert_severity: ["info", "warning", "error"],
       alert_type: ["stock", "maintenance", "document", "system"],
