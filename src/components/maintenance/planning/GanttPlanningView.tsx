@@ -42,7 +42,7 @@ import { ResourceOptimizer } from './ResourceOptimizer';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -71,6 +71,8 @@ interface PlanningActivity {
     id: string;
     name: string;
   } | null;
+  preparation_status?: 'in_progress' | 'ready' | 'anomaly';
+  anomalies_count?: number;
 }
 
 interface Technician {
@@ -163,11 +165,14 @@ export function GanttPlanningView() {
       const start = startOfWeek(currentWeek, { weekStartsOn: 1 });
       const end = endOfWeek(addWeeks(currentWeek, 1), { weekStartsOn: 1 });
       
-      // Fetch both planning activities and interventions
-      const [activitiesResponse, interventionsResponse] = await Promise.all([
+      // Fetch planning activities, interventions, and preparations
+      const [activitiesResponse, interventionsResponse, preparationsResponse] = await Promise.all([
         supabase
           .from('planning_activities')
-          .select('*')
+          .select(`
+            *,
+            boats(id, name)
+          `)
           .gte('scheduled_start', start.toISOString())
           .lte('scheduled_end', end.toISOString())
           .neq('activity_type', 'maintenance')
@@ -182,11 +187,35 @@ export function GanttPlanningView() {
           `)
           .gte('scheduled_date', start.toISOString().split('T')[0])
           .lte('scheduled_date', end.toISOString().split('T')[0])
-          .order('scheduled_date')
+          .order('scheduled_date'),
+
+        supabase
+          .from('boat_preparation_checklists')
+          .select(`
+            id,
+            status,
+            anomalies_count,
+            planning_activity:planning_activities!inner(
+              id,
+              title,
+              scheduled_start,
+              scheduled_end,
+              technician_id,
+              boat_id,
+              base_id,
+              priority,
+              color_code,
+              status
+            ),
+            boat:boats!inner(id, name)
+          `)
+          .gte('planning_activity.scheduled_start', start.toISOString())
+          .lte('planning_activity.scheduled_end', end.toISOString())
       ]);
       
       if (activitiesResponse.error) throw activitiesResponse.error;
       if (interventionsResponse.error) throw interventionsResponse.error;
+      if (preparationsResponse.error) throw preparationsResponse.error;
       
       // Convert interventions to planning activities format
       const interventionActivities = (interventionsResponse.data || []).map(intervention => {
@@ -198,7 +227,7 @@ export function GanttPlanningView() {
         
         return {
           id: `intervention-${intervention.id}`,
-          activity_type: 'emergency' as const, // Show interventions as emergency type for visual distinction
+          activity_type: 'emergency' as const,
           status: intervention.status === 'scheduled' ? 'planned' as const : 
                   intervention.status === 'in_progress' ? 'in_progress' as const :
                   intervention.status === 'completed' ? 'completed' as const : 'cancelled' as const,
@@ -206,12 +235,12 @@ export function GanttPlanningView() {
           description: intervention.description,
           scheduled_start: scheduledDate.toISOString(),
           scheduled_end: endDate.toISOString(),
-          estimated_duration: 480, // 8 hours default
+          estimated_duration: 480,
           technician_id: intervention.technician_id,
           boat_id: intervention.boat_id,
           base_id: intervention.base_id,
           priority: intervention.intervention_type === 'emergency' ? 'high' : 'medium',
-          color_code: '#dc2626', // Red for maintenance interventions
+          color_code: '#dc2626',
           checklist_completed: false,
           delay_minutes: 0,
           notes: intervention.description,
@@ -225,19 +254,49 @@ export function GanttPlanningView() {
           } : null
         };
       });
+
+      // Convert preparations to planning activities format
+      const preparationActivities = (preparationsResponse.data || []).map(prep => ({
+        id: prep.planning_activity.id,
+        activity_type: 'preparation' as const,
+        status: prep.planning_activity.status,
+        title: `🚤 ${prep.planning_activity.title}`,
+        description: prep.planning_activity.title,
+        scheduled_start: prep.planning_activity.scheduled_start,
+        scheduled_end: prep.planning_activity.scheduled_end,
+        estimated_duration: 120, // 2 hours default for preparation
+        technician_id: prep.planning_activity.technician_id,
+        boat_id: prep.planning_activity.boat_id,
+        base_id: prep.planning_activity.base_id,
+        priority: prep.planning_activity.priority,
+        color_code: prep.planning_activity.color_code,
+        checklist_completed: prep.status === 'ready',
+        delay_minutes: 0,
+        preparation_status: prep.status,
+        anomalies_count: prep.anomalies_count,
+        technician: null,
+        boat: prep.boat ? {
+          id: prep.boat.id,
+          name: prep.boat.name
+        } : null
+      }));
       
-      // Combine activities and interventions
+      // Combine all activities
       const allActivities = [
         ...(activitiesResponse.data || []).map(item => ({
           ...item,
-          technician: null,
-          boat: null,
+          technician: null, // Will be populated from profiles query if needed
+          boat: item.boats ? {
+            id: item.boats.id,
+            name: item.boats.name
+          } : null,
           base_id: item.base_id,
           priority: item.priority || 'medium',
           checklist_completed: item.checklist_completed || false,
           delay_minutes: item.delay_minutes || 0
         })),
-        ...interventionActivities
+        ...interventionActivities,
+        ...preparationActivities
       ];
       
       return allActivities as PlanningActivity[];
@@ -248,24 +307,86 @@ export function GanttPlanningView() {
   const { data: unassignedActivities = [] } = useQuery({
     queryKey: ['unassigned-activities'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('planning_activities')
-        .select('*')
-        .is('technician_id', null)
-        .eq('status', 'planned')
-        .neq('activity_type', 'maintenance')
-        .order('scheduled_start');
+      // Fetch unassigned planning activities and preparations
+      const [activitiesResponse, preparationsResponse] = await Promise.all([
+        supabase
+          .from('planning_activities')
+          .select(`
+            *,
+            boats(id, name)
+          `)
+          .is('technician_id', null)
+          .eq('status', 'planned')
+          .neq('activity_type', 'maintenance')
+          .order('scheduled_start'),
+
+        supabase
+          .from('boat_preparation_checklists')
+          .select(`
+            id,
+            status,
+            anomalies_count,
+            planning_activity:planning_activities!inner(
+              id,
+              title,
+              scheduled_start,
+              scheduled_end,
+              technician_id,
+              boat_id,
+              base_id,
+              priority,
+              color_code,
+              status,
+              activity_type
+            ),
+            boat:boats!inner(id, name)
+          `)
+          .eq('planning_activity.technician_id', null)
+          .eq('planning_activity.status', 'planned')
+      ]);
       
-      if (error) throw error;
-      return (data || []).map(item => ({
+      if (activitiesResponse.error) throw activitiesResponse.error;
+      if (preparationsResponse.error) throw preparationsResponse.error;
+
+      const regularActivities = (activitiesResponse.data || []).map(item => ({
         ...item,
         technician: null,
-        boat: null,
+        boat: item.boats ? {
+          id: item.boats.id,
+          name: item.boats.name
+        } : null,
         base_id: item.base_id,
         priority: item.priority || 'medium',
         checklist_completed: item.checklist_completed || false,
         delay_minutes: item.delay_minutes || 0
-      })) as PlanningActivity[];
+      }));
+
+      const preparationActivities = (preparationsResponse.data || []).map(prep => ({
+        id: prep.planning_activity.id,
+        activity_type: 'preparation' as const,
+        status: prep.planning_activity.status,
+        title: `🚤 ${prep.planning_activity.title}`,
+        description: prep.planning_activity.title,
+        scheduled_start: prep.planning_activity.scheduled_start,
+        scheduled_end: prep.planning_activity.scheduled_end,
+        estimated_duration: 120,
+        technician_id: prep.planning_activity.technician_id,
+        boat_id: prep.planning_activity.boat_id,
+        base_id: prep.planning_activity.base_id,
+        priority: prep.planning_activity.priority,
+        color_code: prep.planning_activity.color_code,
+        checklist_completed: prep.status === 'ready',
+        delay_minutes: 0,
+        preparation_status: prep.status,
+        anomalies_count: prep.anomalies_count,
+        technician: null,
+        boat: prep.boat ? {
+          id: prep.boat.id,
+          name: prep.boat.name
+        } : null
+      }));
+
+      return [...regularActivities, ...preparationActivities] as PlanningActivity[];
     }
   });
 

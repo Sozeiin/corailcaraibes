@@ -1,12 +1,12 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
-import { Clock, User, AlertTriangle, CheckCircle2, Play, Pause, Ship } from 'lucide-react';
+import { Clock, User, AlertTriangle, CheckCircle2, Play, Pause, Ship, Calendar, LogIn, LogOut, Car, Coffee } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -28,6 +28,8 @@ interface PlanningActivity {
     id: string;
     name: string;
   };
+  preparation_status?: 'in_progress' | 'ready' | 'anomaly';
+  anomalies_count?: number;
 }
 
 interface PlanningActivityCardProps {
@@ -50,6 +52,18 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
 
   const isCurrentlyDragging = isDragging || dndIsDragging;
 
+  const getActivityIcon = () => {
+    switch (activity.activity_type) {
+      case 'checkin': return <LogIn className="w-4 h-4" />;
+      case 'checkout': return <LogOut className="w-4 h-4" />;
+      case 'travel': return <Car className="w-4 h-4" />;
+      case 'break': return <Coffee className="w-4 h-4" />;
+      case 'emergency': return <AlertTriangle className="w-4 h-4" />;
+      case 'preparation': return <Ship className="w-4 h-4" />;
+      default: return <Calendar className="w-4 h-4" />;
+    }
+  };
+
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     borderLeft: `3px solid ${activity.color_code}`,
@@ -68,22 +82,46 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
       `}
       onClick={onClick}
     >
-      <div className="text-sm font-medium text-gray-900 mb-1 leading-tight">
-        {activity.title}
-      </div>
-      
-      <div className="text-xs text-gray-600 space-y-0.5">
-        <div>
-          {format(new Date(activity.scheduled_start), "HH:mm", { locale: fr })} - {format(new Date(activity.scheduled_end), "HH:mm", { locale: fr })}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          {getActivityIcon()}
+          <span className="font-medium text-sm truncate">{activity.title}</span>
+          {activity.activity_type === 'preparation' && activity.preparation_status && (
+            <span className="text-xs">
+              {activity.preparation_status === 'ready' && '🟢'}
+              {activity.preparation_status === 'in_progress' && '🟡'}
+              {activity.preparation_status === 'anomaly' && '🔴'}
+            </span>
+          )}
         </div>
         
-        {activity.boat && (
-          <div>{activity.boat.name}</div>
-        )}
-        
-        {activity.technician && (
-          <div>{activity.technician.name}</div>
-        )}
+        <div className="text-xs text-muted-foreground space-y-1">
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            <span>{format(new Date(activity.scheduled_start), 'HH:mm')} - {format(new Date(activity.scheduled_end), 'HH:mm')}</span>
+          </div>
+          
+          {activity.boat && (
+            <div className="flex items-center gap-1">
+              <span>🚤</span>
+              <span className="truncate">{activity.boat.name}</span>
+            </div>
+          )}
+          
+          {activity.technician && (
+            <div className="flex items-center gap-1">
+              <User className="w-3 h-3" />
+              <span className="truncate">{activity.technician.name}</span>
+            </div>
+          )}
+
+          {activity.activity_type === 'preparation' && activity.anomalies_count && activity.anomalies_count > 0 && (
+            <div className="flex items-center gap-1 text-red-600">
+              <AlertTriangle className="w-3 h-3" />
+              <span>{activity.anomalies_count} anomalie{activity.anomalies_count > 1 ? 's' : ''}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

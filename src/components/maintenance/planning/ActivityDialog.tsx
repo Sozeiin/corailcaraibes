@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -48,7 +48,7 @@ interface ActivityDialogProps {
 interface ActivityFormData {
   title: string;
   description: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   priority: string;
   estimated_duration: number;
   technician_id: string;

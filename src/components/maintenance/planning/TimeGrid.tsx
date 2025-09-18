@@ -13,7 +13,7 @@ interface TimeSlot {
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   scheduled_start: string;
@@ -31,6 +31,8 @@ interface PlanningActivity {
     id: string;
     name: string;
   } | null;
+  preparation_status?: 'in_progress' | 'ready' | 'anomaly';
+  anomalies_count?: number;
 }
 
 interface Technician {

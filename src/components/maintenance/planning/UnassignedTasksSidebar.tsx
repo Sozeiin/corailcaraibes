@@ -8,7 +8,7 @@ import { PlanningActivityCard } from './PlanningActivityCard';
 
 interface PlanningActivity {
   id: string;
-  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency';
+  activity_type: 'checkin' | 'checkout' | 'travel' | 'break' | 'emergency' | 'preparation';
   status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   title: string;
   description?: string;
@@ -23,6 +23,8 @@ interface PlanningActivity {
     id: string;
     name: string;
   };
+  preparation_status?: 'in_progress' | 'ready' | 'anomaly';
+  anomalies_count?: number;
 }
 
 interface DraggableActivityProps {

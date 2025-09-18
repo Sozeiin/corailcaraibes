@@ -10,6 +10,7 @@ export default function BoatPreparation() {
   const { user } = useAuth();
   const isDirection = user?.role === 'direction';
   const isTechnician = user?.role === 'technicien';
+  const isChefBase = user?.role === 'chef_base';
 
   return (
     <div className="space-y-6">
@@ -23,28 +24,24 @@ export default function BoatPreparation() {
       {isTechnician ? (
         <TechnicianPreparations />
       ) : isDirection ? (
-        <Tabs defaultValue="preparations" className="w-full">
+        <Tabs defaultValue="templates" className="w-full">
           <TabsList>
-            <TabsTrigger value="preparations" className="flex items-center gap-2">
-              <Ship className="w-4 h-4" />
-              Préparations
-            </TabsTrigger>
             <TabsTrigger value="templates" className="flex items-center gap-2">
               <Settings className="w-4 h-4" />
               Modèles de checklist
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="preparations" className="mt-6">
-            <BoatPreparationManager />
-          </TabsContent>
-          
           <TabsContent value="templates" className="mt-6">
             <PreparationTemplateManager />
           </TabsContent>
         </Tabs>
-      ) : (
+      ) : isChefBase ? (
         <BoatPreparationManager />
+      ) : (
+        <div className="text-center py-8">
+          <p className="text-gray-500">Accès non autorisé</p>
+        </div>
       )}
     </div>
   );

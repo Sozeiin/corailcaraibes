@@ -76,53 +76,34 @@ export function BoatPreparationManager() {
     }
   });
 
-  // Fetch active preparations
-  const { data: preparations = [] } = useQuery({
-    queryKey: ['boat-preparations'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('boat_preparation_checklists')
-        .select(`
-          id,
-          status,
-          technician_id,
-          anomalies_count,
-          created_at,
-          boat:boats!inner(id, name, model),
-          planning_activity:planning_activities!inner(id, title, scheduled_start, scheduled_end)
-        `)
-        .in('status', ['in_progress', 'anomaly'])
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as BoatPreparation[];
-    }
-  });
-
-  // Create preparation mutation
+  // Create preparation mutation - simplified for Chef de base
   const createPreparationMutation = useMutation({
-    mutationFn: async (data: CreatePreparationData) => {
-      // First create the planning activity
+    mutationFn: async (data: { boat_id: string; template_id?: string; notes?: string }) => {
+      // Create unassigned planning activity for drag & drop assignment
+      const boatName = boats.find(b => b.id === data.boat_id)?.name || '';
+      
       const { data: activity, error: activityError } = await supabase
         .from('planning_activities')
         .insert({
           activity_type: 'preparation',
-          title: `Préparation ${boats.find(b => b.id === data.boat_id)?.name || ''}`,
+          title: `Préparation ${boatName}`,
           description: data.notes,
-          scheduled_start: data.scheduled_start,
-          scheduled_end: data.scheduled_end,
           boat_id: data.boat_id,
           base_id: user?.baseId,
           status: 'planned',
           priority: 'medium',
-          color_code: '#10b981'
+          color_code: '#10b981',
+          // No scheduled times - will be set via drag & drop
+          scheduled_start: new Date().toISOString(),
+          scheduled_end: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2h default
+          estimated_duration: 120 // 2 hours
         })
         .select()
         .single();
       
       if (activityError) throw activityError;
 
-      // Then create the preparation checklist
+      // Create the preparation checklist
       const { data: preparation, error: prepError } = await supabase
         .from('boat_preparation_checklists')
         .insert({
@@ -138,11 +119,11 @@ export function BoatPreparationManager() {
       return preparation;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boat-preparations'] });
+      queryClient.invalidateQueries({ queryKey: ['unassigned-activities'] });
       queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
       setIsCreateDialogOpen(false);
       setNewPreparation({});
-      toast.success('Ordre de préparation créé avec succès');
+      toast.success('Ordre de préparation créé - disponible dans les tâches non assignées');
     },
     onError: (error) => {
       console.error('Error creating preparation:', error);
@@ -164,22 +145,29 @@ export function BoatPreparationManager() {
   };
 
   const handleCreatePreparation = () => {
-    if (!newPreparation.boat_id || !newPreparation.scheduled_start || !newPreparation.scheduled_end) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+    if (!newPreparation.boat_id) {
+      toast.error('Veuillez sélectionner un bateau');
       return;
     }
-    createPreparationMutation.mutate(newPreparation as CreatePreparationData);
+    createPreparationMutation.mutate({
+      boat_id: newPreparation.boat_id,
+      template_id: newPreparation.template_id,
+      notes: newPreparation.notes
+    });
   };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Gestion des préparations</h2>
+        <div>
+          <h2 className="text-2xl font-bold">Ordres de préparation</h2>
+          <p className="text-gray-600">Créez des ordres qui apparaîtront dans le planning pour assignation</p>
+        </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
-              Nouvelle préparation
+              Nouvel ordre
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-md">
@@ -225,32 +213,19 @@ export function BoatPreparationManager() {
                 </Select>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="scheduled_start">Début prévu *</Label>
-                  <Input
-                    type="datetime-local"
-                    value={newPreparation.scheduled_start || ''}
-                    onChange={(e) => setNewPreparation(prev => ({ ...prev, scheduled_start: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="scheduled_end">Fin prévue *</Label>
-                  <Input
-                    type="datetime-local"
-                    value={newPreparation.scheduled_end || ''}
-                    onChange={(e) => setNewPreparation(prev => ({ ...prev, scheduled_end: e.target.value }))}
-                  />
-                </div>
-              </div>
-
               <div>
-                <Label htmlFor="notes">Notes</Label>
+                <Label htmlFor="notes">Instructions particulières</Label>
                 <Textarea
-                  placeholder="Instructions particulières..."
+                  placeholder="Notes pour le technicien..."
                   value={newPreparation.notes || ''}
                   onChange={(e) => setNewPreparation(prev => ({ ...prev, notes: e.target.value }))}
                 />
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                <p className="text-blue-800">
+                  L'ordre sera créé sans assignation. Utilisez le planning pour l'assigner à un technicien via drag & drop.
+                </p>
               </div>
 
               <Button 
@@ -258,53 +233,26 @@ export function BoatPreparationManager() {
                 className="w-full"
                 disabled={createPreparationMutation.isPending}
               >
-                {createPreparationMutation.isPending ? 'Création...' : 'Créer la préparation'}
+                {createPreparationMutation.isPending ? 'Création...' : 'Créer l\'ordre'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {preparations.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Ship className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">Aucune préparation en cours</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {preparations.map((prep) => (
-            <Card key={prep.id}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg">
-                  {prep.boat.name} ({prep.boat.model})
-                </CardTitle>
-                {getStatusBadge(prep.status)}
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500">Planifiée</p>
-                    <p>{new Date(prep.planning_activity.scheduled_start).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500">Fin prévue</p>
-                    <p>{new Date(prep.planning_activity.scheduled_end).toLocaleString()}</p>
-                  </div>
-                  {prep.anomalies_count > 0 && (
-                    <div className="col-span-2">
-                      <Badge variant="destructive" className="mr-2">
-                        {prep.anomalies_count} anomalie{prep.anomalies_count > 1 ? 's' : ''}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <Card>
+        <CardContent className="text-center py-8">
+          <Ship className="w-12 h-12 mx-auto text-primary mb-4" />
+          <h3 className="text-lg font-medium mb-2">Organisation via le Planning</h3>
+          <p className="text-gray-600 mb-4">
+            Les ordres de préparation apparaissent dans le planning intelligent.<br />
+            Utilisez le drag & drop pour les assigner aux techniciens.
+          </p>
+          <Button variant="outline" onClick={() => window.location.href = '/planning'}>
+            Aller au Planning
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }
