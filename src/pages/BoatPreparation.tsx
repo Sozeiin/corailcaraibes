@@ -3,11 +3,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BoatPreparationManager } from '@/components/preparation/BoatPreparationManager';
 import { PreparationTemplateManager } from '@/components/preparation/PreparationTemplateManager';
+import { TechnicianPreparations } from '@/components/preparation/TechnicianPreparations';
 import { Ship, Settings } from 'lucide-react';
 
 export default function BoatPreparation() {
   const { user } = useAuth();
   const isDirection = user?.role === 'direction';
+  const isTechnician = user?.role === 'technicien';
 
   return (
     <div className="space-y-6">
@@ -18,7 +20,9 @@ export default function BoatPreparation() {
         </div>
       </div>
 
-      {isDirection ? (
+      {isTechnician ? (
+        <TechnicianPreparations />
+      ) : isDirection ? (
         <Tabs defaultValue="preparations" className="w-full">
           <TabsList>
             <TabsTrigger value="preparations" className="flex items-center gap-2">

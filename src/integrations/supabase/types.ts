@@ -4337,6 +4337,7 @@ export type Database = {
         | "notifications"
         | "supply_requests"
         | "distribution"
+        | "boat_preparation"
       purchase_workflow_status:
         | "draft"
         | "pending_approval"
@@ -4535,6 +4536,7 @@ export const Constants = {
         "notifications",
         "supply_requests",
         "distribution",
+        "boat_preparation",
       ],
       purchase_workflow_status: [
         "draft",

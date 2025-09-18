@@ -112,7 +112,7 @@ export function BoatPreparationManager() {
           scheduled_start: data.scheduled_start,
           scheduled_end: data.scheduled_end,
           boat_id: data.boat_id,
-          base_id: user?.base_id,
+          base_id: user?.baseId,
           status: 'planned',
           priority: 'medium',
           color_code: '#10b981'

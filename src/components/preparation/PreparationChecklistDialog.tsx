@@ -66,11 +66,11 @@ export function PreparationChecklistDialog({
     
     // If items already exist in preparation, use them
     if (preparation.items && Array.isArray(preparation.items) && preparation.items.length > 0) {
-      return preparation.items as ChecklistItem[];
+      return preparation.items as unknown as ChecklistItem[];
     }
     
     // Otherwise, use template items or default items
-    const templateItems = preparation.template?.items || [];
+    const templateItems = (preparation.template?.items as any[]) || [];
     const defaultItems = [
       { name: 'Carburant', category: 'Moteur', description: 'Vérifier le niveau de carburant', mandatory: true },
       { name: 'Huile moteur', category: 'Moteur', description: 'Contrôler le niveau d\'huile', mandatory: true },
@@ -113,7 +113,7 @@ export function PreparationChecklistDialog({
       const { error } = await supabase
         .from('boat_preparation_checklists')
         .update({ 
-          items: updatedItems,
+          items: updatedItems as any,
           updated_at: new Date().toISOString()
         })
         .eq('id', preparationId);

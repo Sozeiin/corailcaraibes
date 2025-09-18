@@ -66,7 +66,7 @@ export function PreparationTemplateManager() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as Template[];
+      return data as unknown as Template[];
     }
   });
 
@@ -77,8 +77,9 @@ export function PreparationTemplateManager() {
         .from('preparation_checklist_templates')
         .insert({
           ...data,
+          items: data.items as any,
           created_by: user?.id,
-          base_id: user?.base_id
+          base_id: user?.baseId
         });
       
       if (error) throw error;
@@ -99,7 +100,7 @@ export function PreparationTemplateManager() {
     mutationFn: async ({ id, data }: { id: string; data: Partial<CreateTemplateData> }) => {
       const { error } = await supabase
         .from('preparation_checklist_templates')
-        .update(data)
+        .update({ ...data, items: data.items as any })
         .eq('id', id);
       
       if (error) throw error;

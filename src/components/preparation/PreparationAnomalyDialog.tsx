@@ -81,8 +81,8 @@ export function PreparationAnomalyDialog({
               description: `Anomalie détectée lors de la préparation du bateau ${boat.boat.name}: ${data.description}`,
               boat_id: boat.boat_id,
               priority: data.severity === 'critical' ? 'high' : data.severity === 'high' ? 'medium' : 'low',
-              status: 'pending',
-              base_id: (await supabase.auth.getUser()).data.user?.user_metadata?.base_id
+              status: 'scheduled',
+              base_id: (await supabase.auth.getUser()).data.user?.user_metadata?.baseId
             });
 
           if (interventionError) {

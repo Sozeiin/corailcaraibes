@@ -17,6 +17,7 @@ import Distribution from "./pages/Distribution";
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import SupplyRequests from "./pages/SupplyRequests";
+import BoatPreparation from "./pages/BoatPreparation";
 import Stock from "./pages/Stock";
 import StockScanner from "./pages/StockScanner";
 import Maintenance from "./pages/Maintenance";
@@ -167,6 +168,13 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/boat-preparation" element={
+        <ProtectedRoute>
+          <PermissionGate page="boat_preparation">
+            <BoatPreparation />
+          </PermissionGate>
+        </ProtectedRoute>
+      } />
       <Route
         path="/stock"
         element={
