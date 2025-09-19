@@ -236,27 +236,23 @@ export function GanttMaintenanceSchedule() {
       // Fetch planning activities in the current week
       const weekActivitiesPromise = supabase.from('planning_activities').select(`
           *,
-          technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).gte('scheduled_start::date', weekDays[0]?.dateString).lte('scheduled_start::date', weekDays[6]?.dateString).eq('base_id', user?.baseId).order('scheduled_start');
 
       // Fetch all unassigned planning activities (for tasks panel)
       const unassignedActivitiesPromise = supabase.from('planning_activities').select(`
           *,
-          technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).is('technician_id', null).eq('base_id', user?.baseId).order('scheduled_start');
 
       // Also fetch traditional interventions for backward compatibility
       const weekInterventionsPromise = supabase.from('interventions').select(`
           *,
-          technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).gte('scheduled_date', weekDays[0]?.dateString).lte('scheduled_date', weekDays[6]?.dateString).eq('base_id', user?.baseId).order('scheduled_date');
 
       const unassignedInterventionsPromise = supabase.from('interventions').select(`
           *,
-          technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).is('technician_id', null).eq('base_id', user?.baseId).order('scheduled_date');
 
@@ -317,7 +313,6 @@ export function GanttMaintenanceSchedule() {
         boat_id: activity.boat_id,
         base_id: activity.base_id,
         color_code: activity.color_code,
-        technician: activity.technician,
         boats: activity.boats,
         activity_type: activity.activity_type, // Keep original type for differentiation
         original_intervention_id: activity.original_intervention_id
