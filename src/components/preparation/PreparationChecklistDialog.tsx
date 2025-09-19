@@ -184,9 +184,11 @@ export function PreparationChecklistDialog({
   };
 
   const handleItemPhotoChange = (itemId: string, photoUrl: string | null) => {
+    console.log('Photo change:', itemId, photoUrl);
     const updatedItems = items.map(item => 
       item.id === itemId ? { ...item, photo_url: photoUrl } : item
     );
+    console.log('Updated items:', updatedItems);
     setItems(updatedItems);
     updateChecklistMutation.mutate(updatedItems);
   };
@@ -292,13 +294,13 @@ export function PreparationChecklistDialog({
                                      rows={2}
                                    />
                                  </div>
-                                 <div className="flex items-center gap-2 shrink-0">
-                                   <ChecklistPhotoCapture
-                                     photoUrl={item.photo_url || null}
-                                     onPhotoChange={(url) => handleItemPhotoChange(item.id, url)}
-                                     checklistId={preparationId}
-                                     itemId={item.id}
-                                   />
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <ChecklistPhotoCapture
+                                      photoUrl={item.photo_url || null}
+                                      onPhotoChange={(url) => handleItemPhotoChange(item.id, url)}
+                                      checklistId={preparationId}
+                                      itemId={item.id}
+                                    />
                                    <Button
                                      variant="outline"
                                      size="sm"
