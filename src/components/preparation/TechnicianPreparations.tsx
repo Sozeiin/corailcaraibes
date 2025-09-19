@@ -37,22 +37,60 @@ export function TechnicianPreparations() {
   const { data: preparations = [] } = useQuery({
     queryKey: ['technician-preparations', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get planning activities assigned to technician
+      const { data: activities, error: activitiesError } = await supabase
+        .from('planning_activities')
+        .select(`
+          id,
+          title,
+          scheduled_start,
+          scheduled_end,
+          boats(id, name, model)
+        `)
+        .eq('technician_id', user?.id)
+        .eq('activity_type', 'preparation')
+        .in('status', ['planned', 'in_progress']);
+
+      if (activitiesError) throw activitiesError;
+
+      if (!activities || activities.length === 0) {
+        return [];
+      }
+
+      // Get the preparation checklists for these activities
+      const { data: checklists, error: checklistsError } = await supabase
         .from('boat_preparation_checklists')
         .select(`
           id,
           status,
           anomalies_count,
           created_at,
-          boat:boats!inner(id, name, model),
-          planning_activity:planning_activities!inner(id, title, scheduled_start, scheduled_end, technician_id)
+          planning_activity_id
         `)
-        .eq('planning_activity.technician_id', user?.id)
-        .in('status', ['in_progress', 'anomaly'])
-        .order('planning_activity.scheduled_start', { ascending: true });
-      
-      if (error) throw error;
-      return data as TechnicianPreparation[];
+        .in('planning_activity_id', activities.map(a => a.id))
+        .in('status', ['in_progress', 'anomaly']);
+
+      if (checklistsError) throw checklistsError;
+
+      // Combine the data
+      const combinedData = checklists?.map(checklist => {
+        const activity = activities.find(a => a.id === checklist.planning_activity_id);
+        return {
+          id: checklist.id,
+          status: checklist.status,
+          anomalies_count: checklist.anomalies_count,
+          created_at: checklist.created_at,
+          boat: activity?.boats,
+          planning_activity: {
+            id: activity?.id,
+            title: activity?.title,
+            scheduled_start: activity?.scheduled_start,
+            scheduled_end: activity?.scheduled_end
+          }
+        };
+      }) || [];
+
+      return combinedData as TechnicianPreparation[];
     },
     enabled: !!user?.id
   });
