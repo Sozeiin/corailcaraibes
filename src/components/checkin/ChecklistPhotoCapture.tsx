@@ -73,6 +73,11 @@ export function ChecklistPhotoCapture({
 
   const startCamera = async () => {
     try {
+      setShowCamera(true);
+      
+      // Wait for dialog to be open before requesting camera
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { 
           facingMode: { ideal: 'environment' }, // Prefer back camera
@@ -85,9 +90,9 @@ export function ChecklistPhotoCapture({
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
       }
-      setShowCamera(true);
     } catch (error) {
       console.error('Erreur accès caméra:', error);
+      setShowCamera(false);
       toast({
         title: 'Erreur caméra',
         description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
@@ -237,10 +242,11 @@ export function ChecklistPhotoCapture({
             <div className="relative">
               <video
                 ref={videoRef}
-                className="w-full rounded"
+                className="w-full rounded bg-gray-900"
                 autoPlay
                 playsInline
                 muted
+                style={{ minHeight: '300px' }}
               />
               <canvas ref={canvasRef} className="hidden" />
             </div>
