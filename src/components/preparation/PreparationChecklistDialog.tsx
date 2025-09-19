@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertTriangle, Camera, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreparationAnomalyDialog } from './PreparationAnomalyDialog';
+import { ChecklistPhotoCapture } from '@/components/checkin/ChecklistPhotoCapture';
 
 interface ChecklistItem {
   id: string;
@@ -23,6 +24,7 @@ interface ChecklistItem {
   checked: boolean;
   anomaly: boolean;
   notes?: string;
+  photo_url?: string;
 }
 
 interface PreparationChecklistDialogProps {
@@ -95,7 +97,8 @@ export function PreparationChecklistDialog({
       mandatory: item.mandatory !== false,
       checked: false,
       anomaly: false,
-      notes: ''
+      notes: '',
+      photo_url: null
     }));
   };
 
@@ -180,6 +183,14 @@ export function PreparationChecklistDialog({
     updateChecklistMutation.mutate(updatedItems);
   };
 
+  const handleItemPhotoChange = (itemId: string, photoUrl: string | null) => {
+    const updatedItems = items.map(item => 
+      item.id === itemId ? { ...item, photo_url: photoUrl } : item
+    );
+    setItems(updatedItems);
+    updateChecklistMutation.mutate(updatedItems);
+  };
+
   const canComplete = () => {
     const mandatoryItems = items.filter(item => item.mandatory);
     return mandatoryItems.every(item => item.checked);
@@ -253,46 +264,54 @@ export function PreparationChecklistDialog({
                       </h3>
                       <div className="space-y-2">
                         {categoryItems.map((item) => (
-                          <Card key={item.id} className={`${item.checked ? 'bg-green-50 border-green-200' : ''} p-0`}>
-                            <CardContent className="p-3">
-                              <div className="flex items-start gap-3">
-                                <Checkbox
-                                  checked={item.checked}
-                                  onCheckedChange={(checked) => handleItemCheck(item.id, !!checked)}
-                                  className="mt-0.5"
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-sm">{item.name}</span>
-                                    {item.mandatory && (
-                                      <Badge variant="outline" className="text-xs px-1 py-0">
-                                        Obligatoire
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {item.description && (
-                                    <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
-                                  )}
-                                  <Textarea
-                                    placeholder="Notes ou observations..."
-                                    value={item.notes || ''}
-                                    onChange={(e) => handleItemNotes(item.id, e.target.value)}
-                                    className="text-xs"
-                                    rows={2}
-                                  />
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleItemAnomaly(item.id)}
-                                  className="shrink-0 h-8 px-2"
-                                >
-                                  <AlertTriangle className="w-3 h-3 mr-1" />
-                                  <span className="text-xs">Anomalie</span>
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
+                           <Card key={item.id} className={`${item.checked ? 'bg-green-50 border-green-200' : ''} p-0`}>
+                             <CardContent className="p-3">
+                               <div className="flex items-start gap-3">
+                                 <Checkbox
+                                   checked={item.checked}
+                                   onCheckedChange={(checked) => handleItemCheck(item.id, !!checked)}
+                                   className="mt-0.5"
+                                 />
+                                 <div className="flex-1 min-w-0">
+                                   <div className="flex items-center gap-2 mb-1">
+                                     <span className="font-medium text-sm">{item.name}</span>
+                                     {item.mandatory && (
+                                       <Badge variant="outline" className="text-xs px-1 py-0">
+                                         Obligatoire
+                                       </Badge>
+                                     )}
+                                   </div>
+                                   {item.description && (
+                                     <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
+                                   )}
+                                   <Textarea
+                                     placeholder="Notes ou observations..."
+                                     value={item.notes || ''}
+                                     onChange={(e) => handleItemNotes(item.id, e.target.value)}
+                                     className="text-xs"
+                                     rows={2}
+                                   />
+                                 </div>
+                                 <div className="flex items-center gap-2 shrink-0">
+                                   <ChecklistPhotoCapture
+                                     photoUrl={item.photo_url || null}
+                                     onPhotoChange={(url) => handleItemPhotoChange(item.id, url)}
+                                     checklistId={preparationId}
+                                     itemId={item.id}
+                                   />
+                                   <Button
+                                     variant="outline"
+                                     size="sm"
+                                     onClick={() => handleItemAnomaly(item.id)}
+                                     className="h-8 px-2"
+                                   >
+                                     <AlertTriangle className="w-3 h-3 mr-1" />
+                                     <span className="text-xs">Anomalie</span>
+                                   </Button>
+                                 </div>
+                               </div>
+                             </CardContent>
+                           </Card>
                         ))}
                       </div>
                     </div>
