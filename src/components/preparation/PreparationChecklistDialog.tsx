@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { CheckCircle, AlertTriangle, Camera, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreparationAnomalyDialog } from './PreparationAnomalyDialog';
@@ -204,96 +205,79 @@ export function PreparationChecklistDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Ship className="w-5 h-5" />
-              Préparation - {preparation.boat.name} ({preparation.boat.model})
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="flex gap-6 h-full">
-            {/* Progress sidebar */}
-            <div className="w-64 space-y-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Progression</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{getProgress()}%</div>
-                  <div className="text-sm text-gray-500">
+        <DialogContent className="max-w-5xl max-h-[90vh] p-0">
+          <div className="flex flex-col h-full">
+            {/* Header */}
+            <DialogHeader className="px-6 py-4 border-b">
+              <DialogTitle className="flex items-center gap-2">
+                <Ship className="w-5 h-5" />
+                Préparation - {preparation.boat.name} ({preparation.boat.model})
+              </DialogTitle>
+            </DialogHeader>
+            
+            {/* Progress Bar - Full Width */}
+            <div className="px-6 py-4 bg-muted/30 border-b">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-lg font-semibold">{getProgress()}%</div>
+                  <div className="text-sm text-muted-foreground">
                     {items.filter(i => i.checked).length}/{items.length} éléments
                   </div>
-                  <div className="mt-3">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full transition-all" 
-                        style={{ width: `${getProgress()}%` }}
-                      />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Statut</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Badge variant={preparation.status === 'ready' ? 'default' : 'secondary'}>
-                    {preparation.status === 'ready' ? 'Prêt' : 'En cours'}
-                  </Badge>
-                  {preparation.anomalies_count > 0 && (
-                    <Badge variant="destructive">
-                      {preparation.anomalies_count} anomalie{preparation.anomalies_count > 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                </CardContent>
-              </Card>
-
-              {canComplete() && preparation.status !== 'ready' && (
-                <Button 
-                  onClick={() => completePreparationMutation.mutate()}
-                  disabled={completePreparationMutation.isPending}
-                  className="w-full"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Valider prêt à partir
-                </Button>
-              )}
+                </div>
+                <Progress value={getProgress()} className="h-3" />
+              </div>
             </div>
 
-            {/* Checklist content */}
-            <div className="flex-1">
-              <ScrollArea className="h-[500px]">
-                <div className="space-y-6 pr-4">
+            {/* Status Bar */}
+            <div className="px-6 py-3 border-b bg-background">
+              <div className="flex items-center gap-3">
+                <Badge variant={preparation.status === 'ready' ? 'default' : 'secondary'}>
+                  {preparation.status === 'ready' ? 'Prêt' : 'En cours'}
+                </Badge>
+                {preparation.anomalies_count > 0 && (
+                  <Badge variant="destructive">
+                    {preparation.anomalies_count} anomalie{preparation.anomalies_count > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Main Content - Checklist */}
+            <div className="flex-1 overflow-hidden">
+              <ScrollArea className="h-full">
+                <div className="p-6 space-y-4">
                   {Object.entries(groupedItems).map(([category, categoryItems]) => (
-                    <div key={category}>
-                      <h3 className="font-semibold text-lg mb-3">{category}</h3>
-                      <div className="space-y-3">
+                    <div key={category} className="space-y-3">
+                      <h3 className="font-semibold text-lg text-foreground sticky top-0 bg-background py-2 border-b">
+                        {category}
+                      </h3>
+                      <div className="space-y-2">
                         {categoryItems.map((item) => (
-                          <Card key={item.id} className={item.checked ? 'bg-green-50' : ''}>
-                            <CardContent className="p-4">
+                          <Card key={item.id} className={`${item.checked ? 'bg-green-50 border-green-200' : ''} p-0`}>
+                            <CardContent className="p-3">
                               <div className="flex items-start gap-3">
                                 <Checkbox
                                   checked={item.checked}
                                   onCheckedChange={(checked) => handleItemCheck(item.id, !!checked)}
+                                  className="mt-0.5"
                                 />
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium">{item.name}</span>
+                                    <span className="font-medium text-sm">{item.name}</span>
                                     {item.mandatory && (
-                                      <Badge variant="outline" className="text-xs">Obligatoire</Badge>
+                                      <Badge variant="outline" className="text-xs px-1 py-0">
+                                        Obligatoire
+                                      </Badge>
                                     )}
                                   </div>
                                   {item.description && (
-                                    <p className="text-sm text-gray-600 mb-2">{item.description}</p>
+                                    <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
                                   )}
                                   <Textarea
                                     placeholder="Notes ou observations..."
                                     value={item.notes || ''}
                                     onChange={(e) => handleItemNotes(item.id, e.target.value)}
-                                    className="mt-2"
+                                    className="text-xs"
                                     rows={2}
                                   />
                                 </div>
@@ -301,22 +285,36 @@ export function PreparationChecklistDialog({
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleItemAnomaly(item.id)}
-                                  className="shrink-0"
+                                  className="shrink-0 h-8 px-2"
                                 >
-                                  <AlertTriangle className="w-4 h-4 mr-1" />
-                                  Anomalie
+                                  <AlertTriangle className="w-3 h-3 mr-1" />
+                                  <span className="text-xs">Anomalie</span>
                                 </Button>
                               </div>
                             </CardContent>
                           </Card>
                         ))}
                       </div>
-                      <Separator className="mt-6" />
                     </div>
                   ))}
                 </div>
               </ScrollArea>
             </div>
+
+            {/* Footer with Complete Button */}
+            {canComplete() && preparation.status !== 'ready' && (
+              <div className="px-6 py-4 border-t bg-background">
+                <Button 
+                  onClick={() => completePreparationMutation.mutate()}
+                  disabled={completePreparationMutation.isPending}
+                  className="w-full"
+                  size="lg"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Valider prêt à partir
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
