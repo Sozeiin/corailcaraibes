@@ -68,7 +68,7 @@ export function TechnicianPreparations() {
           planning_activity_id
         `)
         .in('planning_activity_id', activities.map(a => a.id))
-        .in('status', ['in_progress', 'anomaly']);
+        .in('status', ['in_progress', 'anomaly', 'ready']);
 
       if (checklistsError) throw checklistsError;
 
@@ -100,7 +100,14 @@ export function TechnicianPreparations() {
       case 'in_progress':
         return <Badge variant="secondary" className="bg-yellow-100 text-yellow-800"><Clock className="w-3 h-3 mr-1" />En cours</Badge>;
       case 'ready':
-        return <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="w-3 h-3 mr-1" />Prêt</Badge>;
+        return (
+          <div className="flex flex-col items-center gap-1">
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <CheckCircle className="w-3 h-3 mr-1" />Terminé
+            </Badge>
+            <span className="text-xs text-green-600 font-medium">Prêt pour check-in</span>
+          </div>
+        );
       case 'anomaly':
         return <Badge variant="destructive"><AlertTriangle className="w-3 h-3 mr-1" />Anomalie</Badge>;
       default:
