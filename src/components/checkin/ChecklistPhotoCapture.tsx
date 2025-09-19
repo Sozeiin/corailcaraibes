@@ -50,9 +50,14 @@ export function ChecklistPhotoCapture({
 
       if (uploadError) throw uploadError;
 
+      console.log('Upload successful:', uploadData);
+
       const { data: urlData } = supabase.storage
         .from('checklist-photos')
         .getPublicUrl(uploadData.path);
+
+      console.log('URL data:', urlData);
+      console.log('Public URL:', urlData.publicUrl);
 
       onPhotoChange(urlData.publicUrl);
       
@@ -209,6 +214,11 @@ export function ChecklistPhotoCapture({
             className="w-12 h-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => setShowPreview(true)}
             title="Cliquer pour agrandir"
+            onError={(e) => {
+              console.error('Error loading image:', photoUrl);
+              console.error('Image error event:', e);
+            }}
+            onLoad={() => console.log('Image loaded successfully:', photoUrl)}
           />
           <Button
             variant="destructive"
