@@ -190,7 +190,12 @@ export function PreparationChecklistDialog({
     );
     console.log('Updated items:', updatedItems);
     setItems(updatedItems);
-    updateChecklistMutation.mutate(updatedItems);
+    updateChecklistMutation.mutate(updatedItems, {
+      onSuccess: () => {
+        // Force refresh des données après la mutation
+        queryClient.invalidateQueries({ queryKey: ['preparation-checklist', preparationId] });
+      }
+    });
   };
 
   const canComplete = () => {
