@@ -8,7 +8,10 @@ import { MaintenanceReports } from '@/components/reports/MaintenanceReports';
 import { ChecklistReports } from '@/components/reports/ChecklistReports';
 import { IncidentReports } from '@/components/reports/IncidentReports';
 import { OperationalReports } from '@/components/reports/OperationalReports';
+import { PreparationReports } from '@/components/reports/PreparationReports';
+import { PreparationHistoryView } from '@/components/reports/PreparationHistoryView';
 import { useReportsData } from '@/hooks/useReportsData';
+import { usePreparationReportsData } from '@/hooks/usePreparationReportsData';
 import { exportReportToPDF, exportReportToExcel } from '@/lib/reportExports';
 import { 
   FileText, 
@@ -19,7 +22,8 @@ import {
   Download,
   RefreshCw,
   Calendar,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Ship
 } from 'lucide-react';
 import { DateRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
@@ -33,6 +37,7 @@ export default function Reports() {
   });
 
   const { data: reportsData, isLoading, refetch } = useReportsData(dateRange);
+  const { data: preparationReportsData, isLoading: isLoadingPreparations, refetch: refetchPreparations } = usePreparationReportsData(dateRange);
 
   const exportReport = (format: 'pdf' | 'excel') => {
     if (!reportsData) return;
@@ -75,7 +80,10 @@ export default function Reports() {
             placeholder="Sélectionner une période"
           />
           <Button 
-            onClick={() => refetch()} 
+            onClick={() => {
+              refetch();
+              refetchPreparations();
+            }} 
             variant="outline" 
             className="flex items-center gap-2"
           >
@@ -101,7 +109,7 @@ export default function Reports() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="maintenance" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             Maintenance
@@ -109,6 +117,10 @@ export default function Reports() {
           <TabsTrigger value="checklists" className="flex items-center gap-2">
             <CheckSquare className="h-4 w-4" />
             Check-in/out
+          </TabsTrigger>
+          <TabsTrigger value="preparations" className="flex items-center gap-2">
+            <Ship className="h-4 w-4" />
+            Préparations
           </TabsTrigger>
           <TabsTrigger value="incidents" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -136,6 +148,22 @@ export default function Reports() {
             isDirection={isDirection}
             isChefBase={isChefBase}
           />
+        </TabsContent>
+
+        <TabsContent value="preparations" className="space-y-4">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div>
+              <PreparationReports 
+                data={preparationReportsData}
+                dateRange={dateRange} 
+                isDirection={isDirection}
+                isChefBase={isChefBase}
+              />
+            </div>
+            <div>
+              <PreparationHistoryView />
+            </div>
+          </div>
         </TabsContent>
 
         <TabsContent value="incidents" className="space-y-4">
