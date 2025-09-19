@@ -59,7 +59,21 @@ export function ChecklistPhotoCapture({
       console.log('URL data:', urlData);
       console.log('Public URL:', urlData.publicUrl);
 
-      onPhotoChange(urlData.publicUrl);
+      // Vérifier que l'image est accessible avant de la définir
+      const img = new Image();
+      img.onload = () => {
+        console.log('Image accessible:', urlData.publicUrl);
+        onPhotoChange(urlData.publicUrl);
+      };
+      img.onerror = () => {
+        console.error('Image not accessible:', urlData.publicUrl);
+        toast({
+          title: 'Erreur',
+          description: 'La photo a été uploadée mais n\'est pas accessible. Réessayez.',
+          variant: 'destructive',
+        });
+      };
+      img.src = urlData.publicUrl;
       
       toast({
         title: 'Photo ajoutée',
