@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
@@ -22,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 import { DashboardGridLayout } from '@/components/dashboard/DashboardGridLayout';
 import WeatherWidget from '@/components/weather/WeatherWidget';
+import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
 
 const StatCard = ({ title, value, icon: Icon, trend, color }: any) => (
   <Card className="card-hover">
@@ -62,9 +62,6 @@ const AlertItem = ({ type, message, severity }: any) => (
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [baseName, setBaseName] = useState<string>('');
-  const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
   // Early return if no user to prevent rendering errors
   if (!user) {
@@ -76,6 +73,20 @@ export default function Dashboard() {
       </div>
     );
   }
+
+  // Interface spécialisée pour les techniciens
+  if (user.role === 'technicien') {
+    return <TechnicianDashboard />;
+  }
+
+  return <StandardDashboard />;
+}
+
+function StandardDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [baseName, setBaseName] = useState<string>('');
+  const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
@@ -93,7 +104,7 @@ export default function Dashboard() {
     loading: interventionsLoading
   } = useOfflineData<any>({
     table: 'interventions',
-    baseId: user.role !== 'direction' ? user.baseId : undefined,
+    baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
@@ -106,7 +117,7 @@ export default function Dashboard() {
 
   const { data: rawAlerts = [] } = useOfflineData<any>({
     table: 'alerts',
-    baseId: user.role !== 'direction' ? user.baseId : undefined,
+    baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.baseId, user?.role]
   });
 
