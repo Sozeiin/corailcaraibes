@@ -19,6 +19,7 @@ export function ChecklistPhotoCapture({
   itemId 
 }: ChecklistPhotoCaptureProps) {
   const [showCamera, setShowCamera] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -205,7 +206,9 @@ export function ChecklistPhotoCapture({
           <img
             src={photoUrl}
             alt="Photo checklist"
-            className="w-12 h-12 object-cover rounded border"
+            className="w-12 h-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setShowPreview(true)}
+            title="Cliquer pour agrandir"
           />
           <Button
             variant="destructive"
@@ -259,6 +262,28 @@ export function ChecklistPhotoCapture({
                 Annuler
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de prévisualisation en plein écran */}
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/90">
+          <div className="relative w-full h-full flex items-center justify-center">
+            <img
+              src={photoUrl || ''}
+              alt="Aperçu photo checklist"
+              className="max-w-full max-h-full object-contain"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPreview(false)}
+              className="absolute top-4 right-4 text-white hover:bg-white/20"
+              title="Fermer"
+            >
+              <X className="h-6 w-6" />
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
