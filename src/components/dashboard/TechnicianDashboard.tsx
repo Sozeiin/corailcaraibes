@@ -313,7 +313,7 @@ export function TechnicianDashboard() {
                 <Button
                   variant="outline"
                   className="h-20 flex flex-col gap-2"
-                  onClick={() => navigate('/stock')}
+                  onClick={() => navigate('/stock/scanner')}
                 >
                   <Scan className="h-6 w-6" />
                   <span className="text-xs">Scanner Stock</span>
