@@ -10,8 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Plus, Ship, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Plus, Ship, Clock, CheckCircle, AlertTriangle, Calendar, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePreparationOrders } from '@/hooks/usePreparationOrders';
+import { PreparationOrdersTable } from '@/components/preparation/PreparationOrdersTable';
 
 interface BoatPreparation {
   id: string;
@@ -45,6 +48,17 @@ export function BoatPreparationManager() {
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newPreparation, setNewPreparation] = useState<Partial<CreatePreparationData>>({});
+  const [activeTab, setActiveTab] = useState('new');
+
+  // Use the new preparation orders hook
+  const { 
+    orders, 
+    isLoading: ordersLoading, 
+    deleteOrder, 
+    assignTechnician, 
+    isDeleting, 
+    isAssigning 
+  } = usePreparationOrders();
 
   // Fetch boats
   const { data: boats = [] } = useQuery({
@@ -157,12 +171,17 @@ export function BoatPreparationManager() {
     });
   };
 
+  // Filter orders by status
+  const newOrders = orders.filter(order => order.status === 'planned');
+  const inProgressOrders = orders.filter(order => order.status === 'in_progress');
+  const completedOrders = orders.filter(order => order.status === 'completed');
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold">Ordres de préparation</h2>
-          <p className="text-gray-600">Créez des ordres qui apparaîtront dans le planning pour assignation</p>
+          <h2 className="text-2xl font-bold">Gestion des préparations</h2>
+          <p className="text-gray-600">Créez et gérez les ordres de préparation des bateaux</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
@@ -225,7 +244,7 @@ export function BoatPreparationManager() {
 
               <div className="bg-blue-50 p-3 rounded-lg text-sm">
                 <p className="text-blue-800">
-                  L'ordre sera créé sans assignation. Utilisez le planning pour l'assigner à un technicien via drag & drop.
+                  L'ordre sera créé sans assignation. Utilisez le planning ou assignez directement un technicien.
                 </p>
               </div>
 
@@ -241,19 +260,114 @@ export function BoatPreparationManager() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="text-center py-8">
-          <Ship className="w-12 h-12 mx-auto text-primary mb-4" />
-          <h3 className="text-lg font-medium mb-2">Organisation via le Planning</h3>
-          <p className="text-gray-600 mb-4">
-            Les ordres de préparation apparaissent dans le planning intelligent.<br />
-            Utilisez le drag & drop pour les assigner aux techniciens.
-          </p>
-          <Button variant="outline" onClick={() => window.location.href = '/planning'}>
-            Aller au Planning
-          </Button>
-        </CardContent>
-      </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="new" className="flex items-center gap-2">
+            <Calendar className="w-4 h-4" />
+            Nouveaux ({newOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="in_progress" className="flex items-center gap-2">
+            <Clock className="w-4 h-4" />
+            En cours ({inProgressOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Terminés ({completedOrders.length})
+          </TabsTrigger>
+          <TabsTrigger value="planning" className="flex items-center gap-2">
+            <Ship className="w-4 h-4" />
+            Planning
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="new" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Ordres non assignés
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="text-center py-4">Chargement...</div>
+              ) : (
+                <PreparationOrdersTable
+                  orders={newOrders}
+                  onDeleteOrder={deleteOrder}
+                  onAssignTechnician={assignTechnician}
+                  isDeleting={isDeleting}
+                  isAssigning={isAssigning}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="in_progress" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Préparations en cours
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="text-center py-4">Chargement...</div>
+              ) : (
+                <PreparationOrdersTable
+                  orders={inProgressOrders}
+                  onDeleteOrder={deleteOrder}
+                  onAssignTechnician={assignTechnician}
+                  isDeleting={isDeleting}
+                  isAssigning={isAssigning}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="completed" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="w-5 h-5" />
+                Préparations terminées
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {ordersLoading ? (
+                <div className="text-center py-4">Chargement...</div>
+              ) : (
+                <PreparationOrdersTable
+                  orders={completedOrders}
+                  onDeleteOrder={deleteOrder}
+                  onAssignTechnician={assignTechnician}
+                  isDeleting={isDeleting}
+                  isAssigning={isAssigning}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="planning" className="space-y-4">
+          <Card>
+            <CardContent className="text-center py-8">
+              <Ship className="w-12 h-12 mx-auto text-primary mb-4" />
+              <h3 className="text-lg font-medium mb-2">Organisation via le Planning</h3>
+              <p className="text-gray-600 mb-4">
+                Les ordres de préparation apparaissent dans le planning intelligent.<br />
+                Utilisez le drag & drop pour les assigner aux techniciens.
+              </p>
+              <Button variant="outline" onClick={() => window.location.href = '/planning'}>
+                Aller au Planning
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
