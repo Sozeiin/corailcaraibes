@@ -16,6 +16,7 @@ interface Task {
   priority?: 'low' | 'medium' | 'high' | 'urgent';
   technician_id?: string;
   boat_id?: string;
+  activity_type?: 'maintenance' | 'preparation' | 'checkin' | 'checkout';
   boats?: { id: string; name: string; model: string };
 }
 
@@ -43,7 +44,9 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
     id: task.id,
   });
 
-  const typeConfig = getTaskTypeConfig(task.intervention_type || 'default');
+  // Use activity_type for new planning activities, fallback to intervention_type for traditional interventions
+  const taskType = task.activity_type || task.intervention_type || 'default';
+  const typeConfig = getTaskTypeConfig(taskType);
   const IconComponent = typeConfig.icon;
 
   const style = transform ? {

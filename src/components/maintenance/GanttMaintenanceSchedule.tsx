@@ -49,6 +49,8 @@ interface Intervention {
   boat_id?: string;
   base_id: string;
   color_code?: string;
+  activity_type?: 'maintenance' | 'preparation' | 'checkin' | 'checkout';
+  original_intervention_id?: string;
   technician?: {
     id: string;
     name: string;
@@ -94,6 +96,24 @@ const TASK_TYPE_COLORS = {
     border: 'border-red-300',
     text: 'text-red-700',
     icon: AlertTriangle
+  },
+  preparation: {
+    bg: 'bg-emerald-100',
+    border: 'border-emerald-300',
+    text: 'text-emerald-700',
+    icon: Ship
+  },
+  checkin: {
+    bg: 'bg-sky-100',
+    border: 'border-sky-300',
+    text: 'text-sky-700',
+    icon: Ship
+  },
+  checkout: {
+    bg: 'bg-indigo-100',
+    border: 'border-indigo-300',
+    text: 'text-indigo-700',
+    icon: Ship
   },
   default: {
     bg: 'bg-gray-100',
@@ -199,70 +219,124 @@ export function GanttMaintenanceSchedule() {
     enabled: !!user?.baseId
   });
 
-  // Fetch interventions
+  // Fetch all planning activities (interventions + preparations)
   const {
     data: interventions = [],
     isLoading: interventionsLoading,
     error: interventionsError
   } = useQuery({
-    queryKey: ['gantt-interventions', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
+    queryKey: ['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId],
     queryFn: async () => {
       if (!user) {
         console.log('No user available');
         return [];
       }
-      console.log('Fetching interventions for date range:', weekDays[0]?.dateString, 'to', weekDays[6]?.dateString);
-      console.log('User:', {
-        id: user.id,
-        baseId: user.baseId,
-        role: user.role
-      });
+      console.log('Fetching planning activities for date range:', weekDays[0]?.dateString, 'to', weekDays[6]?.dateString);
 
-      // Fetch interventions in the current week
+      // Fetch planning activities in the current week
+      const weekActivitiesPromise = supabase.from('planning_activities').select(`
+          *,
+          technician:profiles!technician_id(id, name),
+          boats(id, name, model)
+        `).gte('scheduled_start::date', weekDays[0]?.dateString).lte('scheduled_start::date', weekDays[6]?.dateString).eq('base_id', user?.baseId).order('scheduled_start');
+
+      // Fetch all unassigned planning activities (for tasks panel)
+      const unassignedActivitiesPromise = supabase.from('planning_activities').select(`
+          *,
+          technician:profiles!technician_id(id, name),
+          boats(id, name, model)
+        `).is('technician_id', null).eq('base_id', user?.baseId).order('scheduled_start');
+
+      // Also fetch traditional interventions for backward compatibility
       const weekInterventionsPromise = supabase.from('interventions').select(`
           *,
           technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).gte('scheduled_date', weekDays[0]?.dateString).lte('scheduled_date', weekDays[6]?.dateString).eq('base_id', user?.baseId).order('scheduled_date');
 
-      // Fetch all unassigned interventions (for tasks panel)
       const unassignedInterventionsPromise = supabase.from('interventions').select(`
           *,
           technician:profiles!technician_id(id, name),
           boats(id, name, model)
         `).is('technician_id', null).eq('base_id', user?.baseId).order('scheduled_date');
-      const [weekResult, unassignedResult] = await Promise.all([weekInterventionsPromise, unassignedInterventionsPromise]);
-      if (weekResult.error) {
-        console.error('Error fetching week interventions:', weekResult.error);
-        throw weekResult.error;
+
+      const [weekActivitiesResult, unassignedActivitiesResult, weekInterventionsResult, unassignedInterventionsResult] = await Promise.all([
+        weekActivitiesPromise, 
+        unassignedActivitiesPromise,
+        weekInterventionsPromise,
+        unassignedInterventionsPromise
+      ]);
+
+      if (weekActivitiesResult.error) {
+        console.error('Error fetching week activities:', weekActivitiesResult.error);
+        throw weekActivitiesResult.error;
       }
-      if (unassignedResult.error) {
-        console.error('Error fetching unassigned interventions:', unassignedResult.error);
-        throw unassignedResult.error;
+      if (unassignedActivitiesResult.error) {
+        console.error('Error fetching unassigned activities:', unassignedActivitiesResult.error);
+        throw unassignedActivitiesResult.error;
+      }
+      if (weekInterventionsResult.error) {
+        console.error('Error fetching week interventions:', weekInterventionsResult.error);
+        throw weekInterventionsResult.error;
+      }
+      if (unassignedInterventionsResult.error) {
+        console.error('Error fetching unassigned interventions:', unassignedInterventionsResult.error);
+        throw unassignedInterventionsResult.error;
       }
 
-      // Combine results, avoiding duplicates
-      const weekInterventions = weekResult.data || [];
-      const unassignedInterventions = unassignedResult.data || [];
-      const allInterventions = [...weekInterventions];
+      // Combine all results
+      const weekActivities = weekActivitiesResult.data || [];
+      const unassignedActivities = unassignedActivitiesResult.data || [];
+      const weekInterventions = weekInterventionsResult.data || [];
+      const unassignedInterventions = unassignedInterventionsResult.data || [];
 
-      // Add unassigned interventions that are not already in the week view
-      unassignedInterventions.forEach(intervention => {
-        if (!weekInterventions.find(wi => wi.id === intervention.id)) {
-          allInterventions.push(intervention);
+      const allActivities = [...weekActivities];
+
+      // Add unassigned activities that are not already in the week view
+      unassignedActivities.forEach(activity => {
+        if (!weekActivities.find(wa => wa.id === activity.id)) {
+          allActivities.push(activity);
         }
       });
-      const data = allInterventions;
-      console.log('Fetched interventions raw:', data);
-      const processedData = data.map(item => ({
-        ...item,
-        estimated_duration: 60,
-        // Default duration
-        intervention_type: item.intervention_type || 'maintenance',
-        priority: 'medium' as const // Default priority
-      })) as Intervention[];
-      console.log('Processed interventions:', processedData);
-      return processedData;
+
+      // Convert planning activities to intervention format
+      const processedActivities = allActivities.map(activity => ({
+        id: activity.id,
+        title: activity.title,
+        description: activity.description,
+        scheduled_date: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'yyyy-MM-dd') : '',
+        scheduled_time: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'HH:mm:ss') : '',
+        estimated_duration: activity.estimated_duration || 60,
+        status: activity.status === 'completed' ? 'completed' : 
+               activity.status === 'in_progress' ? 'in_progress' : 
+               activity.status === 'cancelled' ? 'cancelled' : 
+               activity.status === 'planned' ? 'scheduled' : 'scheduled',
+        intervention_type: activity.activity_type || 'maintenance',
+        priority: activity.priority || 'medium',
+        technician_id: activity.technician_id,
+        boat_id: activity.boat_id,
+        base_id: activity.base_id,
+        color_code: activity.color_code,
+        technician: activity.technician,
+        boats: activity.boats,
+        activity_type: activity.activity_type, // Keep original type for differentiation
+        original_intervention_id: activity.original_intervention_id
+      }));
+
+      // Convert traditional interventions to the same format
+      const processedInterventions = [...weekInterventions, ...unassignedInterventions]
+        .filter(intervention => !allActivities.find(activity => activity.original_intervention_id === intervention.id))
+        .map(intervention => ({
+          ...intervention,
+          estimated_duration: 60, // Default duration for interventions
+          intervention_type: intervention.intervention_type || 'maintenance',
+          priority: intervention.priority || 'medium',
+          activity_type: 'maintenance' // Mark as traditional maintenance
+        }));
+
+      const combinedData = [...processedActivities, ...processedInterventions];
+      console.log('Fetched combined activities and interventions:', combinedData);
+      return combinedData as Intervention[];
     },
     enabled: !!user?.baseId && weekDays.length > 0
   });
@@ -299,7 +373,7 @@ export function GanttMaintenanceSchedule() {
     enabled: interventions.length > 0
   });
 
-  // Update intervention mutation with detailed logging
+  // Update activity/intervention mutation with detailed logging
   const updateInterventionMutation = useMutation({
     mutationFn: async ({
       id,
@@ -308,77 +382,110 @@ export function GanttMaintenanceSchedule() {
       id: string;
       updates: Partial<Intervention>;
     }) => {
-      console.log('🚀 Début de la mutation Supabase pour:', {
-        id,
-        updates
-      });
+      console.log('🚀 Début de la mutation pour:', { id, updates });
 
-      // Clean the updates object to only include valid database fields
-      const cleanUpdates = {
-        ...(updates.technician_id !== undefined && {
-          technician_id: updates.technician_id
-        }),
-        ...(updates.scheduled_date && {
-          scheduled_date: updates.scheduled_date
-        }),
-        ...(updates.scheduled_time && {
-          scheduled_time: updates.scheduled_time
-        }),
-        ...(updates.status && {
-          status: updates.status
-        }),
-        ...(updates.title && {
-          title: updates.title
-        }),
-        ...(updates.description && {
-          description: updates.description
-        })
-      };
-      console.log('🧹 Données nettoyées pour Supabase:', {
-        id,
-        cleanUpdates
-      });
+      // Find the item to determine if it's a planning activity or traditional intervention
+      const item = interventions.find(i => i.id === id);
+      if (!item) {
+        throw new Error(`Item non trouvé: ${id}`);
+      }
 
-      // Vérifier que l'ID intervention est valide
-      if (!id || typeof id !== 'string') {
-        throw new Error(`ID intervention invalide: ${id}`);
+      // Check if this is a planning activity (has activity_type and not traditional maintenance)
+      const isPlanningActivity = item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id;
+
+      if (isPlanningActivity) {
+        // Update planning_activities table
+        const scheduledStart = updates.scheduled_date && updates.scheduled_time 
+          ? `${updates.scheduled_date}T${updates.scheduled_time}` 
+          : undefined;
+
+        // Map status from intervention format to planning_activities format
+        const mapStatusToPlanningActivity = (status: string): 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue' => {
+          switch (status) {
+            case 'scheduled': return 'planned';
+            case 'in_progress': return 'in_progress';
+            case 'completed': return 'completed';
+            case 'cancelled': return 'cancelled';
+            default: return 'planned';
+          }
+        };
+
+        const cleanUpdates = {
+          ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
+          ...(scheduledStart && { 
+            scheduled_start: scheduledStart,
+            scheduled_end: scheduledStart // For now, same as start
+          }),
+          ...(updates.status && { status: mapStatusToPlanningActivity(updates.status) }),
+          ...(updates.title && { title: updates.title }),
+          ...(updates.description && { description: updates.description })
+        };
+
+        const { data, error } = await supabase
+          .from('planning_activities')
+          .update(cleanUpdates)
+          .eq('id', id)
+          .select('id, title, technician_id, scheduled_start, status')
+          .single();
+
+        if (error) {
+          console.error('❌ Erreur planning_activities:', error);
+          throw error;
+        }
+        
+        // Also update boat_preparation_checklists if it's a preparation
+        if (item.activity_type === 'preparation') {
+          await supabase
+            .from('boat_preparation_checklists')
+            .update({ technician_id: updates.technician_id })
+            .eq('planning_activity_id', id);
+        }
+
+        console.log('✅ Planning activity mise à jour:', data);
+        return data;
+      } else {
+        // Update traditional interventions table
+        const cleanUpdates = {
+          ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
+          ...(updates.scheduled_date && { scheduled_date: updates.scheduled_date }),
+          ...(updates.scheduled_time && { scheduled_time: updates.scheduled_time }),
+          ...(updates.status && { status: updates.status }),
+          ...(updates.title && { title: updates.title }),
+          ...(updates.description && { description: updates.description })
+        };
+
+        const { data, error } = await supabase
+          .from('interventions')
+          .update(cleanUpdates)
+          .eq('id', id)
+          .select('id, title, technician_id, scheduled_date, scheduled_time, status')
+          .single();
+
+        if (error) {
+          console.error('❌ Erreur interventions:', error);
+          throw error;
+        }
+
+        console.log('✅ Intervention traditionnelle mise à jour:', data);
+        return data;
       }
-      const {
-        data,
-        error
-      } = await supabase.from('interventions').update(cleanUpdates).eq('id', id).select('id, title, technician_id, scheduled_date, scheduled_time, status').single();
-      console.log('📡 Réponse Supabase:', {
-        data,
-        error
-      });
-      if (error) {
-        console.error('❌ Erreur Supabase détaillée:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        throw error;
-      }
-      if (!data) {
-        throw new Error('Aucune donnée retournée par Supabase après mise à jour');
-      }
-      console.log('✅ Intervention mise à jour avec succès:', data);
-      return data;
     },
     onSuccess: data => {
       console.log('🎉 Mutation réussie, invalidation des queries...');
       queryClient.invalidateQueries({
-        queryKey: ['gantt-interventions']
+        queryKey: ['gantt-activities']
       });
       queryClient.invalidateQueries({
         queryKey: ['technicians']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['preparation-orders']
       });
 
       // Afficher le nom du technicien dans le toast
       const technicianName = data.technician_id ? technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 'Non assigné';
       toast({
-        title: "Intervention mise à jour",
+        title: "Tâche mise à jour",
         description: `Assignée à: ${technicianName}`
       });
     },
