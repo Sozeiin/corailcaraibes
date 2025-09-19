@@ -306,15 +306,15 @@ export function PreparationChecklistDialog({
                                       checklistId={preparationId}
                                       itemId={item.id}
                                     />
-                                   <Button
-                                     variant="outline"
-                                     size="sm"
-                                     onClick={() => handleItemAnomaly(item.id)}
-                                     className="h-8 px-2"
-                                   >
-                                     <AlertTriangle className="w-3 h-3 mr-1" />
-                                     <span className="text-xs">Anomalie</span>
-                                   </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="icon"
+                                      onClick={() => handleItemAnomaly(item.id)}
+                                      className="h-7 w-7"
+                                      title="Signaler une anomalie"
+                                    >
+                                      <AlertTriangle className="h-3 w-3" />
+                                    </Button>
                                  </div>
                                </div>
                              </CardContent>

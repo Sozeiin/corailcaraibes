@@ -221,7 +221,7 @@ export function ChecklistPhotoCapture({
           </Button>
         </div>
       ) : (
-        <div className="relative">
+        <div className="flex items-center gap-1">
           <img
             src={photoUrl}
             alt="Photo checklist"
@@ -235,13 +235,13 @@ export function ChecklistPhotoCapture({
             onLoad={() => console.log('Image loaded successfully:', photoUrl)}
           />
           <Button
-            variant="destructive"
+            variant="outline"
             size="icon"
             onClick={removePhoto}
-            className="absolute -top-1 -right-1 h-4 w-4"
+            className="h-7 w-7"
             title="Supprimer la photo"
           >
-            <X className="h-2 w-2" />
+            <X className="h-3 w-3" />
           </Button>
         </div>
       )}
