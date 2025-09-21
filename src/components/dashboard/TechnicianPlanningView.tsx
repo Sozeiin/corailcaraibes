@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { InterventionCompletionDialog } from '@/components/maintenance/InterventionCompletionDialog';
 import { PreparationChecklistDialog } from '@/components/preparation/PreparationChecklistDialog';
+import { toast } from 'sonner';
 
 interface TechnicianTask {
   id: string;
@@ -271,10 +272,27 @@ export function TechnicianPlanningView() {
     setShowCompletionDialog(true);
   };
 
-  const handleOpenChecklist = (task: TechnicianTask) => {
+  const handleOpenChecklist = async (task: TechnicianTask) => {
     setShowTaskModal(false);
-    setPreparationToCheck(task.original_id);
-    setShowChecklistDialog(true);
+    
+    // Find the preparation checklist ID from the planning activity
+    try {
+      const { data: checklist, error } = await supabase
+        .from('boat_preparation_checklists')
+        .select('id')
+        .eq('planning_activity_id', task.original_id)
+        .single();
+      
+      if (error || !checklist) {
+        toast.error('Impossible de trouver la checklist de préparation');
+        return;
+      }
+      
+      setPreparationToCheck(checklist.id);
+      setShowChecklistDialog(true);
+    } catch (error) {
+      toast.error('Erreur lors de l\'ouverture de la checklist');
+    }
   };
 
   const getStatusBadge = (status: string, type: string) => {
