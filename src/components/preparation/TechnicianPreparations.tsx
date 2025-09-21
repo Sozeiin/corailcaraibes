@@ -37,7 +37,7 @@ export function TechnicianPreparations() {
   const { data: preparations = [] } = useQuery({
     queryKey: ['technician-preparations', user?.id],
     queryFn: async () => {
-      // First get planning activities assigned to technician
+      // First get planning activities assigned to technician (exclude completed)
       const { data: activities, error: activitiesError } = await supabase
         .from('planning_activities')
         .select(`
@@ -57,7 +57,7 @@ export function TechnicianPreparations() {
         return [];
       }
 
-      // Get the preparation checklists for these activities
+      // Get the preparation checklists for these activities (exclude ready/completed)
       const { data: checklists, error: checklistsError } = await supabase
         .from('boat_preparation_checklists')
         .select(`
@@ -68,7 +68,7 @@ export function TechnicianPreparations() {
           planning_activity_id
         `)
         .in('planning_activity_id', activities.map(a => a.id))
-        .in('status', ['in_progress', 'anomaly', 'ready']);
+        .in('status', ['in_progress', 'anomaly']);
 
       if (checklistsError) throw checklistsError;
 
