@@ -162,7 +162,7 @@ export function TechnicianPlanningView() {
 
       if (interventionsError) throw interventionsError;
 
-      // Fetch preparations
+      // Fetch preparations (exclude completed ones and those with 'ready' checklist status)
       const { data: preparations, error: preparationsError } = await supabase
         .from('planning_activities')
         .select(`
@@ -172,6 +172,7 @@ export function TechnicianPlanningView() {
         `)
         .eq('technician_id', user.id)
         .eq('activity_type', 'preparation')
+        .neq('status', 'completed')
         .gte('scheduled_start', dayStart.toISOString())
         .lt('scheduled_start', dayEnd.toISOString())
         .order('scheduled_start');
@@ -205,26 +206,28 @@ export function TechnicianPlanningView() {
             intervention_type: intervention.intervention_type
           };
         }),
-        // Convert preparations
-        ...(preparations || []).map(prep => ({
-          id: prep.id,
-          original_id: prep.id,
-          type: 'preparation' as const,
-          title: prep.title,
-          description: prep.description,
-          scheduled_start: prep.scheduled_start,
-          scheduled_end: prep.scheduled_end,
-          status: prep.status,
-          priority: prep.priority || 'medium',
-          color_code: prep.color_code || '#3b82f6',
-          boat: prep.boats ? {
-            id: prep.boats.id,
-            name: prep.boats.name,
-            model: prep.boats.model
-          } : undefined,
-          anomalies_count: prep.boat_preparation_checklists?.[0]?.anomalies_count || 0,
-          preparation_status: prep.boat_preparation_checklists?.[0]?.status
-        }))
+        // Convert preparations (filter out those with 'ready' checklist status)
+        ...(preparations || [])
+          .filter(prep => prep.boat_preparation_checklists?.[0]?.status !== 'ready')
+          .map(prep => ({
+            id: prep.id,
+            original_id: prep.id,
+            type: 'preparation' as const,
+            title: prep.title,
+            description: prep.description,
+            scheduled_start: prep.scheduled_start,
+            scheduled_end: prep.scheduled_end,
+            status: prep.status,
+            priority: prep.priority || 'medium',
+            color_code: prep.color_code || '#3b82f6',
+            boat: prep.boats ? {
+              id: prep.boats.id,
+              name: prep.boats.name,
+              model: prep.boats.model
+            } : undefined,
+            anomalies_count: prep.boat_preparation_checklists?.[0]?.anomalies_count || 0,
+            preparation_status: prep.boat_preparation_checklists?.[0]?.status
+          }))
       ];
 
       return allTasks;

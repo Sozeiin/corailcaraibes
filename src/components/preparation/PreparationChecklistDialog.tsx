@@ -133,7 +133,19 @@ export function PreparationChecklistDialog({
   // Complete preparation mutation
   const completePreparationMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      // Get current user info for notifications
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('name, base_id')
+        .eq('id', user.id)
+        .single();
+
+      // Update preparation status
+      const { error: prepError } = await supabase
         .from('boat_preparation_checklists')
         .update({ 
           status: 'ready',
@@ -141,11 +153,49 @@ export function PreparationChecklistDialog({
         })
         .eq('id', preparationId);
       
-      if (error) throw error;
+      if (prepError) throw prepError;
+
+      // Update planning activity status to completed
+      if (preparation?.planning_activity_id) {
+        const { error: activityError } = await supabase
+          .from('planning_activities')
+          .update({ status: 'completed' })
+          .eq('id', preparation.planning_activity_id);
+        
+        if (activityError) throw activityError;
+      }
+
+      // Create notification for base chief
+      if (userProfile?.base_id) {
+        const { data: baseChiefs } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'chef_base')
+          .eq('base_id', userProfile.base_id);
+
+        if (baseChiefs && baseChiefs.length > 0) {
+          const notifications = baseChiefs.map(chief => ({
+            user_id: chief.id,
+            type: 'preparation_completed',
+            title: '✅ Préparation terminée',
+            message: `Le bateau ${preparation?.boat?.name} est prêt à partir. Préparation terminée par ${userProfile?.name || 'un technicien'}.`,
+            data: {
+              preparation_id: preparationId,
+              boat_id: preparation?.boat?.id,
+              boat_name: preparation?.boat?.name,
+              completed_by: userProfile?.name
+            }
+          }));
+
+          await supabase.from('notifications').insert(notifications);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['preparation-checklist', preparationId] });
       queryClient.invalidateQueries({ queryKey: ['boat-preparations'] });
+      queryClient.invalidateQueries({ queryKey: ['technician-planning'] });
+      queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
       onOpenChange(false);
       toast.success('Préparation terminée - Bateau prêt à partir !');
     }
