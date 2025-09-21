@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format, addDays, startOfWeek, endOfWeek, addWeeks, subWeeks, isSameDay, isToday } from 'date-fns';
+import { format, addDays, subDays, isSameDay, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
   ChevronLeft, 
@@ -116,30 +116,22 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
 
 export function TechnicianPlanningView() {
   const { user } = useAuth();
-  const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentDay, setCurrentDay] = useState(new Date());
   const [selectedTask, setSelectedTask] = useState<TechnicianTask | null>(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [interventionToComplete, setInterventionToComplete] = useState<any>(null);
 
-  // Generate week days
-  const weekDays = useMemo(() => {
-    const start = startOfWeek(currentWeek, { weekStartsOn: 1 });
-    const days = [];
-    for (let i = 0; i < 7; i++) {
-      days.push(addDays(start, i));
-    }
-    return days;
-  }, [currentWeek]);
-
-  // Fetch technician's tasks
+  // Fetch technician's tasks for the current day
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['technician-planning', user?.id, currentWeek],
+    queryKey: ['technician-planning', user?.id, currentDay],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const start = startOfWeek(currentWeek, { weekStartsOn: 1 });
-      const end = endOfWeek(currentWeek, { weekStartsOn: 1 });
+      const dayStart = new Date(currentDay);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(currentDay);
+      dayEnd.setHours(23, 59, 59, 999);
 
       // Fetch interventions
       const { data: interventions, error: interventionsError } = await supabase
@@ -149,8 +141,7 @@ export function TechnicianPlanningView() {
           boats(id, name, model)
         `)
         .eq('technician_id', user.id)
-        .gte('scheduled_date', start.toISOString().split('T')[0])
-        .lte('scheduled_date', end.toISOString().split('T')[0])
+        .eq('scheduled_date', currentDay.toISOString().split('T')[0])
         .order('scheduled_date');
 
       if (interventionsError) throw interventionsError;
@@ -165,8 +156,8 @@ export function TechnicianPlanningView() {
         `)
         .eq('technician_id', user.id)
         .eq('activity_type', 'preparation')
-        .gte('scheduled_start', start.toISOString())
-        .lte('scheduled_end', end.toISOString())
+        .gte('scheduled_start', dayStart.toISOString())
+        .lt('scheduled_start', dayEnd.toISOString())
         .order('scheduled_start');
 
       if (preparationsError) throw preparationsError;
@@ -225,17 +216,20 @@ export function TechnicianPlanningView() {
     enabled: !!user?.id
   });
 
-  const navigateWeek = (direction: 'prev' | 'next') => {
-    setCurrentWeek(direction === 'next' ? addWeeks(currentWeek, 1) : subWeeks(currentWeek, 1));
+  const navigateDay = (direction: 'prev' | 'next') => {
+    setCurrentDay(direction === 'next' ? addDays(currentDay, 1) : subDays(currentDay, 1));
   };
 
   const goToToday = () => {
-    setCurrentWeek(new Date());
+    setCurrentDay(new Date());
   };
 
-  const getTasksForDay = (date: Date) => {
-    return tasks.filter(task => isSameDay(new Date(task.scheduled_start), date));
-  };
+  // Sort tasks by scheduled time
+  const sortedTasks = useMemo(() => {
+    return [...tasks].sort((a, b) => 
+      new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime()
+    );
+  }, [tasks]);
 
   const handleTaskClick = (task: TechnicianTask) => {
     setSelectedTask(task);
@@ -296,7 +290,7 @@ export function TechnicianPlanningView() {
 
   return (
     <div className="space-y-6">
-      {/* Navigation de la semaine */}
+      {/* Navigation du jour */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -308,7 +302,7 @@ export function TechnicianPlanningView() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigateWeek('prev')}
+                onClick={() => navigateDay('prev')}
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -322,90 +316,114 @@ export function TechnicianPlanningView() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigateWeek('next')}
+                onClick={() => navigateDay('next')}
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Semaine du {format(weekDays[0], 'd MMMM', { locale: fr })} au {format(weekDays[6], 'd MMMM yyyy', { locale: fr })}
-          </p>
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-lg font-semibold">
+                {format(currentDay, 'EEEE d MMMM yyyy', { locale: fr })}
+              </p>
+              {isToday(currentDay) && (
+                <Badge variant="default" className="text-xs mt-1">Aujourd'hui</Badge>
+              )}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {sortedTasks.length} tâche{sortedTasks.length !== 1 ? 's' : ''} planifiée{sortedTasks.length !== 1 ? 's' : ''}
+            </div>
+          </div>
         </CardHeader>
       </Card>
 
-      {/* Grille des jours */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
-        {weekDays.map((day, index) => {
-          const dayTasks = getTasksForDay(day);
-          const isCurrentDay = isToday(day);
-          
-          return (
-            <Card key={index} className={`${isCurrentDay ? 'ring-2 ring-primary' : ''}`}>
-              <CardHeader className="pb-3">
-                <div className="text-center">
-                  <p className="text-sm font-medium">
-                    {format(day, 'EEEE', { locale: fr })}
-                  </p>
-                  <p className={`text-lg font-bold ${isCurrentDay ? 'text-primary' : ''}`}>
-                    {format(day, 'd', { locale: fr })}
-                  </p>
-                  {isCurrentDay && (
-                    <Badge variant="default" className="text-xs mt-1">Aujourd'hui</Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {dayTasks.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground">
-                    <Clock className="h-6 w-6 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Aucune tâche</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-48">
-                    <div className="space-y-2">
-                      {dayTasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`p-3 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all bg-white ${getPriorityColor(task.priority)}`}
-                          onClick={() => handleTaskClick(task)}
-                        >
-                          <div className="flex items-start gap-2">
-                            {task.type === 'intervention' ? 
-                              <Wrench className="h-4 w-4 mt-0.5 text-red-600 flex-shrink-0" /> :
-                              <Ship className="h-4 w-4 mt-0.5 text-blue-600 flex-shrink-0" />
-                            }
-                            <div className="min-w-0 flex-1">
-                              <h4 className="font-medium text-sm truncate">{task.title}</h4>
-                              {task.boat && (
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {task.boat.name}
-                                </p>
-                              )}
-                              <div className="flex items-center justify-between mt-1">
-                                <span className="text-xs text-muted-foreground">
-                                  {format(new Date(task.scheduled_start), 'HH:mm')}
-                                </span>
-                                {getStatusBadge(task.status, task.type)}
-                              </div>
-                              {task.anomalies_count !== undefined && task.anomalies_count > 0 && (
-                                <div className="flex items-center gap-1 mt-1">
-                                  <AlertTriangle className="h-3 w-3 text-amber-500" />
-                                  <span className="text-xs text-amber-600">{task.anomalies_count}</span>
-                                </div>
-                              )}
-                            </div>
+      {/* Tâches du jour */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Tâches de la journée</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {sortedTasks.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">Aucune tâche planifiée</h3>
+              <p className="text-sm">Vous n'avez aucune intervention ou préparation prévue pour cette journée.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {sortedTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className={`p-4 rounded-lg border-l-4 cursor-pointer hover:shadow-md transition-all bg-card ${getPriorityColor(task.priority)}`}
+                  onClick={() => handleTaskClick(task)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 mt-1">
+                      {task.type === 'intervention' ? 
+                        <Wrench className="h-5 w-5 text-red-600" /> :
+                        <Ship className="h-5 w-5 text-blue-600" />
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-base">{task.title}</h3>
+                          {task.boat && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Bateau: {task.boat.name} {task.boat.model && `(${task.boat.model})`}
+                            </p>
+                          )}
+                          {task.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-2 ml-4">
+                          {getStatusBadge(task.status, task.type)}
+                          <div className="text-sm text-muted-foreground">
+                            {format(new Date(task.scheduled_start), 'HH:mm')} - {format(new Date(task.scheduled_end), 'HH:mm')}
                           </div>
                         </div>
-                      ))}
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-3">
+                        <div className="flex items-center gap-4">
+                          <Badge variant="outline" className="text-xs">
+                            {task.type === 'intervention' ? 'Intervention' : 'Préparation'}
+                          </Badge>
+                          {task.priority && (
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                task.priority === 'high' ? 'border-red-500 text-red-700' :
+                                task.priority === 'medium' ? 'border-orange-500 text-orange-700' :
+                                'border-blue-500 text-blue-700'
+                              }`}
+                            >
+                              {task.priority === 'high' ? 'Priorité haute' :
+                               task.priority === 'medium' ? 'Priorité moyenne' :
+                               'Priorité normale'}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        {task.anomalies_count !== undefined && task.anomalies_count > 0 && (
+                          <div className="flex items-center gap-2 text-amber-600">
+                            <AlertTriangle className="h-4 w-4" />
+                            <span className="text-sm font-medium">{task.anomalies_count} anomalie{task.anomalies_count !== 1 ? 's' : ''}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Modal détails tâche */}
       <TaskDetailsModal
