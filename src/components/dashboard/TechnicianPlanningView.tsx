@@ -20,6 +20,7 @@ import {
   Eye
 } from 'lucide-react';
 import { InterventionCompletionDialog } from '@/components/maintenance/InterventionCompletionDialog';
+import { PreparationChecklistDialog } from '@/components/preparation/PreparationChecklistDialog';
 
 interface TechnicianTask {
   id: string;
@@ -47,18 +48,22 @@ interface TaskDetailsModalProps {
   onClose: () => void;
   task: TechnicianTask | null;
   onCompleteIntervention: (task: TechnicianTask) => void;
+  onOpenChecklist: (task: TechnicianTask) => void;
 }
 
 const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
   isOpen,
   onClose,
   task,
-  onCompleteIntervention
+  onCompleteIntervention,
+  onOpenChecklist
 }) => {
   if (!isOpen || !task) return null;
 
   const isIntervention = task.type === 'intervention';
+  const isPreparation = task.type === 'preparation';
   const canComplete = isIntervention && task.status !== 'completed';
+  const canOpenChecklist = isPreparation;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -107,6 +112,14 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
                 Terminer l'intervention
               </Button>
             )}
+            {canOpenChecklist && (
+              <Button 
+                onClick={() => onOpenChecklist(task)}
+                className="flex-1"
+              >
+                Ouvrir la checklist
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -121,6 +134,8 @@ export function TechnicianPlanningView() {
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [interventionToComplete, setInterventionToComplete] = useState<any>(null);
+  const [showChecklistDialog, setShowChecklistDialog] = useState(false);
+  const [preparationToCheck, setPreparationToCheck] = useState<string | null>(null);
 
   // Fetch technician's tasks for the current day
   const { data: tasks = [], isLoading } = useQuery({
@@ -254,6 +269,12 @@ export function TechnicianPlanningView() {
       } : null
     });
     setShowCompletionDialog(true);
+  };
+
+  const handleOpenChecklist = (task: TechnicianTask) => {
+    setShowTaskModal(false);
+    setPreparationToCheck(task.original_id);
+    setShowChecklistDialog(true);
   };
 
   const getStatusBadge = (status: string, type: string) => {
@@ -431,6 +452,7 @@ export function TechnicianPlanningView() {
         onClose={() => setShowTaskModal(false)}
         task={selectedTask}
         onCompleteIntervention={handleCompleteIntervention}
+        onOpenChecklist={handleOpenChecklist}
       />
 
       {/* Dialog completion intervention */}
@@ -442,6 +464,20 @@ export function TechnicianPlanningView() {
             setInterventionToComplete(null);
           }}
           intervention={interventionToComplete}
+        />
+      )}
+
+      {/* Dialog checklist préparation */}
+      {preparationToCheck && (
+        <PreparationChecklistDialog
+          preparationId={preparationToCheck}
+          open={showChecklistDialog}
+          onOpenChange={(open) => {
+            setShowChecklistDialog(open);
+            if (!open) {
+              setPreparationToCheck(null);
+            }
+          }}
         />
       )}
     </div>
