@@ -14,6 +14,7 @@ import { CheckCircle, AlertTriangle, Camera, Ship } from 'lucide-react';
 import { toast } from 'sonner';
 import { PreparationAnomalyDialog } from './PreparationAnomalyDialog';
 import { ChecklistPhotoCapture } from '@/components/checkin/ChecklistPhotoCapture';
+import { ImagePreview } from '@/components/ui/image-preview';
 
 interface ChecklistItem {
   id: string;
@@ -43,6 +44,7 @@ export function PreparationChecklistDialog({
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<ChecklistItem | null>(null);
   const [anomalyDialogOpen, setAnomalyDialogOpen] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ src: string; alt: string } | null>(null);
 
   // Fetch preparation details
   const { data: preparation, isLoading } = useQuery({
@@ -372,15 +374,17 @@ export function PreparationChecklistDialog({
                                        </Button>
                                     </div>
                                    )}
-                                   {readOnly && item.photo_url && (
-                                     <div className="flex items-center gap-2 shrink-0">
-                                       <img 
-                                         src={item.photo_url} 
-                                         alt="Photo de vérification" 
-                                         className="w-16 h-16 object-cover rounded border"
-                                       />
-                                     </div>
-                                   )}
+                                    {readOnly && item.photo_url && (
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <img 
+                                          src={item.photo_url} 
+                                          alt="Photo de vérification" 
+                                          className="w-16 h-16 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                          onClick={() => setPreviewImage({ src: item.photo_url!, alt: "Photo de vérification" })}
+                                          title="Cliquer pour agrandir"
+                                        />
+                                      </div>
+                                    )}
                                </div>
                              </CardContent>
                            </Card>
@@ -417,6 +421,15 @@ export function PreparationChecklistDialog({
           preparationId={preparationId}
           item={selectedItem}
           onAnomalyReported={handleAnomalyReported}
+        />
+      )}
+
+      {previewImage && (
+        <ImagePreview
+          src={previewImage.src}
+          alt={previewImage.alt}
+          open={!!previewImage}
+          onOpenChange={(open) => !open && setPreviewImage(null)}
         />
       )}
     </>
