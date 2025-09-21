@@ -31,12 +31,14 @@ interface PreparationChecklistDialogProps {
   preparationId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  readOnly?: boolean;
 }
 
 export function PreparationChecklistDialog({ 
   preparationId, 
   open, 
-  onOpenChange 
+  onOpenChange,
+  readOnly = false
 }: PreparationChecklistDialogProps) {
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<ChecklistItem | null>(null);
@@ -324,11 +326,12 @@ export function PreparationChecklistDialog({
                            <Card key={item.id} className={`${item.checked ? 'bg-green-50 border-green-200' : ''} p-0`}>
                              <CardContent className="p-3">
                                <div className="flex items-start gap-3">
-                                 <Checkbox
-                                   checked={item.checked}
-                                   onCheckedChange={(checked) => handleItemCheck(item.id, !!checked)}
-                                   className="mt-0.5"
-                                 />
+                                  <Checkbox
+                                    checked={item.checked}
+                                    onCheckedChange={readOnly ? undefined : (checked) => handleItemCheck(item.id, !!checked)}
+                                    className="mt-0.5"
+                                    disabled={readOnly}
+                                  />
                                  <div className="flex-1 min-w-0">
                                    <div className="flex items-center gap-2 mb-1">
                                      <span className="font-medium text-sm">{item.name}</span>
@@ -341,31 +344,43 @@ export function PreparationChecklistDialog({
                                    {item.description && (
                                      <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
                                    )}
-                                   <Textarea
-                                     placeholder="Notes ou observations..."
-                                     value={item.notes || ''}
-                                     onChange={(e) => handleItemNotes(item.id, e.target.value)}
-                                     className="text-xs"
-                                     rows={2}
-                                   />
-                                 </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <ChecklistPhotoCapture
-                                      photoUrl={item.photo_url || null}
-                                      onPhotoChange={(url) => handleItemPhotoChange(item.id, url)}
-                                      checklistId={preparationId}
-                                      itemId={item.id}
+                                    <Textarea
+                                      placeholder="Notes ou observations..."
+                                      value={item.notes || ''}
+                                      onChange={readOnly ? undefined : (e) => handleItemNotes(item.id, e.target.value)}
+                                      className="text-xs"
+                                      rows={2}
+                                      readOnly={readOnly}
                                     />
-                                    <Button
-                                      variant="outline"
-                                      size="icon"
-                                      onClick={() => handleItemAnomaly(item.id)}
-                                      className="h-7 w-7"
-                                      title="Signaler une anomalie"
-                                    >
-                                      <AlertTriangle className="h-3 w-3" />
-                                    </Button>
                                  </div>
+                                   {!readOnly && (
+                                     <div className="flex items-center gap-2 shrink-0">
+                                       <ChecklistPhotoCapture
+                                         photoUrl={item.photo_url || null}
+                                         onPhotoChange={(url) => handleItemPhotoChange(item.id, url)}
+                                         checklistId={preparationId}
+                                         itemId={item.id}
+                                       />
+                                       <Button
+                                         variant="outline"
+                                         size="icon"
+                                         onClick={() => handleItemAnomaly(item.id)}
+                                         className="h-7 w-7"
+                                         title="Signaler une anomalie"
+                                       >
+                                         <AlertTriangle className="h-3 w-3" />
+                                       </Button>
+                                    </div>
+                                   )}
+                                   {readOnly && item.photo_url && (
+                                     <div className="flex items-center gap-2 shrink-0">
+                                       <img 
+                                         src={item.photo_url} 
+                                         alt="Photo de vérification" 
+                                         className="w-16 h-16 object-cover rounded border"
+                                       />
+                                     </div>
+                                   )}
                                </div>
                              </CardContent>
                            </Card>
@@ -378,7 +393,7 @@ export function PreparationChecklistDialog({
             </div>
 
             {/* Footer with Complete Button */}
-            {canComplete() && preparation.status !== 'ready' && (
+            {!readOnly && canComplete() && preparation.status !== 'ready' && (
               <div className="px-6 py-4 border-t bg-background">
                 <Button 
                   onClick={() => completePreparationMutation.mutate()}
