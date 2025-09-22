@@ -23,6 +23,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 import { StockItemAutocomplete } from './StockItemAutocomplete';
 import { OrderLinkDialog } from './OrderLinkDialog';
+import { StockMovementDialog } from './StockMovementDialog';
 import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@/lib/stockUtils';
 import { safeRemoveChild, safeRemoveById, safeRemoveBySelector } from '@/lib/domUtils';
 
@@ -57,6 +58,11 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
   const [codeToCreate, setCodeToCreate] = useState('');
   const [isOrderLinkDialogOpen, setIsOrderLinkDialogOpen] = useState(false);
   const [pendingLinkOperation, setPendingLinkOperation] = useState<ScannedOperation | null>(null);
+  const [showMovementDialog, setShowMovementDialog] = useState(false);
+  const [movementData, setMovementData] = useState<{
+    stockItem: { id: string; name: string; quantity: number };
+    removedQuantity: number;
+  } | null>(null);
   
   // Debug logs for dialog state
   console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
@@ -616,6 +622,19 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         setIsOrderLinkDialogOpen(true);
       }
 
+      // Si c'est une sortie de stock, ouvrir le dialog de traçabilité
+      if (operation.operation === 'remove') {
+        setMovementData({
+          stockItem: {
+            id: operation.stockItem.id,
+            name: operation.stockItem.name,
+            quantity: newQuantity
+          },
+          removedQuantity: operation.quantity
+        });
+        setShowMovementDialog(true);
+      }
+
     } catch (error) {
       console.error('Erreur:', error);
       setOperations(prev => 
@@ -875,6 +894,19 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
           stockItemId={pendingLinkOperation.stockItem.id}
           stockItemName={pendingLinkOperation.stockItem.name}
           quantityReceived={pendingLinkOperation.quantity}
+        />
+      )}
+
+      {/* Dialog de traçabilité des sorties de stock */}
+      {showMovementDialog && movementData && (
+        <StockMovementDialog
+          isOpen={showMovementDialog}
+          onClose={() => {
+            setShowMovementDialog(false);
+            setMovementData(null);
+          }}
+          stockItem={movementData.stockItem}
+          removedQuantity={movementData.removedQuantity}
         />
       )}
     </div>

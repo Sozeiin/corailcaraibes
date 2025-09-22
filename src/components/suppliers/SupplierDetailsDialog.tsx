@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, Mail, Phone, MapPin, Calendar, Package } from 'lucide-react';
 import { Supplier } from '@/types';
 import { SupplierQuotesHistory } from './SupplierQuotesHistory';
+import { SupplierStockMovements } from './SupplierStockMovements';
 
 interface SupplierDetailsDialogProps {
   isOpen: boolean;
@@ -131,6 +132,22 @@ export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDet
             </CardHeader>
             <CardContent>
               <SupplierQuotesHistory supplier={supplier} />
+            </CardContent>
+          </Card>
+
+          {/* Sorties de stock */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Sorties de stock
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SupplierStockMovements 
+                supplierId={supplier.id} 
+                supplierName={supplier.name} 
+              />
             </CardContent>
           </Card>
         </div>
