@@ -62,8 +62,8 @@ export function useStockMovements(supplierId?: string) {
         query = query.eq('base_id', baseId);
       }
 
-      // Filtrer uniquement les sorties de stock
-      query = query.eq('movement_type', 'out');
+      // Filtrer uniquement les sorties de stock (outbound_distribution)
+      query = query.eq('movement_type', 'outbound_distribution');
 
       const { data, error } = await query;
 
@@ -94,7 +94,7 @@ export function useCreateStockMovement() {
         .insert({
           sku: movement.sku,
           qty: -Math.abs(movement.qty), // Toujours négatif pour une sortie
-          movement_type: 'out',
+          movement_type: 'outbound_distribution',
           base_id: user?.baseId,
           actor: user?.id,
           notes: movement.supplier_id ? 

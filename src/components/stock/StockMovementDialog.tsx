@@ -55,7 +55,7 @@ export function StockMovementDialog({
         .insert({
           sku: stockItem.id,
           qty: -Math.abs(removedQuantity), // Négatif pour une sortie
-          movement_type: 'out',
+          movement_type: 'outbound_distribution',
           base_id: user?.baseId,
           actor: user?.id,
           notes: `Sortie vers fournisseur:${selectedSupplierId}. ${notes.trim() || ''}`.trim(),
