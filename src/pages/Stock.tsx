@@ -58,6 +58,13 @@ export default function Stock() {
   // Get bases for filter first
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
+  const {
+    data: rawStockItems = [],
+    loading: isLoading,
+    update: updateItem,
+    refetch: refetchStock
+  } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
+
   // Set default base filter for chefs de base
   useEffect(() => {
     if (user && bases.length > 0 && selectedBase === 'all') {
@@ -67,12 +74,24 @@ export default function Stock() {
     }
   }, [user, bases, selectedBase]);
 
-  const {
-    data: rawStockItems = [],
-    loading: isLoading,
-    update: updateItem,
-    refetch: refetchStock
-  } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
+  // Force data refresh when selectedBase changes for chefs de base
+  useEffect(() => {
+    console.log('Base filter changed to:', selectedBase);
+    console.log('User role:', user?.role);
+    console.log('Total stock items fetched:', rawStockItems.length);
+    
+    if (user?.role === 'chef_base' && selectedBase !== 'all') {
+      console.log('Refetching data for chef de base with new base filter');
+      refetchStock();
+    }
+  }, [selectedBase, user?.role, refetchStock]);
+
+  // Debug: Log the bases represented in stock data
+  useEffect(() => {
+    const basesInStock = Array.from(new Set(rawStockItems.map(item => item.base_id)));
+    console.log('Bases represented in stock data:', basesInStock);
+    console.log('Available bases:', bases.map(b => ({ id: b.id, name: b.name })));
+  }, [rawStockItems, bases]);
 
   // Use mutations and realtime updates
   const deleteStockMutation = useDeleteStockItem();
