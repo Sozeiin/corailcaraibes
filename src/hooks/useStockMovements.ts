@@ -13,16 +13,12 @@ export interface StockMovement {
   notes: string | null;
   ts: string;
   supplier_id?: string | null;
-  stock_item?: {
+  stock_items?: {
     name: string;
     reference: string;
     unit: string;
   };
-  supplier?: {
-    name: string;
-    category: string;
-  };
-  user?: {
+  profiles?: {
     name: string;
   };
 }
@@ -38,14 +34,10 @@ export function useStockMovements(supplierId?: string) {
         .from('stock_movements')
         .select(`
           *,
-          stock_items:sku (
+          stock_items!sku (
             name,
             reference,
             unit
-          ),
-          suppliers (
-            name,
-            category
           ),
           profiles:actor (
             name

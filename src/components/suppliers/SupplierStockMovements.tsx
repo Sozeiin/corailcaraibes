@@ -115,25 +115,25 @@ export function SupplierStockMovements({ supplierId, supplierName }: SupplierSto
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{movement.stock_item?.name}</div>
+                      <div className="font-medium">{movement.stock_items?.name}</div>
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline">
-                        {movement.stock_item?.reference || 'N/A'}
+                        {movement.stock_items?.reference || 'N/A'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <span className="font-semibold text-red-600">{movement.qty}</span>
                         <span className="text-sm text-muted-foreground">
-                          {movement.stock_item?.unit}
+                          {movement.stock_items?.unit}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm">{movement.user?.name || 'Utilisateur inconnu'}</span>
+                        <span className="text-sm">{movement.profiles?.name || 'Utilisateur inconnu'}</span>
                       </div>
                     </TableCell>
                     <TableCell>
