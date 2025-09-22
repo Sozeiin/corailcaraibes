@@ -73,6 +73,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
           console.log(`[useOfflineData] Filtering by base_id: ${baseId}`);
         } else {
           finalQuery = queryBuilder;
+          console.log(`[useOfflineData] No base filter applied - fetching all data`);
         }
         
         const { data: onlineData, error: supabaseError } = await finalQuery;

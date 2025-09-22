@@ -14,6 +14,7 @@ interface StockCardsProps {
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
   onViewDetails?: (item: StockItem) => void;
   canManage: boolean;
+  userBaseId?: string;
 }
 
 // Composant optimisé pour une carte individuelle
@@ -23,7 +24,8 @@ const StockCard = memo(({
   onDuplicate, 
   onUpdateQuantity, 
   onViewDetails, 
-  canManage 
+  canManage,
+  userBaseId 
 }: {
   item: StockItem;
   onEdit: (item: StockItem) => void;
@@ -31,6 +33,7 @@ const StockCard = memo(({
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
   onViewDetails?: (item: StockItem) => void;
   canManage: boolean;
+  userBaseId?: string;
 }) => {
   const isLowStock = item.quantity <= item.minThreshold;
   
@@ -96,14 +99,17 @@ const StockCard = memo(({
 
         {canManage && (
           <div className="flex items-center gap-2 pt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(item)}
-              className="flex-1"
-            >
-              <Edit className="h-4 w-4" />
-            </Button>
+            {/* Actions d'édition seulement pour les articles de la même base */}
+            {(!userBaseId || item.baseId === userBaseId) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onEdit(item)}
+                className="flex-1"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
             {onDuplicate && (
               <Button
                 variant="outline"
@@ -125,7 +131,7 @@ const StockCard = memo(({
           </div>
         )}
 
-        {canManage && onUpdateQuantity && (
+        {canManage && onUpdateQuantity && (!userBaseId || item.baseId === userBaseId) && (
           <div className="flex items-center gap-2 pt-2">
             <Button
               variant="outline"
@@ -152,7 +158,7 @@ const StockCard = memo(({
 
 StockCard.displayName = 'StockCard';
 
-export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onViewDetails, canManage }: StockCardsProps) {
+export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuantity, onViewDetails, canManage, userBaseId }: StockCardsProps) {
   // Optimisation : mémoriser les éléments pour éviter les re-rendus inutiles
   const memoizedItems = useMemo(() => items, [items]);
 
@@ -181,6 +187,7 @@ export function StockCards({ items, isLoading, onEdit, onDuplicate, onUpdateQuan
           onUpdateQuantity={onUpdateQuantity}
           onViewDetails={onViewDetails}
           canManage={canManage}
+          userBaseId={userBaseId}
         />
       ))}
     </div>

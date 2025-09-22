@@ -43,7 +43,8 @@ export default function Stock() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
+  // Les chefs de base peuvent voir tous les stocks, les techniciens seulement leur base
+  const baseId = user?.role === 'technicien' ? user?.baseId : undefined;
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -67,23 +68,29 @@ export default function Stock() {
   useRealtimeStockUpdates();
 
 
-  const stockItems: StockItem[] = rawStockItems.map((item: any) => ({
-    id: item.id,
-    name: item.name,
-    reference: item.reference || '',
-    category: item.category || '',
-    quantity: item.quantity || 0,
-    minThreshold: item.min_threshold || 0,
-    unit: item.unit || '',
-    location: item.location || '',
-    baseId: item.base_id || '',
-    baseName: '',
-    photoUrl: item.photo_url || '',
-    lastUpdated: item.last_updated || new Date().toISOString(),
-    lastPurchaseDate: null,
-    lastPurchaseCost: null,
-    lastSupplierId: null
-  }));
+  const stockItems: StockItem[] = rawStockItems.map((item: any) => {
+    // Trouver le nom de la base correspondante
+    const base = bases.find(b => b.id === item.base_id);
+    const baseName = base?.name || '';
+    
+    return {
+      id: item.id,
+      name: item.name,
+      reference: item.reference || '',
+      category: item.category || '',
+      quantity: item.quantity || 0,
+      minThreshold: item.min_threshold || 0,
+      unit: item.unit || '',
+      location: item.location || '',
+      baseId: item.base_id || '',
+      baseName,
+      photoUrl: item.photo_url || '',
+      lastUpdated: item.last_updated || new Date().toISOString(),
+      lastPurchaseDate: null,
+      lastPurchaseCost: null,
+      lastSupplierId: null
+    };
+  });
 
   // Get bases for filter
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
@@ -267,6 +274,7 @@ export default function Stock() {
               onDelete={handleDelete}
               onViewDetails={handleViewDetails}
               canManage={canManageStock}
+              userBaseId={user?.baseId}
             />
           )}
         </div>
