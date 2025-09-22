@@ -49,7 +49,7 @@ export function OrderLinkDialog({
           suppliers!inner(name)
         `)
         .eq('base_id', user?.baseId)
-        .in('status', ['ordered', 'shipping_antilles', 'order_confirmed'])
+        .in('status', ['ordered', 'pending', 'received'])
         .order('created_at', { ascending: false })
         .limit(10);
 
