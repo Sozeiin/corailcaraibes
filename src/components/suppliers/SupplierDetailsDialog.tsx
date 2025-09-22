@@ -6,19 +6,19 @@ import { Building2, Mail, Phone, MapPin, Calendar, Package } from 'lucide-react'
 import { Supplier } from '@/types';
 import { SupplierQuotesHistory } from './SupplierQuotesHistory';
 import { SupplierStockMovements } from './SupplierStockMovements';
-
 interface SupplierDetailsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   supplier: Supplier | null;
 }
-
-export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDetailsDialogProps) {
+export function SupplierDetailsDialog({
+  isOpen,
+  onClose,
+  supplier
+}: SupplierDetailsDialogProps) {
   if (!supplier) return null;
-
   const getCategoryColor = (category: string | null) => {
     if (!category) return 'bg-gray-100 text-gray-800';
-    
     const colors: Record<string, string> = {
       'Maintenance': 'bg-blue-100 text-blue-800',
       'Carburant': 'bg-orange-100 text-orange-800',
@@ -28,15 +28,12 @@ export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDet
       'Sécurité': 'bg-red-100 text-red-800',
       'Électronique': 'bg-indigo-100 text-indigo-800',
       'Voilerie': 'bg-teal-100 text-teal-800',
-      'Moteur': 'bg-yellow-100 text-yellow-800',
+      'Moteur': 'bg-yellow-100 text-yellow-800'
     };
-    
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[95vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+  return <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-full max-w-[75vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -50,11 +47,9 @@ export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDet
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span>{supplier.name}</span>
-                {supplier.category && (
-                  <Badge className={getCategoryColor(supplier.category)}>
+                {supplier.category && <Badge className={getCategoryColor(supplier.category)}>
                     {supplier.category}
-                  </Badge>
-                )}
+                  </Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -66,28 +61,18 @@ export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDet
                     Contact
                   </h4>
                   <div className="space-y-2">
-                    {supplier.email && (
-                      <div className="flex items-center text-sm text-muted-foreground">
+                    {supplier.email && <div className="flex items-center text-sm text-muted-foreground">
                         <Mail className="h-3 w-3 mr-2" />
-                        <a 
-                          href={`mailto:${supplier.email}`}
-                          className="hover:text-primary hover:underline"
-                        >
+                        <a href={`mailto:${supplier.email}`} className="hover:text-primary hover:underline">
                           {supplier.email}
                         </a>
-                      </div>
-                    )}
-                    {supplier.phone && (
-                      <div className="flex items-center text-sm text-muted-foreground">
+                      </div>}
+                    {supplier.phone && <div className="flex items-center text-sm text-muted-foreground">
                         <Phone className="h-3 w-3 mr-2" />
-                        <a 
-                          href={`tel:${supplier.phone}`}
-                          className="hover:text-primary hover:underline"
-                        >
+                        <a href={`tel:${supplier.phone}`} className="hover:text-primary hover:underline">
                           {supplier.phone}
                         </a>
-                      </div>
-                    )}
+                      </div>}
                   </div>
                 </div>
 
@@ -144,14 +129,10 @@ export function SupplierDetailsDialog({ isOpen, onClose, supplier }: SupplierDet
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <SupplierStockMovements 
-                supplierId={supplier.id} 
-                supplierName={supplier.name} 
-              />
+              <SupplierStockMovements supplierId={supplier.id} supplierName={supplier.name} />
             </CardContent>
           </Card>
         </div>
       </DialogContent>
-    </Dialog>
-  );
+    </Dialog>;
 }
