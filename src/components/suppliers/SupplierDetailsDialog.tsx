@@ -33,7 +33,7 @@ export function SupplierDetailsDialog({
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[120vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
+      <DialogContent className="w-full max-w-[120vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden p-4 sm:p-60 ">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
