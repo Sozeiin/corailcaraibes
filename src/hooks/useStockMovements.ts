@@ -30,37 +30,49 @@ export function useStockMovements(supplierId?: string) {
   return useQuery({
     queryKey: ['stock-movements', supplierId, baseId],
     queryFn: async () => {
-      let query = supabase
+      // Récupérer d'abord les mouvements de stock
+      let movementsQuery = supabase
         .from('stock_movements')
-        .select(`
-          *,
-          stock_items:sku!inner (
-            name,
-            reference,
-            unit
-          ),
-          profiles:actor (
-            name
-          )
-        `)
+        .select('*')
+        .eq('movement_type', 'outbound_distribution')
         .order('ts', { ascending: false });
 
-      // Pour filtrer par fournisseur, on utilisera les notes pour identifier les sorties fournisseurs
+      // Filtrer par fournisseur si fourni
       if (supplierId) {
-        query = query.ilike('notes', `%${supplierId}%`);
+        movementsQuery = movementsQuery.ilike('notes', `%${supplierId}%`);
       }
 
-      if (baseId) {
-        query = query.eq('base_id', baseId);
+      const { data: movements, error: movementsError } = await movementsQuery;
+      if (movementsError) throw movementsError;
+
+      if (!movements || movements.length === 0) {
+        return [];
       }
 
-      // Filtrer uniquement les sorties de stock (outbound_distribution)
-      query = query.eq('movement_type', 'outbound_distribution');
+      // Récupérer les informations des articles de stock
+      const stockItemIds = movements.map(m => m.sku);
+      const { data: stockItems, error: stockError } = await supabase
+        .from('stock_items')
+        .select('id, name, reference, unit')
+        .in('id', stockItemIds);
 
-      const { data, error } = await query;
+      if (stockError) throw stockError;
 
-      if (error) throw error;
-      return data as any[];
+      // Récupérer les informations des utilisateurs
+      const userIds = movements.map(m => m.actor).filter(Boolean);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Joindre les données
+      return movements.map(movement => ({
+        ...movement,
+        stock_items: stockItems?.find(item => item.id === movement.sku) || null,
+        profiles: profiles?.find(profile => profile.id === movement.actor) || null
+      }));
     },
     enabled: !!user
   });
