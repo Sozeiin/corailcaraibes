@@ -34,11 +34,12 @@ export function OrderLinkDialog({
   const [isLinking, setIsLinking] = useState(false);
   const queryClient = useQueryClient();
 
-  // Récupérer les demandes d'approvisionnement correspondantes
-  const { data: potentialRequests, isLoading } = useQuery({
-    queryKey: ['potential-supply-requests', stockItemId, stockItemName],
+  // Récupérer les demandes d'approvisionnement ET les commandes correspondantes
+  const { data: potentialItems, isLoading } = useQuery({
+    queryKey: ['potential-linkable-items', stockItemId, stockItemName],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Récupérer les demandes d'approvisionnement
+      const { data: supplyRequests, error: supplyError } = await supabase
         .from('supply_requests')
         .select(`
           id,
@@ -53,52 +54,134 @@ export function OrderLinkDialog({
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (supplyError) throw supplyError;
+
+      // Récupérer les commandes
+      const { data: orders, error: ordersError } = await supabase
+        .from('orders')
+        .select(`
+          id,
+          order_number,
+          status,
+          created_at,
+          suppliers!inner(name)
+        `)
+        .eq('base_id', user?.baseId)
+        .in('status', ['ordered', 'received', 'shipping_antilles'])
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (ordersError) throw ordersError;
+
+      // Récupérer les articles des commandes pour faire le matching
+      const orderIds = orders?.map(o => o.id) || [];
+      let orderItems: any[] = [];
       
-      // Filtrer les demandes qui correspondent au nom de l'article scanné
-      if (!data || data.length === 0) return [];
+      if (orderIds.length > 0) {
+        const { data: items, error: itemsError } = await supabase
+          .from('order_items')
+          .select('order_id, product_name, reference')
+          .in('order_id', orderIds);
+        
+        if (!itemsError) {
+          orderItems = items || [];
+        }
+      }
+
+      const results: any[] = [];
+
+      // Ajouter les demandes d'approvisionnement correspondantes
+      if (supplyRequests) {
+        const matchingRequests = supplyRequests.filter(request => 
+          request.item_name && stockItemName &&
+          (request.item_name.toLowerCase().includes(stockItemName.toLowerCase()) ||
+           stockItemName.toLowerCase().includes(request.item_name.toLowerCase()))
+        );
+        
+        matchingRequests.forEach(request => {
+          results.push({
+            ...request,
+            type: 'supply_request',
+            display_name: request.request_number,
+            item_description: request.item_name
+          });
+        });
+      }
+
+      // Ajouter les commandes correspondantes
+      if (orders) {
+        orders.forEach(order => {
+          const matchingItems = orderItems.filter(item => 
+            item.order_id === order.id &&
+            item.product_name && stockItemName &&
+            (item.product_name.toLowerCase().includes(stockItemName.toLowerCase()) ||
+             stockItemName.toLowerCase().includes(item.product_name.toLowerCase()))
+          );
+          
+          if (matchingItems.length > 0) {
+            results.push({
+              ...order,
+              type: 'order',
+              display_name: order.order_number,
+              item_description: matchingItems[0].product_name,
+              supplier_name: order.suppliers?.name
+            });
+          }
+        });
+      }
       
-      const matchingRequests = data.filter(request => 
-        request.item_name && stockItemName &&
-        (request.item_name.toLowerCase().includes(stockItemName.toLowerCase()) ||
-         stockItemName.toLowerCase().includes(request.item_name.toLowerCase()))
-      );
-      
-      return matchingRequests || [];
+      return results;
     },
     enabled: isOpen && !!stockItemId,
   });
 
-  const handleLinkToRequest = async (requestId: string) => {
+  const handleLinkToItem = async (item: any) => {
     setIsLinking(true);
     try {
-      const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
-        stock_item_id_param: stockItemId,
-        request_id_param: requestId,
-        quantity_received_param: quantityReceived
-      });
+      let result: { success: boolean; message?: string; error?: string };
 
-      if (error) throw error;
+      if (item.type === 'supply_request') {
+        // Lier à une demande d'approvisionnement
+        const { data, error } = await supabase.rpc('link_stock_scan_to_supply_request', {
+          stock_item_id_param: stockItemId,
+          request_id_param: item.id,
+          quantity_received_param: quantityReceived
+        });
 
-      const result = data as { success: boolean; message?: string; error?: string };
+        if (error) throw error;
+        result = data as { success: boolean; message?: string; error?: string };
+      } else if (item.type === 'order') {
+        // Lier à une commande
+        const { data, error } = await supabase.rpc('link_stock_scan_to_order', {
+          stock_item_id_param: stockItemId,
+          order_id_param: item.id,
+          quantity_received_param: quantityReceived
+        });
+
+        if (error) throw error;
+        result = data as { success: boolean; message?: string; error?: string };
+      } else {
+        throw new Error('Type d\'élément non reconnu');
+      }
 
       if (result?.success) {
         await queryClient.invalidateQueries({ queryKey: ['supply-requests'] });
+        await queryClient.invalidateQueries({ queryKey: ['orders'] });
         await queryClient.invalidateQueries({ queryKey: ['stock'] });
         await queryClient.invalidateQueries({ queryKey: ['purchase-history'] });
         toast({
           title: 'Liaison réussie',
-          description: result.message || 'Stock lié à la demande d\'approvisionnement',
+          description: result.message || `Stock lié ${item.type === 'supply_request' ? 'à la demande d\'approvisionnement' : 'à la commande'}`,
         });
         onClose();
       } else {
         throw new Error(result?.error || 'Erreur lors de la liaison');
       }
     } catch (error) {
-      console.error('Erreur liaison demande:', error);
+      console.error('Erreur liaison:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de lier le stock à cette demande',
+        description: `Impossible de lier le stock à ${item.type === 'supply_request' ? 'cette demande' : 'cette commande'}`,
         variant: 'destructive'
       });
     } finally {
@@ -128,26 +211,36 @@ export function OrderLinkDialog({
           </div>
 
           {isLoading ? (
-            <div className="text-center py-4">Recherche des demandes d'approvisionnement...</div>
-          ) : potentialRequests && potentialRequests.length > 0 ? (
+            <div className="text-center py-4">Recherche des éléments correspondants...</div>
+          ) : potentialItems && potentialItems.length > 0 ? (
             <div className="space-y-3">
-              <h3 className="font-medium">Demandes d'approvisionnement correspondantes :</h3>
-              {potentialRequests.map((request: any) => (
-                <Card key={request.id} className="p-3">
+              <h3 className="font-medium">Éléments correspondants :</h3>
+              {potentialItems.map((item: any) => (
+                <Card key={`${item.type}-${item.id}`} className="p-3">
                   <CardContent className="p-0">
                     <div className="flex items-center justify-between mb-2">
                       <div>
-                        <span className="font-medium">{request.request_number}</span>
-                        <Badge
-                          variant={request.status === 'shipped' ? 'default' : 'secondary'}
-                          className="ml-2"
-                        >
-                          {request.status === 'shipped' ? 'Expédié' : request.status}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{item.display_name}</span>
+                          <Badge
+                            variant={item.type === 'supply_request' ? 'default' : 'outline'}
+                            className="ml-2"
+                          >
+                            {item.type === 'supply_request' ? '📋 Demande' : '📦 Commande'}
+                          </Badge>
+                          <Badge
+                            variant={item.status === 'shipped' || item.status === 'ordered' ? 'default' : 'secondary'}
+                            className="ml-1"
+                          >
+                            {item.status === 'shipped' ? 'Expédié' : 
+                             item.status === 'ordered' ? 'Commandé' :
+                             item.status === 'received' ? 'Reçu' : item.status}
+                          </Badge>
+                        </div>
                       </div>
                       <Button
                         size="sm"
-                        onClick={() => handleLinkToRequest(request.id)}
+                        onClick={() => handleLinkToItem(item)}
                         disabled={isLinking}
                         className="flex items-center gap-1"
                       >
@@ -157,17 +250,17 @@ export function OrderLinkDialog({
                     </div>
 
                     <p className="text-sm text-muted-foreground mb-2">
-                      Article: {request.item_name}
+                      Article: {item.item_description}
                     </p>
 
-                    {request.supplier_name && (
+                    {item.supplier_name && (
                       <p className="text-sm text-muted-foreground mb-2">
-                        Fournisseur: {request.supplier_name}
+                        Fournisseur: {item.supplier_name}
                       </p>
                     )}
 
                     <div className="text-xs text-muted-foreground">
-                      Demande créée le {new Date(request.created_at).toLocaleDateString('fr-FR')}
+                      {item.type === 'supply_request' ? 'Demande' : 'Commande'} créée le {new Date(item.created_at).toLocaleDateString('fr-FR')}
                     </div>
                   </CardContent>
                 </Card>
@@ -176,9 +269,9 @@ export function OrderLinkDialog({
           ) : (
             <div className="text-center py-6 text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-              <p>Aucune demande d'approvisionnement correspondante trouvée</p>
+              <p>Aucun élément correspondant trouvé</p>
               <p className="text-sm mt-1">
-                L'article a été ajouté au stock sans liaison à une demande
+                L'article a été ajouté au stock sans liaison
               </p>
             </div>
           )}
@@ -187,7 +280,7 @@ export function OrderLinkDialog({
             <Button variant="outline" onClick={onClose}>
               Fermer
             </Button>
-            {potentialRequests && potentialRequests.length === 0 && (
+            {potentialItems && potentialItems.length === 0 && (
               <Button onClick={onClose} className="flex items-center gap-1">
                 <Check className="h-3 w-3" />
                 Continuer sans liaison
