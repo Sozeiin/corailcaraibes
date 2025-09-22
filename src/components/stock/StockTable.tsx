@@ -112,35 +112,11 @@ export function StockTable({
                 <TableCell className="text-center">
                   <div className="flex flex-col items-center gap-1">
                   <div className="flex items-center gap-1">
-                    {canManage && onUpdateQuantity && (!userBaseId || item.baseId === userBaseId) && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdateQuantity(item.id, Math.max(0, item.quantity - 1));
-                        }}
-                        className="h-6 w-6 p-0 text-orange-600 hover:bg-orange-50"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                    )}
+                    {canManage && onUpdateQuantity && (!userBaseId || item.baseId === userBaseId)}
                     <span className={`min-w-[2rem] text-center font-semibold ${item.quantity <= item.minThreshold ? 'text-orange-600' : ''}`}>
                       {item.quantity}
                     </span>
-                    {canManage && onUpdateQuantity && (!userBaseId || item.baseId === userBaseId) && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onUpdateQuantity(item.id, item.quantity + 1);
-                        }}
-                        className="h-6 w-6 p-0 text-green-600 hover:bg-green-50"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    )}
+                    {canManage && onUpdateQuantity && (!userBaseId || item.baseId === userBaseId)}
                     </div>
                     {/* Affichage des détails sur mobile/tablet */}
                     <div className="lg:hidden">
@@ -177,22 +153,20 @@ export function StockTable({
                           <Copy className="h-4 w-4" />
                         </Button>}
                       {/* Actions d'édition seulement pour les articles de la même base */}
-                      {(!userBaseId || item.baseId === userBaseId) && (
-                        <>
+                      {(!userBaseId || item.baseId === userBaseId) && <>
                           <Button variant="ghost" size="sm" onClick={e => {
-                      e.stopPropagation();
-                      onEdit(item);
-                    }} title="Modifier" className="h-8 w-8 p-0">
+                    e.stopPropagation();
+                    onEdit(item);
+                  }} title="Modifier" className="h-8 w-8 p-0">
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button variant="ghost" size="sm" onClick={e => {
-                      e.stopPropagation();
-                      onDelete(item);
-                    }} title="Supprimer" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
+                    e.stopPropagation();
+                    onDelete(item);
+                  }} title="Supprimer" className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50">
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </>
-                      )}
+                        </>}
                     </div>
                   </TableCell>}
               </TableRow>;
