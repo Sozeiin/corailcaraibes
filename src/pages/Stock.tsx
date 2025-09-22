@@ -58,6 +58,15 @@ export default function Stock() {
   // Get bases for filter first
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
+  // Set default base filter for chefs de base
+  useEffect(() => {
+    if (user && bases.length > 0 && selectedBase === 'all') {
+      if (user.role === 'chef_base' && user.baseId) {
+        setSelectedBase(user.baseId);
+      }
+    }
+  }, [user, bases, selectedBase]);
+
   const {
     data: rawStockItems = [],
     loading: isLoading,
@@ -249,6 +258,7 @@ export default function Stock() {
             showLowStock={showLowStock}
             onLowStockChange={setShowLowStock}
             userRole={user?.role}
+            userBaseId={user?.baseId}
           />
         </div>
 

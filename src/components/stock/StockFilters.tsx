@@ -21,6 +21,7 @@ interface StockFiltersProps {
   showLowStock: boolean;
   onLowStockChange: (show: boolean) => void;
   userRole?: string;
+  userBaseId?: string;
 }
 
 export function StockFilters({ 
@@ -32,11 +33,17 @@ export function StockFilters({
   onBaseChange,
   showLowStock,
   onLowStockChange,
-  userRole
+  userRole,
+  userBaseId
 }: StockFiltersProps) {
   const clearFilters = () => {
     onCategoryChange('all');
-    onBaseChange('all');
+    // For chefs de base, reset to their own base instead of 'all'
+    if (userRole === 'chef_base' && userBaseId) {
+      onBaseChange(userBaseId);
+    } else {
+      onBaseChange('all');
+    }
     onLowStockChange(false);
   };
 
