@@ -34,7 +34,7 @@ export function useStockMovements(supplierId?: string) {
         .from('stock_movements')
         .select(`
           *,
-          stock_items!sku (
+          stock_items:sku!inner (
             name,
             reference,
             unit
