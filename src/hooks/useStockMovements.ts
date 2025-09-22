@@ -47,7 +47,7 @@ export function useStockMovements(supplierId?: string) {
 
       // Pour filtrer par fournisseur, on utilisera les notes pour identifier les sorties fournisseurs
       if (supplierId) {
-        query = query.ilike('notes', `%fournisseur:${supplierId}%`);
+        query = query.ilike('notes', `%${supplierId}%`);
       }
 
       if (baseId) {
