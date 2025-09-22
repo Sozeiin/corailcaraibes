@@ -33,7 +33,7 @@ export function SupplierDetailsDialog({
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
   return <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-full max-w-[120vw] sm:max-w-lg md:max-w-2xl lg:max-w-4xl max-h-[95vh] overflow-y-auto overflow-x-hidden p-4 sm:p-60 ">
+      <DialogContent className="w-full max-w-[95vw] sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl max-h-[90vh] overflow-y-auto p-3 sm:p-4 lg:p-6">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Building2 className="h-5 w-5" />
@@ -45,15 +45,15 @@ export function SupplierDetailsDialog({
           {/* Informations du fournisseur */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{supplier.name}</span>
+              <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <span className="text-base sm:text-lg break-words">{supplier.name}</span>
                 {supplier.category && <Badge className={getCategoryColor(supplier.category)}>
                     {supplier.category}
                   </Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
                 {/* Contact */}
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center gap-2">
