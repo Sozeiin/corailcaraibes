@@ -14,20 +14,16 @@ const menuItems = [{
   title: 'Bateaux',
   icon: Ship,
   roles: ['direction', 'chef_base', 'technicien'],
-  subItems: [
-    {
-      title: 'Dashboard',
-      url: '/boats/dashboard'
-    },
-    {
-      title: 'Flotte',
-      url: '/boats'
-    },
-    {
-      title: 'Contrôles des bateaux',
-      url: '/safety-controls'
-    }
-  ]
+  subItems: [{
+    title: 'Dashboard',
+    url: '/boats/dashboard'
+  }, {
+    title: 'Flotte',
+    url: '/boats'
+  }, {
+    title: 'Contrôles des bateaux',
+    url: '/safety-controls'
+  }]
 }, {
   title: 'Fournisseurs',
   url: '/suppliers',
@@ -42,16 +38,13 @@ const menuItems = [{
   title: 'Stock',
   icon: Package,
   roles: ['direction', 'chef_base', 'technicien'],
-  subItems: [
-    {
-      title: 'Inventaire',
-      url: '/stock'
-    },
-    {
-      title: 'Scanner',
-      url: '/stock/scanner'
-    }
-  ]
+  subItems: [{
+    title: 'Inventaire',
+    url: '/stock'
+  }, {
+    title: 'Scanner',
+    url: '/stock/scanner'
+  }]
 }, {
   title: 'Distribution',
   url: '/distribution',
@@ -61,25 +54,20 @@ const menuItems = [{
   title: 'Maintenance',
   icon: Wrench,
   roles: ['direction', 'chef_base', 'technicien'],
-  subItems: [
-    {
-      title: 'Interventions',
-      url: '/maintenance'
-    },
-    {
-      title: 'Préventive',
-      url: '/maintenance/preventive',
-      roles: ['direction', 'chef_base']
-    },
-    {
-      title: 'Planning',
-      url: '/maintenance/gantt'
-    },
-    {
-      title: 'Historique',
-      url: '/maintenance/history'
-    }
-  ]
+  subItems: [{
+    title: 'Interventions',
+    url: '/maintenance'
+  }, {
+    title: 'Préventive',
+    url: '/maintenance/preventive',
+    roles: ['direction', 'chef_base']
+  }, {
+    title: 'Planning',
+    url: '/maintenance/gantt'
+  }, {
+    title: 'Historique',
+    url: '/maintenance/history'
+  }]
 }, {
   title: 'Préparation bateaux',
   url: '/boat-preparation',
@@ -93,8 +81,12 @@ const menuItems = [{
 }];
 export function AppSidebar() {
   const location = useLocation();
-  const { user } = useAuth();
-  const { setOpenMobile } = useSidebar();
+  const {
+    user
+  } = useAuth();
+  const {
+    setOpenMobile
+  } = useSidebar();
   const isMobile = useIsMobile();
   const [baseName, setBaseName] = useState<string>('');
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
@@ -102,17 +94,14 @@ export function AppSidebar() {
     const fetchBaseName = async () => {
       if (user?.baseId && user.role !== 'direction') {
         try {
-          const { data, error } = await supabase
-            .from('bases')
-            .select('name')
-            .eq('id', user.baseId)
-            .maybeSingle();
-          
+          const {
+            data,
+            error
+          } = await supabase.from('bases').select('name').eq('id', user.baseId).maybeSingle();
           if (error) {
             console.error('Error fetching base name:', error);
             return;
           }
-          
           if (data) {
             setBaseName(data.name);
           }
@@ -123,104 +112,68 @@ export function AppSidebar() {
     };
     fetchBaseName();
   }, [user?.baseId, user?.role]);
-  const filteredMenuItems = menuItems
-    .filter(item => user && item.roles.includes(user.role))
-    .map(item => ({
-      ...item,
-      subItems: item.subItems?.filter(subItem =>
-        !subItem.roles || (user && subItem.roles.includes(user.role))
-      )
-    }));
-
+  const filteredMenuItems = menuItems.filter(item => user && item.roles.includes(user.role)).map(item => ({
+    ...item,
+    subItems: item.subItems?.filter(subItem => !subItem.roles || user && subItem.roles.includes(user.role))
+  }));
   const handleNavClick = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
   };
-
   const getNavClass = (path: string) => {
     const isActive = location.pathname === path;
     return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`;
   };
-
   const handleSubMenuToggle = (title: string, open: boolean) => {
-    setOpenSubMenus(prev => ({ ...prev, [title]: open }));
+    setOpenSubMenus(prev => ({
+      ...prev,
+      [title]: open
+    }));
   };
-
-  const isSubItemActive = (subItems: Array<{url: string; roles?: string[] }>) => {
+  const isSubItemActive = (subItems: Array<{
+    url: string;
+    roles?: string[];
+  }>) => {
     return subItems.some(subItem => location.pathname === subItem.url);
   };
-  return (
-    <Sidebar className={`${!isMobile ? 'hidden sm:block' : ''} w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern`}>
+  return <Sidebar className={`${!isMobile ? 'hidden sm:block' : ''} w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern`}>
       <SidebarContent className="p-2 sm:p-3 lg:p-4">
-        <SidebarGroup>
+        <SidebarGroup className="my-[50px]">
           <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-2 sm:mb-3 lg:mb-4">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
-              {filteredMenuItems.map(item => (
-                <SidebarMenuItem key={item.title}>
-                  {item.subItems ? (
-                    <div
-                      onMouseEnter={() => handleSubMenuToggle(item.title, true)}
-                      onMouseLeave={() => handleSubMenuToggle(item.title, false)}
-                    >
-                      <SidebarMenuButton 
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${
-                          isSubItemActive(item.subItems) ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'
-                        }`}
-                      >
+              {filteredMenuItems.map(item => <SidebarMenuItem key={item.title}>
+                  {item.subItems ? <div onMouseEnter={() => handleSubMenuToggle(item.title, true)} onMouseLeave={() => handleSubMenuToggle(item.title, false)}>
+                      <SidebarMenuButton className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isSubItemActive(item.subItems) ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         <span className="text-xs sm:text-sm lg:text-base truncate">{item.title}</span>
-                        <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${
-                          openSubMenus[item.title] ? 'rotate-180' : ''
-                        }`} />
+                        <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${openSubMenus[item.title] ? 'rotate-180' : ''}`} />
                       </SidebarMenuButton>
                       
-                      {openSubMenus[item.title] && (
-                        <SidebarMenuSub className="ml-4 mt-1 space-y-1">
-                          {item.subItems.map(subItem => (
-                            <SidebarMenuSubItem key={subItem.title}>
+                      {openSubMenus[item.title] && <SidebarMenuSub className="ml-4 mt-1 space-y-1">
+                          {item.subItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
-                                <NavLink 
-                                  to={subItem.url} 
-                                  className={getNavClass(subItem.url)}
-                                  onClick={handleNavClick}
-                                >
+                                <NavLink to={subItem.url} className={getNavClass(subItem.url)} onClick={handleNavClick}>
                                   <span className="text-xs sm:text-sm lg:text-base truncate">{subItem.title}</span>
                                 </NavLink>
                               </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      )}
-                    </div>
-                  ) : (
-                    <SidebarMenuButton asChild>
-                      <NavLink 
-                        to={item.url} 
-                        className={getNavClass(item.url)}
-                        onClick={handleNavClick}
-                      >
+                            </SidebarMenuSubItem>)}
+                        </SidebarMenuSub>}
+                    </div> : <SidebarMenuButton asChild>
+                      <NavLink to={item.url} className={getNavClass(item.url)} onClick={handleNavClick}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="text-xs sm:text-sm lg:text-base truncate">{item.title}</span>
+                        <span className="text-xs sm:text-sm lg:text-base truncate my-0">{item.title}</span>
                       </NavLink>
-                    </SidebarMenuButton>
-                  )}
-                </SidebarMenuItem>
-              ))}
+                    </SidebarMenuButton>}
+                </SidebarMenuItem>)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <div className="mt-4 sm:mt-6 lg:mt-8 p-2 sm:p-3 lg:p-4 bg-white/10 rounded-lg">
-          <h3 className="text-white text-xs sm:text-sm font-medium mb-1 sm:mb-2">Base actuelle</h3>
-          <p className="text-white/80 text-xs break-words">
-            {user?.role === 'direction' ? 'Toutes les bases' : baseName || 'Chargement...'}
-          </p>
-        </div>
+        
       </SidebarContent>
-    </Sidebar>
-  );
+    </Sidebar>;
 }
