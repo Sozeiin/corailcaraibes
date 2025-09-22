@@ -43,7 +43,7 @@ export default function Stock() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Les chefs de base peuvent voir tous les stocks, les techniciens seulement leur base
+  // Seuls les techniciens ont accès limité à leur base
   const baseId = user?.role === 'technicien' ? user?.baseId : undefined;
 
   useEffect(() => {
@@ -65,33 +65,12 @@ export default function Stock() {
     refetch: refetchStock
   } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
 
-  // Set default base filter for chefs de base
+  // Set default base filter for chefs de base (one time only)
   useEffect(() => {
-    if (user && bases.length > 0 && selectedBase === 'all') {
-      if (user.role === 'chef_base' && user.baseId) {
-        setSelectedBase(user.baseId);
-      }
+    if (user && bases.length > 0 && selectedBase === 'all' && user.role === 'chef_base' && user.baseId) {
+      setSelectedBase(user.baseId);
     }
-  }, [user, bases, selectedBase]);
-
-  // Force data refresh when selectedBase changes for chefs de base
-  useEffect(() => {
-    console.log('Base filter changed to:', selectedBase);
-    console.log('User role:', user?.role);
-    console.log('Total stock items fetched:', rawStockItems.length);
-    
-    if (user?.role === 'chef_base' && selectedBase !== 'all') {
-      console.log('Refetching data for chef de base with new base filter');
-      refetchStock();
-    }
-  }, [selectedBase, user?.role, refetchStock]);
-
-  // Debug: Log the bases represented in stock data
-  useEffect(() => {
-    const basesInStock = Array.from(new Set(rawStockItems.map(item => item.base_id)));
-    console.log('Bases represented in stock data:', basesInStock);
-    console.log('Available bases:', bases.map(b => ({ id: b.id, name: b.name })));
-  }, [rawStockItems, bases]);
+  }, [user, bases]); // Removed selectedBase from deps to avoid loop
 
   // Use mutations and realtime updates
   const deleteStockMutation = useDeleteStockItem();

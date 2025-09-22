@@ -38,16 +38,15 @@ export function StockFilters({
 }: StockFiltersProps) {
   const clearFilters = () => {
     onCategoryChange('all');
-    // For chefs de base, reset to their own base instead of 'all'
-    if (userRole === 'chef_base' && userBaseId) {
-      onBaseChange(userBaseId);
-    } else {
-      onBaseChange('all');
-    }
+    onBaseChange('all');
     onLowStockChange(false);
   };
 
-  const hasActiveFilters = selectedCategory !== 'all' || selectedBase !== 'all' || showLowStock;
+  // For chefs de base, consider their default base as "no filter" state
+  const hasActiveFilters = selectedCategory !== 'all' || 
+    (userRole !== 'chef_base' && selectedBase !== 'all') ||
+    (userRole === 'chef_base' && selectedBase !== 'all' && selectedBase !== userBaseId) ||
+    showLowStock;
   const showBaseFilter = userRole === 'direction' || userRole === 'chef_base';
 
   return (
