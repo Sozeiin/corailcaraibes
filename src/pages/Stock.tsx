@@ -55,6 +55,9 @@ export default function Stock() {
     }
   }, [location.search, navigate]);
 
+  // Get bases for filter first
+  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
+
   const {
     data: rawStockItems = [],
     loading: isLoading,
@@ -66,7 +69,6 @@ export default function Stock() {
   const deleteStockMutation = useDeleteStockItem();
   const updateQuantityMutation = useUpdateStockQuantity();
   useRealtimeStockUpdates();
-
 
   const stockItems: StockItem[] = rawStockItems.map((item: any) => {
     // Trouver le nom de la base correspondante
@@ -91,9 +93,6 @@ export default function Stock() {
       lastSupplierId: null
     };
   });
-
-  // Get bases for filter
-  const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
   // Get unique categories for filter
   const categories = Array.from(new Set(stockItems.filter(item => item.category).map(item => item.category)));
