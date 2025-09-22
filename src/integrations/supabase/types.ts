@@ -4223,6 +4223,12 @@ export type Database = {
       link_stock_scan_to_supply_request: {
         Args:
           | {
+              p_quantity_received: number
+              p_stock_item_id: string
+              p_supply_request_id: string
+              p_unit_cost?: number
+            }
+          | {
               quantity_received_param: number
               request_id_param: string
               stock_item_id_param: string
