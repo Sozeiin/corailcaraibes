@@ -616,6 +616,30 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
         description: `${operation.stockItem.name}: ${operation.operation === 'add' ? '+' : '-'}${operation.quantity}`,
       });
 
+      // Vérifier si c'est un article d'expédition à réceptionner automatiquement
+      if (operation.operation === 'add') {
+        try {
+          const { data: shipmentReceptionResult, error: shipmentError } = await supabase
+            .rpc('handle_shipment_item_reception', {
+              item_sku: operation.code,
+              destination_base_id: user?.baseId,
+              received_by_user_id: user?.id
+            });
+
+          if (!shipmentError && shipmentReceptionResult) {
+            const result = shipmentReceptionResult as { success?: boolean; message?: string };
+            if (result.success) {
+              toast({
+                title: '📦 Article d\'expédition reçu automatiquement',
+                description: result.message || 'Article marqué comme reçu dans l\'expédition',
+              });
+            }
+          }
+        } catch (shipmentError) {
+          console.log('No shipment item found for this scan, continuing with normal flow');
+        }
+      }
+
       // Proposer de lier à une commande si c'est une entrée de stock
       if (operation.operation === 'add') {
         setPendingLinkOperation(operation);

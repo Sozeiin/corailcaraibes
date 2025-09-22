@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Truck, Package, Receipt } from 'lucide-react';
+import { Truck, Package } from 'lucide-react';
 import { PreparationTab } from '@/components/distribution/PreparationTab';
 import { TrackingTab } from '@/components/distribution/TrackingTab';
-import { ReceptionTab } from '@/components/distribution/ReceptionTab';
 
 export default function Distribution() {
   const [activeTab, setActiveTab] = useState('preparation');
@@ -21,21 +20,16 @@ export default function Distribution() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="preparation" className="flex items-center gap-1 sm:gap-2">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Préparer</span>
+            <span className="hidden sm:inline">Préparer & scanner</span>
             <span className="sm:hidden">Préparer</span>
           </TabsTrigger>
           <TabsTrigger value="tracking" className="flex items-center gap-1 sm:gap-2">
             <Truck className="h-4 w-4" />
             <span className="hidden sm:inline">Suivi & étiquettes</span>
             <span className="sm:hidden">Suivi</span>
-          </TabsTrigger>
-          <TabsTrigger value="reception" className="flex items-center gap-1 sm:gap-2">
-            <Receipt className="h-4 w-4" />
-            <span className="hidden sm:inline">Réception</span>
-            <span className="sm:hidden">Réception</span>
           </TabsTrigger>
         </TabsList>
 
@@ -44,10 +38,10 @@ export default function Distribution() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Package className="h-5 w-5" />
-                Préparation des expéditions
+                Préparation & Scanner
               </CardTitle>
               <CardDescription>
-                Créez un envoi, scannez les articles et organisez-les dans des colis
+                Créez des expéditions, scannez les articles et organisez-les en colis. Le scanner intégré permet également de recevoir automatiquement les articles d'autres bases.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -61,31 +55,14 @@ export default function Distribution() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Suivi des expéditions et étiquettes
+                Suivi détaillé & étiquettes
               </CardTitle>
               <CardDescription>
-                Consultez le statut des envois et imprimez les étiquettes de colis
+                Statut en temps réel des expéditions avec suivi par article et impression d'étiquettes
               </CardDescription>
             </CardHeader>
             <CardContent>
               <TrackingTab />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="reception" className="mt-4 sm:mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                Réception des expéditions
-              </CardTitle>
-              <CardDescription>
-                Scannez les colis et articles reçus pour les intégrer au stock
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ReceptionTab />
             </CardContent>
           </Card>
         </TabsContent>

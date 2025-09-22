@@ -2978,10 +2978,13 @@ export type Database = {
           package_id: string | null
           product_label: string | null
           qty: number
+          received_at: string | null
+          received_by: string | null
           received_qty: number
           shipment_id: string
           sku: string
           source_base_id: string
+          stock_movement_id: string | null
           tenant_id: string
         }
         Insert: {
@@ -2991,10 +2994,13 @@ export type Database = {
           package_id?: string | null
           product_label?: string | null
           qty?: number
+          received_at?: string | null
+          received_by?: string | null
           received_qty?: number
           shipment_id: string
           sku: string
           source_base_id: string
+          stock_movement_id?: string | null
           tenant_id?: string
         }
         Update: {
@@ -3004,10 +3010,13 @@ export type Database = {
           package_id?: string | null
           product_label?: string | null
           qty?: number
+          received_at?: string | null
+          received_by?: string | null
           received_qty?: number
           shipment_id?: string
           sku?: string
           source_base_id?: string
+          stock_movement_id?: string | null
           tenant_id?: string
         }
         Relationships: [
@@ -4200,6 +4209,14 @@ export type Database = {
       gtrgm_out: {
         Args: { "": unknown }
         Returns: unknown
+      }
+      handle_shipment_item_reception: {
+        Args: {
+          destination_base_id: string
+          item_sku: string
+          received_by_user_id: string
+        }
+        Returns: Json
       }
       has_page_permission: {
         Args: {
