@@ -602,6 +602,13 @@ export function GanttMaintenanceSchedule() {
         }
       };
       console.log('📤 DRAG AND DROP - Data being sent to database:', updateData);
+      
+      // Debug temporaire avec alert
+      alert(`DÉBOGAGE: 
+Heure cliquée: ${hour}h00
+Heure sauvée: ${scheduledTime}
+Date: ${dateString}
+Technicien: ${technicianId}`);
 
       // Vérifier la validité du technicien
       if (technicianId !== 'unassigned') {
