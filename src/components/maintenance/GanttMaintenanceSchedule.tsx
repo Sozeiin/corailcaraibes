@@ -513,11 +513,16 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(task || null);
   };
   const handleDragEnd = (event: DragEndEvent) => {
+    // Log immédiat pour voir si la fonction est appelée
+    alert('DRAG END APPELÉ !');
+    console.log('🔥 DRAG END FUNCTION CALLED');
+    
     const {
       active,
       over
     } = event;
     if (!over || !draggedTask) {
+      alert('DRAG END: Pas de over ou pas de draggedTask');
       setDraggedTask(null);
       return;
     }
