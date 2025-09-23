@@ -809,11 +809,9 @@ export function GanttMaintenanceSchedule() {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <h1 className="text-2xl font-semibold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
-                Planning Maintenance avec Météo
-              </h1>
+              
             </div>
-            <div className="flex items-center gap-2 bg-background rounded-lg border p-1">
+            <div className="flex items-center gap-2 bg-background rounded-lg border p-1 mx-[470px]">
               <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')} className="hover:bg-muted">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
