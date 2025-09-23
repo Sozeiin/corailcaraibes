@@ -504,24 +504,30 @@ export function GanttMaintenanceSchedule() {
       active,
       over
     } = event;
-    console.log('Drag ended:', {
+    console.log('🚀 DRAG END - Début:', {
       activeId: active.id,
-      overId: over?.id
+      overId: over?.id,
+      draggedTask: draggedTask?.title,
+      draggedTaskType: draggedTask?.activity_type
     });
     if (!over || !draggedTask) {
-      console.log('No valid drop target or dragged task');
+      console.log('❌ DRAG END - Pas de cible valide ou pas de tâche:', {
+        over: !!over,
+        draggedTask: !!draggedTask
+      });
       setDraggedTask(null);
       return;
     }
     try {
       const dropId = over.id.toString();
-      console.log('Drop target ID:', dropId);
+      console.log('🎯 DRAG END - Drop target ID:', dropId);
 
       // New drop target format: technicianId|dayIndex|hour
       // Using pipe separator to avoid UUID parsing issues
       const parts = dropId.split('|');
+      console.log('🔍 DRAG END - Parts parsed:', parts);
       if (parts.length !== 3) {
-        console.error('Invalid drop target format:', dropId, 'expected format: technicianId|dayIndex|hour');
+        console.error('❌ DRAG END - Format invalide:', dropId, 'expected format: technicianId|dayIndex|hour');
         setDraggedTask(null);
         return;
       }
@@ -545,8 +551,14 @@ export function GanttMaintenanceSchedule() {
 
       // Get the date string directly from weekDays array
       const targetDay = weekDays[dayIndex];
+      console.log('🗓️ DRAG END - Target day lookup:', {
+        dayIndex,
+        weekDaysLength: weekDays.length,
+        targetDay: targetDay?.dateString,
+        allWeekDays: weekDays.map((d, i) => ({ index: i, dateString: d.dateString }))
+      });
       if (!targetDay) {
-        console.error('Invalid day index:', dayIndex);
+        console.error('❌ DRAG END - Index de jour invalide:', dayIndex, 'weekDays length:', weekDays.length);
         setDraggedTask(null);
         return;
       }
@@ -554,10 +566,12 @@ export function GanttMaintenanceSchedule() {
 
       // Format the time correctly for database
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
-      console.log('Final update data:', {
+      console.log('💾 DRAG END - Données finales pour mise à jour:', {
         technician_id: technicianId === 'unassigned' ? null : technicianId,
         scheduled_date: dateString,
-        scheduled_time: scheduledTime
+        scheduled_time: scheduledTime,
+        draggedTaskCurrentDate: draggedTask.scheduled_date,
+        draggedTaskCurrentTime: draggedTask.scheduled_time
       });
 
       // Store the last dropped technician for this intervention with persistence
@@ -622,12 +636,19 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    console.log('Getting tasks for slot:', {
+    console.log('📋 GET TASKS FOR SLOT:', {
       technicianId,
       dateString,
       hour
     });
-    console.log('Available interventions:', interventions.length);
+    console.log('📊 Interventions disponibles:', interventions.length, interventions.map(i => ({
+      id: i.id,
+      title: i.title,
+      scheduled_date: i.scheduled_date,
+      scheduled_time: i.scheduled_time,
+      technician_id: i.technician_id,
+      activity_type: i.activity_type
+    })));
     const tasks = interventions.filter(intervention => {
       // Parse the scheduled time correctly
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : 9;
