@@ -854,21 +854,25 @@ export function GanttMaintenanceSchedule() {
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Panel tâches non assignées - moderne et responsive */}
-          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-40 rounded-t-2xl m-4 mb-0 shadow-md">
+          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-48 rounded-t-2xl m-4 mb-0 shadow-md">
               <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                   <Clock className="h-4 w-4 text-blue-600" />
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="max-h-32 p-4">
-                <div className="flex sm:flex-col md:flex-row flex-wrap gap-4 overflow-x-auto md:overflow-x-visible">
-                  {getUnassignedTasks().map(task => <div key={task.id} className="w-48 flex-none">
+              <ScrollArea className="max-h-40 p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {getUnassignedTasks().map(task => (
+                    <div key={task.id} className="w-full">
                       <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
-                    </div>)}
-                  {getUnassignedTasks().length === 0 && <p className="text-sm text-gray-500 text-center py-4 w-full">
-                      Aucune tâche non assignée
-                    </p>}
+                    </div>
+                  ))}
+                  {getUnassignedTasks().length === 0 && <div className="col-span-full">
+                      <p className="text-sm text-gray-500 text-center py-8">
+                        Aucune tâche non assignée
+                      </p>
+                    </div>}
                 </div>
               </ScrollArea>
             </div>}
