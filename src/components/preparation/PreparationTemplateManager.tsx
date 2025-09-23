@@ -51,7 +51,7 @@ export function PreparationTemplateManager() {
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [newTemplate, setNewTemplate] = useState<CreateTemplateData>({
     name: '',
-    boat_id: '',
+    boat_id: 'global',
     category: 'standard',
     items: []
   });
@@ -103,7 +103,7 @@ export function PreparationTemplateManager() {
         .from('preparation_checklist_templates')
         .insert({
           name: templateData.name,
-          boat_id: templateData.boat_id || null,
+          boat_id: templateData.boat_id === 'global' ? null : templateData.boat_id,
           category: templateData.category,
           items: templateData.items as any,
           created_by: user?.id,
@@ -120,7 +120,7 @@ export function PreparationTemplateManager() {
       setIsCreateDialogOpen(false);
       setNewTemplate({
         name: '',
-        boat_id: '',
+        boat_id: 'global',
         category: 'standard',
         items: []
       });
@@ -138,7 +138,7 @@ export function PreparationTemplateManager() {
         .from('preparation_checklist_templates')
         .update({
           name: template.name,
-          boat_id: template.boat_id || null,
+          boat_id: template.boat_id === 'global' ? null : template.boat_id,
           category: template.category,
           items: template.items as any
         })
@@ -232,7 +232,7 @@ export function PreparationTemplateManager() {
     });
     setNewTemplate({
       name: template.name,
-      boat_id: template.boat_id,
+      boat_id: template.boat_id || 'global',
       category: template.category,
       items: template.items
     });
@@ -241,7 +241,7 @@ export function PreparationTemplateManager() {
   const handleDuplicateTemplate = (template: Template) => {
     setNewTemplate({
       name: `${template.name} (Copie)`,
-      boat_id: template.boat_id,
+      boat_id: template.boat_id || 'global',
       category: template.category,
       items: [...template.items]
     });
@@ -269,12 +269,13 @@ export function PreparationTemplateManager() {
         <div>
           <Label htmlFor="boat">Bateau (optionnel)</Label>
           <Select
-            value={template.boat_id || ''}
+            value={template.boat_id || 'global'}
             onValueChange={(value) => {
+              const boatId = value === 'global' ? undefined : value;
               if (isEditing && editingTemplate) {
-                setEditingTemplate({ ...editingTemplate, boat_id: value || undefined });
+                setEditingTemplate({ ...editingTemplate, boat_id: boatId });
               } else {
-                setNewTemplate({ ...newTemplate, boat_id: value || undefined });
+                setNewTemplate({ ...newTemplate, boat_id: boatId });
               }
             }}
           >
@@ -282,7 +283,7 @@ export function PreparationTemplateManager() {
               <SelectValue placeholder="Sélectionner un bateau (global si vide)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Modèle global (tous les bateaux)</SelectItem>
+              <SelectItem value="global">Modèle global (tous les bateaux)</SelectItem>
               {boats.map((boat) => (
                 <SelectItem key={boat.id} value={boat.id}>
                   {boat.name} ({boat.model})
