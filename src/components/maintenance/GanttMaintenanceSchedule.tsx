@@ -539,8 +539,19 @@ export function GanttMaintenanceSchedule() {
         technicianId,
         dayIndex,
         hour,
-        originalDropId: dropId
+        originalDropId: dropId,
+        hourStr: hourStr,
+        parsedHour: hour
       });
+      
+      // Ajout d'un log pour vérifier le mapping heure
+      console.log('🕐 HOUR MAPPING CHECK:', {
+        received_hour: hour,
+        timeSlots_first: timeSlots[0]?.hour,
+        timeSlots_last: timeSlots[timeSlots.length - 1]?.hour,
+        all_timeSlots: timeSlots.map(s => s.hour)
+      });
+      
       if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
         console.error('Invalid drop target data:', {
           technicianId,
