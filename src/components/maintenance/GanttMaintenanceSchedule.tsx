@@ -68,57 +68,57 @@ interface Technician {
 }
 const TASK_TYPE_COLORS = {
   oil: {
-    bg: 'bg-amber-50',
-    border: 'border-l-amber-400',
-    text: 'text-amber-800',
+    bg: 'bg-amber-100',
+    border: 'border-amber-300',
+    text: 'text-amber-700',
     icon: Droplets
   },
   engine: {
-    bg: 'bg-blue-600',
-    border: 'border-l-blue-500',
-    text: 'text-white',
+    bg: 'bg-blue-100',
+    border: 'border-blue-300',
+    text: 'text-blue-700',
     icon: Cog
   },
   electrical: {
-    bg: 'bg-purple-50',
-    border: 'border-l-purple-400',
-    text: 'text-purple-800',
+    bg: 'bg-purple-100',
+    border: 'border-purple-300',
+    text: 'text-purple-700',
     icon: Zap
   },
   mechanical: {
-    bg: 'bg-green-50',
-    border: 'border-l-green-400',
-    text: 'text-green-800',
+    bg: 'bg-green-100',
+    border: 'border-green-300',
+    text: 'text-green-700',
     icon: Wrench
   },
   emergency: {
-    bg: 'bg-red-600',
-    border: 'border-l-red-500',
-    text: 'text-white',
+    bg: 'bg-red-100',
+    border: 'border-red-300',
+    text: 'text-red-700',
     icon: AlertTriangle
   },
   preparation: {
-    bg: 'bg-emerald-50',
-    border: 'border-l-emerald-400',
-    text: 'text-emerald-800',
+    bg: 'bg-emerald-100',
+    border: 'border-emerald-300',
+    text: 'text-emerald-700',
     icon: Ship
   },
   checkin: {
-    bg: 'bg-sky-50',
-    border: 'border-l-sky-400',
-    text: 'text-sky-800',
+    bg: 'bg-sky-100',
+    border: 'border-sky-300',
+    text: 'text-sky-700',
     icon: Ship
   },
   checkout: {
-    bg: 'bg-indigo-50',
-    border: 'border-l-indigo-400',
-    text: 'text-indigo-800',
+    bg: 'bg-indigo-100',
+    border: 'border-indigo-300',
+    text: 'text-indigo-700',
     icon: Ship
   },
   default: {
-    bg: 'bg-gray-50',
-    border: 'border-l-gray-400',
-    text: 'text-gray-800',
+    bg: 'bg-gray-100',
+    border: 'border-gray-300',
+    text: 'text-gray-700',
     icon: Wrench
   }
 };
@@ -801,30 +801,30 @@ export function GanttMaintenanceSchedule() {
   console.log('Render - Loading:', interventionsLoading);
   console.log('Render - Error:', interventionsError);
   return <div className="h-screen flex flex-col bg-background">
-      {/* Header modern avec météo */}
-      <div className="flex-none border-b bg-gradient-to-r from-gray-50 to-blue-50 p-4 shadow-md rounded-b-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:gap-24">
+      {/* Header with Weather Widget */}
+      <div className="flex-none border-b bg-gradient-to-r from-card to-muted/10 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-600/10 rounded-2xl shadow-sm">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Calendar className="h-5 w-5 text-primary" />
               </div>
-              <h1 className="text-base sm:text-2xl font-semibold text-gray-800">
-                Planning Maintenance
+              <h1 className="text-2xl font-semibold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Planning Maintenance avec Météo
               </h1>
             </div>
-            <div className="flex items-center gap-2 bg-white rounded-2xl border shadow-sm p-1">
-              <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')} className="hover:bg-gray-100 rounded-xl">
+            <div className="flex items-center gap-2 bg-background rounded-lg border p-1">
+              <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')} className="hover:bg-muted">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="font-medium px-4 py-1 min-w-[200px] text-center text-sm">
+              <span className="font-medium px-4 py-1 min-w-[200px] text-center">
                 {format(weekDays[0]?.date || new Date(), 'd MMM', {
                 locale: fr
               })} - {format(weekDays[6]?.date || new Date(), 'd MMM yyyy', {
                 locale: fr
               })}
               </span>
-              <Button variant="ghost" size="sm" onClick={() => navigateWeek('next')} className="hover:bg-gray-100 rounded-xl">
+              <Button variant="ghost" size="sm" onClick={() => navigateWeek('next')} className="hover:bg-muted">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -832,72 +832,66 @@ export function GanttMaintenanceSchedule() {
           
           <div className="flex items-center gap-2">
             {/* Mobile panel toggle */}
-            <Button variant="outline" size="sm" className="md:hidden rounded-xl shadow-sm" onClick={() => setShowUnassignedPanel(!showUnassignedPanel)}>
+            <Button variant="outline" size="sm" className="md:hidden" onClick={() => setShowUnassignedPanel(!showUnassignedPanel)}>
               {showUnassignedPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
             
             {/* Add task button */}
-            <Button size="sm" onClick={() => setShowTaskDialog(true)} className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl shadow-md">
+            <Button size="sm" onClick={() => setShowTaskDialog(true)} className="bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Nouvelle tâche</span>
-              <span className="sm:hidden">+</span>
+              Nouvelle tâche
             </Button>
           </div>
         </div>
         
-        {/* Weather Widget moderne */}
-        <div className="bg-white rounded-2xl p-4 shadow-md">
+        {/* Weather Widget */}
+        <div className="w-full">
           <WeatherWidget compact />
         </div>
       </div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Panel tâches non assignées - compact et efficace */}
-          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-32 rounded-t-2xl m-4 mb-0 shadow-md">
-              <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-blue-600" />
+          {/* Unassigned tasks panel - moved to top */}
+          {showUnassignedPanel && <div className="flex-none border-b bg-muted/30 max-h-40">
+              <div className="p-3 border-b bg-muted/50">
+                <h3 className="font-medium text-foreground flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="max-h-24 p-3">
-                <div className="flex gap-2 overflow-x-auto">
-                  {getUnassignedTasks().map(task => (
-                    <div key={task.id} className="w-40 flex-none">
+              <ScrollArea className="max-h-32 p-2">
+                <div className="flex flex-initial h-32 ">
+                  {getUnassignedTasks().map(task => <div key={task.id} className="w-48">
                       <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
-                    </div>
-                  ))}
-                  {getUnassignedTasks().length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4 w-full">
+                    </div>)}
+                  {getUnassignedTasks().length === 0 && <p className="text-sm text-muted-foreground text-center py-4 w-full">
                       Aucune tâche non assignée
-                    </p>
-                  )}
+                    </p>}
                 </div>
               </ScrollArea>
             </div>}
 
           {/* Main table */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Header tableau moderne */}
-            <div className="flex-none border-b bg-gradient-to-r from-gray-100 to-blue-100 shadow-md m-4 rounded-2xl overflow-hidden">
-              <div className="flex overflow-x-auto md:overflow-x-visible">
-                {/* Colonne technicien */}
-                <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 bg-white p-4 font-semibold text-gray-700 flex items-center gap-2">
-                  <User className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm">Technicien</span>
+            {/* Table header */}
+            <div className="flex-none border-b bg-gradient-to-r from-muted/40 to-muted/20 shadow-sm">
+              <div className="flex">
+                {/* Technician column header */}
+                <div className="w-40 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Technicien
                 </div>
-                {/* Colonne heure */}
-                <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 bg-white p-4 font-semibold text-gray-700 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm hidden sm:inline">Heure</span>
-                  <span className="text-sm sm:hidden">H</span>
+                {/* Hour column header */}
+                <div className="w-20 flex-none border-r bg-muted/50 p-3 font-semibold text-foreground/80 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Heure
                 </div>
-                {/* Colonnes jours */}
-                {weekDays.map(day => <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 bg-gray-50">
-                    <div className={`text-center p-4 font-medium transition-colors ${day.isToday ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}`}>
-                      <div className="text-xs text-gray-500 uppercase tracking-wider">{day.dayName}</div>
-                      <div className={`text-base sm:text-lg ${day.isToday ? 'text-blue-700 font-bold' : 'text-gray-800'}`}>
+                {/* Day columns headers */}
+                {weekDays.map(day => <div key={day.dateString} className="w-48 flex-none border-r bg-muted/50">
+                    <div className={`text-center p-3 font-medium ${day.isToday ? 'bg-primary/10 text-primary' : 'text-foreground/80'} transition-colors`}>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wider">{day.dayName}</div>
+                      <div className={`text-lg ${day.isToday ? 'text-primary font-bold' : 'text-foreground'}`}>
                         {day.dayNumber}
                       </div>
                     </div>
@@ -905,67 +899,67 @@ export function GanttMaintenanceSchedule() {
               </div>
             </div>
 
-            {/* Contenu tableau moderne et responsive */}
+            {/* Table content */}
             <ScrollArea className="flex-1">
-              <div className="min-h-full bg-white m-4 rounded-2xl shadow-md overflow-hidden">
+              <div className="min-h-full">
                 {technicians.map(technician => {
                 const isCollapsed = collapsedTechnicians.has(technician.id);
                 const taskCount = getTechnicianTaskCount(technician.id);
-                return <div key={technician.id} className="border-b border-gray-200 last:border-b-0">
+                return <div key={technician.id} className="border-b last:border-b-0">
                       {isCollapsed ?
-                  // Vue réduite - responsive
-                  <div className="flex overflow-x-auto hover:bg-gray-50 transition-colors bg-gray-50/50">
-                          <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 p-4 flex items-center gap-2">
-                            <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-blue-100 rounded-xl">
-                              <ChevronDown className="h-3 w-3 text-blue-600" />
+                  // Collapsed view - single row with technician info and expand button
+                  <div className="flex border-b border-border/20 hover:bg-muted/10 transition-colors bg-muted/5">
+                          <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
+                            <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-primary/10">
+                              <ChevronDown className="h-3 w-3" />
                             </Button>
-                            <div className="p-1 bg-blue-100 rounded-xl">
-                              <User className="h-3 w-3 text-blue-600" />
+                            <div className="p-1 bg-primary/10 rounded-sm">
+                              <User className="h-3 w-3 text-primary" />
                             </div>
                             <span className="text-sm font-medium truncate">{technician.name}</span>
-                            {taskCount > 0 && <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-2xl">
+                            {taskCount > 0 && <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                                 {taskCount}
                               </Badge>}
                           </div>
                           
-                          <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
-                            <span className="text-xs text-gray-500">Réduit</span>
+                          <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                            <span className="text-xs text-muted-foreground">Réduit</span>
                           </div>
                           
-                          {/* Cellules jours - mode réduit */}
-                          {weekDays.map(day => <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 p-4 flex items-center justify-center">
-                              <span className="text-xs text-gray-400">···</span>
+                          {/* Day cells - collapsed placeholder */}
+                          {weekDays.map(day => <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0 p-2 flex items-center justify-center">
+                              <span className="text-xs text-muted-foreground">···</span>
                             </div>)}
                         </div> :
-                  // Vue étendue - créneaux horaires
-                  timeSlots.map(slot => <div key={`${technician.id}-${slot.hour}`} className="flex overflow-x-auto md:overflow-x-visible border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
-                            {/* Nom technicien - affiché seulement à la première heure */}
-                            <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 p-4 flex items-center gap-2">
+                  // Expanded view - original time slots
+                  timeSlots.map(slot => <div key={`${technician.id}-${slot.hour}`} className="flex border-b border-border/20 last:border-b-0 hover:bg-muted/10 transition-colors">
+                            {/* Technician name - only show on first hour */}
+                            <div className="w-40 flex-none border-r p-2 flex items-center gap-2">
                               {slot.hour === timeSlots[0].hour && <>
-                                  <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-blue-100 rounded-xl">
-                                    <ChevronUp className="h-3 w-3 text-blue-600" />
+                                  <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-primary/10">
+                                    <ChevronUp className="h-3 w-3" />
                                   </Button>
-                                  <div className="p-1 bg-blue-100 rounded-xl">
-                                    <User className="h-3 w-3 text-blue-600" />
+                                  <div className="p-1 bg-primary/10 rounded-sm">
+                                    <User className="h-3 w-3 text-primary" />
                                   </div>
                                   <span className="text-sm font-medium truncate">{technician.name}</span>
-                                  {taskCount > 0 && <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-2xl">
+                                  {taskCount > 0 && <Badge variant="secondary" className="text-xs px-1 py-0 h-4">
                                       {taskCount}
                                     </Badge>}
                                 </>}
                             </div>
                             
-                            {/* Heure */}
-                            <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
-                              <span className="text-sm font-mono text-gray-600">{slot.label}</span>
+                            {/* Hour */}
+                            <div className="w-20 flex-none border-r p-2 flex items-center justify-center">
+                              <span className="text-sm font-mono text-muted-foreground">{slot.label}</span>
                             </div>
                             
-                             {/* Cellules jours avec tâches */}
+                             {/* Day cells */}
                              {weekDays.map(day => {
                       const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
                       const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
                       const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
-                      return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
+                      return <div key={day.dateString} className="w-48 flex-none border-r last:border-r-0">
                                      <DroppableTimeSlot id={`${technician.id}|${day.dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
                           ...task,
                           weatherEvaluation: weatherEvaluations[task.id],
@@ -992,27 +986,27 @@ export function GanttMaintenanceSchedule() {
         </DragOverlay>
       </DndContext>
 
-      {/* Alertes météo modernes */}
-      {Object.entries(weatherEvaluations).some(([_, evaluation]) => !evaluation.suitable) && <div className="m-4 bg-orange-50 border border-orange-200 rounded-2xl p-4 shadow-md">
-          <div className="flex items-center gap-2 text-orange-800 font-semibold mb-4">
+      {/* Weather Alerts */}
+      {Object.entries(weatherEvaluations).some(([_, evaluation]) => !evaluation.suitable) && <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-orange-800 font-medium mb-3">
             <AlertTriangle className="h-5 w-5" />
             Alertes météorologiques
           </div>
-          <div className="space-y-4">
+          <div className="space-y-2">
             {Object.entries(weatherEvaluations).filter(([_, evaluation]) => !evaluation.suitable).map(([interventionId, evaluation]) => {
           const intervention = interventions.find(i => i.id === interventionId);
           if (!intervention) return null;
-          return <div key={interventionId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-white rounded-2xl border shadow-sm">
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-800">{intervention.title}</div>
-                      <div className="text-sm text-gray-600">
+          return <div key={interventionId} className="flex items-center justify-between p-3 bg-white rounded border">
+                    <div>
+                      <div className="font-medium">{intervention.title}</div>
+                      <div className="text-sm text-muted-foreground">
                         {intervention.boats?.name} - {format(new Date(intervention.scheduled_date), 'EEEE d MMMM', {
                   locale: fr
                 })}
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {evaluation.violated_rules?.map(rule => <Button key={rule.rule_name} size="sm" variant="outline" className="rounded-2xl" onClick={() => handleWeatherReschedule(intervention.id, rule.adjustment_days)}>
+                    <div className="flex gap-2">
+                      {evaluation.violated_rules?.map(rule => <Button key={rule.rule_name} size="sm" variant="outline" onClick={() => handleWeatherReschedule(intervention.id, rule.adjustment_days)}>
                           <RefreshCw className="h-4 w-4 mr-1" />
                           Reporter de {rule.adjustment_days}j
                         </Button>)}
