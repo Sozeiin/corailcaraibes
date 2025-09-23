@@ -501,9 +501,15 @@ export function GanttMaintenanceSchedule() {
     }
   });
   const handleDragStart = (event: DragStartEvent) => {
-    console.log('Drag started with task ID:', event.active.id);
+    console.log('🟢 DRAG START - Task ID:', event.active.id);
     const task = interventions.find(i => i.id === event.active.id);
-    console.log('Found task:', task);
+    console.log('🟢 DRAG START - Found task:', {
+      id: task?.id,
+      title: task?.title,
+      current_time: task?.scheduled_time,
+      current_date: task?.scheduled_date,
+      technician_id: task?.technician_id
+    });
     setDraggedTask(task || null);
   };
   const handleDragEnd = (event: DragEndEvent) => {
@@ -637,7 +643,7 @@ export function GanttMaintenanceSchedule() {
 
       // Debug logging for 6AM issues
       if (hour === 6 && dateMatch && technicianMatch) {
-        console.log('Checking 6AM slot:', {
+        console.log('🔍 Checking 6AM slot:', {
           intervention: intervention.title,
           scheduled_time: intervention.scheduled_time,
           taskHour,
@@ -647,7 +653,21 @@ export function GanttMaintenanceSchedule() {
         });
       }
 
-      return technicianMatch && dateMatch && hourMatch;
+      const match = technicianMatch && dateMatch && hourMatch;
+      
+      // Log all matches for debugging
+      if (match) {
+        console.log('✅ TASK FOUND for slot:', {
+          hour,
+          date: dateString,
+          technician: technicianId,
+          task: intervention.title,
+          task_time: intervention.scheduled_time,
+          task_date: intervention.scheduled_date
+        });
+      }
+
+      return match;
     });
   };
   const getUnassignedTasks = () => {
