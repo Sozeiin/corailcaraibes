@@ -77,17 +77,26 @@ export function BoatPreparationManager() {
 
   // Fetch preparation templates
   const { data: templates = [] } = useQuery({
-    queryKey: ['preparation-templates'],
+    queryKey: ['preparation-templates', newPreparation.boat_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('preparation_checklist_templates')
-        .select('*')
+        .select(`
+          *,
+          boat:boats(id, name, model)
+        `)
         .eq('is_active', true)
         .order('name');
       
       if (error) throw error;
-      return data;
+      return data || [];
     }
+  });
+
+  // Filter templates based on selected boat
+  const filteredTemplates = templates.filter(template => {
+    if (!newPreparation.boat_id) return true; // Show all if no boat selected
+    return template.boat_id === null || template.boat_id === newPreparation.boat_id;
   });
 
   // Create preparation mutation - simplified for Chef de base
@@ -223,9 +232,10 @@ export function BoatPreparationManager() {
                     <SelectValue placeholder="Sélectionner un modèle (optionnel)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {templates.map((template) => (
+                    {filteredTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
+                        {template.boat ? ` (${template.boat.name})` : ' (Global)'}
                       </SelectItem>
                     ))}
                   </SelectContent>

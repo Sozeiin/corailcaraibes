@@ -2295,6 +2295,7 @@ export type Database = {
       preparation_checklist_templates: {
         Row: {
           base_id: string | null
+          boat_id: string | null
           boat_model: string | null
           category: string | null
           created_at: string | null
@@ -2307,6 +2308,7 @@ export type Database = {
         }
         Insert: {
           base_id?: string | null
+          boat_id?: string | null
           boat_model?: string | null
           category?: string | null
           created_at?: string | null
@@ -2319,6 +2321,7 @@ export type Database = {
         }
         Update: {
           base_id?: string | null
+          boat_id?: string | null
           boat_model?: string | null
           category?: string | null
           created_at?: string | null
@@ -2342,6 +2345,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "preparation_checklist_templates_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
             referencedColumns: ["id"]
           },
         ]

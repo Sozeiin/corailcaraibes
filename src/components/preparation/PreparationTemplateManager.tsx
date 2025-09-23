@@ -25,7 +25,12 @@ interface TemplateItem {
 interface Template {
   id: string;
   name: string;
-  boat_model?: string;
+  boat_id?: string;
+  boat?: {
+    id: string;
+    name: string;
+    model: string;
+  };
   category: string;
   items: TemplateItem[];
   is_active: boolean;
@@ -34,7 +39,7 @@ interface Template {
 
 interface CreateTemplateData {
   name: string;
-  boat_model?: string;
+  boat_id?: string;
   category: string;
   items: TemplateItem[];
 }
@@ -46,6 +51,7 @@ export function PreparationTemplateManager() {
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   const [newTemplate, setNewTemplate] = useState<CreateTemplateData>({
     name: '',
+    boat_id: '',
     category: 'standard',
     items: []
   });
@@ -56,38 +62,68 @@ export function PreparationTemplateManager() {
     mandatory: true
   });
 
-  // Fetch templates
-  const { data: templates = [] } = useQuery({
+  // Fetch existing templates with boat information
+  const { data: templates = [], refetch: refetchTemplates } = useQuery({
     queryKey: ['preparation-templates'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('preparation_checklist_templates')
-        .select('*')
+        .select(`
+          *,
+          boat:boats(id, name, model)
+        `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as unknown as Template[];
+      return (data || []).map(template => ({
+        ...template,
+        items: (template.items as unknown as TemplateItem[]) || []
+      }));
+    }
+  });
+
+  // Fetch boats for selection
+  const { data: boats = [] } = useQuery({
+    queryKey: ['boats'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boats')
+        .select('id, name, model')
+        .order('name');
+      
+      if (error) throw error;
+      return data || [];
     }
   });
 
   // Create template mutation
   const createTemplateMutation = useMutation({
-    mutationFn: async (data: CreateTemplateData) => {
-      const { error } = await supabase
+    mutationFn: async (templateData: CreateTemplateData) => {
+      const { data, error } = await supabase
         .from('preparation_checklist_templates')
         .insert({
-          ...data,
-          items: data.items as any,
+          name: templateData.name,
+          boat_id: templateData.boat_id || null,
+          category: templateData.category,
+          items: templateData.items as any,
           created_by: user?.id,
           base_id: user?.baseId
-        });
+        })
+        .select()
+        .single();
       
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['preparation-templates'] });
       setIsCreateDialogOpen(false);
-      setNewTemplate({ name: '', category: 'standard', items: [] });
+      setNewTemplate({
+        name: '',
+        boat_id: '',
+        category: 'standard',
+        items: []
+      });
       toast.success('Modèle créé avec succès');
     },
     onError: () => {
@@ -97,13 +133,21 @@ export function PreparationTemplateManager() {
 
   // Update template mutation
   const updateTemplateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<CreateTemplateData> }) => {
-      const { error } = await supabase
+    mutationFn: async (template: Template) => {
+      const { data, error } = await supabase
         .from('preparation_checklist_templates')
-        .update({ ...data, items: data.items as any })
-        .eq('id', id);
+        .update({
+          name: template.name,
+          boat_id: template.boat_id || null,
+          category: template.category,
+          items: template.items as any
+        })
+        .eq('id', template.id)
+        .select()
+        .single();
       
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['preparation-templates'] });
@@ -178,21 +222,26 @@ export function PreparationTemplateManager() {
 
   const handleUpdateTemplate = () => {
     if (!editingTemplate) return;
-    updateTemplateMutation.mutate({
-      id: editingTemplate.id,
-      data: {
-        name: editingTemplate.name,
-        boat_model: editingTemplate.boat_model,
-        category: editingTemplate.category,
-        items: editingTemplate.items
-      }
+    updateTemplateMutation.mutate(editingTemplate);
+  };
+
+  const handleEditTemplate = (template: Template) => {
+    setEditingTemplate({
+      ...template,
+      items: template.items || []
+    });
+    setNewTemplate({
+      name: template.name,
+      boat_id: template.boat_id,
+      category: template.category,
+      items: template.items
     });
   };
 
   const handleDuplicateTemplate = (template: Template) => {
     setNewTemplate({
       name: `${template.name} (Copie)`,
-      boat_model: template.boat_model,
+      boat_id: template.boat_id,
       category: template.category,
       items: [...template.items]
     });
@@ -203,7 +252,7 @@ export function PreparationTemplateManager() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="name">Nom du modèle *</Label>
+          <Label htmlFor="name">Nom du modèle</Label>
           <Input
             id="name"
             value={template.name}
@@ -214,23 +263,33 @@ export function PreparationTemplateManager() {
                 setNewTemplate({ ...newTemplate, name: e.target.value });
               }
             }}
-            placeholder="Ex: Préparation Lagoon 42"
+            placeholder="Ex: Checklist standard Lagoon"
           />
         </div>
         <div>
-          <Label htmlFor="boat_model">Modèle de bateau</Label>
-          <Input
-            id="boat_model"
-            value={template.boat_model || ''}
-            onChange={(e) => {
+          <Label htmlFor="boat">Bateau (optionnel)</Label>
+          <Select
+            value={template.boat_id || ''}
+            onValueChange={(value) => {
               if (isEditing && editingTemplate) {
-                setEditingTemplate({ ...editingTemplate, boat_model: e.target.value });
+                setEditingTemplate({ ...editingTemplate, boat_id: value || undefined });
               } else {
-                setNewTemplate({ ...newTemplate, boat_model: e.target.value });
+                setNewTemplate({ ...newTemplate, boat_id: value || undefined });
               }
             }}
-            placeholder="Ex: Lagoon 42"
-          />
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Sélectionner un bateau (global si vide)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Modèle global (tous les bateaux)</SelectItem>
+              {boats.map((boat) => (
+                <SelectItem key={boat.id} value={boat.id}>
+                  {boat.name} ({boat.model})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -313,7 +372,7 @@ export function PreparationTemplateManager() {
       </div>
 
       {/* Items list */}
-      {template.items.length > 0 && (
+      {template.items && template.items.length > 0 && (
         <div>
           <h4 className="font-medium mb-3">Éléments de la checklist ({template.items.length})</h4>
           <ScrollArea className="h-64 border rounded">
@@ -406,7 +465,7 @@ export function PreparationTemplateManager() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setEditingTemplate(template)}
+                  onClick={() => handleEditTemplate(template)}
                 >
                   <Edit className="w-4 h-4" />
                 </Button>
@@ -422,8 +481,12 @@ export function PreparationTemplateManager() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-gray-500">Modèle de bateau</p>
-                  <p>{template.boat_model || 'Tous modèles'}</p>
+                  <p className="text-gray-500">Bateau</p>
+                  {template.boat ? (
+                    <p>{template.boat.name} ({template.boat.model})</p>
+                  ) : (
+                    <p>Modèle global</p>
+                  )}
                 </div>
                 <div>
                   <p className="text-gray-500">Nombre d'éléments</p>
