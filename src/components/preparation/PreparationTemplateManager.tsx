@@ -58,18 +58,12 @@ export function PreparationTemplateManager() {
 
   // Fetch templates
   const { data: templates = [] } = useQuery({
-    queryKey: ['preparation-templates', user?.baseId],
+    queryKey: ['preparation-templates'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('preparation_checklist_templates')
-        .select('*');
-      
-      // Direction can see all templates, others see only their base templates + global ones
-      if (user?.role !== 'direction') {
-        query = query.or(`base_id.eq.${user?.baseId},base_id.is.null`);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
+        .select('*')
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as unknown as Template[];
