@@ -163,18 +163,19 @@ export function PreparationTab() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       refetchItems();
       refetchPackages();
       toast({
-        title: 'Article ajouté',
-        description: 'L\'article a été ajouté au colis.'
+        title: 'Succès',
+        description: result || 'L\'article a été ajouté au colis.'
       });
     },
     onError: (error) => {
+      console.error('Erreur lors de l\'ajout de l\'article:', error);
       toast({
-        title: 'Erreur',
-        description: error.message,
+        title: 'Erreur lors du scan',
+        description: error.message || 'Impossible d\'ajouter l\'article au colis',
         variant: 'destructive'
       });
     }
@@ -242,15 +243,14 @@ export function PreparationTab() {
   };
 
   const handleScan = (sku: string) => {
+    // Auto-create a default package if none is specified
+    const finalPackageCode = packageCode.trim() || `AUTO-${Date.now().toString().slice(-6)}`;
+    
     if (!packageCode.trim()) {
-      toast({
-        title: 'Colis non défini',
-        description: 'Veuillez saisir un code de colis avant de scanner.',
-        variant: 'destructive'
-      });
-      return;
+      setPackageCode(finalPackageCode);
     }
-    addItemMutation.mutate({ sku, qty: 1, packageCode });
+    
+    addItemMutation.mutate({ sku, qty: 1, packageCode: finalPackageCode });
   };
 
   const canShip = currentShipment?.status === 'packed' && 
@@ -386,18 +386,22 @@ export function PreparationTab() {
             <>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="packageCode">Code du colis en cours</Label>
+                  <Label htmlFor="packageCode">Code du colis (optionnel)</Label>
                   <Input
                     id="packageCode"
                     value={packageCode}
                     onChange={(e) => setPackageCode(e.target.value)}
-                    placeholder="Ex: G27"
+                    placeholder="Ex: G27 (auto-généré si vide)"
                   />
                 </div>
                 <div>
                   <ScanInput
                     onScan={handleScan}
-                    disabled={addItemMutation.isPending || !packageCode.trim()}
+                    disabled={addItemMutation.isPending}
+                    placeholder={packageCode.trim() ? 
+                      `Scanner pour ${packageCode}` : 
+                      "Scanner (colis automatique)"
+                    }
                   />
                 </div>
               </div>

@@ -29,7 +29,7 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stock_items')
-        .select('id, name, reference')
+        .select('id, name, reference, quantity')
         .eq('base_id', user?.baseId)
         .order('name');
       if (error) throw error;
@@ -166,12 +166,21 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
                           key={item.id}
                           type="button"
                           variant="ghost"
-                          className="w-full justify-start p-2 h-auto"
+                          className="w-full justify-between p-2 h-auto"
                           onClick={() => handleSelect(item)}
                         >
                           <div className="flex flex-col text-left">
                             <span className="text-sm font-medium">{item.name}</span>
                             <span className="text-xs text-muted-foreground">{item.reference}</span>
+                          </div>
+                          <div className="text-xs text-right">
+                            <span className={`px-2 py-1 rounded-full ${
+                              item.quantity > 0 
+                                ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' 
+                                : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                            }`}>
+                              Stock: {item.quantity}
+                            </span>
                           </div>
                         </Button>
                       ))}
@@ -218,8 +227,12 @@ export function ScanInput({ onScan, disabled = false, placeholder = "Scanner ou 
           </div>
         </form>
         
-        <div className="mt-4 text-xs text-muted-foreground">
+        <div className="mt-4 text-xs text-muted-foreground space-y-1">
           <p>💡 Astuce: Utilisez un lecteur de code-barres USB ou Bluetooth pour scanner rapidement</p>
+          <p>📦 Le code de colis sera généré automatiquement si non spécifié</p>
+          {stockItems.length > 0 && (
+            <p>📋 {stockItems.length} article(s) disponibles dans cette base</p>
+          )}
         </div>
       </CardContent>
     </Card>

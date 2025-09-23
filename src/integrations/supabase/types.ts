@@ -4113,12 +4113,19 @@ export type Database = {
     }
     Functions: {
       add_item_by_scan: {
-        Args: {
-          p_package_code?: string
-          p_qty?: number
-          p_shipment_id: string
-          p_sku: string
-        }
+        Args:
+          | {
+              p_package_code?: string
+              p_qty?: number
+              p_shipment_id: string
+              p_sku: string
+            }
+          | {
+              p_package_code?: string
+              p_qty?: number
+              p_shipment_id: string
+              p_sku: string
+            }
         Returns: string
       }
       add_order_items_to_stock: {
