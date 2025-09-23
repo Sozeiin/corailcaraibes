@@ -100,7 +100,9 @@ export function PreparationDetailsDialog({
   };
 
   const canAddBoxes = preparation.status === 'draft' || preparation.status === 'in_progress';
-  const canClose = preparation.status === 'in_progress' && preparationBoxes.length > 0 && preparationBoxes.every((box: any) => box.status === 'closed');
+  const closedBoxes = preparationBoxes.filter((box: any) => box.status === 'closed');
+  const allBoxesClosed = preparationBoxes.length > 0 && closedBoxes.length === preparationBoxes.length;
+  const canClose = preparation.status === 'in_progress' && allBoxesClosed;
   const canShip = preparation.status === 'closed';
 
   return (
@@ -166,9 +168,14 @@ export function PreparationDetailsDialog({
                   </Button>
                 )}
                 {!canClose && preparation.status === 'in_progress' && (
-                  <p className="text-sm text-muted-foreground">
-                    Fermez tous les cartons pour pouvoir clôturer la préparation.
-                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    {preparationBoxes.length === 0 ? (
+                      <p>Créez au moins un carton pour pouvoir clôturer la préparation.</p>
+                    ) : (
+                      <p>Fermez tous les cartons pour pouvoir clôturer la préparation. 
+                        ({closedBoxes.length}/{preparationBoxes.length} cartons fermés)</p>
+                    )}
+                  </div>
                 )}
                 {canShip && (
                   <Button 

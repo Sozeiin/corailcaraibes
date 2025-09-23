@@ -145,6 +145,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
   const [manualCode, setManualCode] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [showSearchMode, setShowSearchMode] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
 
   // Récupérer les articles de stock pour l'autocomplete
   const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
@@ -255,9 +256,17 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
           console.warn('Erreur arrêt stream:', error);
         }
         
-        // Nettoyage sécurisé avec timeout
+        // Nettoyage sécurisé avec timeout et fallback
         setTimeout(() => {
-          safeRemoveById('shipment-scanner-overlay');
+          try {
+            safeRemoveById('shipment-scanner-overlay');
+          } catch (error) {
+            // Fallback direct si safeRemoveById échoue
+            const overlay = document.getElementById('shipment-scanner-overlay');
+            if (overlay && overlay.parentNode) {
+              overlay.parentNode.removeChild(overlay);
+            }
+          }
           setIsScanning(false);
         }, 100);
       };
@@ -338,6 +347,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
 
   const handleStockItemSelect = (item: any) => {
     setShowSearchMode(false);
+    setSearchValue('');
     // Utiliser la référence ou le nom comme code de scan
     const code = item.reference || item.name;
     handleScanSuccess(code);
@@ -385,8 +395,8 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
               <div className="p-3 border rounded-lg bg-muted/50">
                 <StockItemAutocomplete
                   stockItems={stockItems}
-                  value=""
-                  onChange={() => {}}
+                  value={searchValue}
+                  onChange={setSearchValue}
                   onSelect={handleStockItemSelect}
                   placeholder="Rechercher par nom ou référence..."
                   className="w-full"
