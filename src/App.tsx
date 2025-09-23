@@ -13,7 +13,7 @@ import { BoatsDashboard } from "./pages/BoatsDashboard";
 import { BoatDetails } from "./pages/BoatDetails";
 import { BoatSafetyControls } from "./pages/BoatSafetyControls";
 import { SafetyControls } from "./pages/SafetyControls";
-import Distribution from "./pages/Distribution";
+
 import Suppliers from "./pages/Suppliers";
 import Orders from "./pages/Orders";
 import SupplyRequests from "./pages/SupplyRequests";
@@ -124,16 +124,6 @@ function AppRoutes() {
           <ProtectedRoute>
             <PermissionGate page="safety_controls">
               <BoatSafetyControls />
-            </PermissionGate>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/distribution"
-        element={
-          <ProtectedRoute>
-            <PermissionGate page="distribution">
-              <Distribution />
             </PermissionGate>
           </ProtectedRoute>
         }
