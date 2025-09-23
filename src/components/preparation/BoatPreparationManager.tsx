@@ -96,7 +96,7 @@ export function BoatPreparationManager() {
   // Filter templates based on selected boat
   const filteredTemplates = templates.filter(template => {
     if (!newPreparation.boat_id) return true; // Show all if no boat selected
-    return template.boat_id === null || template.boat_id === newPreparation.boat_id;
+    return template.boat_id === newPreparation.boat_id; // Only show boat-specific templates
   });
 
   // Create preparation mutation - simplified for Chef de base
