@@ -39,7 +39,7 @@ export function UnassignedTasksPanel({ tasks, isVisible, onTaskClick, getTaskTyp
   }
 
   return (
-    <div className="w-64 flex-none border-r bg-muted/20 md:block">
+    <div className="w-80 flex-none border-r bg-muted/20 md:block">
       <Card className="h-full rounded-none border-0 shadow-none">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-sm">
