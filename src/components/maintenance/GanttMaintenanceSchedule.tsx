@@ -504,30 +504,18 @@ export function GanttMaintenanceSchedule() {
       active,
       over
     } = event;
-    console.log('🚀 DRAG END - Début:', {
-      activeId: active.id,
-      overId: over?.id,
-      draggedTask: draggedTask?.title,
-      draggedTaskType: draggedTask?.activity_type
-    });
     if (!over || !draggedTask) {
-      console.log('❌ DRAG END - Pas de cible valide ou pas de tâche:', {
-        over: !!over,
-        draggedTask: !!draggedTask
-      });
       setDraggedTask(null);
       return;
     }
     try {
       const dropId = over.id.toString();
-      console.log('🎯 DRAG END - Drop target ID:', dropId);
 
       // New drop target format: technicianId|dayIndex|hour
       // Using pipe separator to avoid UUID parsing issues
       const parts = dropId.split('|');
-      console.log('🔍 DRAG END - Parts parsed:', parts);
       if (parts.length !== 3) {
-        console.error('❌ DRAG END - Format invalide:', dropId, 'expected format: technicianId|dayIndex|hour');
+        console.error('Invalid drop target format:', dropId, 'expected format: technicianId|dayIndex|hour');
         setDraggedTask(null);
         return;
       }
@@ -551,14 +539,8 @@ export function GanttMaintenanceSchedule() {
 
       // Get the date string directly from weekDays array
       const targetDay = weekDays[dayIndex];
-      console.log('🗓️ DRAG END - Target day lookup:', {
-        dayIndex,
-        weekDaysLength: weekDays.length,
-        targetDay: targetDay?.dateString,
-        allWeekDays: weekDays.map((d, i) => ({ index: i, dateString: d.dateString }))
-      });
       if (!targetDay) {
-        console.error('❌ DRAG END - Index de jour invalide:', dayIndex, 'weekDays length:', weekDays.length);
+        console.error('Invalid day index:', dayIndex, 'weekDays length:', weekDays.length);
         setDraggedTask(null);
         return;
       }
@@ -566,13 +548,6 @@ export function GanttMaintenanceSchedule() {
 
       // Format the time correctly for database
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
-      console.log('💾 DRAG END - Données finales pour mise à jour:', {
-        technician_id: technicianId === 'unassigned' ? null : technicianId,
-        scheduled_date: dateString,
-        scheduled_time: scheduledTime,
-        draggedTaskCurrentDate: draggedTask.scheduled_date,
-        draggedTaskCurrentTime: draggedTask.scheduled_time
-      });
 
       // Store the last dropped technician for this intervention with persistence
       const newLastDropped = {
@@ -636,55 +611,26 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    console.log('📋 GET TASKS FOR SLOT:', {
-      technicianId,
-      dateString,
-      hour
-    });
-    console.log('📊 Interventions disponibles:', interventions.length, interventions.map(i => ({
-      id: i.id,
-      title: i.title,
-      scheduled_date: i.scheduled_date,
-      scheduled_time: i.scheduled_time,
-      technician_id: i.technician_id,
-      activity_type: i.activity_type
-    })));
-    const tasks = interventions.filter(intervention => {
+    return interventions.filter(intervention => {
       // Parse the scheduled time correctly
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : 9;
 
-      // Compare technician IDs (handle null cases)
-      const technicianMatch = intervention.technician_id === technicianId;
+      // Handle technician matching - if technicianId is null, show unassigned tasks
+      const technicianMatch = technicianId === null ? 
+        (intervention.technician_id === null || intervention.technician_id === undefined) :
+        intervention.technician_id === technicianId;
 
       // Compare dates using consistent format
       const dateMatch = intervention.scheduled_date === dateString;
 
       // Compare hours
       const hourMatch = taskHour === hour;
-      console.log('Filtering task:', intervention.id, {
-        intervention_technician: intervention.technician_id,
-        slot_technician: technicianId,
-        technicianMatch,
-        intervention_date: intervention.scheduled_date,
-        slot_date: dateString,
-        dateMatch,
-        intervention_hour: taskHour,
-        slot_hour: hour,
-        hourMatch,
-        included: technicianMatch && dateMatch && hourMatch
-      });
+
       return technicianMatch && dateMatch && hourMatch;
     });
-    console.log(`Tasks for slot ${technicianId}|${dateString}|${hour}:`, tasks.map(t => ({
-      id: t.id,
-      title: t.title
-    })));
-    return tasks;
   };
   const getUnassignedTasks = () => {
-    const unassigned = interventions.filter(intervention => !intervention.technician_id);
-    console.log('Unassigned tasks:', unassigned);
-    return unassigned;
+    return interventions.filter(intervention => !intervention.technician_id);
   };
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
