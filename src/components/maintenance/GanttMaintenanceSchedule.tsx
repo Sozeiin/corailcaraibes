@@ -804,14 +804,16 @@ export function GanttMaintenanceSchedule() {
       {/* Header with Weather Widget */}
       <div className="flex-none border-b bg-gradient-to-r from-card to-muted/10 p-4 shadow-sm">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-24">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
-              
+              <h1 className="text-2xl font-semibold bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+                Planning Maintenance avec Météo
+              </h1>
             </div>
-            <div className="flex items-center gap-2 bg-background rounded-lg border p-1 mx-[470px]">
+            <div className="flex items-center gap-2 bg-background rounded-lg border p-1">
               <Button variant="ghost" size="sm" onClick={() => navigateWeek('prev')} className="hover:bg-muted">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -858,8 +860,8 @@ export function GanttMaintenanceSchedule() {
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="max-h-52 p-0.5 ">
-                <div className="flex flex-wrap gap-3 ">
+              <ScrollArea className="max-h-32 p-2">
+                <div className="flex flex-wrap gap-2.5 ">
                   {getUnassignedTasks().map(task => <div key={task.id} className="w-48">
                       <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
                     </div>)}
