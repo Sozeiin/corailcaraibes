@@ -3,11 +3,14 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { QrCode, Scan } from 'lucide-react';
+import { QrCode, Scan, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { searchGlobalStockItems } from '@/lib/stockUtils';
+import { StockItemAutocomplete } from '@/components/stock/StockItemAutocomplete';
+import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { safeRemoveById } from '@/lib/domUtils';
 
 interface ShipmentScannerProps {
   boxId: string;
@@ -141,6 +144,48 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
 
   const [manualCode, setManualCode] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [showSearchMode, setShowSearchMode] = useState(false);
+
+  // Récupérer les articles de stock pour l'autocomplete
+  const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
+  const { data: rawStockItems = [] } = useOfflineData<any>({ 
+    table: 'stock_items', 
+    baseId, 
+    dependencies: [user?.role, user?.baseId] 
+  });
+
+  const stockItems = rawStockItems.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    reference: item.reference || '',
+    category: item.category || '',
+    quantity: item.quantity || 0,
+    location: item.location || ''
+  }));
+
+  // Fonction d'amélioration d'image pour codes endommagés
+  const enhanceImageForScanning = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      const factor = 1.5;
+      const intercept = 128 * (1 - factor);
+      
+      data[i] = Math.max(0, Math.min(255, data[i] * factor + intercept));
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] * factor + intercept));
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] * factor + intercept));
+      
+      if (brightness < 128) {
+        data[i] = data[i + 1] = data[i + 2] = 0;
+      } else {
+        data[i] = data[i + 1] = data[i + 2] = 255;
+      }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
+  }, []);
 
   const startScan = useCallback(async () => {
     setIsScanning(true);
@@ -152,8 +197,9 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { min: 720, ideal: 1920, max: 1920 },
+          height: { min: 480, ideal: 1080, max: 1080 },
+          frameRate: { ideal: 30, max: 60 }
         }
       });
 
@@ -203,15 +249,22 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
 
       const cleanup = () => {
         scanning = false;
-        stream.getTracks().forEach(track => track.stop());
-        const element = document.getElementById('shipment-scanner-overlay');
-        if (element) element.remove();
-        setIsScanning(false);
+        try {
+          stream.getTracks().forEach(track => track.stop());
+        } catch (error) {
+          console.warn('Erreur arrêt stream:', error);
+        }
+        
+        // Nettoyage sécurisé avec timeout
+        setTimeout(() => {
+          safeRemoveById('shipment-scanner-overlay');
+          setIsScanning(false);
+        }, 100);
       };
 
       closeBtn.onclick = cleanup;
 
-      // Scanner en continu
+      // Scanner optimisé avec tentatives multiples
       const scanLoop = async () => {
         if (!scanning) return;
         
@@ -222,20 +275,41 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
           canvas.height = video.videoHeight || 480;
           ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-          const result = codeReader.decodeFromCanvas(canvas);
-          if (result && scanning) {
-            const code = result.getText().trim();
-            status.textContent = `Code détecté: ${code}`;
-            cleanup();
-            await handleScanSuccess(code);
-            return;
+          // Tentative 1: Image normale
+          try {
+            const result = codeReader.decodeFromCanvas(canvas);
+            if (result && scanning) {
+              const code = result.getText().trim();
+              status.textContent = `✅ Code détecté: ${code}`;
+              cleanup();
+              await handleScanSuccess(code);
+              return;
+            }
+          } catch (normalError) {
+            // Tentative 2: Image améliorée pour codes endommagés
+            if (ctx) {
+              try {
+                enhanceImageForScanning(canvas, ctx);
+                const enhancedResult = codeReader.decodeFromCanvas(canvas);
+                
+                if (enhancedResult && scanning) {
+                  const code = enhancedResult.getText().trim();
+                  status.textContent = `✅ Code détecté (amélioré): ${code}`;
+                  cleanup();
+                  await handleScanSuccess(code);
+                  return;
+                }
+              } catch (enhancedError) {
+                // Continue scanning
+              }
+            }
           }
         } catch (error) {
           // Continue scanning
         }
         
         if (scanning) {
-          setTimeout(scanLoop, 100);
+          setTimeout(scanLoop, 80); // Plus rapide pour meilleure réactivité
         }
       };
 
@@ -252,7 +326,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
         variant: 'destructive'
       });
     }
-  }, []);
+  }, [enhanceImageForScanning]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -260,6 +334,13 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
       handleScanSuccess(manualCode.trim());
       setManualCode('');
     }
+  };
+
+  const handleStockItemSelect = (item: any) => {
+    setShowSearchMode(false);
+    // Utiliser la référence ou le nom comme code de scan
+    const code = item.reference || item.name;
+    handleScanSuccess(code);
   };
 
   return (
@@ -284,11 +365,39 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
             {isScanning ? 'Scanner actif...' : 'Démarrer le scanner'}
           </Button>
 
-          <div className="relative">
-            <div className="text-center text-sm text-muted-foreground mb-2">ou</div>
-            <form onSubmit={handleManualSubmit} className="flex gap-2">
+          <div className="space-y-3">
+            <div className="text-center text-sm text-muted-foreground">ou</div>
+            
+            {/* Recherche d'article */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowSearchMode(!showSearchMode)}
+                className="flex items-center gap-2"
+                disabled={isProcessing}
+              >
+                <Search className="h-4 w-4" />
+                Rechercher article
+              </Button>
+            </div>
+
+            {showSearchMode && (
+              <div className="p-3 border rounded-lg bg-muted/50">
+                <StockItemAutocomplete
+                  stockItems={stockItems}
+                  value=""
+                  onChange={() => {}}
+                  onSelect={handleStockItemSelect}
+                  placeholder="Rechercher par nom ou référence..."
+                  className="w-full"
+                />
+              </div>
+            )}
+            
+            {/* Saisie manuelle */}
+            <form onSubmit={handleManualSubmit} className="space-y-2">
               <Input
-                placeholder="Saisir un code manuellement"
+                placeholder="Code article, référence, ou nom..."
                 value={manualCode}
                 onChange={(e) => setManualCode(e.target.value)}
                 disabled={isProcessing}
@@ -297,8 +406,10 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
                 type="submit" 
                 variant="outline"
                 disabled={isProcessing || !manualCode.trim()}
+                className="w-full"
               >
-                <Scan className="h-4 w-4" />
+                <Scan className="h-4 w-4 mr-2" />
+                Ajouter cet article
               </Button>
             </form>
           </div>

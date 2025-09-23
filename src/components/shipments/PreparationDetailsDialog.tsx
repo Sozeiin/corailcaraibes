@@ -100,7 +100,7 @@ export function PreparationDetailsDialog({
   };
 
   const canAddBoxes = preparation.status === 'draft' || preparation.status === 'in_progress';
-  const canClose = preparation.status === 'in_progress' && preparationBoxes.every((box: any) => box.status === 'closed');
+  const canClose = preparation.status === 'in_progress' && preparationBoxes.length > 0 && preparationBoxes.every((box: any) => box.status === 'closed');
   const canShip = preparation.status === 'closed';
 
   return (
@@ -165,6 +165,11 @@ export function PreparationDetailsDialog({
                     Clôturer la préparation
                   </Button>
                 )}
+                {!canClose && preparation.status === 'in_progress' && (
+                  <p className="text-sm text-muted-foreground">
+                    Fermez tous les cartons pour pouvoir clôturer la préparation.
+                  </p>
+                )}
                 {canShip && (
                   <Button 
                     onClick={() => handleStatusChange('shipped')}
@@ -173,6 +178,17 @@ export function PreparationDetailsDialog({
                   >
                     <Truck className="h-4 w-4" />
                     Marquer comme expédiée
+                  </Button>
+                )}
+                {preparation.status === 'shipped' && (
+                  <Button 
+                    onClick={() => handleStatusChange('completed')}
+                    disabled={loading}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                  >
+                    <Package className="h-4 w-4" />
+                    Marquer comme terminée
                   </Button>
                 )}
                 {preparation.status === 'closed' && (
