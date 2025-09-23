@@ -619,8 +619,8 @@ export function GanttMaintenanceSchedule() {
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
     return interventions.filter(intervention => {
-      // Parse the scheduled time correctly
-      const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : 9;
+      // Parse the scheduled time correctly - no default value to avoid misplacement
+      const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
 
       // Handle technician matching - if technicianId is null, show unassigned tasks
       const technicianMatch = technicianId === null ? 
@@ -630,8 +630,20 @@ export function GanttMaintenanceSchedule() {
       // Compare dates using consistent format
       const dateMatch = intervention.scheduled_date === dateString;
 
-      // Compare hours
+      // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
+
+      // Debug logging for 6AM issues
+      if (hour === 6 && dateMatch && technicianMatch) {
+        console.log('Checking 6AM slot:', {
+          intervention: intervention.title,
+          scheduled_time: intervention.scheduled_time,
+          taskHour,
+          hourMatch,
+          technicianId,
+          intervention_technician_id: intervention.technician_id
+        });
+      }
 
       return technicianMatch && dateMatch && hourMatch;
     });
