@@ -375,11 +375,15 @@ export function GanttMaintenanceSchedule() {
         throw new Error(`Item non trouvé: ${id}`);
       }
 
-      // Check if this is a planning activity (has activity_type and not traditional maintenance)
-      const isPlanningActivity = item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id;
+      // Check if this is a planning activity more reliably
+      const isPlanningActivity = (item.activity_type && item.activity_type === 'preparation') || 
+                                  (item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id);
       if (isPlanningActivity) {
         // Update planning_activities table
-        const scheduledStart = updates.scheduled_date && updates.scheduled_time ? `${updates.scheduled_date}T${updates.scheduled_time}` : undefined;
+        const scheduledStart = updates.scheduled_date && updates.scheduled_time ? 
+          `${updates.scheduled_date}T${updates.scheduled_time}` : undefined;
+        const scheduledEnd = scheduledStart ? 
+          new Date(new Date(scheduledStart).getTime() + (item.estimated_duration || 60) * 60000).toISOString() : undefined;
 
         // Map status from intervention format to planning_activities format
         const mapStatusToPlanningActivity = (status: string): 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue' => {
@@ -402,7 +406,7 @@ export function GanttMaintenanceSchedule() {
           }),
           ...(scheduledStart && {
             scheduled_start: scheduledStart,
-            scheduled_end: scheduledStart // For now, same as start
+            scheduled_end: scheduledEnd || scheduledStart
           }),
           ...(updates.status && {
             status: mapStatusToPlanningActivity(updates.status)
@@ -475,6 +479,9 @@ export function GanttMaintenanceSchedule() {
       });
       queryClient.invalidateQueries({
         queryKey: ['preparation-orders']
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['planning-activities']
       });
 
       // Afficher le nom du technicien dans le toast
