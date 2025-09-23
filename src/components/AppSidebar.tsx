@@ -46,11 +46,6 @@ const menuItems = [{
     url: '/stock/scanner'
   }]
 }, {
-  title: 'Distribution',
-  url: '/distribution',
-  icon: Truck,
-  roles: ['direction', 'chef_base', 'technicien']
-}, {
   title: 'Maintenance',
   icon: Wrench,
   roles: ['direction', 'chef_base', 'technicien'],
