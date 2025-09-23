@@ -44,6 +44,10 @@ const menuItems = [{
   }, {
     title: 'Scanner',
     url: '/stock/scanner'
+  }, {
+    title: 'Préparations d\'expéditions',
+    url: '/preparations-expeditions',
+    roles: ['direction', 'chef_base']
   }]
 }, {
   title: 'Maintenance',

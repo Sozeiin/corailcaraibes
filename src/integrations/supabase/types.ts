@@ -2636,6 +2636,178 @@ export type Database = {
         }
         Relationships: []
       }
+      shipment_box_items: {
+        Row: {
+          box_id: string
+          id: string
+          item_name: string
+          item_reference: string | null
+          quantity: number
+          scanned_at: string
+          scanned_by: string | null
+          stock_item_id: string
+          unit_price: number | null
+        }
+        Insert: {
+          box_id: string
+          id?: string
+          item_name: string
+          item_reference?: string | null
+          quantity?: number
+          scanned_at?: string
+          scanned_by?: string | null
+          stock_item_id: string
+          unit_price?: number | null
+        }
+        Update: {
+          box_id?: string
+          id?: string
+          item_name?: string
+          item_reference?: string | null
+          quantity?: number
+          scanned_at?: string
+          scanned_by?: string | null
+          stock_item_id?: string
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_box_items_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_box_items_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_boxes: {
+        Row: {
+          box_identifier: string
+          closed_at: string | null
+          created_at: string
+          id: string
+          preparation_id: string
+          status: string
+          total_items: number
+        }
+        Insert: {
+          box_identifier: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          preparation_id: string
+          status?: string
+          total_items?: number
+        }
+        Update: {
+          box_identifier?: string
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          preparation_id?: string
+          status?: string
+          total_items?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_boxes_preparation_id_fkey"
+            columns: ["preparation_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_preparations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_preparations: {
+        Row: {
+          closed_at: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          destination_base_id: string
+          id: string
+          name: string
+          notes: string | null
+          reference: string
+          shipped_at: string | null
+          source_base_id: string
+          status: string
+          total_boxes: number
+          total_items: number
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          destination_base_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          reference: string
+          shipped_at?: string | null
+          source_base_id: string
+          status?: string
+          total_boxes?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          destination_base_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          reference?: string
+          shipped_at?: string | null
+          source_base_id?: string
+          status?: string
+          total_boxes?: number
+          total_items?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_preparations_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_preparations_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_preparations_source_base_id_fkey"
+            columns: ["source_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_preparations_source_base_id_fkey"
+            columns: ["source_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_item_quotes: {
         Row: {
           attachment_url: string | null
@@ -3631,6 +3803,10 @@ export type Database = {
       evaluate_weather_for_maintenance: {
         Args: { base_id_param: string; maintenance_date: string }
         Returns: Json
+      }
+      generate_shipment_reference: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       generate_stock_reference: {
         Args: Record<PropertyKey, never>
