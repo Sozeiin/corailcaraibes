@@ -883,7 +883,8 @@ export function GanttMaintenanceSchedule() {
             )}
           </div>
               </ScrollArea>
-            </div>}
+            </div>
+          )}
 
           {/* Main table */}
           <div className="flex-1 flex flex-col overflow-hidden">
