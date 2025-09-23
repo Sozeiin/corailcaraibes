@@ -61,13 +61,13 @@ export function DroppableTimeSlot({
   return (
     <div
       ref={setNodeRef}
-      className={`min-h-[40px] p-0.5 relative transition-all duration-200 ${getWeatherSlotStyle()} ${
-        isOver ? 'bg-primary/10 border-primary/30 shadow-inner border-2 border-dashed' : 'hover:bg-muted/20 border-2 border-transparent'
+      className={`min-h-[50px] p-2 relative transition-all duration-300 rounded-md ${getWeatherSlotStyle()} ${
+        isOver ? 'bg-blue-100 border-blue-300 shadow-inner border-2 border-dashed' : 'hover:bg-gray-100 border-2 border-transparent cursor-pointer'
       }`}
     >
-      <div className="space-y-0.5">
+      <div className="space-y-2">
         {tasks.map(task => (
-          <div key={task.id}>
+          <div key={task.id} className="w-full">
             {renderTaskCard ? renderTaskCard(task) : (
               <DraggableTaskCard
                 task={task}
