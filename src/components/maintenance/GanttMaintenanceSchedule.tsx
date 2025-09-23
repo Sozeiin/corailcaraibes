@@ -961,12 +961,12 @@ export function GanttMaintenanceSchedule() {
                             </div>
                             
                              {/* Cellules jours avec tâches */}
-                             {weekDays.map(day => {
+                             {weekDays.map((day, dayIndex) => {
                       const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
                       const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
                       const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
                       return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
-                                     <DroppableTimeSlot id={`${technician.id}|${day.dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
+                                     <DroppableTimeSlot id={`${technician.id}|${dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
                           ...task,
                           weatherEvaluation: weatherEvaluations[task.id],
                           weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
