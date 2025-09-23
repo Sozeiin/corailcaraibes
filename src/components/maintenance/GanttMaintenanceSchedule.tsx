@@ -250,19 +250,11 @@ export function GanttMaintenanceSchedule() {
           *,
           boats(id, name, model)
         `).gte('scheduled_date', weekDays[0]?.dateString).lte('scheduled_date', weekDays[6]?.dateString).eq('base_id', user?.baseId).order('scheduled_date');
-
       const unassignedInterventionsPromise = supabase.from('interventions').select(`
           *,
           boats(id, name, model)
         `).is('technician_id', null).eq('base_id', user?.baseId).order('scheduled_date');
-
-      const [weekActivitiesResult, unassignedActivitiesResult, weekInterventionsResult, unassignedInterventionsResult] = await Promise.all([
-        weekActivitiesPromise, 
-        unassignedActivitiesPromise,
-        weekInterventionsPromise,
-        unassignedInterventionsPromise
-      ]);
-
+      const [weekActivitiesResult, unassignedActivitiesResult, weekInterventionsResult, unassignedInterventionsResult] = await Promise.all([weekActivitiesPromise, unassignedActivitiesPromise, weekInterventionsPromise, unassignedInterventionsPromise]);
       if (weekActivitiesResult.error) {
         console.error('Error fetching week activities:', weekActivitiesResult.error);
         throw weekActivitiesResult.error;
@@ -285,7 +277,6 @@ export function GanttMaintenanceSchedule() {
       const unassignedActivities = unassignedActivitiesResult.data || [];
       const weekInterventions = weekInterventionsResult.data || [];
       const unassignedInterventions = unassignedInterventionsResult.data || [];
-
       const allActivities = [...weekActivities];
 
       // Add unassigned activities that are not already in the week view
@@ -303,10 +294,7 @@ export function GanttMaintenanceSchedule() {
         scheduled_date: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'yyyy-MM-dd') : '',
         scheduled_time: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'HH:mm:ss') : '',
         estimated_duration: activity.estimated_duration || 60,
-        status: activity.status === 'completed' ? 'completed' : 
-               activity.status === 'in_progress' ? 'in_progress' : 
-               activity.status === 'cancelled' ? 'cancelled' : 
-               activity.status === 'planned' ? 'scheduled' : 'scheduled',
+        status: activity.status === 'completed' ? 'completed' : activity.status === 'in_progress' ? 'in_progress' : activity.status === 'cancelled' ? 'cancelled' : activity.status === 'planned' ? 'scheduled' : 'scheduled',
         intervention_type: activity.activity_type || 'maintenance',
         priority: activity.priority || 'medium',
         technician_id: activity.technician_id,
@@ -314,21 +302,20 @@ export function GanttMaintenanceSchedule() {
         base_id: activity.base_id,
         color_code: activity.color_code,
         boats: activity.boats,
-        activity_type: activity.activity_type, // Keep original type for differentiation
+        activity_type: activity.activity_type,
+        // Keep original type for differentiation
         original_intervention_id: activity.original_intervention_id
       }));
 
       // Convert traditional interventions to the same format
-      const processedInterventions = [...weekInterventions, ...unassignedInterventions]
-        .filter(intervention => !allActivities.find(activity => activity.original_intervention_id === intervention.id))
-        .map(intervention => ({
-          ...intervention,
-          estimated_duration: 60, // Default duration for interventions
-          intervention_type: intervention.intervention_type || 'maintenance',
-          priority: intervention.priority || 'medium',
-          activity_type: 'maintenance' // Mark as traditional maintenance
-        }));
-
+      const processedInterventions = [...weekInterventions, ...unassignedInterventions].filter(intervention => !allActivities.find(activity => activity.original_intervention_id === intervention.id)).map(intervention => ({
+        ...intervention,
+        estimated_duration: 60,
+        // Default duration for interventions
+        intervention_type: intervention.intervention_type || 'maintenance',
+        priority: intervention.priority || 'medium',
+        activity_type: 'maintenance' // Mark as traditional maintenance
+      }));
       const combinedData = [...processedActivities, ...processedInterventions];
       console.log('Fetched combined activities and interventions:', combinedData);
       return combinedData as Intervention[];
@@ -377,7 +364,10 @@ export function GanttMaintenanceSchedule() {
       id: string;
       updates: Partial<Intervention>;
     }) => {
-      console.log('🚀 Début de la mutation pour:', { id, updates });
+      console.log('🚀 Début de la mutation pour:', {
+        id,
+        updates
+      });
 
       // Find the item to determine if it's a planning activity or traditional intervention
       const item = interventions.find(i => i.id === id);
@@ -387,80 +377,90 @@ export function GanttMaintenanceSchedule() {
 
       // Check if this is a planning activity (has activity_type and not traditional maintenance)
       const isPlanningActivity = item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id;
-
       if (isPlanningActivity) {
         // Update planning_activities table
-        const scheduledStart = updates.scheduled_date && updates.scheduled_time 
-          ? `${updates.scheduled_date}T${updates.scheduled_time}` 
-          : undefined;
+        const scheduledStart = updates.scheduled_date && updates.scheduled_time ? `${updates.scheduled_date}T${updates.scheduled_time}` : undefined;
 
         // Map status from intervention format to planning_activities format
         const mapStatusToPlanningActivity = (status: string): 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue' => {
           switch (status) {
-            case 'scheduled': return 'planned';
-            case 'in_progress': return 'in_progress';
-            case 'completed': return 'completed';
-            case 'cancelled': return 'cancelled';
-            default: return 'planned';
+            case 'scheduled':
+              return 'planned';
+            case 'in_progress':
+              return 'in_progress';
+            case 'completed':
+              return 'completed';
+            case 'cancelled':
+              return 'cancelled';
+            default:
+              return 'planned';
           }
         };
-
         const cleanUpdates = {
-          ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
-          ...(scheduledStart && { 
+          ...(updates.technician_id !== undefined && {
+            technician_id: updates.technician_id
+          }),
+          ...(scheduledStart && {
             scheduled_start: scheduledStart,
             scheduled_end: scheduledStart // For now, same as start
           }),
-          ...(updates.status && { status: mapStatusToPlanningActivity(updates.status) }),
-          ...(updates.title && { title: updates.title }),
-          ...(updates.description && { description: updates.description })
+          ...(updates.status && {
+            status: mapStatusToPlanningActivity(updates.status)
+          }),
+          ...(updates.title && {
+            title: updates.title
+          }),
+          ...(updates.description && {
+            description: updates.description
+          })
         };
-
-        const { data, error } = await supabase
-          .from('planning_activities')
-          .update(cleanUpdates)
-          .eq('id', id)
-          .select('id, title, technician_id, scheduled_start, status')
-          .single();
-
+        const {
+          data,
+          error
+        } = await supabase.from('planning_activities').update(cleanUpdates).eq('id', id).select('id, title, technician_id, scheduled_start, status').single();
         if (error) {
           console.error('❌ Erreur planning_activities:', error);
           throw error;
         }
-        
+
         // Also update boat_preparation_checklists if it's a preparation
         if (item.activity_type === 'preparation') {
-          await supabase
-            .from('boat_preparation_checklists')
-            .update({ technician_id: updates.technician_id })
-            .eq('planning_activity_id', id);
+          await supabase.from('boat_preparation_checklists').update({
+            technician_id: updates.technician_id
+          }).eq('planning_activity_id', id);
         }
-
         console.log('✅ Planning activity mise à jour:', data);
         return data;
       } else {
         // Update traditional interventions table
         const cleanUpdates = {
-          ...(updates.technician_id !== undefined && { technician_id: updates.technician_id }),
-          ...(updates.scheduled_date && { scheduled_date: updates.scheduled_date }),
-          ...(updates.scheduled_time && { scheduled_time: updates.scheduled_time }),
-          ...(updates.status && { status: updates.status }),
-          ...(updates.title && { title: updates.title }),
-          ...(updates.description && { description: updates.description })
+          ...(updates.technician_id !== undefined && {
+            technician_id: updates.technician_id
+          }),
+          ...(updates.scheduled_date && {
+            scheduled_date: updates.scheduled_date
+          }),
+          ...(updates.scheduled_time && {
+            scheduled_time: updates.scheduled_time
+          }),
+          ...(updates.status && {
+            status: updates.status
+          }),
+          ...(updates.title && {
+            title: updates.title
+          }),
+          ...(updates.description && {
+            description: updates.description
+          })
         };
-
-        const { data, error } = await supabase
-          .from('interventions')
-          .update(cleanUpdates)
-          .eq('id', id)
-          .select('id, title, technician_id, scheduled_date, scheduled_time, status')
-          .single();
-
+        const {
+          data,
+          error
+        } = await supabase.from('interventions').update(cleanUpdates).eq('id', id).select('id, title, technician_id, scheduled_date, scheduled_time, status').single();
         if (error) {
           console.error('❌ Erreur interventions:', error);
           throw error;
         }
-
         console.log('✅ Intervention traditionnelle mise à jour:', data);
         return data;
       }
@@ -861,7 +861,7 @@ export function GanttMaintenanceSchedule() {
                 </h3>
               </div>
               <ScrollArea className="max-h-32 p-2">
-                <div className="flex flex-wrap gap-2.5 ">
+                <div className="flex flex-wrap gap-3 ">
                   {getUnassignedTasks().map(task => <div key={task.id} className="w-48">
                       <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
                     </div>)}
