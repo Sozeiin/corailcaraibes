@@ -529,10 +529,11 @@ export function GanttMaintenanceSchedule() {
       const [technicianId, dayIndexStr, hourStr] = parts;
       const dayIndex = parseInt(dayIndexStr);
       const hour = parseInt(hourStr);
-      console.log('Parsed drop target:', {
+      console.log('🎯 DRAG AND DROP - Parsed drop target:', {
         technicianId,
         dayIndex,
-        hour
+        hour,
+        originalDropId: dropId
       });
       if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
         console.error('Invalid drop target data:', {
@@ -556,6 +557,16 @@ export function GanttMaintenanceSchedule() {
       // Format the time correctly for database
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
 
+      console.log('🎯 DRAG AND DROP - Final data for update:', {
+        taskId: draggedTask.id,
+        taskTitle: draggedTask.title,
+        targetDate: dateString,
+        targetTime: scheduledTime,
+        targetTechnician: technicianId === 'unassigned' ? null : technicianId,
+        originalTaskTime: draggedTask.scheduled_time,
+        originalTaskDate: draggedTask.scheduled_date
+      });
+
       // Store the last dropped technician for this intervention with persistence
       const newLastDropped = {
         ...lastDroppedTechnician,
@@ -563,15 +574,6 @@ export function GanttMaintenanceSchedule() {
       };
       setLastDroppedTechnician(newLastDropped);
       localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
-      console.log('🎯 Intervention droppée - état mis à jour:', {
-        interventionId: draggedTask.id,
-        interventionTitle: draggedTask.title,
-        technicianId: technicianId,
-        technicianName: technicians?.find(t => t.id === technicianId)?.name || 'Non assigné',
-        newLastDropped,
-        originalTechnicianId: draggedTask.technician_id,
-        finalTechnicianId: technicianId === 'unassigned' ? null : technicianId
-      });
 
       // Préparer et valider les données de mise à jour
       const updateData = {
@@ -582,7 +584,7 @@ export function GanttMaintenanceSchedule() {
           scheduled_time: scheduledTime
         }
       };
-      console.log('📤 Données finales à envoyer à Supabase:', updateData);
+      console.log('📤 DRAG AND DROP - Data being sent to database:', updateData);
 
       // Vérifier la validité du technicien
       if (technicianId !== 'unassigned') {
