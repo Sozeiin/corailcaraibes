@@ -676,9 +676,9 @@ Données envoyées à la DB:
       // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
 
-      // Debug logging for slot 10 specifically
-      if (hour === 10) {
-        console.log(`🔍 SLOT 10 CHECK - ${intervention.title}:`, {
+      // Debug logging for slot 12 specifically
+      if (hour === 12) {
+        console.log(`🔍 SLOT 12 CHECK - ${intervention.title}:`, {
           intervention_id: intervention.id,
           intervention_time: intervention.scheduled_time,
           intervention_date: intervention.scheduled_date,
@@ -711,8 +711,8 @@ Données envoyées à la DB:
       return match;
     });
 
-    if (hour === 10) {
-      console.log(`📊 SLOT 10 RESULTS:`, {
+    if (hour === 12) {
+      console.log(`📊 SLOT 12 RESULTS:`, {
         total_interventions: interventions.length,
         matching_tasks: matchingTasks.length,
         matching_task_titles: matchingTasks.map(t => t.title)
