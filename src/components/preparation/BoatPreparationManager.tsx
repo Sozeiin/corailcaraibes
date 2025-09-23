@@ -104,12 +104,13 @@ export function BoatPreparationManager() {
     mutationFn: async (data: { boat_id: string; template_id?: string; notes?: string }) => {
       // Create unassigned planning activity for drag & drop assignment
       const boatName = boats.find(b => b.id === data.boat_id)?.name || '';
+      const templateName = templates.find(t => t.id === data.template_id)?.name;
       
       const { data: activity, error: activityError } = await supabase
         .from('planning_activities')
         .insert({
           activity_type: 'preparation',
-          title: `Préparation ${boatName}`,
+          title: `${templateName || 'Préparation'} ${boatName}`,
           description: data.notes,
           boat_id: data.boat_id,
           base_id: user?.baseId,
