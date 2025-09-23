@@ -661,7 +661,7 @@ Données envoyées à la DB:
     setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    return interventions.filter(intervention => {
+    const matchingTasks = interventions.filter(intervention => {
       // Parse the scheduled time correctly - no default value to avoid misplacement
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
 
@@ -676,15 +676,21 @@ Données envoyées à la DB:
       // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
 
-      // Debug logging for 6AM issues
-      if (hour === 6 && dateMatch && technicianMatch) {
-        console.log('🔍 Checking 6AM slot:', {
-          intervention: intervention.title,
-          scheduled_time: intervention.scheduled_time,
-          taskHour,
-          hourMatch,
-          technicianId,
-          intervention_technician_id: intervention.technician_id
+      // Debug logging for slot 10 specifically
+      if (hour === 10) {
+        console.log(`🔍 SLOT 10 CHECK - ${intervention.title}:`, {
+          intervention_id: intervention.id,
+          intervention_time: intervention.scheduled_time,
+          intervention_date: intervention.scheduled_date,
+          intervention_technician: intervention.technician_id,
+          parsed_hour: taskHour,
+          checking_hour: hour,
+          checking_date: dateString,
+          checking_technician: technicianId,
+          hour_match: hourMatch,
+          date_match: dateMatch,
+          technician_match: technicianMatch,
+          final_match: (technicianMatch && dateMatch && hourMatch)
         });
       }
 
@@ -704,6 +710,16 @@ Données envoyées à la DB:
 
       return match;
     });
+
+    if (hour === 10) {
+      console.log(`📊 SLOT 10 RESULTS:`, {
+        total_interventions: interventions.length,
+        matching_tasks: matchingTasks.length,
+        matching_task_titles: matchingTasks.map(t => t.title)
+      });
+    }
+
+    return matchingTasks;
   };
   const getUnassignedTasks = () => {
     return interventions.filter(intervention => !intervention.technician_id);
