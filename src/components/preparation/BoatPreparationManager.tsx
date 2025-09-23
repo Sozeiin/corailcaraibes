@@ -82,7 +82,6 @@ export function BoatPreparationManager() {
       const { data, error } = await supabase
         .from('preparation_checklist_templates')
         .select('*')
-        .or(`base_id.eq.${user?.baseId},base_id.is.null`)
         .eq('is_active', true)
         .order('name');
       
