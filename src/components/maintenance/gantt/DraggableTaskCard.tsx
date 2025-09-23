@@ -112,7 +112,7 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
         ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation
       `}
     >
-      <div className="p-0.5 space-y-0">
+      <div className="px-1 py-0.5 space-y-0">
         {/* Header with status and icon */}
         <div className="flex items-center justify-between">
           <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
