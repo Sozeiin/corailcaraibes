@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, Settings, Trash2, Edit } from 'lucide-react';
+import { Plus, Settings, Trash2, Edit, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TemplateItem {
@@ -187,6 +187,16 @@ export function PreparationTemplateManager() {
         items: editingTemplate.items
       }
     });
+  };
+
+  const handleDuplicateTemplate = (template: Template) => {
+    setNewTemplate({
+      name: `${template.name} (Copie)`,
+      boat_model: template.boat_model,
+      category: template.category,
+      items: [...template.items]
+    });
+    setIsCreateDialogOpen(true);
   };
 
   const renderTemplateForm = (template: CreateTemplateData | Template, isEditing = false) => (
@@ -385,6 +395,14 @@ export function PreparationTemplateManager() {
               <div className="flex items-center gap-2">
                 <Badge variant="outline">{template.category}</Badge>
                 {!template.is_active && <Badge variant="secondary">Inactif</Badge>}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDuplicateTemplate(template)}
+                  title="Dupliquer le modèle"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="sm"
