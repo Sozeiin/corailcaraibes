@@ -860,7 +860,7 @@ export function GanttMaintenanceSchedule() {
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="max-h-32 p-2">
+              <ScrollArea className="max-h-52 p-0.5 ">
                 <div className="flex flex-wrap gap-3 ">
                   {getUnassignedTasks().map(task => <div key={task.id} className="w-48">
                       <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
