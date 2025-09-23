@@ -609,11 +609,23 @@ export function GanttMaintenanceSchedule() {
       console.log('📤 DRAG AND DROP - Data being sent to database:', updateData);
       
       // Debug temporaire avec alert
-      alert(`DÉBOGAGE: 
-Heure cliquée: ${hour}h00
-Heure sauvée: ${scheduledTime}
+      alert(`DÉBOGAGE DÉTAILLÉ: 
+Slot cliqué: ${hour}h00
+Heure formatée: ${scheduledTime}
 Date: ${dateString}
-Technicien: ${technicianId}`);
+Drop ID complet: ${dropId}
+Technicien: ${technicianId}
+
+Données envoyées à la DB:
+- scheduled_time: ${updateData.updates.scheduled_time}
+- scheduled_date: ${updateData.updates.scheduled_date}`);
+
+      console.log('🔍 DEBUGGING INFO:', {
+        slot_hour: hour,
+        formatted_time: scheduledTime,
+        full_drop_id: dropId,
+        update_data: updateData
+      });
 
       // Vérifier la validité du technicien
       if (technicianId !== 'unassigned') {
