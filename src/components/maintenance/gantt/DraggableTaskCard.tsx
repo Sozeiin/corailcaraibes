@@ -107,42 +107,41 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
         console.log('Mouse down on card:', e.button); // 0=left, 1=middle, 2=right
       }}
       className={`
-        relative cursor-grab active:cursor-grabbing select-none transition-all duration-300 rounded-2xl shadow-sm
-        ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.02]'}
-        ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation w-full h-full
+        relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
+        ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.01]'}
+        ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation w-full
       `}
     >
-      <div className="p-3 space-y-2 h-full flex flex-col">
+      <div className="p-1.5 space-y-1">
         {/* Header with status and icon */}
         <div className="flex items-center justify-between">
-          <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
-          <IconComponent className={`h-4 w-4 ${typeConfig.text}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
+          <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
         </div>
         
-        {/* Task title */}
-        <div className={`text-sm font-semibold line-clamp-2 ${typeConfig.text} flex-1`}>
+        {/* Task title - compact */}
+        <div className={`text-[10px] font-semibold line-clamp-2 ${typeConfig.text} leading-tight`}>
           {task.title}
         </div>
         
-        {/* Boat name et time dans la même ligne */}
-        <div className="space-y-1">
-          {task.boats && (
-            <div className="flex items-center gap-1 text-xs text-gray-600">
-              <Ship className="h-3 w-3" />
-              <span className="truncate">{task.boats.name}</span>
-            </div>
-          )}
-          
-          {task.scheduled_time && (
-            <div className="text-xs font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded-md inline-block">
-              {task.scheduled_time.split(':').slice(0, 2).join(':')}
-            </div>
-          )}
-        </div>
+        {/* Boat name - très compact */}
+        {task.boats && (
+          <div className="flex items-center gap-0.5 text-[9px] text-gray-600">
+            <Ship className="h-2 w-2" />
+            <span className="truncate">{task.boats.name}</span>
+          </div>
+        )}
         
-        {/* Priority indicator */}
+        {/* Time - très compact */}
+        {task.scheduled_time && (
+          <div className="text-[9px] font-mono text-gray-600">
+            {task.scheduled_time.split(':').slice(0, 2).join(':')}
+          </div>
+        )}
+        
+        {/* Priority indicator - minimal */}
         {task.priority && (task.priority === 'urgent' || task.priority === 'high') && (
-          <div className={`w-full h-1 rounded-full ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-500'}`} />
+          <div className={`w-full h-0.5 rounded ${task.priority === 'urgent' ? 'bg-red-500' : 'bg-orange-500'}`} />
         )}
       </div>
     </Card>
