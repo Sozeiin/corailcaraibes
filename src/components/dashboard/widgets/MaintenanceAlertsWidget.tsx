@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useMemo } from 'react';
-import { AlertTriangle, Wrench, Calendar, ExternalLink } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { AlertTriangle, Wrench, Calendar, ExternalLink, Zap } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
+import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 
 export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
   const dashboardData = useDashboardData();
+  const [showInterventionDialog, setShowInterventionDialog] = useState(false);
 
   const alerts = useMemo(() => {
     if (dashboardData.loading) return [];
@@ -124,13 +126,24 @@ export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
         
         {alerts.filter(a => a.priority === 'critical').length > 0 && (
           <div className="border-t pt-3">
-            <Button size="sm" className="w-full" variant="destructive">
-              <AlertTriangle className="h-3 w-3 mr-1" />
+            <Button 
+              size="sm" 
+              className="w-full" 
+              variant="destructive"
+              onClick={() => setShowInterventionDialog(true)}
+            >
+              <Zap className="h-3 w-3 mr-1" />
               Planifier {alerts.filter(a => a.priority === 'critical').length} intervention(s) urgente(s)
             </Button>
           </div>
         )}
       </CardContent>
+
+      {/* Intervention Dialog */}
+      <InterventionDialog
+        isOpen={showInterventionDialog}
+        onClose={() => setShowInterventionDialog(false)}
+      />
     </Card>
   );
 };

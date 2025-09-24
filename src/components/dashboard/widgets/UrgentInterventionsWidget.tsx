@@ -4,14 +4,18 @@ import { Button } from '@/components/ui/button';
 import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Zap, User, Clock, ArrowRight, AlertCircle } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
 
 export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const dashboardData = useDashboardData();
+  const [showInterventionDialog, setShowInterventionDialog] = useState(false);
 
   const urgentInterventions = useMemo(() => {
     if (dashboardData.loading) return [];
@@ -20,9 +24,9 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
     
     return interventions
       .filter(intervention => 
-        intervention.status === 'in_progress' || 
-        intervention.priority === 'urgent' || 
-        intervention.status === 'blocked'
+        intervention.intervention_type === 'urgence' || 
+        intervention.status === 'blocked' ||
+        (intervention.status === 'in_progress' && intervention.priority === 'urgent')
       )
       .map(intervention => {
         const boat = boats.find(b => b.id === intervention.boat_id);
@@ -138,7 +142,12 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
                   <Badge variant={getStatusBadge(intervention.status, intervention.isOverdue)}>
                     {getStatusText(intervention.status, intervention.isOverdue)}
                   </Badge>
-                  <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 w-6 p-0"
+                    onClick={() => navigate(`/maintenance?intervention=${intervention.id}`)}
+                  >
                     <ArrowRight className="h-3 w-3" />
                   </Button>
                 </div>
@@ -158,14 +167,31 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
             </Badge>
           </div>
           
-          {urgentInterventions.some(i => !i.technician_id) && (
-            <Button size="sm" className="w-full" variant="outline">
-              <User className="h-3 w-3 mr-1" />
-              Réassigner interventions
+          <div className="flex gap-2">
+            {urgentInterventions.some(i => !i.technician_id) && (
+              <Button size="sm" className="flex-1" variant="outline">
+                <User className="h-3 w-3 mr-1" />
+                Réassigner
+              </Button>
+            )}
+            <Button 
+              size="sm" 
+              className="flex-1" 
+              variant="secondary"
+              onClick={() => setShowInterventionDialog(true)}
+            >
+              <Zap className="h-3 w-3 mr-1" />
+              Planifier urgente
             </Button>
-          )}
+          </div>
         </div>
       </CardContent>
+
+      {/* Intervention Dialog */}
+      <InterventionDialog
+        isOpen={showInterventionDialog}
+        onClose={() => setShowInterventionDialog(false)}
+      />
     </Card>
   );
 };

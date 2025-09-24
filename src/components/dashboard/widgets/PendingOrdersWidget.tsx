@@ -8,9 +8,11 @@ import { useMemo } from 'react';
 import { Package, Clock, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
 import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 
 export const PendingOrdersWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const dashboardData = useDashboardData();
 
   const pendingOrders = useMemo(() => {
@@ -180,7 +182,20 @@ export const PendingOrdersWidget = ({ config }: WidgetProps) => {
                       {order.type === 'preparation' ? 'Prépa' : 
                        order.type === 'checkin' ? 'Check' : 'Stock'}
                     </Badge>
-                    <Button size="sm" variant="ghost" className="h-6 w-6 p-0">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-6 w-6 p-0"
+                      onClick={() => {
+                        if (order.type === 'preparation') {
+                          navigate('/boat-preparation');
+                        } else if (order.type === 'checkin') {
+                          navigate('/boats');
+                        } else {
+                          navigate('/orders');
+                        }
+                      }}
+                    >
                       <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
@@ -192,7 +207,21 @@ export const PendingOrdersWidget = ({ config }: WidgetProps) => {
         
         {orderStats.urgent > 0 && (
           <div className="border-t pt-3">
-            <Button size="sm" className="w-full" variant="secondary">
+            <Button 
+              size="sm" 
+              className="w-full" 
+              variant="secondary"
+              onClick={() => {
+                const urgentOrder = pendingOrders.find(o => o.priority === 'urgent');
+                if (urgentOrder?.type === 'preparation') {
+                  navigate('/boat-preparation');
+                } else if (urgentOrder?.type === 'checkin') {
+                  navigate('/boats');
+                } else {
+                  navigate('/orders');
+                }
+              }}
+            >
               <AlertCircle className="h-3 w-3 mr-1" />
               Traiter {orderStats.urgent} ordre(s) urgent(s)
             </Button>
