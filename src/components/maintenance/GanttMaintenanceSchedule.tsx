@@ -527,24 +527,14 @@ export function GanttMaintenanceSchedule() {
         return;
       }
 
-      const [technicianId, dayIndexStr, hourStr] = parts;
-      const dayIndex = parseInt(dayIndexStr);
+      const [technicianId, dateString, hourStr] = parts;
       const hour = parseInt(hourStr);
       
-      if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
-        console.error('Invalid drop target data:', { technicianId, dayIndex, hour });
+      if (isNaN(hour)) {
+        console.error('Invalid drop target data:', { technicianId, dateString, hour });
         setDraggedTask(null);
         return;
       }
-
-      const targetDay = weekDays[dayIndex];
-      if (!targetDay) {
-        console.error('Invalid day index:', dayIndex);
-        setDraggedTask(null);
-        return;
-      }
-
-      const dateString = targetDay.dateString;
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
 
       // Store last technician
