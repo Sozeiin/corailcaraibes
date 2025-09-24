@@ -14,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { useQueryClient } from '@tanstack/react-query';
 import { safeRemoveById, safeRemoveChild } from '@/lib/domUtils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { X } from 'lucide-react';
 
 export interface InterventionPart {
   id?: string;
@@ -41,6 +43,17 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   const queryClient = useQueryClient();
   const [stockSearchValue, setStockSearchValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+
+  const stopScan = useCallback(() => {
+    setIsScanning(false);
+    const video = document.getElementById('intervention-scanner-video') as HTMLVideoElement;
+    if (video && video.srcObject) {
+      const stream = video.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      video.srcObject = null;
+    }
+    safeRemoveById('intervention-scanner-canvas');
+  }, []);
 
   // Fetch available stock items
   const { data: stockItems = [] } = useQuery({
@@ -301,7 +314,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
             if (scanning && result) {
               const code = result.getText().trim();
               console.log('📷 CODE INTERVENTION DETECTE (normal):', code);
-              handleInterventionScan(code, status, cleanup, attemptCount);
+              handleInterventionScan(code, cleanup, attemptCount);
               return;
             }
           } catch (normalError) {
@@ -314,7 +327,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
                 if (scanning && enhancedResult) {
                   const code = enhancedResult.getText().trim();
                   console.log('📷 CODE INTERVENTION DETECTE (amélioré):', code);
-                  handleInterventionScan(code, status, cleanup, attemptCount);
+                  handleInterventionScan(code, cleanup, attemptCount);
                   return;
                 }
               } catch (enhancedError) {
@@ -355,20 +368,15 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     }
   };
 
-  const handleInterventionScan = async (code: string, status: HTMLElement, cleanup: () => void, attemptCount: number) => {
+  const handleInterventionScan = async (code: string, cleanup: () => void, attemptCount: number) => {
     if (validateBarcodeFormat(code)) {
       console.log(`✅ CODE VALIDE pour intervention en ${attemptCount} tentatives:`, code);
-      status.textContent = `✅ ${code} - Détecté!`;
       
       setTimeout(() => {
         cleanup();
+        setIsScanning(false);
         processInterventionScan(code);
       }, 500);
-    } else {
-      status.textContent = `⚠️ Code invalide: ${code}`;
-      setTimeout(() => {
-        status.textContent = '🔍 Scanner activé...';
-      }, 1000);
     }
   };
 
@@ -725,6 +733,47 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
           </div>
         )}
       </CardContent>
+
+      {/* Scanner Dialog */}
+      <Dialog open={isScanning} onOpenChange={(open) => {
+        if (!open) {
+          stopScan();
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              Scanner Code-barres
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={stopScan}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="relative">
+              <video
+                id="intervention-scanner-video"
+                className="w-full h-64 bg-black rounded-lg"
+                playsInline
+                muted
+              />
+              <div className="absolute inset-0 border-2 border-red-500 opacity-50 rounded-lg"></div>
+              <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3/4 h-1/3 border-2 border-white opacity-75"></div>
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              Positionnez le code-barres dans le cadre pour le scanner
+            </div>
+            <Button variant="outline" onClick={stopScan} className="w-full">
+              Fermer le scanner
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
