@@ -11,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format, addDays, startOfWeek, addHours, isToday, isSameDay, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, Clock, User, Ship, ChevronLeft, ChevronRight, Calendar, Wrench, Zap, Droplets, Cog, AlertTriangle, ChevronDown, ChevronUp, CloudRain, RefreshCw, Cloud, Sun } from 'lucide-react';
-import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
-import { DraggableTaskCard } from './gantt/DraggableTaskCard';
+import { SimpleDroppableSlot } from './gantt/SimpleDroppableSlot';
+import { SimpleDraggableTask } from './gantt/SimpleDraggableTask';
 import { TaskDialog } from './gantt/TaskDialog';
 import { InterventionContextMenu } from './gantt/InterventionContextMenu';
 import { InterventionDetailsModal } from './gantt/InterventionDetailsModal';
@@ -576,23 +576,25 @@ export function GanttMaintenanceSchedule() {
       setDraggedTask(null);
     }
   };
-  const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    return interventions.filter(intervention => {
-      // Parse scheduled time
-      const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
-      if (taskHour === null) return false;
+  // Group tasks by slot for efficient rendering
+  const tasksBySlot = useMemo(() => {
+    const grouped: Record<string, Intervention[]> = {};
+    
+    interventions.forEach(intervention => {
+      if (!intervention.scheduled_date || !intervention.scheduled_time) return;
       
-      // Simple matching logic
-      const technicianMatch = technicianId === null ? 
-        (intervention.technician_id === null || intervention.technician_id === undefined) :
-        intervention.technician_id === technicianId;
+      const hour = parseInt(intervention.scheduled_time.split(':')[0]);
+      const techId = intervention.technician_id || 'unassigned';
+      const slotId = `${techId}|${intervention.scheduled_date}|${hour}`;
       
-      const dateMatch = intervention.scheduled_date === dateString;
-      const hourMatch = taskHour === hour;
-      
-      return technicianMatch && dateMatch && hourMatch;
+      if (!grouped[slotId]) {
+        grouped[slotId] = [];
+      }
+      grouped[slotId].push(intervention);
     });
-  };
+    
+    return grouped;
+  }, [interventions]);
   const getUnassignedTasks = () => {
     return interventions.filter(intervention => !intervention.technician_id);
   };
@@ -806,7 +808,11 @@ export function GanttMaintenanceSchedule() {
                 <div className="flex gap-2 overflow-x-auto">
                   {getUnassignedTasks().map(task => (
                     <div key={task.id} className="w-40 flex-none">
-                      <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
+                      <SimpleDraggableTask 
+                        task={task} 
+                        onTaskClick={() => setSelectedTask(task)} 
+                        getTaskTypeConfig={getTaskTypeConfig} 
+                      />
                     </div>
                   ))}
                   {getUnassignedTasks().length === 0 && (
@@ -904,36 +910,23 @@ export function GanttMaintenanceSchedule() {
                             
                              {/* Cellules jours avec tâches */}
                              {weekDays.map((day, dayIndex) => {
-                       const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
-                       
-                       // Debug log pour voir les appels de getTasksForSlot
-                       if (slot.hour === 12) {
-                         console.log(`🎯 RENDER CALL for ${technician.name} at ${slot.hour}:00:`, {
-                           technician_id: technician.id,
-                           technician_name: technician.name,
-                           day_dateString: day.dateString,
-                           slot_hour: slot.hour,
-                           tasks_found: tasks.length,
-                           task_titles: tasks.map(t => t.title)
-                         });
-                       }
-                       
-                       const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
-                       const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
-                       return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
-                                     <DroppableTimeSlot id={`${technician.id}|${dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
-                          ...task,
-                          weatherEvaluation: weatherEvaluations[task.id],
-                          weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
-                        }))} onTaskClick={task => {
-                          console.log('Setting selected task:', task);
-                          setSelectedTask(task as Intervention);
-                        }} getTaskTypeConfig={getTaskTypeConfig} weatherSeverity={weatherSeverity} renderTaskCard={task => <InterventionContextMenu intervention={task as any} technicians={technicians} lastDroppedTechnicianId={lastDroppedTechnician[task.id]} onViewDetails={() => handleViewDetails(task as any)} onEdit={() => handleEditIntervention(task as any)} onStatusChange={status => handleStatusChange(task as any, status)} onReassign={technicianId => handleReassign(task as any, technicianId)} onDelete={() => handleDeleteIntervention(task as any)} onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}>
-                                           <DraggableTaskCard task={task} getTaskTypeConfig={getTaskTypeConfig} />
-                                         </InterventionContextMenu>} />
-                                 </div>;
-                    })}
-                          </div>)}
+                        const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
+                        const tasks = tasksBySlot[slotId] || [];
+                        
+                        return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
+                                      <SimpleDroppableSlot 
+                                        id={slotId}
+                                        tasks={tasks}
+                                        onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                                        onTaskContextMenu={(task, e) => {
+                                          setSelectedTask(task as Intervention);
+                                          // Handle context menu here if needed
+                                        }}
+                                        getTaskTypeConfig={getTaskTypeConfig}
+                                      />
+                                  </div>;
+                     })}
+                           </div>)}
                     </div>;
               })}
               </div>
@@ -943,7 +936,7 @@ export function GanttMaintenanceSchedule() {
 
         {/* Drag overlay */}
         <DragOverlay>
-          {draggedTask && <DraggableTaskCard task={draggedTask} isDragging={true} getTaskTypeConfig={getTaskTypeConfig} />}
+          {draggedTask && <SimpleDraggableTask task={draggedTask} getTaskTypeConfig={getTaskTypeConfig} />}
         </DragOverlay>
       </DndContext>
 
