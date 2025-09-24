@@ -85,13 +85,42 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     const trimmedCode = code.trim();
     if (trimmedCode.length < 3 || trimmedCode.length > 30) return false;
     
+    // Accepter les caractères alphanumériques, tirets, points et underscores
     const validCharsRegex = /^[A-Za-z0-9\-_.]+$/;
     if (!validCharsRegex.test(trimmedCode)) return false;
     
+    // Rejeter les codes trop simples
     const invalidPatterns = [
       /^0+$/, /^1+$/, /^\d{1,2}$/, /^[A-Z]{1}$/
     ];
     return !invalidPatterns.some(pattern => pattern.test(trimmedCode));
+  }, []);
+
+  const enhanceImageForScanning = useCallback((canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D) => {
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Amélioration de contraste pour codes-barres endommagés
+    for (let i = 0; i < data.length; i += 4) {
+      const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      
+      // Augmenter le contraste
+      const factor = 1.5;
+      const intercept = 128 * (1 - factor);
+      
+      data[i] = Math.max(0, Math.min(255, data[i] * factor + intercept));     // R
+      data[i + 1] = Math.max(0, Math.min(255, data[i + 1] * factor + intercept)); // G
+      data[i + 2] = Math.max(0, Math.min(255, data[i + 2] * factor + intercept)); // B
+      
+      // Conversion binaire pour améliorer la lisibilité
+      if (brightness < 128) {
+        data[i] = data[i + 1] = data[i + 2] = 0; // Noir
+      } else {
+        data[i] = data[i + 1] = data[i + 2] = 255; // Blanc
+      }
+    }
+    
+    ctx.putImageData(imageData, 0, 0);
   }, []);
 
   const startInterventionScan = async () => {
@@ -177,6 +206,13 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         font-size: 16px; font-weight: bold; min-height: 24px;
       `;
 
+      const qualityIndicator = document.createElement('div');
+      qualityIndicator.id = 'intervention-quality-indicator';
+      qualityIndicator.style.cssText = `
+        color: #888; margin: 5px 0; text-align: center; 
+        font-size: 12px; min-height: 16px;
+      `;
+
       const closeBtn = document.createElement('button');
       closeBtn.textContent = '✕ FERMER';
       closeBtn.style.cssText = `
@@ -189,6 +225,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       overlay.appendChild(instruction);
       overlay.appendChild(videoContainer);
       overlay.appendChild(status);
+      overlay.appendChild(qualityIndicator);
       overlay.appendChild(closeBtn);
       document.body.appendChild(overlay);
 
@@ -224,45 +261,88 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      const performScan = () => {
+      // Fonction de scan optimisée avec enhancement
+      const performAdvancedScan = () => {
         if (!scanning) return;
         
         const now = Date.now();
         if (now - lastScanTime < scanCooldown) {
-          requestAnimationFrame(performScan);
+          requestAnimationFrame(performAdvancedScan);
           return;
         }
         lastScanTime = now;
         attemptCount++;
 
         try {
+          // Capturer frame pour analyse
           canvas.width = video.videoWidth || 640;
           canvas.height = video.videoHeight || 480;
           ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+          // Zone de scan focalisée (crop central)
+          const cropX = canvas.width * 0.1;
+          const cropY = canvas.height * 0.3;
+          const cropWidth = canvas.width * 0.8;
+          const cropHeight = canvas.height * 0.4;
+
+          const croppedCanvas = document.createElement('canvas');
+          const croppedCtx = croppedCanvas.getContext('2d');
+          croppedCanvas.width = cropWidth;
+          croppedCanvas.height = cropHeight;
+          
+          croppedCtx?.drawImage(
+            canvas, cropX, cropY, cropWidth, cropHeight,
+            0, 0, cropWidth, cropHeight
+          );
+
+          // Tentative 1: Image normale
           try {
-            const result = codeReader.decodeFromCanvas(canvas);
+            const result = codeReader.decodeFromCanvas(croppedCanvas);
             if (scanning && result) {
               const code = result.getText().trim();
-              console.log('📷 CODE INTERVENTION DETECTE:', code);
+              console.log('📷 CODE INTERVENTION DETECTE (normal):', code);
               handleInterventionScan(code, status, cleanup, attemptCount);
               return;
             }
-          } catch (error) {
-            // Continue scanning
+          } catch (normalError) {
+            // Tentative 2: Image améliorée pour codes endommagés
+            if (scanning && croppedCtx) {
+              try {
+                enhanceImageForScanning(croppedCanvas, croppedCtx);
+                const enhancedResult = codeReader.decodeFromCanvas(croppedCanvas);
+                
+                if (scanning && enhancedResult) {
+                  const code = enhancedResult.getText().trim();
+                  console.log('📷 CODE INTERVENTION DETECTE (amélioré):', code);
+                  handleInterventionScan(code, status, cleanup, attemptCount);
+                  return;
+                }
+              } catch (enhancedError) {
+                // Continuer le scan si pas de résultat
+              }
+            }
           }
           
+          // Feedback utilisateur pour codes difficiles
+          if (attemptCount % 25 === 0) { // Toutes les 2 secondes environ
+            qualityIndicator.textContent = `💡 Conseil: Rapprochez/éloignez le code ou améliorez l'éclairage`;
+          }
+          if (attemptCount % 40 === 0) {
+            status.textContent = '🔍 Recherche intensive pour codes endommagés...';
+          }
+          
+          // Continuer le scan
           if (scanning) {
-            requestAnimationFrame(performScan);
+            requestAnimationFrame(performAdvancedScan);
           }
 
         } catch (error) {
           console.error('Erreur capture frame:', error);
-          requestAnimationFrame(performScan);
+          requestAnimationFrame(performAdvancedScan);
         }
       };
 
-      requestAnimationFrame(performScan);
+      requestAnimationFrame(performAdvancedScan);
       
     } catch (error) {
       console.error('❌ ERREUR SCANNER INTERVENTION:', error);
