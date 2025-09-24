@@ -470,26 +470,22 @@ export function GanttMaintenanceSchedule() {
       }
     },
     onSuccess: async (data) => {
-      // Force immediate refetch of the data
-      await queryClient.refetchQueries({
-        queryKey: ['gantt-activities']
-      });
+      // Force complete refresh of all related data
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ['gantt-activities'] }),
+        queryClient.refetchQueries({ queryKey: ['planning-activities'] }),
+        queryClient.refetchQueries({ queryKey: ['interventions'] })
+      ]);
       
-      // Invalidate related queries
-      queryClient.invalidateQueries({
-        queryKey: ['technicians']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['preparation-orders']
-      });
-      queryClient.invalidateQueries({
-        queryKey: ['planning-activities']
-      });
-
-      // Afficher le nom du technicien dans le toast
-      const technicianName = data.technician_id ? technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 'Non assigné';
+      // Reset drag state immediately
+      setDraggedTask(null);
+      
+      const technicianName = data.technician_id ? 
+        technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 
+        'Non assigné';
+      
       toast({
-        title: "Tâche mise à jour",
+        title: "Tâche déplacée",
         description: `Assignée à: ${technicianName}`
       });
     },
@@ -515,52 +511,43 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(task || null);
   };
   const handleDragEnd = async (event: DragEndEvent) => {
-    const {
-      active,
-      over
-    } = event;
+    const { active, over } = event;
     if (!over || !draggedTask) {
       setDraggedTask(null);
       return;
     }
+
     try {
       const dropId = over.id.toString();
-
-      // New drop target format: technicianId|dayIndex|hour
-      // Using pipe separator to avoid UUID parsing issues
       const parts = dropId.split('|');
+      
       if (parts.length !== 3) {
-        console.error('Invalid drop target format:', dropId, 'expected format: technicianId|dayIndex|hour');
+        console.error('Invalid drop target format:', dropId);
         setDraggedTask(null);
         return;
       }
+
       const [technicianId, dayIndexStr, hourStr] = parts;
       const dayIndex = parseInt(dayIndexStr);
       const hour = parseInt(hourStr);
       
       if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
-        console.error('Invalid drop target data:', {
-          technicianId,
-          dayIndex,
-          hour
-        });
+        console.error('Invalid drop target data:', { technicianId, dayIndex, hour });
         setDraggedTask(null);
         return;
       }
 
-      // Get the date string directly from weekDays array
       const targetDay = weekDays[dayIndex];
       if (!targetDay) {
-        console.error('Invalid day index:', dayIndex, 'weekDays length:', weekDays.length);
+        console.error('Invalid day index:', dayIndex);
         setDraggedTask(null);
         return;
       }
-      const dateString = targetDay.dateString;
 
-      // Format the time correctly for database
+      const dateString = targetDay.dateString;
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
 
-      // Store the last dropped technician for this intervention with persistence
+      // Store last technician
       const newLastDropped = {
         ...lastDroppedTechnician,
         [draggedTask.id]: technicianId === 'unassigned' ? '' : technicianId
@@ -568,7 +555,6 @@ export function GanttMaintenanceSchedule() {
       setLastDroppedTechnician(newLastDropped);
       localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
 
-      // Préparer et valider les données de mise à jour
       const updateData = {
         id: draggedTask.id,
         updates: {
@@ -578,28 +564,7 @@ export function GanttMaintenanceSchedule() {
         }
       };
 
-      // Vérifier la validité du technicien
-      if (technicianId !== 'unassigned') {
-        const technicianExists = technicians?.find(t => t.id === technicianId);
-        if (!technicianExists) {
-          console.error('❌ Technicien introuvable:', {
-            technicianId,
-            availableTechnicians: technicians?.map(t => ({
-              id: t.id,
-              name: t.name
-            }))
-          });
-          toast({
-            title: "Erreur",
-            description: "Technicien introuvable, veuillez réessayer",
-            variant: "destructive"
-          });
-          setDraggedTask(null);
-          return;
-        }
-      }
-
-      // Update the intervention
+      // Update the intervention and wait for completion
       await updateInterventionMutation.mutateAsync(updateData);
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
@@ -608,56 +573,25 @@ export function GanttMaintenanceSchedule() {
         description: "Impossible de déplacer la tâche",
         variant: "destructive"
       });
+      setDraggedTask(null);
     }
-    setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    // Log pour debug - afficher toutes les interventions une seule fois
-    if (technicianId === 'c0d4e902-02bf-4556-9529-2a35395c5042' && hour === 10) {
-      console.log('🎯 ALL INTERVENTIONS AVAILABLE:', interventions.map(i => ({
-        id: i.id,
-        title: i.title,
-        scheduled_date: i.scheduled_date,
-        scheduled_time: i.scheduled_time,
-        technician_id: i.technician_id
-      })));
-    }
-    
-    const matchingTasks = interventions.filter(intervention => {
-      // Parse the scheduled time correctly - no default value to avoid misplacement
+    return interventions.filter(intervention => {
+      // Parse scheduled time
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
-
-      // Handle technician matching - if technicianId is null, show unassigned tasks
+      if (taskHour === null) return false;
+      
+      // Simple matching logic
       const technicianMatch = technicianId === null ? 
         (intervention.technician_id === null || intervention.technician_id === undefined) :
         intervention.technician_id === technicianId;
-
-      // Compare dates using consistent format
+      
       const dateMatch = intervention.scheduled_date === dateString;
-
-      // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
-
-      // Log pour la carte qui nous intéresse
-      if (intervention.id === '2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') {
-        console.log(`🔍 CHECKING CORYPHENE for slot ${technicianId}|${dateString}|${hour}:`, {
-          intervention_technician: intervention.technician_id,
-          slot_technician: technicianId,
-          technician_match: technicianMatch,
-          intervention_date: intervention.scheduled_date,
-          slot_date: dateString,
-          date_match: dateMatch,
-          intervention_hour: taskHour,
-          slot_hour: hour,
-          hour_match: hourMatch,
-          final_match: (technicianMatch && dateMatch && hourMatch)
-        });
-      }
-
+      
       return technicianMatch && dateMatch && hourMatch;
     });
-
-    return matchingTasks;
   };
   const getUnassignedTasks = () => {
     return interventions.filter(intervention => !intervention.technician_id);
