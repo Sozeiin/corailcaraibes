@@ -355,7 +355,7 @@ export function GanttMaintenanceSchedule() {
     enabled: interventions.length > 0
   });
 
-  // Update activity/intervention mutation with detailed logging
+  // Update activity/intervention mutation with optimistic updates
   const updateInterventionMutation = useMutation({
     mutationFn: async ({
       id,
@@ -469,13 +469,34 @@ export function GanttMaintenanceSchedule() {
         return data;
       }
     },
-    onSuccess: async (data) => {
-      // Force complete refresh of all related data
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ['gantt-activities'] }),
-        queryClient.refetchQueries({ queryKey: ['planning-activities'] }),
-        queryClient.refetchQueries({ queryKey: ['interventions'] })
-      ]);
+    onMutate: async ({ id, updates }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['gantt-activities'] });
+      
+      // Snapshot the previous value
+      const previousData = queryClient.getQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId]);
+      
+      // Optimistically update the local cache
+      queryClient.setQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId], (old: Intervention[] = []) => {
+        return old.map(intervention => 
+          intervention.id === id 
+            ? { ...intervention, ...updates }
+            : intervention
+        );
+      });
+      
+      console.log('🔄 Mise à jour optimiste appliquée pour:', id, updates);
+      
+      // Return a context object with the snapshotted value
+      return { previousData };
+    },
+    onSuccess: async (data, variables, context) => {
+      console.log('✅ Mutation réussie, invalidation des queries');
+      
+      // Invalidate and refetch to ensure we have fresh data
+      await queryClient.invalidateQueries({ queryKey: ['gantt-activities'] });
+      await queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
+      await queryClient.invalidateQueries({ queryKey: ['interventions'] });
       
       // Reset drag state immediately
       setDraggedTask(null);
@@ -489,8 +510,17 @@ export function GanttMaintenanceSchedule() {
         description: `Assignée à: ${technicianName}`
       });
     },
-    onError: error => {
+    onError: (error, variables, context) => {
       console.error('💥 Erreur lors de la mutation:', error);
+      
+      // If we had previous data, roll back to it
+      if (context?.previousData) {
+        queryClient.setQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId], context.previousData);
+      }
+      
+      // Reset drag state
+      setDraggedTask(null);
+      
       toast({
         title: "Erreur lors de la mise à jour",
         description: `Impossible de mettre à jour l'intervention: ${error.message}`,
