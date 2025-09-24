@@ -35,6 +35,7 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
     { id: 'maintenance', label: 'Maintenance' },
     { id: 'actions', label: 'Actions' },
     { id: 'analytics', label: 'Analytics' },
+    { id: 'operations', label: 'Opérations' },
   ];
 
   const filteredWidgets = availableWidgets.filter(widget => 
@@ -58,7 +59,7 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
     }
   };
 
-  const handleAddWidget = (widgetType: string) => {
+  const handleAddWidget = async (widgetType: string) => {
     const widget = availableWidgets.find(w => w.type === widgetType);
     if (!widget) return;
 
@@ -75,8 +76,12 @@ export const DashboardCustomizer = ({ isOpen, onClose }: DashboardCustomizerProp
       },
     };
 
-    addWidget(newWidget);
-    console.log('Adding widget:', newWidget);
+    try {
+      await addWidget(newWidget);
+      console.log('Widget added successfully:', newWidget);
+    } catch (error) {
+      console.error('Failed to add widget:', error);
+    }
   };
 
   const getIcon = (iconName: string) => {

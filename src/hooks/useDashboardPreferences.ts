@@ -117,13 +117,17 @@ export const useDashboardPreferences = () => {
     }
   };
 
-  const addWidget = (widgetConfig: WidgetConfig) => {
+  const addWidget = async (widgetConfig: WidgetConfig) => {
     console.log('Adding widget to layout:', widgetConfig);
     const newLayout = {
       widgets: [...layout.widgets, widgetConfig],
     };
     console.log('New layout:', newLayout);
-    savePreferences(newLayout);
+    await savePreferences(newLayout);
+    // Force refresh après sauvegarde réussie
+    setTimeout(() => {
+      refetchPreferences();
+    }, 500);
   };
 
   const removeWidget = (widgetId: string) => {
