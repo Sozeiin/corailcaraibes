@@ -98,12 +98,27 @@ export const BoatFlowWidget = ({ config }: WidgetProps) => {
     enabled: showAssignDialog
   });
 
-  // Mock technicians for now (would fetch from profiles in real implementation)
-  const technicians = [
-    { id: 'tech1', display_name: 'Technicien 1' },
-    { id: 'tech2', display_name: 'Technicien 2' },
-    { id: 'tech3', display_name: 'Technicien 3' }
-  ];
+  // Récupérer les techniciens depuis la base de données
+  const { data: technicians = [] } = useQuery({
+    queryKey: ['technicians', user?.baseId],
+    queryFn: async () => {
+      if (user?.role === 'direction') {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .eq('role', 'technicien');
+        return data || [];
+      } else {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .eq('role', 'technicien')
+          .eq('base_id', user?.baseId);
+        return data || [];
+      }
+    },
+    enabled: showAssignDialog && !!user?.id,
+  });
 
   // Create preparation mutation
   const createPreparationMutation = useMutation({
@@ -384,7 +399,7 @@ export const BoatFlowWidget = ({ config }: WidgetProps) => {
                     <SelectContent>
                       {technicians.map((technician) => (
                         <SelectItem key={technician.id} value={technician.id}>
-                          {technician.display_name}
+                          {technician.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
