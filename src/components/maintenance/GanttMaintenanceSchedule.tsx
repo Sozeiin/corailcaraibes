@@ -381,10 +381,18 @@ export function GanttMaintenanceSchedule() {
                                   (item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id);
       if (isPlanningActivity) {
         // Update planning_activities table
+        // Build the scheduled time without timezone conversion to preserve local time
         const scheduledStart = updates.scheduled_date && updates.scheduled_time ? 
-          `${updates.scheduled_date}T${updates.scheduled_time}` : undefined;
+          `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
         const scheduledEnd = scheduledStart ? 
-          new Date(new Date(scheduledStart).getTime() + (item.estimated_duration || 60) * 60000).toISOString() : undefined;
+          `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
+        
+        console.log('🕐 TIMEZONE FIX - Planned Times:', {
+          originalDate: updates.scheduled_date,
+          originalTime: updates.scheduled_time,
+          constructedStart: scheduledStart,
+          constructedEnd: scheduledEnd
+        });
 
         // Map status from intervention format to planning_activities format
         const mapStatusToPlanningActivity = (status: string): 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue' => {
@@ -427,6 +435,12 @@ export function GanttMaintenanceSchedule() {
           console.error('❌ Erreur planning_activities:', error);
           throw error;
         }
+        
+        console.log('🕐 TIMEZONE VERIFICATION - DB Response:', {
+          sent_start: cleanUpdates.scheduled_start,
+          received_start: data?.scheduled_start,
+          original_time: updates.scheduled_time
+        });
 
         // Also update boat_preparation_checklists if it's a preparation
         if (item.activity_type === 'preparation') {
