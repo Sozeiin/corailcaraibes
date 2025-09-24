@@ -23,7 +23,7 @@ export interface Widget {
   component: React.ComponentType<WidgetProps>;
   defaultSize: 'small' | 'medium' | 'large';
   supportedRoles: ('direction' | 'chef_base' | 'technicien')[];
-  category: 'statistics' | 'alerts' | 'maintenance' | 'actions' | 'analytics';
+  category: 'statistics' | 'alerts' | 'maintenance' | 'actions' | 'analytics' | 'operations';
 }
 
 export interface WidgetProps {

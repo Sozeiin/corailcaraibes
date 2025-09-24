@@ -8,6 +8,7 @@ interface DashboardData {
   alerts: any[];
   bases: any[];
   orders: any[];
+  preparations: any[];
   loading: boolean;
   error: string | null;
 }
@@ -20,6 +21,7 @@ export const useDashboardData = (): DashboardData => {
     alerts: [],
     bases: [],
     orders: [],
+    preparations: [],
     loading: true,
     error: null,
   });
@@ -73,6 +75,30 @@ export const useDashboardData = (): DashboardData => {
         promises.push(supabase.from('orders').select('*').eq('base_id', user.baseId));
       }
 
+      // Load preparation checklists for chef_base
+      if (user.role === 'chef_base') {
+        promises.push(
+          supabase
+            .from('boat_preparation_checklists')
+            .select(`
+              *,
+              boats(name, model)
+            `)
+            .eq('boats.base_id', user.baseId)
+        );
+      } else if (user.role === 'direction') {
+        promises.push(
+          supabase
+            .from('boat_preparation_checklists')
+            .select(`
+              *,
+              boats(name, model)
+            `)
+        );
+      } else {
+        promises.push(Promise.resolve({ data: [] }));
+      }
+
       const results = await Promise.all(promises);
       
       console.log('Dashboard data loaded:', {
@@ -81,6 +107,7 @@ export const useDashboardData = (): DashboardData => {
         alerts: results[2]?.data?.length || 0,
         bases: results[3]?.data?.length || 0,
         orders: results[4]?.data?.length || 0,
+        preparations: results[5]?.data?.length || 0,
       });
 
       setData({
@@ -89,6 +116,7 @@ export const useDashboardData = (): DashboardData => {
         alerts: results[2]?.data || [],
         bases: results[3]?.data || [],
         orders: results[4]?.data || [],
+        preparations: results[5]?.data || [],
         loading: false,
         error: null,
       });

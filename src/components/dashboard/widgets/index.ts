@@ -4,6 +4,11 @@ import { AlertsWidget } from './AlertsWidget';
 import { MaintenanceWidget } from './MaintenanceWidget';
 import { QuickActionsWidget } from './QuickActionsWidget';
 import { AnalyticsWidget } from './AnalyticsWidget';
+import { BoatFlowWidget } from './BoatFlowWidget';
+import { MaintenanceAlertsWidget } from './MaintenanceAlertsWidget';
+import { UrgentInterventionsWidget } from './UrgentInterventionsWidget';
+import { PendingOrdersWidget } from './PendingOrdersWidget';
+import { PerformanceIndicatorsWidget } from './PerformanceIndicatorsWidget';
 
 export const AVAILABLE_WIDGETS: Widget[] = [
   {
@@ -59,6 +64,61 @@ export const AVAILABLE_WIDGETS: Widget[] = [
     component: AnalyticsWidget,
     defaultSize: 'large',
     supportedRoles: ['direction'],
+    category: 'analytics',
+  },
+  {
+    id: 'boat-flow',
+    type: 'boat-flow',
+    title: 'Flux Bateaux Temps Réel',
+    description: 'Suivi des retours de location et préparations',
+    icon: 'Ship',
+    component: BoatFlowWidget,
+    defaultSize: 'medium',
+    supportedRoles: ['chef_base'],
+    category: 'operations',
+  },
+  {
+    id: 'maintenance-alerts',
+    type: 'maintenance-alerts',
+    title: 'Alertes Maintenance Critiques',
+    description: 'Alertes de maintenance urgentes et dépassées',
+    icon: 'AlertTriangle',
+    component: MaintenanceAlertsWidget,
+    defaultSize: 'medium',
+    supportedRoles: ['chef_base'],
+    category: 'alerts',
+  },
+  {
+    id: 'urgent-interventions',
+    type: 'urgent-interventions',
+    title: 'Interventions d\'Urgence',
+    description: 'Interventions en cours et bloquées',
+    icon: 'Zap',
+    component: UrgentInterventionsWidget,
+    defaultSize: 'medium',
+    supportedRoles: ['chef_base'],
+    category: 'operations',
+  },
+  {
+    id: 'pending-orders',
+    type: 'pending-orders',
+    title: 'Ordres en Attente',
+    description: 'Préparations, check-in/out et commandes à traiter',
+    icon: 'Package',
+    component: PendingOrdersWidget,
+    defaultSize: 'medium',
+    supportedRoles: ['chef_base'],
+    category: 'operations',
+  },
+  {
+    id: 'performance-indicators',
+    type: 'performance-indicators',
+    title: 'Indicateurs de Performance',
+    description: 'Métriques temps réel de performance opérationnelle',
+    icon: 'Target',
+    component: PerformanceIndicatorsWidget,
+    defaultSize: 'large',
+    supportedRoles: ['chef_base'],
     category: 'analytics',
   },
 ];

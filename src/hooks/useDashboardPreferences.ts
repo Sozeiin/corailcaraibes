@@ -160,6 +160,49 @@ export const useDashboardPreferences = () => {
 };
 
 const getDefaultLayout = (role: string): DashboardLayout => {
+  if (role === 'chef_base') {
+    // Centre de Contrôle Opérationnel pour Chef de Base
+    return {
+      widgets: [
+        {
+          id: 'boat-flow-1',
+          type: 'boat-flow',
+          title: 'Flux Bateaux Temps Réel',
+          size: 'medium',
+          position: { x: 0, y: 0, w: 6, h: 4 },
+        },
+        {
+          id: 'maintenance-alerts-1',
+          type: 'maintenance-alerts',
+          title: 'Alertes Maintenance Critiques',
+          size: 'medium',
+          position: { x: 6, y: 0, w: 6, h: 4 },
+        },
+        {
+          id: 'urgent-interventions-1',
+          type: 'urgent-interventions',
+          title: 'Interventions d\'Urgence',
+          size: 'medium',
+          position: { x: 0, y: 4, w: 6, h: 4 },
+        },
+        {
+          id: 'pending-orders-1',
+          type: 'pending-orders',
+          title: 'Ordres en Attente',
+          size: 'medium',
+          position: { x: 6, y: 4, w: 6, h: 4 },
+        },
+        {
+          id: 'performance-indicators-1',
+          type: 'performance-indicators',
+          title: 'Indicateurs de Performance',
+          size: 'large',
+          position: { x: 0, y: 8, w: 12, h: 3 },
+        },
+      ]
+    };
+  }
+
   const baseWidgets: WidgetConfig[] = [
     {
       id: 'stats-1',
