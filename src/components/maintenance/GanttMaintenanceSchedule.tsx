@@ -612,7 +612,16 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
-    console.log('🔍 getTasksForSlot called with:', { technicianId, dateString, hour });
+    // Log pour debug - afficher toutes les interventions une seule fois
+    if (technicianId === 'c0d4e902-02bf-4556-9529-2a35395c5042' && hour === 10) {
+      console.log('🎯 ALL INTERVENTIONS AVAILABLE:', interventions.map(i => ({
+        id: i.id,
+        title: i.title,
+        scheduled_date: i.scheduled_date,
+        scheduled_time: i.scheduled_time,
+        technician_id: i.technician_id
+      })));
+    }
     
     const matchingTasks = interventions.filter(intervention => {
       // Parse the scheduled time correctly - no default value to avoid misplacement
@@ -629,31 +638,23 @@ export function GanttMaintenanceSchedule() {
       // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
 
-      // Log every check for debugging
-      if (intervention.id === '2c8edd4e-41c8-4911-8e00-da85e4cfe7c4' || hour === 12) {
-        console.log(`🔍 CHECKING "${intervention.title}":`, {
-          intervention_id: intervention.id,
-          intervention_time: intervention.scheduled_time,
-          intervention_date: intervention.scheduled_date,
+      // Log pour la carte qui nous intéresse
+      if (intervention.id === '2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') {
+        console.log(`🔍 CHECKING CORYPHENE for slot ${technicianId}|${dateString}|${hour}:`, {
           intervention_technician: intervention.technician_id,
-          parsed_hour: taskHour,
-          slot_hour: hour,
-          slot_date: dateString,
           slot_technician: technicianId,
-          hour_match: hourMatch,
-          date_match: dateMatch,
           technician_match: technicianMatch,
+          intervention_date: intervention.scheduled_date,
+          slot_date: dateString,
+          date_match: dateMatch,
+          intervention_hour: taskHour,
+          slot_hour: hour,
+          hour_match: hourMatch,
           final_match: (technicianMatch && dateMatch && hourMatch)
         });
       }
 
       return technicianMatch && dateMatch && hourMatch;
-    });
-
-    console.log(`📊 SLOT RESULTS for ${technicianId}|${dateString}|${hour}:`, {
-      total_interventions: interventions.length,
-      matching_tasks: matchingTasks.length,
-      matching_task_titles: matchingTasks.map(t => t.title)
     });
 
     return matchingTasks;
@@ -822,6 +823,16 @@ export function GanttMaintenanceSchedule() {
               </span>
               <Button variant="ghost" size="sm" onClick={() => navigateWeek('next')} className="hover:bg-gray-100 rounded-xl">
                 <ChevronRight className="h-4 w-4" />
+              </Button>
+              
+              {/* Bouton pour aller à la semaine du 23 septembre */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCurrentWeek(new Date('2025-09-23'))}
+                className="ml-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
+              >
+                Semaine du 23 sept
               </Button>
             </div>
           </div>
