@@ -491,12 +491,19 @@ export function GanttMaintenanceSchedule() {
       return { previousData };
     },
     onSuccess: async (data, variables, context) => {
-      console.log('✅ Mutation réussie, invalidation des queries');
+      console.log('✅ Mutation réussie, mise à jour directe du cache');
       
-      // Invalidate and refetch to ensure we have fresh data
-      await queryClient.invalidateQueries({ queryKey: ['gantt-activities'] });
-      await queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
-      await queryClient.invalidateQueries({ queryKey: ['interventions'] });
+      // Mettre à jour directement le cache au lieu d'invalidateQueries
+      const queryKey = ['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId];
+      
+      queryClient.setQueryData(queryKey, (oldData: Intervention[] = []) => {
+        console.log('🔄 Updating cache directly with:', data);
+        return oldData.map(intervention => 
+          intervention.id === variables.id 
+            ? { ...intervention, ...data, ...variables.updates }
+            : intervention
+        );
+      });
       
       // Reset drag state immediately
       setDraggedTask(null);
@@ -504,6 +511,11 @@ export function GanttMaintenanceSchedule() {
       const technicianName = data.technician_id ? 
         technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 
         'Non assigné';
+      
+      // Force un petit délai puis invalidate pour s'assurer de la cohérence
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['gantt-activities'] });
+      }, 100);
       
       toast({
         title: "Tâche déplacée",
