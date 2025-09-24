@@ -469,11 +469,13 @@ export function GanttMaintenanceSchedule() {
         return data;
       }
     },
-    onSuccess: data => {
-      console.log('🎉 Mutation réussie, invalidation des queries...');
-      queryClient.invalidateQueries({
+    onSuccess: async (data) => {
+      // Force immediate refetch of the data
+      await queryClient.refetchQueries({
         queryKey: ['gantt-activities']
       });
+      
+      // Invalidate related queries
       queryClient.invalidateQueries({
         queryKey: ['technicians']
       });
@@ -512,17 +514,12 @@ export function GanttMaintenanceSchedule() {
     });
     setDraggedTask(task || null);
   };
-  const handleDragEnd = (event: DragEndEvent) => {
-    // Log immédiat pour voir si la fonction est appelée
-    alert('DRAG END APPELÉ !');
-    console.log('🔥 DRAG END FUNCTION CALLED');
-    
+  const handleDragEnd = async (event: DragEndEvent) => {
     const {
       active,
       over
     } = event;
     if (!over || !draggedTask) {
-      alert('DRAG END: Pas de over ou pas de draggedTask');
       setDraggedTask(null);
       return;
     }
@@ -540,22 +537,6 @@ export function GanttMaintenanceSchedule() {
       const [technicianId, dayIndexStr, hourStr] = parts;
       const dayIndex = parseInt(dayIndexStr);
       const hour = parseInt(hourStr);
-      console.log('🎯 DRAG AND DROP - Parsed drop target:', {
-        technicianId,
-        dayIndex,
-        hour,
-        originalDropId: dropId,
-        hourStr: hourStr,
-        parsedHour: hour
-      });
-      
-      // Ajout d'un log pour vérifier le mapping heure
-      console.log('🕐 HOUR MAPPING CHECK:', {
-        received_hour: hour,
-        timeSlots_first: timeSlots[0]?.hour,
-        timeSlots_last: timeSlots[timeSlots.length - 1]?.hour,
-        all_timeSlots: timeSlots.map(s => s.hour)
-      });
       
       if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
         console.error('Invalid drop target data:', {
@@ -579,16 +560,6 @@ export function GanttMaintenanceSchedule() {
       // Format the time correctly for database
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
 
-      console.log('🎯 DRAG AND DROP - Final data for update:', {
-        taskId: draggedTask.id,
-        taskTitle: draggedTask.title,
-        targetDate: dateString,
-        targetTime: scheduledTime,
-        targetTechnician: technicianId === 'unassigned' ? null : technicianId,
-        originalTaskTime: draggedTask.scheduled_time,
-        originalTaskDate: draggedTask.scheduled_date
-      });
-
       // Store the last dropped technician for this intervention with persistence
       const newLastDropped = {
         ...lastDroppedTechnician,
@@ -606,26 +577,6 @@ export function GanttMaintenanceSchedule() {
           scheduled_time: scheduledTime
         }
       };
-      console.log('📤 DRAG AND DROP - Data being sent to database:', updateData);
-      
-      // Debug temporaire avec alert
-      alert(`DÉBOGAGE DÉTAILLÉ: 
-Slot cliqué: ${hour}h00
-Heure formatée: ${scheduledTime}
-Date: ${dateString}
-Drop ID complet: ${dropId}
-Technicien: ${technicianId}
-
-Données envoyées à la DB:
-- scheduled_time: ${updateData.updates.scheduled_time}
-- scheduled_date: ${updateData.updates.scheduled_date}`);
-
-      console.log('🔍 DEBUGGING INFO:', {
-        slot_hour: hour,
-        formatted_time: scheduledTime,
-        full_drop_id: dropId,
-        update_data: updateData
-      });
 
       // Vérifier la validité du technicien
       if (technicianId !== 'unassigned') {
@@ -648,8 +599,8 @@ Données envoyées à la DB:
         }
       }
 
-      // Update the intervention avec logs détaillés
-      updateInterventionMutation.mutate(updateData);
+      // Update the intervention
+      await updateInterventionMutation.mutateAsync(updateData);
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
       toast({
@@ -676,48 +627,8 @@ Données envoyées à la DB:
       // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
 
-      // Debug logging for slot 12 specifically
-      if (hour === 12) {
-        console.log(`🔍 SLOT 12 CHECK - ${intervention.title}:`, {
-          intervention_id: intervention.id,
-          intervention_time: intervention.scheduled_time,
-          intervention_date: intervention.scheduled_date,
-          intervention_technician: intervention.technician_id,
-          parsed_hour: taskHour,
-          checking_hour: hour,
-          checking_date: dateString,
-          checking_technician: technicianId,
-          hour_match: hourMatch,
-          date_match: dateMatch,
-          technician_match: technicianMatch,
-          final_match: (technicianMatch && dateMatch && hourMatch)
-        });
-      }
-
-      const match = technicianMatch && dateMatch && hourMatch;
-      
-      // Log all matches for debugging
-      if (match) {
-        console.log('✅ TASK FOUND for slot:', {
-          hour,
-          date: dateString,
-          technician: technicianId,
-          task: intervention.title,
-          task_time: intervention.scheduled_time,
-          task_date: intervention.scheduled_date
-        });
-      }
-
-      return match;
+      return technicianMatch && dateMatch && hourMatch;
     });
-
-    if (hour === 12) {
-      console.log(`📊 SLOT 12 RESULTS:`, {
-        total_interventions: interventions.length,
-        matching_tasks: matchingTasks.length,
-        matching_task_titles: matchingTasks.map(t => t.title)
-      });
-    }
 
     return matchingTasks;
   };
