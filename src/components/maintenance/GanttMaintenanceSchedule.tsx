@@ -612,6 +612,8 @@ export function GanttMaintenanceSchedule() {
     setDraggedTask(null);
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
+    console.log('🔍 getTasksForSlot called with:', { technicianId, dateString, hour });
+    
     const matchingTasks = interventions.filter(intervention => {
       // Parse the scheduled time correctly - no default value to avoid misplacement
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
@@ -627,7 +629,31 @@ export function GanttMaintenanceSchedule() {
       // Compare hours - only show if hour matches exactly
       const hourMatch = taskHour === hour;
 
+      // Log every check for debugging
+      if (intervention.id === '2c8edd4e-41c8-4911-8e00-da85e4cfe7c4' || hour === 12) {
+        console.log(`🔍 CHECKING "${intervention.title}":`, {
+          intervention_id: intervention.id,
+          intervention_time: intervention.scheduled_time,
+          intervention_date: intervention.scheduled_date,
+          intervention_technician: intervention.technician_id,
+          parsed_hour: taskHour,
+          slot_hour: hour,
+          slot_date: dateString,
+          slot_technician: technicianId,
+          hour_match: hourMatch,
+          date_match: dateMatch,
+          technician_match: technicianMatch,
+          final_match: (technicianMatch && dateMatch && hourMatch)
+        });
+      }
+
       return technicianMatch && dateMatch && hourMatch;
+    });
+
+    console.log(`📊 SLOT RESULTS for ${technicianId}|${dateString}|${hour}:`, {
+      total_interventions: interventions.length,
+      matching_tasks: matchingTasks.length,
+      matching_task_titles: matchingTasks.map(t => t.title)
     });
 
     return matchingTasks;
@@ -933,10 +959,23 @@ export function GanttMaintenanceSchedule() {
                             
                              {/* Cellules jours avec tâches */}
                              {weekDays.map((day, dayIndex) => {
-                      const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
-                      const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
-                      const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
-                      return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
+                       const tasks = getTasksForSlot(technician.id, day.dateString, slot.hour);
+                       
+                       // Debug log pour voir les appels de getTasksForSlot
+                       if (slot.hour === 12) {
+                         console.log(`🎯 RENDER CALL for ${technician.name} at ${slot.hour}:00:`, {
+                           technician_id: technician.id,
+                           technician_name: technician.name,
+                           day_dateString: day.dateString,
+                           slot_hour: slot.hour,
+                           tasks_found: tasks.length,
+                           task_titles: tasks.map(t => t.title)
+                         });
+                       }
+                       
+                       const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
+                       const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
+                       return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
                                      <DroppableTimeSlot id={`${technician.id}|${dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
                           ...task,
                           weatherEvaluation: weatherEvaluations[task.id],
