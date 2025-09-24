@@ -293,7 +293,7 @@ export function GanttMaintenanceSchedule() {
         title: activity.title,
         description: activity.description,
         scheduled_date: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'yyyy-MM-dd') : '',
-        scheduled_time: activity.scheduled_start ? format(parseISO(activity.scheduled_start), 'HH:mm:ss') : '',
+        scheduled_time: activity.scheduled_start ? activity.scheduled_start.split('T')[1].split('+')[0] : '',
         estimated_duration: activity.estimated_duration || 60,
         status: activity.status === 'completed' ? 'completed' : activity.status === 'in_progress' ? 'in_progress' : activity.status === 'cancelled' ? 'cancelled' : activity.status === 'planned' ? 'scheduled' : 'scheduled',
         intervention_type: activity.activity_type || 'maintenance',
