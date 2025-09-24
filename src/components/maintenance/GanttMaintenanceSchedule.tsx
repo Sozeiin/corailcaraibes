@@ -598,14 +598,27 @@ export function GanttMaintenanceSchedule() {
   };
   // Group tasks by slot for efficient rendering
   const tasksBySlot = useMemo(() => {
+    console.log('🔄 Recalculating tasksBySlot with interventions:', interventions.length);
     const grouped: Record<string, Intervention[]> = {};
     
     interventions.forEach(intervention => {
-      if (!intervention.scheduled_date || !intervention.scheduled_time) return;
+      if (!intervention.scheduled_date || !intervention.scheduled_time) {
+        console.log('❌ Skipping intervention without date/time:', intervention.id, intervention.title);
+        return;
+      }
       
       const hour = parseInt(intervention.scheduled_time.split(':')[0]);
       const techId = intervention.technician_id || 'unassigned';
       const slotId = `${techId}|${intervention.scheduled_date}|${hour}`;
+      
+      console.log('📍 Grouping intervention:', {
+        id: intervention.id,
+        title: intervention.title,
+        techId,
+        date: intervention.scheduled_date,
+        hour,
+        slotId
+      });
       
       if (!grouped[slotId]) {
         grouped[slotId] = [];
@@ -613,6 +626,7 @@ export function GanttMaintenanceSchedule() {
       grouped[slotId].push(intervention);
     });
     
+    console.log('📊 Final tasksBySlot groups:', Object.keys(grouped).length, grouped);
     return grouped;
   }, [interventions]);
   const getUnassignedTasks = () => {
@@ -932,6 +946,16 @@ export function GanttMaintenanceSchedule() {
                              {weekDays.map((day, dayIndex) => {
                         const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
                         const tasks = tasksBySlot[slotId] || [];
+                        
+                        // Debug logging for specific slot
+                        if (slotId.includes('2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') || tasks.length > 0) {
+                          console.log('🎯 Rendering slot:', {
+                            slotId,
+                            tasksCount: tasks.length,
+                            taskIds: tasks.map(t => t.id),
+                            taskTitles: tasks.map(t => t.title)
+                          });
+                        }
                         
                         return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
                                       <SimpleDroppableSlot 
