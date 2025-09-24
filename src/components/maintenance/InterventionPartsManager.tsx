@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, Minus, Package } from 'lucide-react';
+import { Plus, Minus, Package, Scan, QrCode } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,10 @@ import { StockItemAutocomplete } from '@/components/stock/StockItemAutocomplete'
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { BrowserMultiFormatReader } from '@zxing/browser';
+import { useQueryClient } from '@tanstack/react-query';
+import { safeRemoveById, safeRemoveChild } from '@/lib/domUtils';
 
 export interface InterventionPart {
   id?: string;
@@ -33,7 +37,10 @@ interface InterventionPartsManagerProps {
 
 export function InterventionPartsManager({ parts, onPartsChange, disabled = false, boatId }: InterventionPartsManagerProps) {
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [stockSearchValue, setStockSearchValue] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
 
   // Fetch available stock items
   const { data: stockItems = [] } = useQuery({
@@ -41,7 +48,7 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stock_items')
-        .select('id,name,quantity,unit_price,stock_reservations(quantity)')
+        .select('id,name,reference,quantity,unit_price,stock_reservations(quantity)')
         .eq('base_id', user?.baseId)
         .order('name');
 
@@ -72,6 +79,340 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     },
     enabled: !!boatId
   });
+
+  const validateBarcodeFormat = useCallback((code: string): boolean => {
+    if (!code || typeof code !== 'string') return false;
+    const trimmedCode = code.trim();
+    if (trimmedCode.length < 3 || trimmedCode.length > 30) return false;
+    
+    const validCharsRegex = /^[A-Za-z0-9\-_.]+$/;
+    if (!validCharsRegex.test(trimmedCode)) return false;
+    
+    const invalidPatterns = [
+      /^0+$/, /^1+$/, /^\d{1,2}$/, /^[A-Z]{1}$/
+    ];
+    return !invalidPatterns.some(pattern => pattern.test(trimmedCode));
+  }, []);
+
+  const startInterventionScan = async () => {
+    console.log('🚀 SCAN INTERVENTION - Sortie de stock');
+    setIsScanning(true);
+    
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Caméra non supportée');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { 
+          facingMode: 'environment',
+          width: { min: 720, ideal: 1920, max: 1920 },
+          height: { min: 480, ideal: 1080, max: 1080 },
+          frameRate: { ideal: 30, max: 60 }
+        }
+      });
+
+      const overlay = document.createElement('div');
+      overlay.id = 'intervention-scanner-overlay';
+      overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; padding: 20px;
+      `;
+
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+      video.style.cssText = `
+        width: 100%; max-width: 400px; height: 300px; 
+        border: 3px solid #ef4444;
+        border-radius: 12px; object-fit: cover; 
+        box-shadow: 0 0 30px rgba(255,255,255,0.3);
+        filter: brightness(1.1) contrast(1.2);
+      `;
+
+      const scanZone = document.createElement('div');
+      scanZone.style.cssText = `
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: 250px; height: 120px; border: 4px solid #ef4444;
+        border-radius: 8px; pointer-events: none; z-index: 1;
+        background: rgba(239, 68, 68, 0.1);
+        animation: pulse 2s infinite;
+      `;
+
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes pulse {
+          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+        }
+      `;
+      document.head.appendChild(style);
+
+      const videoContainer = document.createElement('div');
+      videoContainer.style.cssText = 'position: relative; display: inline-block;';
+      videoContainer.appendChild(video);
+      videoContainer.appendChild(scanZone);
+
+      const title = document.createElement('h2');
+      title.textContent = '📤 SCANNER PIÈCE - SORTIE DE STOCK';
+      title.style.cssText = `
+        color: #ef4444; 
+        margin-bottom: 15px; text-align: center; font-size: 20px; font-weight: bold;
+      `;
+
+      const instruction = document.createElement('div');
+      instruction.textContent = 'Scannez le code-barres de la pièce à utiliser dans l\'intervention';
+      instruction.style.cssText = `
+        color: #ccc; margin-bottom: 15px; text-align: center; font-size: 14px;
+      `;
+
+      const status = document.createElement('div');
+      status.id = 'intervention-scan-status';
+      status.textContent = '🔍 Scanner activé...';
+      status.style.cssText = `
+        color: white; margin: 15px 0; text-align: center; 
+        font-size: 16px; font-weight: bold; min-height: 24px;
+      `;
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕ FERMER';
+      closeBtn.style.cssText = `
+        padding: 12px 30px; background: #ef4444; color: white;
+        border: none; border-radius: 8px; font-size: 16px; 
+        font-weight: bold; cursor: pointer; margin-top: 15px; transition: all 0.2s;
+      `;
+
+      overlay.appendChild(title);
+      overlay.appendChild(instruction);
+      overlay.appendChild(videoContainer);
+      overlay.appendChild(status);
+      overlay.appendChild(closeBtn);
+      document.body.appendChild(overlay);
+
+      let scanning = true;
+      let attemptCount = 0;
+      let lastScanTime = 0;
+      const scanCooldown = 80;
+      
+      const codeReader = new BrowserMultiFormatReader();
+
+      const cleanup = () => {
+        console.log('🧹 NETTOYAGE SCANNER INTERVENTION');
+        scanning = false;
+        stream.getTracks().forEach(track => track.stop());
+        safeRemoveById('intervention-scanner-overlay');
+        const styleElements = document.querySelectorAll('style');
+        styleElements.forEach(styleEl => {
+          if (styleEl.textContent?.includes('@keyframes pulse')) {
+            safeRemoveChild(styleEl);
+          }
+        });
+        setIsScanning(false);
+      };
+
+      closeBtn.onclick = cleanup;
+
+      await new Promise((resolve) => {
+        video.addEventListener('loadedmetadata', () => {
+          video.play().then(resolve);
+        });
+      });
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      const performScan = () => {
+        if (!scanning) return;
+        
+        const now = Date.now();
+        if (now - lastScanTime < scanCooldown) {
+          requestAnimationFrame(performScan);
+          return;
+        }
+        lastScanTime = now;
+        attemptCount++;
+
+        try {
+          canvas.width = video.videoWidth || 640;
+          canvas.height = video.videoHeight || 480;
+          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          try {
+            const result = codeReader.decodeFromCanvas(canvas);
+            if (scanning && result) {
+              const code = result.getText().trim();
+              console.log('📷 CODE INTERVENTION DETECTE:', code);
+              handleInterventionScan(code, status, cleanup, attemptCount);
+              return;
+            }
+          } catch (error) {
+            // Continue scanning
+          }
+          
+          if (scanning) {
+            requestAnimationFrame(performScan);
+          }
+
+        } catch (error) {
+          console.error('Erreur capture frame:', error);
+          requestAnimationFrame(performScan);
+        }
+      };
+
+      requestAnimationFrame(performScan);
+      
+    } catch (error) {
+      console.error('❌ ERREUR SCANNER INTERVENTION:', error);
+      setIsScanning(false);
+      toast({
+        title: 'Erreur Scanner',
+        description: `Impossible d'accéder à la caméra: ${error.message}`,
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleInterventionScan = async (code: string, status: HTMLElement, cleanup: () => void, attemptCount: number) => {
+    if (validateBarcodeFormat(code)) {
+      console.log(`✅ CODE VALIDE pour intervention en ${attemptCount} tentatives:`, code);
+      status.textContent = `✅ ${code} - Détecté!`;
+      
+      setTimeout(() => {
+        cleanup();
+        processInterventionScan(code);
+      }, 500);
+    } else {
+      status.textContent = `⚠️ Code invalide: ${code}`;
+      setTimeout(() => {
+        status.textContent = '🔍 Scanner activé...';
+      }, 1000);
+    }
+  };
+
+  const processInterventionScan = async (code: string) => {
+    console.log('🔍 Processing intervention scan:', code);
+    const trimmedCode = code.trim();
+    
+    // Recherche de l'article dans le stock
+    let stockItem = stockItems.find(item => 
+      item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
+    );
+    
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.reference && 
+        item.reference.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+    }
+    
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.name.toLowerCase().includes(trimmedCode.toLowerCase()) &&
+        trimmedCode.length >= 3
+      );
+    }
+
+    if (stockItem) {
+      // Vérifier si l'article n'est pas déjà dans la liste
+      const existingPart = parts.find(part => part.stockItemId === stockItem.id);
+      
+      if (existingPart) {
+        // Augmenter la quantité si possible
+        if (existingPart.quantity < (stockItem.available_quantity || 0)) {
+          const updatedParts = parts.map(part => 
+            part.stockItemId === stockItem.id 
+              ? { 
+                  ...part, 
+                  quantity: part.quantity + 1,
+                  totalCost: (part.quantity + 1) * part.unitCost
+                }
+              : part
+          );
+          onPartsChange(updatedParts);
+          
+          toast({
+            title: 'Quantité augmentée',
+            description: `${stockItem.name} - Quantité: ${existingPart.quantity + 1}`,
+          });
+        } else {
+          toast({
+            title: 'Stock insuffisant',
+            description: `${stockItem.name} - Stock disponible: ${stockItem.available_quantity}`,
+            variant: 'destructive'
+          });
+        }
+      } else {
+        // Ajouter la nouvelle pièce
+        const newPart: InterventionPart = {
+          stockItemId: stockItem.id,
+          partName: stockItem.name,
+          quantity: 1,
+          unitCost: stockItem.unit_price || 0,
+          totalCost: stockItem.unit_price || 0,
+          availableQuantity: stockItem.available_quantity,
+          notes: ''
+        };
+
+        onPartsChange([...parts, newPart]);
+        
+        toast({
+          title: 'Pièce scannée ajoutée',
+          description: `${stockItem.name} ajouté à l'intervention`,
+        });
+      }
+
+      // Décrémenter automatiquement le stock
+      try {
+        const { error } = await supabase
+          .from('stock_items')
+          .update({ 
+            quantity: stockItem.quantity - 1,
+            last_updated: new Date().toISOString()
+          })
+          .eq('id', stockItem.id);
+
+        if (error) throw error;
+
+        // Créer un mouvement de stock pour traçabilité - utiliser la bonne structure
+        await supabase
+          .from('stock_movements')
+          .insert({
+            sku: stockItem.reference || stockItem.name,
+            qty: -1,
+            movement_type: 'outbound_intervention',
+            base_id: user?.baseId || '',
+            actor: user?.email || '',
+            notes: `Sortie automatique pour intervention - Scanner`
+          });
+
+        // Actualiser les données de stock
+        queryClient.invalidateQueries({ queryKey: ['stock-items-for-intervention'] });
+        
+        toast({
+          title: 'Stock mis à jour',
+          description: `${stockItem.name} - Stock: ${stockItem.quantity - 1}`,
+        });
+        
+      } catch (error) {
+        console.error('Erreur mise à jour stock:', error);
+        toast({
+          title: 'Erreur stock',
+          description: 'Impossible de mettre à jour le stock',
+          variant: 'destructive'
+        });
+      }
+    } else {
+      toast({
+        title: 'Article non trouvé',
+        description: `Aucun article trouvé pour le code: ${code}`,
+        variant: 'destructive'
+      });
+    }
+  };
 
   const addCustomPart = () => {
     const newPart: InterventionPart = {
@@ -125,32 +466,55 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
       </CardHeader>
       <CardContent className="space-y-4">
         {!disabled && (
-          <div className="flex gap-2">
-            <div className="flex-1">
-              <StockItemAutocomplete
-                stockItems={stockItems.filter(item => !parts.some(part => part.stockItemId === item.id))}
-                value={stockSearchValue}
-                onChange={setStockSearchValue}
-                onSelect={async (item) => {
-                  const newPart: InterventionPart = {
-                    stockItemId: item.id,
-                    partName: item.name,
-                    quantity: 1,
-                    unitCost: (item as any).unit_price || 0,
-                    totalCost: (item as any).unit_price || 0,
-                    availableQuantity: (item as any).available_quantity,
-                    notes: ''
-                  };
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <StockItemAutocomplete
+                  stockItems={stockItems.filter(item => !parts.some(part => part.stockItemId === item.id))}
+                  value={stockSearchValue}
+                  onChange={setStockSearchValue}
+                  onSelect={async (item) => {
+                    const newPart: InterventionPart = {
+                      stockItemId: item.id,
+                      partName: item.name,
+                      quantity: 1,
+                      unitCost: (item as any).unit_price || 0,
+                      totalCost: (item as any).unit_price || 0,
+                      availableQuantity: (item as any).available_quantity,
+                      notes: ''
+                    };
 
-                  onPartsChange([...parts, newPart]);
-                  setStockSearchValue(''); // Clear search after selection
-                }}
-                placeholder="Rechercher une pièce dans le stock..."
-              />
+                    onPartsChange([...parts, newPart]);
+                    setStockSearchValue(''); // Clear search after selection
+                  }}
+                  placeholder="Rechercher une pièce dans le stock..."
+                />
+              </div>
+              <Button variant="outline" onClick={addCustomPart}>
+                Pièce personnalisée
+              </Button>
             </div>
-            <Button variant="outline" onClick={addCustomPart}>
-              Pièce personnalisée
-            </Button>
+            
+            <div className="flex justify-center">
+              <Button 
+                variant="outline" 
+                onClick={startInterventionScan}
+                disabled={isScanning}
+                className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border-red-200 text-red-700"
+              >
+                {isScanning ? (
+                  <>
+                    <QrCode className="h-4 w-4 animate-pulse" />
+                    Scanner en cours...
+                  </>
+                ) : (
+                  <>
+                    <Scan className="h-4 w-4" />
+                    Scanner Code-barres (Sortie Stock)
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
