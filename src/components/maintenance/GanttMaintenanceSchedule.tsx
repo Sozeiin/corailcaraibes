@@ -157,6 +157,7 @@ export function GanttMaintenanceSchedule() {
         label: `${hour.toString().padStart(2, '0')}:00`
       });
     }
+    console.log('⏰ TIMESLOTS GENERATED:', slots.map(s => `${s.hour}h (${s.label})`));
     return slots;
   }, []);
 
@@ -561,10 +562,13 @@ export function GanttMaintenanceSchedule() {
 
     try {
       const dropId = over.id.toString();
+      console.log('🎯 DROP ANALYSIS - DropId:', dropId);
+      
       const parts = dropId.split('|');
+      console.log('🎯 DROP ANALYSIS - Parts:', parts);
       
       if (parts.length !== 3) {
-        console.error('Invalid drop target format:', dropId);
+        console.error('❌ Invalid drop target format:', dropId);
         setDraggedTask(null);
         return;
       }
@@ -572,12 +576,26 @@ export function GanttMaintenanceSchedule() {
       const [technicianId, dateString, hourStr] = parts;
       const hour = parseInt(hourStr);
       
+      console.log('🎯 DROP ANALYSIS - Parsed:', {
+        technicianId,
+        dateString, 
+        hourStr,
+        parsedHour: hour,
+        draggedTaskOriginal: {
+          id: draggedTask.id,
+          current_time: draggedTask.scheduled_time,
+          current_date: draggedTask.scheduled_date
+        }
+      });
+      
       if (isNaN(hour)) {
-        console.error('Invalid drop target data:', { technicianId, dateString, hour });
+        console.error('❌ Invalid drop target data:', { technicianId, dateString, hour });
         setDraggedTask(null);
         return;
       }
+      
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
+      console.log('🎯 DROP ANALYSIS - Final scheduledTime:', scheduledTime);
 
       // Store last technician
       const newLastDropped = {
@@ -619,17 +637,22 @@ export function GanttMaintenanceSchedule() {
         return;
       }
       
-      const hour = parseInt(intervention.scheduled_time.split(':')[0]);
+      const timeParts = intervention.scheduled_time.split(':');
+      const hour = parseInt(timeParts[0]);
       const techId = intervention.technician_id || 'unassigned';
       const slotId = `${techId}|${intervention.scheduled_date}|${hour}`;
       
-      console.log('📍 Grouping intervention:', {
+      console.log('📍 GROUPING DETAILED ANALYSIS:', {
         id: intervention.id,
         title: intervention.title,
+        raw_scheduled_time: intervention.scheduled_time,
+        timeParts: timeParts,
+        parsed_hour: hour,
         techId,
         date: intervention.scheduled_date,
-        hour,
-        slotId
+        generated_slotId: slotId,
+        // Verify hour is in valid range for timeSlots (6-19)
+        hour_in_range: hour >= 6 && hour <= 19
       });
       
       if (!grouped[slotId]) {
@@ -948,10 +971,12 @@ export function GanttMaintenanceSchedule() {
                                 </>}
                             </div>
                             
-                            {/* Heure */}
+                             {/* Heure */}
                             <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
                               <span className="text-sm font-mono text-gray-600">{slot.label}</span>
                               <span className="text-xs text-red-500 ml-1">({slot.hour})</span>
+                              {/* Debug visual verification */}
+                              <span className="text-xs text-blue-500 ml-1 font-bold">V:{slot.hour}</span>
                             </div>
                             
                              {/* Cellules jours avec tâches */}
@@ -959,13 +984,17 @@ export function GanttMaintenanceSchedule() {
                         const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
                         const tasks = tasksBySlot[slotId] || [];
                         
-                        // Debug logging for specific slot
+                        // Debug logging for slot mapping verification
                         if (slotId.includes('2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') || tasks.length > 0) {
-                          console.log('🎯 Rendering slot:', {
+                          console.log('🎯 SLOT MAPPING VERIFICATION:', {
                             slotId,
+                            visualHour: slot.hour,
+                            visualLabel: slot.label,
+                            dateString: day.dateString,
                             tasksCount: tasks.length,
                             taskIds: tasks.map(t => t.id),
-                            taskTitles: tasks.map(t => t.title)
+                            taskTitles: tasks.map(t => t.title),
+                            taskCurrentTimes: tasks.map(t => t.scheduled_time)
                           });
                         }
                         
