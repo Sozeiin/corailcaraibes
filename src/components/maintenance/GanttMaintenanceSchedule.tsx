@@ -11,8 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format, addDays, startOfWeek, addHours, isToday, isSameDay, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Plus, Clock, User, Ship, ChevronLeft, ChevronRight, Calendar, Wrench, Zap, Droplets, Cog, AlertTriangle, ChevronDown, ChevronUp, CloudRain, RefreshCw, Cloud, Sun } from 'lucide-react';
-import { SimpleDroppableSlot } from './gantt/SimpleDroppableSlot';
-import { SimpleDraggableTask } from './gantt/SimpleDraggableTask';
+import { DroppableTimeSlot } from './gantt/DroppableTimeSlot';
+import { DraggableTaskCard } from './gantt/DraggableTaskCard';
 import { TaskDialog } from './gantt/TaskDialog';
 import { InterventionContextMenu } from './gantt/InterventionContextMenu';
 import { InterventionDetailsModal } from './gantt/InterventionDetailsModal';
@@ -147,11 +147,6 @@ export function GanttMaintenanceSchedule() {
   } = useToast();
   const queryClient = useQueryClient();
   const [weatherEvaluations, setWeatherEvaluations] = useState<Record<string, WeatherEvaluation>>({});
-  const [contextMenu, setContextMenu] = useState<{
-    task: Intervention;
-    x: number;
-    y: number;
-  } | null>(null);
 
   // Generate time slots (6 AM to 7 PM)
   const timeSlots = useMemo(() => {
@@ -517,29 +512,51 @@ export function GanttMaintenanceSchedule() {
   };
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    setDraggedTask(null);
-    
-    if (!over) return;
+    if (!over || !draggedTask) {
+      setDraggedTask(null);
+      return;
+    }
 
     try {
       const dropId = over.id.toString();
-      const [technicianId, dateString, hourStr] = dropId.split('|');
+      const parts = dropId.split('|');
       
-      if (!technicianId || !dateString || !hourStr) {
-        console.error('Invalid drop format:', dropId);
+      if (parts.length !== 3) {
+        console.error('Invalid drop target format:', dropId);
+        setDraggedTask(null);
         return;
       }
 
+      const [technicianId, dayIndexStr, hourStr] = parts;
+      const dayIndex = parseInt(dayIndexStr);
       const hour = parseInt(hourStr);
-      if (isNaN(hour)) {
-        console.error('Invalid hour:', hourStr);
+      
+      if (isNaN(hour) || isNaN(dayIndex) || dayIndex < 0 || dayIndex > 6) {
+        console.error('Invalid drop target data:', { technicianId, dayIndex, hour });
+        setDraggedTask(null);
         return;
       }
 
+      const targetDay = weekDays[dayIndex];
+      if (!targetDay) {
+        console.error('Invalid day index:', dayIndex);
+        setDraggedTask(null);
+        return;
+      }
+
+      const dateString = targetDay.dateString;
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
 
+      // Store last technician
+      const newLastDropped = {
+        ...lastDroppedTechnician,
+        [draggedTask.id]: technicianId === 'unassigned' ? '' : technicianId
+      };
+      setLastDroppedTechnician(newLastDropped);
+      localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
+
       const updateData = {
-        id: active.id.toString(),
+        id: draggedTask.id,
         updates: {
           technician_id: technicianId === 'unassigned' ? null : technicianId,
           scheduled_date: dateString,
@@ -547,19 +564,8 @@ export function GanttMaintenanceSchedule() {
         }
       };
 
+      // Update the intervention and wait for completion
       await updateInterventionMutation.mutateAsync(updateData);
-      
-      // Force refresh all data
-      await queryClient.refetchQueries({
-        queryKey: ['gantt-interventions']
-      });
-      await queryClient.refetchQueries({
-        queryKey: ['planning-activities']
-      });
-      await queryClient.refetchQueries({
-        queryKey: ['technicians']
-      });
-      
     } catch (error) {
       console.error('Error in handleDragEnd:', error);
       toast({
@@ -567,15 +573,18 @@ export function GanttMaintenanceSchedule() {
         description: "Impossible de déplacer la tâche",
         variant: "destructive"
       });
+      setDraggedTask(null);
     }
   };
   const getTasksForSlot = (technicianId: string | null, dateString: string, hour: number) => {
     return interventions.filter(intervention => {
+      // Parse scheduled time
       const taskHour = intervention.scheduled_time ? parseInt(intervention.scheduled_time.split(':')[0]) : null;
       if (taskHour === null) return false;
       
+      // Simple matching logic
       const technicianMatch = technicianId === null ? 
-        !intervention.technician_id :
+        (intervention.technician_id === null || intervention.technician_id === undefined) :
         intervention.technician_id === technicianId;
       
       const dateMatch = intervention.scheduled_date === dateString;
@@ -797,7 +806,7 @@ export function GanttMaintenanceSchedule() {
                 <div className="flex gap-2 overflow-x-auto">
                   {getUnassignedTasks().map(task => (
                     <div key={task.id} className="w-40 flex-none">
-                      <SimpleDraggableTask task={task} onClick={() => setSelectedTask(task)} />
+                      <DraggableTaskCard task={task} onClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} isDragging={false} />
                     </div>
                   ))}
                   {getUnassignedTasks().length === 0 && (
@@ -912,19 +921,16 @@ export function GanttMaintenanceSchedule() {
                        const dayWeatherEvaluation = getDayWeatherEvaluation(day.dateString);
                        const weatherSeverity = getWeatherSeverity(dayWeatherEvaluation);
                        return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
-                                      <SimpleDroppableSlot 
-                                        id={`${technician.id}|${day.dateString}|${slot.hour}`}
-                                        tasks={tasks}
-                                        onTaskClick={(task) => setSelectedTask(task as Intervention)}
-                                        onTaskContextMenu={(e, task) => {
-                                          e.preventDefault();
-                                          setContextMenu({
-                                            task: task as Intervention,
-                                            x: e.clientX,
-                                            y: e.clientY
-                                          });
-                                        }}
-                                      />
+                                     <DroppableTimeSlot id={`${technician.id}|${dayIndex}|${slot.hour}`} tasks={tasks.map(task => ({
+                          ...task,
+                          weatherEvaluation: weatherEvaluations[task.id],
+                          weatherSeverity: getWeatherSeverity(weatherEvaluations[task.id])
+                        }))} onTaskClick={task => {
+                          console.log('Setting selected task:', task);
+                          setSelectedTask(task as Intervention);
+                        }} getTaskTypeConfig={getTaskTypeConfig} weatherSeverity={weatherSeverity} renderTaskCard={task => <InterventionContextMenu intervention={task as any} technicians={technicians} lastDroppedTechnicianId={lastDroppedTechnician[task.id]} onViewDetails={() => handleViewDetails(task as any)} onEdit={() => handleEditIntervention(task as any)} onStatusChange={status => handleStatusChange(task as any, status)} onReassign={technicianId => handleReassign(task as any, technicianId)} onDelete={() => handleDeleteIntervention(task as any)} onWeatherEvaluation={() => handleWeatherEvaluation(task as any)}>
+                                           <DraggableTaskCard task={task} getTaskTypeConfig={getTaskTypeConfig} />
+                                         </InterventionContextMenu>} />
                                  </div>;
                     })}
                           </div>)}
@@ -937,7 +943,7 @@ export function GanttMaintenanceSchedule() {
 
         {/* Drag overlay */}
         <DragOverlay>
-          {draggedTask && <SimpleDraggableTask task={draggedTask} />}
+          {draggedTask && <DraggableTaskCard task={draggedTask} isDragging={true} getTaskTypeConfig={getTaskTypeConfig} />}
         </DragOverlay>
       </DndContext>
 
