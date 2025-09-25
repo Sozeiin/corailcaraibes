@@ -32,6 +32,7 @@ export const OilChangeStatusBadge: React.FC<OilChangeStatusBadgeProps> = ({
     <div title={tooltipText}>
       <Wrench 
         className={`${sizeClasses[size]} ${badgeInfo.color} ${className}`}
+        strokeWidth={3}
       />
     </div>
   );

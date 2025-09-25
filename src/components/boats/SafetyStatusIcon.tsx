@@ -39,6 +39,7 @@ export const SafetyStatusIcon: React.FC<SafetyStatusIconProps> = ({
     <div title={`Contrôles expirés: ${expiredCount}`}>
       <Shield 
         className={`${sizeClasses[size]} ${getStatusColor()} ${className}`}
+        strokeWidth={3}
       />
     </div>
   );
