@@ -120,7 +120,10 @@ export function TaskDialog({ task, isOpen, onClose, technicians, onTaskCreated }
         scheduled_time: '09:00'
       });
 
+      console.log('✅ Task created successfully, invalidating queries...');
+      await queryClient.invalidateQueries({ queryKey: ['gantt-activities'] });
       await queryClient.invalidateQueries({ queryKey: ['gantt-interventions'] });
+      console.log('✅ Queries invalidated, calling callbacks...');
       onTaskCreated?.();
       onClose();
     } catch (error) {

@@ -563,16 +563,44 @@ export function GanttMaintenanceSchedule() {
       title: task?.title,
       current_time: task?.scheduled_time,
       current_date: task?.scheduled_date,
-      technician_id: task?.technician_id
+      technician_id: task?.technician_id,
+      activity_type: task?.activity_type,
+      original_intervention_id: task?.original_intervention_id
     });
+    
+    // Debug: Check if task is in interventions list
+    console.log('🔍 DRAG DEBUG - All interventions count:', interventions.length);
+    console.log('🔍 DRAG DEBUG - Unassigned tasks:', getUnassignedTasks().map(t => ({ id: t.id, title: t.title })));
+    
+    if (!task) {
+      console.error('❌ DRAG ERROR - Task not found in interventions list! Task ID:', event.active.id);
+      console.log('📝 Available intervention IDs:', interventions.map(i => i.id));
+    }
+    
     setDraggedTask(task || null);
   };
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (!over || !draggedTask) {
+    console.log('🎯 DRAG END - Active ID:', active.id, 'Over ID:', over?.id);
+    
+    if (!over) {
+      console.log('❌ DRAG END - No valid drop target');
       setDraggedTask(null);
       return;
     }
+    
+    if (!draggedTask) {
+      console.log('❌ DRAG END - No dragged task found');
+      setDraggedTask(null);
+      return;
+    }
+    
+    console.log('🎯 DRAG END - Dragged task:', {
+      id: draggedTask.id,
+      title: draggedTask.title,
+      activity_type: draggedTask.activity_type,
+      original_intervention_id: draggedTask.original_intervention_id
+    });
 
     try {
       const dropId = over.id.toString();
