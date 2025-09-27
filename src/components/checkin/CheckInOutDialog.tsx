@@ -16,9 +16,20 @@ import { useAuth } from '@/contexts/AuthContext';
 interface CheckInOutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  preselectedBoat?: any;
+  preselectedType?: 'checkin' | 'checkout';
+  preselectedRentalData?: any;
+  onComplete?: (data: any) => void;
 }
 
-export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) {
+export function CheckInOutDialog({ 
+  open, 
+  onOpenChange,
+  preselectedBoat,
+  preselectedType,
+  preselectedRentalData,
+  onComplete 
+}: CheckInOutDialogProps) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('checkin');
   const [selectedBoat, setSelectedBoat] = useState<any>(null);
@@ -33,12 +44,20 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
 
   const handleCheckInComplete = (data: any) => {
     // Handle check-in completion
-    onOpenChange(false);
+    if (onComplete) {
+      onComplete({ ...data, checklistId: data.id });
+    } else {
+      onOpenChange(false);
+    }
   };
 
   const handleCheckOutComplete = (data: any) => {
     // Handle check-out completion  
-    onOpenChange(false);
+    if (onComplete) {
+      onComplete({ ...data, checklistId: data.id });
+    } else {
+      onOpenChange(false);
+    }
   };
 
   return (
@@ -73,12 +92,14 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
                   <div className="space-y-4">
                     <BoatRentalSelector
                       type="checkin"
-                        onBoatSelect={(boat) => {
-                          setSelectedBoat(boat);
-                        }}
-                        onRentalDataChange={(data) => {
-                          setRentalData(data);
-                        }}
+                      preselectedBoat={preselectedBoat}
+                      preselectedRentalData={preselectedRentalData}
+                      onBoatSelect={(boat) => {
+                        setSelectedBoat(boat);
+                      }}
+                      onRentalDataChange={(data) => {
+                        setRentalData(data);
+                      }}
                     />
                     
                     {selectedBoat && rentalData && (
@@ -98,6 +119,8 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
                   <div className="space-y-4">
                     <BoatRentalSelector
                       type="checkout"
+                      preselectedBoat={preselectedBoat}
+                      preselectedRentalData={preselectedRentalData}
                       onBoatSelect={setSelectedBoat}
                       onRentalDataChange={setRentalData}
                     />

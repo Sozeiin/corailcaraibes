@@ -24,9 +24,17 @@ interface BoatRentalSelectorProps {
   type: 'checkin' | 'checkout';
   onBoatSelect: (boat: any) => void;
   onRentalDataChange: (data: any) => void;
+  preselectedBoat?: any;
+  preselectedRentalData?: any;
 }
 
-export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: BoatRentalSelectorProps) {
+export function BoatRentalSelector({ 
+  type, 
+  onBoatSelect, 
+  onRentalDataChange,
+  preselectedBoat,
+  preselectedRentalData 
+}: BoatRentalSelectorProps) {
   const { user } = useAuth();
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   // Use secure input hooks for customer data
@@ -117,6 +125,25 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
   });
 
   const selectedBoat = boats.find(b => b.id === selectedBoatId);
+
+  // Handle preselected boat
+  useEffect(() => {
+    if (preselectedBoat && !selectedBoatId) {
+      setSelectedBoatId(preselectedBoat.id);
+    }
+  }, [preselectedBoat, selectedBoatId]);
+
+  // Handle preselected rental data
+  useEffect(() => {
+    if (preselectedRentalData) {
+      customerName.setValue(preselectedRentalData.customer_name || '');
+      customerEmail.setValue(preselectedRentalData.customer_email || '');
+      customerPhone.setValue(preselectedRentalData.customer_phone || '');
+      setStartDate(preselectedRentalData.start_date || '');
+      setEndDate(preselectedRentalData.end_date || '');
+      setNotes(preselectedRentalData.notes || '');
+    }
+  }, [preselectedRentalData, customerName, customerEmail, customerPhone]);
 
   useEffect(() => {
     if (selectedBoat) {

@@ -30,6 +30,7 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 
 import NotFound from "./pages/NotFound";
+import CheckinCheckoutManagement from "./pages/CheckinCheckoutManagement";
 
 const queryClient = new QueryClient();
 
@@ -164,6 +165,11 @@ function AppRoutes() {
           <PermissionGate page="boat_preparation">
             <BoatPreparation />
           </PermissionGate>
+        </ProtectedRoute>
+      } />
+      <Route path="/checkin-checkout-management" element={
+        <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
+          <CheckinCheckoutManagement />
         </ProtectedRoute>
       } />
       <Route

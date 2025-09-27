@@ -1112,6 +1112,100 @@ export type Database = {
           },
         ]
       }
+      checkin_checkout_orders: {
+        Row: {
+          base_id: string
+          boat_id: string
+          completed_checklist_id: string | null
+          created_at: string | null
+          created_by: string
+          id: string
+          notes: string | null
+          order_type: string
+          rental_data: Json | null
+          scheduled_end: string
+          scheduled_start: string
+          status: string | null
+          technician_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          base_id: string
+          boat_id: string
+          completed_checklist_id?: string | null
+          created_at?: string | null
+          created_by: string
+          id?: string
+          notes?: string | null
+          order_type: string
+          rental_data?: Json | null
+          scheduled_end: string
+          scheduled_start: string
+          status?: string | null
+          technician_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          base_id?: string
+          boat_id?: string
+          completed_checklist_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          notes?: string | null
+          order_type?: string
+          rental_data?: Json | null
+          scheduled_end?: string
+          scheduled_start?: string
+          status?: string | null
+          technician_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_checkout_orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_checkout_orders_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_checkout_orders_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_checkout_orders_completed_checklist_id_fkey"
+            columns: ["completed_checklist_id"]
+            isOneToOne: false
+            referencedRelation: "boat_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_checkout_orders_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checkin_checkout_orders_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           category: string | null
