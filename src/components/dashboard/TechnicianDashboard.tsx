@@ -14,16 +14,11 @@ import {
 } from 'lucide-react';
 import { TechnicianPlanningView } from './TechnicianPlanningView';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
-import { TechnicianCheckinCheckoutOrders } from '@/components/checkin/TechnicianCheckinCheckoutOrders';
-import { useCheckinNotifications } from '@/hooks/useCheckinNotifications';
 
 export function TechnicianDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
-
-  // Enable real-time notifications for checkin/checkout orders
-  useCheckinNotifications();
 
   return (
     <div className="space-y-6">
@@ -53,9 +48,6 @@ export function TechnicianDashboard() {
           </div>
         </div>
       </div>
-
-      {/* Check-in/out Orders Section */}
-      <TechnicianCheckinCheckoutOrders />
 
       {/* Planning principal */}
       <TechnicianPlanningView />
