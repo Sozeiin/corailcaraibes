@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,13 +9,16 @@ import {
   Wrench, 
   Ship, 
   Scan,
-  Eye
+  Eye,
+  Anchor
 } from 'lucide-react';
 import { TechnicianPlanningView } from './TechnicianPlanningView';
+import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 
 export function TechnicianDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -28,10 +31,20 @@ export function TechnicianDashboard() {
               Voici votre planning de la semaine
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-marine-200">
-              {format(new Date(), 'EEEE dd MMMM yyyy', { locale: fr })}
-            </p>
+          <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
+            <Button
+              onClick={() => setCheckInOutDialogOpen(true)}
+              variant="secondary"
+              className="bg-white/10 hover:bg-white/20 border-white/20 text-white"
+            >
+              <Anchor className="h-4 w-4 mr-2" />
+              Check-in / Check-out
+            </Button>
+            <div className="text-right">
+              <p className="text-sm text-marine-200">
+                {format(new Date(), 'EEEE dd MMMM yyyy', { locale: fr })}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -81,6 +94,11 @@ export function TechnicianDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      <CheckInOutDialog 
+        open={checkInOutDialogOpen}
+        onOpenChange={setCheckInOutDialogOpen}
+      />
     </div>
   );
 }
