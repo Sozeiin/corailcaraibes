@@ -985,12 +985,9 @@ export function GanttMaintenanceSchedule() {
                                 </>}
                             </div>
                             
-                             {/* Heure */}
+                            {/* Heure */}
                             <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
                               <span className="text-sm font-mono text-gray-600">{slot.label}</span>
-                              <span className="text-xs text-red-500 ml-1">({slot.hour})</span>
-                              {/* Debug visual verification */}
-                              <span className="text-xs text-blue-500 ml-1 font-bold">V:{slot.hour}</span>
                             </div>
                             
                              {/* Cellules jours avec tâches */}
