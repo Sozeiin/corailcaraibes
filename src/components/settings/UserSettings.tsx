@@ -110,6 +110,8 @@ export function UserSettings() {
         return 'default';
       case 'chef_base':
         return 'secondary';
+      case 'administratif':
+        return 'destructive';
       case 'technicien':
         return 'outline';
       default:
@@ -123,6 +125,8 @@ export function UserSettings() {
         return 'Direction';
       case 'chef_base':
         return 'Chef de base';
+      case 'administratif':
+        return 'Administratif';
       case 'technicien':
         return 'Technicien';
       default:
@@ -178,6 +182,7 @@ export function UserSettings() {
               <SelectContent>
                 <SelectItem value="technicien">Technicien</SelectItem>
                 <SelectItem value="chef_base">Chef de base</SelectItem>
+                <SelectItem value="administratif">Administratif</SelectItem>
                 <SelectItem value="direction">Direction</SelectItem>
               </SelectContent>
             </Select>
