@@ -12,8 +12,8 @@ import { BoatRentalSelector } from './BoatRentalSelector';
 
 interface TechnicianCheckinSelectorProps {
   boats: any[];
-  onFormSelect: (form: any) => void;
-  onManualCheckin: () => void;
+  onFormSelect: (data: { boat: any; rentalData: any }) => void;
+  onManualCheckin: (boat: any, rentalData: any) => void;
 }
 
 export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin }: TechnicianCheckinSelectorProps) {
@@ -85,7 +85,7 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
   const handleManualCheckinData = (data: any) => {
     setRentalData(data);
     if (selectedBoat && data?.isValid) {
-      onManualCheckin();
+      onManualCheckin(selectedBoat, data);
     }
   };
 

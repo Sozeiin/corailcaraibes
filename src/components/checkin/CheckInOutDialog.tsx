@@ -10,8 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Ship, CheckCircle, AlertTriangle } from 'lucide-react';
 import { BoatRentalSelector } from './BoatRentalSelector';
+import { TechnicianCheckinSelector } from './TechnicianCheckinSelector';
 import { ChecklistForm } from './ChecklistForm';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CheckInOutDialogProps {
   open: boolean;
@@ -23,12 +26,46 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
   const [activeTab, setActiveTab] = useState('checkin');
   const [selectedBoat, setSelectedBoat] = useState<any>(null);
   const [rentalData, setRentalData] = useState<any>(null);
+  const [showChecklist, setShowChecklist] = useState(false);
+
+  // Fetch available boats for technician selector
+  const { data: boats = [] } = useQuery({
+    queryKey: ['boats-available'],
+    queryFn: async () => {
+      const query = supabase
+        .from('boats')
+        .select('*')
+        .eq('status', 'available');
+
+      if (user?.role !== 'direction') {
+        query.eq('base_id', user?.baseId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user
+  });
 
   // Reset selections when tab changes
   const handleTabChange = (value: string) => {
     setActiveTab(value);
     setSelectedBoat(null);
     setRentalData(null);
+    setShowChecklist(false);
+  };
+
+  const handleFormSelect = (data: { boat: any; rentalData: any }) => {
+    setSelectedBoat(data.boat);
+    setRentalData(data.rentalData);
+    setShowChecklist(true);
+  };
+
+  const handleManualCheckin = (boat: any, rentalData: any) => {
+    setSelectedBoat(boat);
+    setRentalData(rentalData);
+    setShowChecklist(true);
   };
 
   const handleCheckInComplete = (data: any) => {
@@ -71,17 +108,26 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
               <TabsContent value="checkin" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   <div className="space-y-4">
-                    <BoatRentalSelector
-                      type="checkin"
+                    {user?.role === 'technicien' ? (
+                      <TechnicianCheckinSelector
+                        boats={boats}
+                        onFormSelect={handleFormSelect}
+                        onManualCheckin={handleManualCheckin}
+                      />
+                    ) : (
+                      <BoatRentalSelector
+                        type="checkin"
                         onBoatSelect={(boat) => {
                           setSelectedBoat(boat);
                         }}
                         onRentalDataChange={(data) => {
                           setRentalData(data);
+                          setShowChecklist(true);
                         }}
-                    />
+                      />
+                    )}
                     
-                    {selectedBoat && rentalData && (
+                    {selectedBoat && rentalData && showChecklist && (
                       <ChecklistForm
                         boat={selectedBoat}
                         rentalData={rentalData}
