@@ -31,6 +31,9 @@ const menuItems = [{
   subItems: [{
     title: 'Check-in',
     url: '/checkin'
+  }, {
+    title: 'Check-out',
+    url: '/checkout'
   }]
 }, {
   title: 'Fournisseurs',

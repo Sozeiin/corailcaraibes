@@ -30,7 +30,7 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 
 import CheckIn from "./pages/CheckIn";
-
+import CheckOut from "./pages/CheckOut";
 
 import NotFound from "./pages/NotFound";
 
@@ -254,6 +254,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
             <CheckIn />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+            <CheckOut />
           </ProtectedRoute>
         }
       />
