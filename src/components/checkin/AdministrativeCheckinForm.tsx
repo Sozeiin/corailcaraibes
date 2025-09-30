@@ -16,7 +16,7 @@ import { Ship, User, Plus, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSecureTextInput, useSecureEmailInput, useSecurePhoneInput } from '@/hooks/useSecureInput';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
 import { useQuery } from '@tanstack/react-query';
 
 interface AdministrativeCheckinFormProps {
@@ -26,7 +26,7 @@ interface AdministrativeCheckinFormProps {
 
 export function AdministrativeCheckinForm({ boats, onFormCreated }: AdministrativeCheckinFormProps) {
   const { user } = useAuth();
-  const { toast } = useToast();
+  
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -88,8 +88,7 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
 
       if (error) throw error;
 
-      toast({
-        title: "Fiche client créé avec succès",
+      toast.success("Fiche client créé avec succès", {
         description: "La fiche client a été créée et est prête pour le check-in technique.",
       });
 
@@ -107,10 +106,8 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
       onFormCreated();
     } catch (error) {
       console.error('Error creating form:', error);
-      toast({
-        title: "Erreur",
+      toast.error("Erreur", {
         description: "Impossible de créer la fiche client.",
-        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
