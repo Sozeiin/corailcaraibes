@@ -31,13 +31,6 @@ const menuItems = [{
   subItems: [{
     title: 'Check-in',
     url: '/checkin'
-  }, {
-    title: 'Check-out',
-    url: '/checkout'
-  }, {
-    title: 'Fiches clients',
-    url: '/administrative-checkin',
-    roles: ['direction', 'chef_base', 'administratif']
   }]
 }, {
   title: 'Fournisseurs',
@@ -171,7 +164,9 @@ export function AppSidebar() {
                       {openSubMenus[item.title] && <SidebarMenuSub className="ml-4 mt-1 space-y-1">
                           {item.subItems.map(subItem => <SidebarMenuSubItem key={subItem.title}>
                               <SidebarMenuSubButton asChild>
-                                
+                                <NavLink to={subItem.url} className={getNavClass(subItem.url)} onClick={handleNavClick}>
+                                  <span className="text-xs sm:text-sm lg:text-base truncate">{subItem.title}</span>
+                                </NavLink>
                               </SidebarMenuSubButton>
                             </SidebarMenuSubItem>)}
                         </SidebarMenuSub>}

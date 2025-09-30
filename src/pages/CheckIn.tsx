@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AdministrativeCheckinForm } from '@/components/checkin/AdministrativeCheckinForm';
+
 import { TechnicianCheckinSelector } from '@/components/checkin/TechnicianCheckinSelector';
 import { ChecklistForm } from '@/components/checkin/ChecklistForm';
 import { PermissionGate } from '@/components/auth/PermissionGate';
@@ -54,10 +54,6 @@ export default function CheckIn() {
     setShowChecklist(false);
   };
 
-  const handleFormCreated = () => {
-    // Refresh is handled by the query
-  };
-
   return (
     <PermissionGate page="dashboard">
       <div className="container mx-auto p-6 space-y-6">
@@ -67,18 +63,11 @@ export default function CheckIn() {
         </div>
 
         {!showChecklist ? (
-          user?.role === 'administratif' ? (
-            <AdministrativeCheckinForm
-              boats={boats}
-              onFormCreated={handleFormCreated}
-            />
-          ) : (
-            <TechnicianCheckinSelector
-              boats={boats}
-              onFormSelect={handleFormSelect}
-              onManualCheckin={handleManualCheckin}
-            />
-          )
+          <TechnicianCheckinSelector
+            boats={boats}
+            onFormSelect={handleFormSelect}
+            onManualCheckin={handleManualCheckin}
+          />
         ) : (
           <ChecklistForm
             boat={selectedBoat}
