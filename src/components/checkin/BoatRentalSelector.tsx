@@ -22,11 +22,12 @@ import { useSecureTextInput, useSecureEmailInput, useSecurePhoneInput } from '@/
 
 interface BoatRentalSelectorProps {
   type: 'checkin' | 'checkout';
+  mode?: 'administrative' | 'technician';
   onBoatSelect: (boat: any) => void;
   onRentalDataChange: (data: any) => void;
 }
 
-export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: BoatRentalSelectorProps) {
+export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, onRentalDataChange }: BoatRentalSelectorProps) {
   const { user } = useAuth();
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   // Use secure input hooks for customer data
@@ -142,7 +143,7 @@ export function BoatRentalSelector({ type, onBoatSelect, onRentalDataChange }: B
     const isValidForCheckout = type === 'checkout' && selectedRental;
 
     if (isValidForCheckin || isValidForCheckout) {
-      onRentalDataChange(rentalData);
+      onRentalDataChange({ ...rentalData, isValid: true });
     }
   }, [type, selectedBoatId, customerName.sanitizedValue, customerEmail.sanitizedValue, customerPhone.sanitizedValue, startDate, endDate, notes, selectedRental, user?.baseId, onRentalDataChange]);
 

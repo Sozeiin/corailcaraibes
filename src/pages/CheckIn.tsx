@@ -1,33 +1,61 @@
 import React, { useState } from 'react';
-import { BoatRentalSelector } from '@/components/checkin/BoatRentalSelector';
+import { useQuery } from '@tanstack/react-query';
+import { AdministrativeCheckinForm } from '@/components/checkin/AdministrativeCheckinForm';
+import { TechnicianCheckinSelector } from '@/components/checkin/TechnicianCheckinSelector';
 import { ChecklistForm } from '@/components/checkin/ChecklistForm';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function CheckIn() {
+  const { user } = useAuth();
   const [selectedBoat, setSelectedBoat] = useState(null);
   const [rentalData, setRentalData] = useState(null);
   const [showChecklist, setShowChecklist] = useState(false);
 
-  const handleBoatSelect = (boat: any) => {
-    setSelectedBoat(boat);
-    if (boat && rentalData) {
-      setShowChecklist(true);
-    }
+  // Get available boats
+  const { data: boats = [] } = useQuery({
+    queryKey: ['boats-available', user?.baseId],
+    queryFn: async () => {
+      if (!user) return [];
+
+      let query = supabase
+        .from('boats')
+        .select('*')
+        .eq('status', 'available')
+        .order('name');
+
+      if (user.role !== 'direction') {
+        query = query.eq('base_id', user.baseId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user,
+  });
+
+  const handleFormSelect = (formData: any) => {
+    setSelectedBoat(formData.boat);
+    setRentalData(formData.rentalData);
+    setShowChecklist(true);
   };
 
-  const handleRentalDataChange = (data: any) => {
-    setRentalData(data);
-    if (selectedBoat && data?.isValid) {
-      setShowChecklist(true);
-    }
+  const handleManualCheckin = () => {
+    setShowChecklist(true);
   };
 
   const handleChecklistComplete = () => {
     setSelectedBoat(null);
     setRentalData(null);
     setShowChecklist(false);
+  };
+
+  const handleFormCreated = () => {
+    // Refresh is handled by the query
   };
 
   return (
@@ -39,18 +67,18 @@ export default function CheckIn() {
         </div>
 
         {!showChecklist ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Sélection du bateau et informations client</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <BoatRentalSelector
-                type="checkin"
-                onBoatSelect={handleBoatSelect}
-                onRentalDataChange={handleRentalDataChange}
-              />
-            </CardContent>
-          </Card>
+          user?.role === 'administratif' ? (
+            <AdministrativeCheckinForm
+              boats={boats}
+              onFormCreated={handleFormCreated}
+            />
+          ) : (
+            <TechnicianCheckinSelector
+              boats={boats}
+              onFormSelect={handleFormSelect}
+              onManualCheckin={handleManualCheckin}
+            />
+          )
         ) : (
           <ChecklistForm
             boat={selectedBoat}
