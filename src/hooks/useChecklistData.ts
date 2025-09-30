@@ -203,8 +203,7 @@ export function useUpdateBoatStatus() {
         .from('boats')
         .update({ status })
         .eq('id', boatId)
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error('❌ [DEBUG] Erreur mise à jour bateau:', error);
