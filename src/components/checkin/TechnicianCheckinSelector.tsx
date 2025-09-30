@@ -32,7 +32,7 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
         .from('administrative_checkin_forms')
         .select(`
           *,
-          boats(name, model, year)
+          boats(id, name, model, year)
         `)
         .eq('base_id', user.baseId)
         .eq('status', 'ready')
