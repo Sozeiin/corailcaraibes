@@ -156,10 +156,7 @@ export default function Auth() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">Connexion</TabsTrigger>
-              
-            </TabsList>
+            
             
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4">
