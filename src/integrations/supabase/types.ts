@@ -14,6 +14,91 @@ export type Database = {
   }
   public: {
     Tables: {
+      administrative_checkin_forms: {
+        Row: {
+          base_id: string
+          boat_id: string | null
+          created_at: string | null
+          created_by: string
+          customer_address: string | null
+          customer_email: string | null
+          customer_id_number: string | null
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          planned_end_date: string | null
+          planned_start_date: string | null
+          rental_notes: string | null
+          special_instructions: string | null
+          status: string | null
+          updated_at: string | null
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          base_id: string
+          boat_id?: string | null
+          created_at?: string | null
+          created_by: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_id_number?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          rental_notes?: string | null
+          special_instructions?: string | null
+          status?: string | null
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          base_id?: string
+          boat_id?: string | null
+          created_at?: string | null
+          created_by?: string
+          customer_address?: string | null
+          customer_email?: string | null
+          customer_id_number?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          planned_end_date?: string | null
+          planned_start_date?: string | null
+          rental_notes?: string | null
+          special_instructions?: string | null
+          status?: string | null
+          updated_at?: string | null
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "administrative_checkin_forms_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alerts: {
         Row: {
           base_id: string | null

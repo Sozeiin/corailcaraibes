@@ -63,8 +63,8 @@ export function usePermissions() {
   });
 
   const hasPermission = (page: PagePermission): boolean => {
-    // Direction and chef_base always have access
-    if (user?.role === 'direction' || user?.role === 'chef_base') {
+    // Direction, chef_base and administratif always have access
+    if (user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'administratif') {
       return true;
     }
     

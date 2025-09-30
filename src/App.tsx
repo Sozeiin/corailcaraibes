@@ -28,12 +28,13 @@ import MaintenanceHistory from "./pages/MaintenanceHistory";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
+import AdministrativeCheckin from "./pages/AdministrativeCheckin";
 
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: Array<'direction' | 'chef_base' | 'technicien'> }) {
+function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: Array<'direction' | 'chef_base' | 'technicien' | 'administratif'> }) {
   const { isAuthenticated, loading, session, user } = useAuth();
   
   // Show loading spinner while auth is initializing
@@ -209,7 +210,7 @@ function AppRoutes() {
       <Route
         path="/maintenance/preventive"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
             <PermissionGate page="maintenance_preventive">
               <MaintenancePreventive />
             </PermissionGate>
@@ -247,9 +248,17 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/administrative-checkin"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+            <AdministrativeCheckin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/settings"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'technicien']}>
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'technicien', 'administratif']}>
             <Settings />
           </ProtectedRoute>
         }

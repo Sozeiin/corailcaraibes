@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -9,11 +9,11 @@ const menuItems = [{
   title: 'Tableau de bord',
   url: '/',
   icon: BarChart3,
-  roles: ['direction', 'chef_base', 'technicien']
+  roles: ['direction', 'chef_base', 'technicien', 'administratif']
 }, {
   title: 'Bateaux',
   icon: Ship,
-  roles: ['direction', 'chef_base', 'technicien'],
+  roles: ['direction', 'chef_base', 'technicien', 'administratif'],
   subItems: [{
     title: 'Dashboard',
     url: '/boats/dashboard'
@@ -25,19 +25,34 @@ const menuItems = [{
     url: '/safety-controls'
   }]
 }, {
+  title: 'Check-in/out',
+  icon: ClipboardCheck,
+  roles: ['direction', 'chef_base', 'technicien', 'administratif'],
+  subItems: [{
+    title: 'Check-in',
+    url: '/checkin'
+  }, {
+    title: 'Check-out',
+    url: '/checkout'
+  }, {
+    title: 'Fiches clients',
+    url: '/administrative-checkin',
+    roles: ['direction', 'chef_base', 'administratif']
+  }]
+}, {
   title: 'Fournisseurs',
   url: '/suppliers',
   icon: Users,
-  roles: ['direction', 'chef_base']
+  roles: ['direction', 'chef_base', 'administratif']
 }, {
   title: 'Commandes',
   url: '/supply-requests',
   icon: ShoppingCart,
-  roles: ['direction', 'chef_base']
+  roles: ['direction', 'chef_base', 'administratif']
 }, {
   title: 'Stock',
   icon: Package,
-  roles: ['direction', 'chef_base', 'technicien'],
+  roles: ['direction', 'chef_base', 'technicien', 'administratif'],
   subItems: [{
     title: 'Inventaire',
     url: '/stock'
@@ -47,22 +62,23 @@ const menuItems = [{
   }, {
     title: 'Préparations d\'expéditions',
     url: '/preparations-expeditions',
-    roles: ['direction', 'chef_base']
+    roles: ['direction', 'chef_base', 'administratif']
   }]
 }, {
   title: 'Maintenance',
   icon: Wrench,
-  roles: ['direction', 'chef_base', 'technicien'],
+  roles: ['direction', 'chef_base', 'technicien', 'administratif'],
   subItems: [{
     title: 'Interventions',
     url: '/maintenance'
   }, {
     title: 'Préventive',
     url: '/maintenance/preventive',
-    roles: ['direction', 'chef_base']
+    roles: ['direction', 'chef_base', 'administratif']
   }, {
     title: 'Planning',
-    url: '/maintenance/gantt'
+    url: '/maintenance/gantt',
+    roles: ['direction', 'chef_base', 'administratif']
   }, {
     title: 'Historique',
     url: '/maintenance/history'
@@ -71,12 +87,12 @@ const menuItems = [{
   title: 'Préparation bateaux',
   url: '/boat-preparation',
   icon: Ship,
-  roles: ['direction', 'chef_base', 'technicien']
+  roles: ['direction', 'chef_base', 'technicien', 'administratif']
 }, {
   title: 'Paramètres',
   url: '/settings',
   icon: Settings,
-  roles: ['direction', 'chef_base', 'technicien']
+  roles: ['direction', 'chef_base', 'technicien', 'administratif']
 }];
 export function AppSidebar() {
   const location = useLocation();
