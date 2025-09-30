@@ -377,16 +377,12 @@ export function GanttMaintenanceSchedule() {
       }
 
       // Check if this is a planning activity more reliably
-      const isPlanningActivity = (item.activity_type && item.activity_type === 'preparation') || 
-                                  (item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id);
+      const isPlanningActivity = item.activity_type && item.activity_type === 'preparation' || item.activity_type && item.activity_type !== 'maintenance' && !item.original_intervention_id;
       if (isPlanningActivity) {
         // Update planning_activities table
         // Build the scheduled time without timezone conversion to preserve local time
-        const scheduledStart = updates.scheduled_date && updates.scheduled_time ? 
-          `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
-        const scheduledEnd = scheduledStart ? 
-          `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
-        
+        const scheduledStart = updates.scheduled_date && updates.scheduled_time ? `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
+        const scheduledEnd = scheduledStart ? `${updates.scheduled_date}T${updates.scheduled_time}+00:00` : undefined;
         console.log('🕐 TIMEZONE FIX - Planned Times:', {
           originalDate: updates.scheduled_date,
           originalTime: updates.scheduled_time,
@@ -435,7 +431,6 @@ export function GanttMaintenanceSchedule() {
           console.error('❌ Erreur planning_activities:', error);
           throw error;
         }
-        
         console.log('🕐 TIMEZONE VERIFICATION - DB Response:', {
           sent_start: cleanUpdates.scheduled_start,
           received_start: data?.scheduled_start,
@@ -484,54 +479,56 @@ export function GanttMaintenanceSchedule() {
         return data;
       }
     },
-    onMutate: async ({ id, updates }) => {
+    onMutate: async ({
+      id,
+      updates
+    }) => {
       // Cancel any outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['gantt-activities'] });
-      
+      await queryClient.cancelQueries({
+        queryKey: ['gantt-activities']
+      });
+
       // Snapshot the previous value
       const previousData = queryClient.getQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId]);
-      
+
       // Optimistically update the local cache
       queryClient.setQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId], (old: Intervention[] = []) => {
-        return old.map(intervention => 
-          intervention.id === id 
-            ? { ...intervention, ...updates }
-            : intervention
-        );
+        return old.map(intervention => intervention.id === id ? {
+          ...intervention,
+          ...updates
+        } : intervention);
       });
-      
       console.log('🔄 Mise à jour optimiste appliquée pour:', id, updates);
-      
+
       // Return a context object with the snapshotted value
-      return { previousData };
+      return {
+        previousData
+      };
     },
     onSuccess: async (data, variables, context) => {
       console.log('✅ Mutation réussie, mise à jour directe du cache');
-      
+
       // Mettre à jour directement le cache au lieu d'invalidateQueries
       const queryKey = ['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId];
-      
       queryClient.setQueryData(queryKey, (oldData: Intervention[] = []) => {
         console.log('🔄 Updating cache directly with:', data);
-        return oldData.map(intervention => 
-          intervention.id === variables.id 
-            ? { ...intervention, ...data, ...variables.updates }
-            : intervention
-        );
+        return oldData.map(intervention => intervention.id === variables.id ? {
+          ...intervention,
+          ...data,
+          ...variables.updates
+        } : intervention);
       });
-      
+
       // Reset drag state immediately
       setDraggedTask(null);
-      
-      const technicianName = data.technician_id ? 
-        technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 
-        'Non assigné';
-      
+      const technicianName = data.technician_id ? technicians?.find(t => t.id === data.technician_id)?.name || 'Technicien inconnu' : 'Non assigné';
+
       // Force un petit délai puis invalidate pour s'assurer de la cohérence
       setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ['gantt-activities'] });
+        queryClient.invalidateQueries({
+          queryKey: ['gantt-activities']
+        });
       }, 100);
-      
       toast({
         title: "Tâche déplacée",
         description: `Assignée à: ${technicianName}`
@@ -539,15 +536,14 @@ export function GanttMaintenanceSchedule() {
     },
     onError: (error, variables, context) => {
       console.error('💥 Erreur lors de la mutation:', error);
-      
+
       // If we had previous data, roll back to it
       if (context?.previousData) {
         queryClient.setQueryData(['gantt-activities', weekDays[0]?.dateString, weekDays[6]?.dateString, user?.baseId], context.previousData);
       }
-      
+
       // Reset drag state
       setDraggedTask(null);
-      
       toast({
         title: "Erreur lors de la mise à jour",
         description: `Impossible de mettre à jour l'intervention: ${error.message}`,
@@ -567,60 +563,56 @@ export function GanttMaintenanceSchedule() {
       activity_type: task?.activity_type,
       original_intervention_id: task?.original_intervention_id
     });
-    
+
     // Debug: Check if task is in interventions list
     console.log('🔍 DRAG DEBUG - All interventions count:', interventions.length);
-    console.log('🔍 DRAG DEBUG - Unassigned tasks:', getUnassignedTasks().map(t => ({ id: t.id, title: t.title })));
-    
+    console.log('🔍 DRAG DEBUG - Unassigned tasks:', getUnassignedTasks().map(t => ({
+      id: t.id,
+      title: t.title
+    })));
     if (!task) {
       console.error('❌ DRAG ERROR - Task not found in interventions list! Task ID:', event.active.id);
       console.log('📝 Available intervention IDs:', interventions.map(i => i.id));
     }
-    
     setDraggedTask(task || null);
   };
   const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+    const {
+      active,
+      over
+    } = event;
     console.log('🎯 DRAG END - Active ID:', active.id, 'Over ID:', over?.id);
-    
     if (!over) {
       console.log('❌ DRAG END - No valid drop target');
       setDraggedTask(null);
       return;
     }
-    
     if (!draggedTask) {
       console.log('❌ DRAG END - No dragged task found');
       setDraggedTask(null);
       return;
     }
-    
     console.log('🎯 DRAG END - Dragged task:', {
       id: draggedTask.id,
       title: draggedTask.title,
       activity_type: draggedTask.activity_type,
       original_intervention_id: draggedTask.original_intervention_id
     });
-
     try {
       const dropId = over.id.toString();
       console.log('🎯 DROP ANALYSIS - DropId:', dropId);
-      
       const parts = dropId.split('|');
       console.log('🎯 DROP ANALYSIS - Parts:', parts);
-      
       if (parts.length !== 3) {
         console.error('❌ Invalid drop target format:', dropId);
         setDraggedTask(null);
         return;
       }
-
       const [technicianId, dateString, hourStr] = parts;
       const hour = parseInt(hourStr);
-      
       console.log('🎯 DROP ANALYSIS - Parsed:', {
         technicianId,
-        dateString, 
+        dateString,
         hourStr,
         parsedHour: hour,
         draggedTaskOriginal: {
@@ -629,13 +621,15 @@ export function GanttMaintenanceSchedule() {
           current_date: draggedTask.scheduled_date
         }
       });
-      
       if (isNaN(hour)) {
-        console.error('❌ Invalid drop target data:', { technicianId, dateString, hour });
+        console.error('❌ Invalid drop target data:', {
+          technicianId,
+          dateString,
+          hour
+        });
         setDraggedTask(null);
         return;
       }
-      
       const scheduledTime = `${hour.toString().padStart(2, '0')}:00:00`;
       console.log('🎯 DROP ANALYSIS - Final scheduledTime:', scheduledTime);
 
@@ -646,7 +640,6 @@ export function GanttMaintenanceSchedule() {
       };
       setLastDroppedTechnician(newLastDropped);
       localStorage.setItem('fleetcat_last_dropped_technician', JSON.stringify(newLastDropped));
-
       const updateData = {
         id: draggedTask.id,
         updates: {
@@ -672,18 +665,15 @@ export function GanttMaintenanceSchedule() {
   const tasksBySlot = useMemo(() => {
     console.log('🔄 Recalculating tasksBySlot with interventions:', interventions.length);
     const grouped: Record<string, Intervention[]> = {};
-    
     interventions.forEach(intervention => {
       if (!intervention.scheduled_date || !intervention.scheduled_time) {
         console.log('❌ Skipping intervention without date/time:', intervention.id, intervention.title);
         return;
       }
-      
       const timeParts = intervention.scheduled_time.split(':');
       const hour = parseInt(timeParts[0]);
       const techId = intervention.technician_id || 'unassigned';
       const slotId = `${techId}|${intervention.scheduled_date}|${hour}`;
-      
       console.log('📍 GROUPING DETAILED ANALYSIS:', {
         id: intervention.id,
         title: intervention.title,
@@ -696,13 +686,11 @@ export function GanttMaintenanceSchedule() {
         // Verify hour is in valid range for timeSlots (6-19)
         hour_in_range: hour >= 6 && hour <= 19
       });
-      
       if (!grouped[slotId]) {
         grouped[slotId] = [];
       }
       grouped[slotId].push(intervention);
     });
-    
     console.log('📊 Final tasksBySlot groups:', Object.keys(grouped).length, grouped);
     return grouped;
   }, [interventions]);
@@ -873,12 +861,7 @@ export function GanttMaintenanceSchedule() {
               </Button>
               
               {/* Bouton pour aller à la semaine du 23 septembre */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setCurrentWeek(new Date('2025-09-23'))}
-                className="ml-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100"
-              >
+              <Button variant="outline" size="sm" onClick={() => setCurrentWeek(new Date('2025-09-23'))} className="ml-2 bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100">
                 Semaine du 23 sept
               </Button>
             </div>
@@ -909,28 +892,20 @@ export function GanttMaintenanceSchedule() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Panel tâches non assignées - compact et efficace */}
           {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-32 rounded-t-2xl m-4 mb-0 shadow-md">
-              <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
+              <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl px-0 py-0">
                 <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
                   <Clock className="h-4 w-4 text-blue-600" />
                   Tâches non assignées ({getUnassignedTasks().length})
                 </h3>
               </div>
-              <ScrollArea className="max-h-24 p-3">
+              <ScrollArea className="max-h-24 p-3 my-0 py-0 px-0">
                 <div className="flex gap-2 overflow-x-auto">
-                  {getUnassignedTasks().map(task => (
-                    <div key={task.id} className="w-40 flex-none">
-                      <SimpleDraggableTask 
-                        task={task} 
-                        onTaskClick={() => setSelectedTask(task)} 
-                        getTaskTypeConfig={getTaskTypeConfig} 
-                      />
-                    </div>
-                  ))}
-                  {getUnassignedTasks().length === 0 && (
-                    <p className="text-sm text-gray-500 text-center py-4 w-full">
+                  {getUnassignedTasks().map(task => <div key={task.id} className="w-40 flex-none">
+                      <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
+                    </div>)}
+                  {getUnassignedTasks().length === 0 && <p className="text-sm text-gray-500 text-center py-4 w-full">
                       Aucune tâche non assignée
-                    </p>
-                  )}
+                    </p>}
                 </div>
               </ScrollArea>
             </div>}
@@ -1020,36 +995,29 @@ export function GanttMaintenanceSchedule() {
                             
                              {/* Cellules jours avec tâches */}
                              {weekDays.map((day, dayIndex) => {
-                        const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
-                        const tasks = tasksBySlot[slotId] || [];
-                        
-                        // Debug logging for slot mapping verification
-                        if (slotId.includes('2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') || tasks.length > 0) {
-                          console.log('🎯 SLOT MAPPING VERIFICATION:', {
-                            slotId,
-                            visualHour: slot.hour,
-                            visualLabel: slot.label,
-                            dateString: day.dateString,
-                            tasksCount: tasks.length,
-                            taskIds: tasks.map(t => t.id),
-                            taskTitles: tasks.map(t => t.title),
-                            taskCurrentTimes: tasks.map(t => t.scheduled_time)
-                          });
-                        }
-                        
-                        return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
-                                      <SimpleDroppableSlot 
-                                        id={slotId}
-                                        tasks={tasks}
-                                        onTaskClick={(task) => setSelectedTask(task as Intervention)}
-                                        onTaskContextMenu={(task, e) => {
-                                          setSelectedTask(task as Intervention);
-                                          // Handle context menu here if needed
-                                        }}
-                                        getTaskTypeConfig={getTaskTypeConfig}
-                                      />
+                      const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
+                      const tasks = tasksBySlot[slotId] || [];
+
+                      // Debug logging for slot mapping verification
+                      if (slotId.includes('2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') || tasks.length > 0) {
+                        console.log('🎯 SLOT MAPPING VERIFICATION:', {
+                          slotId,
+                          visualHour: slot.hour,
+                          visualLabel: slot.label,
+                          dateString: day.dateString,
+                          tasksCount: tasks.length,
+                          taskIds: tasks.map(t => t.id),
+                          taskTitles: tasks.map(t => t.title),
+                          taskCurrentTimes: tasks.map(t => t.scheduled_time)
+                        });
+                      }
+                      return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
+                                      <SimpleDroppableSlot id={slotId} tasks={tasks} onTaskClick={task => setSelectedTask(task as Intervention)} onTaskContextMenu={(task, e) => {
+                          setSelectedTask(task as Intervention);
+                          // Handle context menu here if needed
+                        }} getTaskTypeConfig={getTaskTypeConfig} />
                                   </div>;
-                     })}
+                    })}
                            </div>)}
                     </div>;
               })}
