@@ -89,7 +89,7 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
       if (error) throw error;
 
       toast({
-        title: "Fiche créée avec succès",
+        title: "Fiche client créé avec succès",
         description: "La fiche client a été créée et est prête pour le check-in technique.",
       });
 
