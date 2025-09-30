@@ -28,9 +28,9 @@ import MaintenanceHistory from "./pages/MaintenanceHistory";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
-
+import AdministrativeCheckin from "./pages/AdministrativeCheckin";
 import CheckIn from "./pages/CheckIn";
-
+import CheckOut from "./pages/CheckOut";
 
 import NotFound from "./pages/NotFound";
 
@@ -254,6 +254,22 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
             <CheckIn />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkout"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+            <CheckOut />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/administrative-checkin"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+            <AdministrativeCheckin />
           </ProtectedRoute>
         }
       />
