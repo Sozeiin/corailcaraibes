@@ -899,7 +899,7 @@ export function GanttMaintenanceSchedule() {
                 </h3>
               </div>
               <ScrollArea className="max-h-24 p-3 my-0 py-0 px-0">
-                <div className="flex gap-2 overflow-x-auto">
+                <div className="flex overflow-x-hidden \n">
                   {getUnassignedTasks().map(task => <div key={task.id} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
                     </div>)}
