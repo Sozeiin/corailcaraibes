@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
+import { invalidateStockQueries } from '@/lib/queryInvalidation';
 
 export function useDeleteStockItem() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (itemId: string) => {
@@ -20,16 +20,9 @@ export function useDeleteStockItem() {
     },
     onSuccess: (itemId) => {
       // Invalider toutes les requêtes liées au stock
-      queryClient.invalidateQueries({ queryKey: ['stock-items'] });
-      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
-      queryClient.invalidateQueries({ queryKey: ['purchase-history'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-reservations'] });
-      queryClient.invalidateQueries({ queryKey: ['component-purchase-history'] });
+      invalidateStockQueries(queryClient);
       
-      toast({
-        title: "Article supprimé",
-        description: "L'article a été supprimé avec succès.",
-      });
+      toast.success("Article supprimé avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression article:', error);
@@ -41,18 +34,13 @@ export function useDeleteStockItem() {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
       
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erreur de suppression: ${errorMessage}`);
     },
   });
 }
 
 export function useUpdateStockQuantity() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ itemId, quantity }: { itemId: string; quantity: number }) => {
@@ -92,11 +80,7 @@ export function useUpdateStockQuantity() {
         queryClient.setQueryData(['stock-items'], context.previousData);
       }
       
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour la quantité.",
-        variant: "destructive",
-      });
+      toast.error("Impossible de mettre à jour la quantité.");
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['stock-items'] });

@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
+import { invalidatePlanningQueries } from '@/lib/queryInvalidation';
 
 export interface PreparationOrder {
   id: string;
@@ -115,6 +116,9 @@ export function usePreparationOrders() {
     },
     enabled: !!user,
     refetchInterval: 30000, // Refresh every 30 seconds
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    staleTime: 10000, // 10 seconds
   });
 
   const deleteOrderMutation = useMutation({
@@ -145,9 +149,7 @@ export function usePreparationOrders() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['preparation-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
-      queryClient.invalidateQueries({ queryKey: ['unassigned-activities'] });
+      invalidatePlanningQueries(queryClient);
       toast.success('Ordre de préparation supprimé');
     },
     onError: (error) => {
@@ -183,8 +185,7 @@ export function usePreparationOrders() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['preparation-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
+      invalidatePlanningQueries(queryClient);
       toast.success('Technicien assigné');
     },
     onError: (error) => {

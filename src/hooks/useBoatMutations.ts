@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
+import { invalidateBoatQueries, invalidateInterventionQueries } from '@/lib/queryInvalidation';
 
 export function useDeleteBoat() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (boatId: string) => {
@@ -18,17 +18,9 @@ export function useDeleteBoat() {
       if (error) throw error;
       return boatId;
     },
-    onSuccess: () => {
-      // Invalider toutes les requêtes liées aux bateaux
-      queryClient.invalidateQueries({ queryKey: ['boats'] });
-      queryClient.invalidateQueries({ queryKey: ['boat-checklists'] });
-      queryClient.invalidateQueries({ queryKey: ['boat-components'] });
-      queryClient.invalidateQueries({ queryKey: ['interventions'] });
-      
-      toast({
-        title: "Bateau supprimé",
-        description: "Le bateau a été supprimé avec succès.",
-      });
+    onSuccess: (boatId) => {
+      invalidateBoatQueries(queryClient, boatId);
+      toast.success("Bateau supprimé avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression bateau:', error);
@@ -40,18 +32,13 @@ export function useDeleteBoat() {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
       
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erreur: ${errorMessage}`);
     },
   });
 }
 
 export function useDeleteIntervention() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (interventionId: string) => {
@@ -71,10 +58,8 @@ export function useDeleteIntervention() {
       queryClient.invalidateQueries({ queryKey: ['maintenance-history'] });
       queryClient.invalidateQueries({ queryKey: ['planning-activities'] });
       
-      toast({
-        title: "Intervention supprimée",
-        description: "L'intervention a été supprimée avec succès.",
-      });
+      invalidateInterventionQueries(queryClient);
+      toast.success("Intervention supprimée avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression intervention:', error);
@@ -86,11 +71,7 @@ export function useDeleteIntervention() {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
       
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erreur: ${errorMessage}`);
     },
   });
 }

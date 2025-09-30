@@ -1,10 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
+import { invalidateSupplierQueries, invalidateOrderQueries } from '@/lib/queryInvalidation';
 
 export function useDeleteSupplier() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (supplierId: string) => {
@@ -19,16 +19,8 @@ export function useDeleteSupplier() {
       return supplierId;
     },
     onSuccess: () => {
-      // Invalider toutes les requêtes liées aux fournisseurs
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-item-quotes'] });
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['purchase-history'] });
-      
-      toast({
-        title: "Fournisseur supprimé",
-        description: "Le fournisseur a été supprimé avec succès.",
-      });
+      invalidateSupplierQueries(queryClient);
+      toast.success("Fournisseur supprimé avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression fournisseur:', error);
@@ -40,18 +32,13 @@ export function useDeleteSupplier() {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
       
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erreur: ${errorMessage}`);
     },
   });
 }
 
 export function useDeleteOrder() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (orderId: string) => {
@@ -71,10 +58,8 @@ export function useDeleteOrder() {
       queryClient.invalidateQueries({ queryKey: ['order-items'] });
       queryClient.invalidateQueries({ queryKey: ['purchase-workflow-steps'] });
       
-      toast({
-        title: "Commande supprimée",
-        description: "La commande a été supprimée avec succès.",
-      });
+      invalidateOrderQueries(queryClient);
+      toast.success("Commande supprimée avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression commande:', error);
@@ -86,11 +71,7 @@ export function useDeleteOrder() {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
       
-      toast({
-        title: "Erreur de suppression",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      toast.error(`Erreur: ${errorMessage}`);
     },
   });
 }

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/components/ui/sonner';
+import { invalidateBoatQueries, invalidateChecklistQueries } from '@/lib/queryInvalidation';
 
 export interface ChecklistItem {
   id: string;
@@ -53,12 +54,13 @@ export function useChecklistItems() {
       return data || [];
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 }
 
 export function useCreateChecklist() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (checklistData: ChecklistData) => {
@@ -134,26 +136,18 @@ export function useCreateChecklist() {
       return checklist;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['checklists'] });
-      toast({
-        title: 'Checklist créée',
-        description: 'La checklist a été créée avec succès.',
-      });
+      invalidateChecklistQueries(queryClient);
+      toast.success("Checklist créée avec succès");
     },
     onError: (error: any) => {
       console.error('❌ [DEBUG] Erreur mutation checklist:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Erreur lors de la création de la checklist',
-        variant: 'destructive',
-      });
+      toast.error(`Erreur: ${error.message || 'Erreur lors de la création de la checklist'}`);
     },
   });
 }
 
 export function useCreateRental() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (rentalData: BoatRental) => {
@@ -175,25 +169,17 @@ export function useCreateRental() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rentals'] });
-      toast({
-        title: 'Location créée',
-        description: 'La location a été créée avec succès.',
-      });
+      toast.success("Location créée avec succès");
     },
     onError: (error: any) => {
       console.error('❌ [DEBUG] Erreur mutation location:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Erreur lors de la création de la location',
-        variant: 'destructive',
-      });
+      toast.error(`Erreur: ${error.message || 'Erreur lors de la création de la location'}`);
     },
   });
 }
 
 export function useUpdateBoatStatus() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ boatId, status }: { boatId: string; status: 'maintenance' | 'available' | 'rented' | 'out_of_service' }) => {
@@ -213,27 +199,19 @@ export function useUpdateBoatStatus() {
       console.log('✅ [DEBUG] Statut bateau mis à jour:', data);
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['boats'] });
-      toast({
-        title: 'Statut mis à jour',
-        description: 'Le statut du bateau a été mis à jour.',
-      });
+    onSuccess: (data) => {
+      invalidateBoatQueries(queryClient, data?.[0]?.id);
+      toast.success("Statut du bateau mis à jour");
     },
     onError: (error: any) => {
       console.error('❌ [DEBUG] Erreur mutation statut bateau:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Erreur lors de la mise à jour du statut',
-        variant: 'destructive',
-      });
+      toast.error(`Erreur: ${error.message || 'Erreur lors de la mise à jour du statut'}`);
     },
   });
 }
 
 export function useUpdateRentalStatus() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: async ({ rentalId, status }: { rentalId: string; status: string }) => {
@@ -256,18 +234,11 @@ export function useUpdateRentalStatus() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rentals'] });
-      toast({
-        title: 'Statut mis à jour',
-        description: 'Le statut de la location a été mis à jour.',
-      });
+      toast.success("Statut de la location mis à jour");
     },
     onError: (error: any) => {
       console.error('❌ [DEBUG] Erreur mutation statut location:', error);
-      toast({
-        title: 'Erreur',
-        description: error.message || 'Erreur lors de la mise à jour du statut',
-        variant: 'destructive',
-      });
+      toast.error(`Erreur: ${error.message || 'Erreur lors de la mise à jour du statut'}`);
     },
   });
 }

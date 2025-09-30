@@ -38,7 +38,11 @@ export function useNotifications() {
       if (error) throw error;
       return data as Notification[];
     },
-    enabled: !!user?.id
+    enabled: !!user?.id,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+    refetchInterval: 30000, // Refetch every 30 seconds for notifications
+    staleTime: 1000, // 1 second - notifications should be fresh
   });
 
   // Marquer une notification comme lue

@@ -4,7 +4,13 @@ import {
   useRealtimeChecklistUpdates, 
   useRealtimeBoatUpdates,
   useRealtimeSupplierUpdates,
-  useRealtimeOrderUpdates
+  useRealtimeOrderUpdates,
+  useRealtimeAdministrativeCheckinUpdates,
+  useRealtimeInterventionUpdates,
+  useRealtimePlanningUpdates,
+  useRealtimeBoatComponentUpdates,
+  useRealtimeBoatChecklistUpdates,
+  useRealtimeBoatRentalUpdates
 } from '@/hooks/useRealtimeUpdates';
 
 interface GlobalRealtimeProviderProps {
@@ -22,6 +28,12 @@ export function GlobalRealtimeProvider({ children }: GlobalRealtimeProviderProps
   useRealtimeBoatUpdates();
   useRealtimeSupplierUpdates();
   useRealtimeOrderUpdates();
+  useRealtimeAdministrativeCheckinUpdates();
+  useRealtimeInterventionUpdates();
+  useRealtimePlanningUpdates();
+  useRealtimeBoatComponentUpdates();
+  useRealtimeBoatChecklistUpdates();
+  useRealtimeBoatRentalUpdates();
 
   return <>{children}</>;
 }
