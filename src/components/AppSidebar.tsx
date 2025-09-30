@@ -34,10 +34,6 @@ const menuItems = [{
   }, {
     title: 'Check-out',
     url: '/checkout'
-  }, {
-    title: 'Fiches clients',
-    url: '/administrative-checkin',
-    roles: ['direction', 'chef_base', 'administratif']
   }]
 }, {
   title: 'Fournisseurs',
