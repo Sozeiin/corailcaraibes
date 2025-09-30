@@ -255,6 +255,10 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
       // Create or update rental
       console.log('🏠 [DEBUG] Création/mise à jour rental - début');
+      console.log('🏠 [DEBUG] boat object:', boat);
+      console.log('🏠 [DEBUG] boat.base_id:', boat.base_id);
+      console.log('🏠 [DEBUG] user.baseId fallback:', user.baseId);
+      
       let rental = rentalData;
       if (type === 'checkin' && !rentalData.id) {
         console.log('🏠 [DEBUG] Création nouvelle location...');
@@ -268,7 +272,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           total_amount: rentalData.totalAmount || 0,
           status: 'confirmed',
           notes: rentalData.notes,
-          base_id: boat.base_id,
+          base_id: boat.base_id || user.baseId,
         });
         console.log('✅ [DEBUG] Location créée:', rental);
       }
@@ -325,7 +329,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             boat_id: boat.id,
             status: 'scheduled' as const,
             scheduled_date: new Date().toISOString().split('T')[0],
-            base_id: boat.base_id,
+            base_id: boat.base_id || user.baseId,
             intervention_type: 'corrective'
           });
 
