@@ -63,7 +63,7 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
 
   const selectedBoat = boats.find(b => b.id === selectedBoatId);
 
-  const isFormValid = selectedBoatId && customerName.isValid && startDate && endDate;
+  const isFormValid = selectedBoatId && customerName.value.trim() && startDate && endDate;
 
   const handleSubmit = async () => {
     if (!isFormValid || !user) return;
@@ -210,8 +210,8 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
                   onChange={customerName.handleChange}
                   placeholder="Nom complet"
                 />
-                {customerName.error && (
-                  <p className="text-sm text-destructive mt-1">{customerName.error}</p>
+                {!customerName.value.trim() && (
+                  <p className="text-sm text-destructive mt-1">Ce champ est requis</p>
                 )}
               </div>
               <div>
