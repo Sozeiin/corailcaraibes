@@ -182,7 +182,7 @@ export default function Auth() {
                   </Label>
                 </div>
                 
-                <Button type="submit" className="w-full" disabled={loading}>
+                <Button type="submit" disabled={loading} className="w-full mx-[2px]">
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </form>
