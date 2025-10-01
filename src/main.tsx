@@ -9,11 +9,15 @@ import { ErrorBoundary } from '@/components/ui/error-boundary';
 import App from './App.tsx';
 import './index.css';
 
-// Configure React Query
+// Configure React Query with aggressive refresh for real-time sync
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60 * 1000, // 1 minute
+      staleTime: 0, // Always consider data stale to force refresh
+      refetchOnWindowFocus: true, // Refresh when window gets focus
+      refetchOnMount: true, // Refresh when component mounts
+      refetchOnReconnect: true, // Refresh when reconnecting
+      refetchInterval: 30000, // Auto-refresh every 30 seconds
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors except 408 (timeout)
         if (error?.status >= 400 && error?.status < 500 && error?.status !== 408) {

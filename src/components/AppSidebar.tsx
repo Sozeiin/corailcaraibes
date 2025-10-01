@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { invalidateAllRelatedQueries } from '@/lib/queryInvalidation';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
 import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -89,13 +91,10 @@ const menuItems = [{
 }];
 export function AppSidebar() {
   const location = useLocation();
-  const {
-    user
-  } = useAuth();
-  const {
-    setOpenMobile
-  } = useSidebar();
+  const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
+  const queryClient = useQueryClient();
   const [baseName, setBaseName] = useState<string>('');
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
   useEffect(() => {
@@ -125,6 +124,8 @@ export function AppSidebar() {
     subItems: item.subItems?.filter(subItem => !subItem.roles || user && subItem.roles.includes(user.role))
   }));
   const handleNavClick = () => {
+    console.log('🔄 Navigation click - refreshing data...');
+    invalidateAllRelatedQueries(queryClient);
     if (isMobile) {
       setOpenMobile(false);
     }

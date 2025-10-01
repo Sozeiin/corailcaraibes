@@ -285,6 +285,18 @@ export const useOfflineSync = () => {
     loadInitialStatus();
   }, []);
 
+  // Auto-sync périodique toutes les 2 minutes quand en ligne
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (syncStatus.isOnline && !syncStatus.isSyncing) {
+        console.log('🔄 Auto-sync périodique...');
+        performFullSync();
+      }
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval);
+  }, [syncStatus.isOnline, syncStatus.isSyncing, performFullSync]);
+
   return {
     syncStatus,
     performSync: performFullSync,

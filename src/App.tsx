@@ -5,6 +5,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { GlobalRealtimeProvider } from "@/components/GlobalRealtimeProvider";
+import { NavigationRefresh } from "@/components/NavigationRefresh";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { PermissionGate } from "@/components/auth/PermissionGate";
 import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
@@ -300,17 +302,23 @@ function AppRoutes() {
   );
 }
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <GlobalRealtimeProvider>
-        <Layout>
-          <AppRoutes />
-          <Sonner />
-        </Layout>
-      </GlobalRealtimeProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  // Active le refresh automatique global
+  useAutoRefresh();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <GlobalRealtimeProvider>
+          <NavigationRefresh />
+          <Layout>
+            <AppRoutes />
+            <Sonner />
+          </Layout>
+        </GlobalRealtimeProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

@@ -360,3 +360,88 @@ export function useRealtimeBoatRentalUpdates() {
     };
   }, [queryClient]);
 }
+
+// Hook pour les notifications
+export function useRealtimeNotificationUpdates() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('notification-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        },
+        (payload) => {
+          console.log('📡 Mise à jour temps réel notifications:', payload);
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+          queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}
+
+// Hook pour les préparations de bateaux
+export function useRealtimeBoatPreparationUpdates() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('boat-preparation-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'boat_preparation_checklists'
+        },
+        (payload) => {
+          console.log('📡 Mise à jour temps réel préparations:', payload);
+          queryClient.invalidateQueries({ queryKey: ['boat-preparation-history'] });
+          queryClient.invalidateQueries({ queryKey: ['boat-preparation-checklists'] });
+          queryClient.invalidateQueries({ queryKey: ['preparation-orders'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}
+
+// Hook pour les mouvements de stock
+export function useRealtimeStockMovementUpdates() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('stock-movement-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stock_movements'
+        },
+        (payload) => {
+          console.log('📡 Mise à jour temps réel mouvements stock:', payload);
+          queryClient.invalidateQueries({ queryKey: ['stock-movements'] });
+          queryClient.invalidateQueries({ queryKey: ['stock-items'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+}

@@ -9,6 +9,7 @@ import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { OfflineStatusIcon } from '@/components/OfflineStatusIcon';
+import { ForceRefreshButton } from '@/components/ForceRefreshButton';
 export const Header = () => {
   const {
     user,
@@ -49,6 +50,7 @@ export const Header = () => {
       </div>
 
       <div className="flex items-center gap-1 md:gap-2 lg:gap-4 flex-shrink-0">
+        <ForceRefreshButton />
         <NotificationDropdown />
 
         <DropdownMenu>
