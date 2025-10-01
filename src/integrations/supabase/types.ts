@@ -4342,6 +4342,14 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      is_channel_member: {
+        Args: { channel_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
+      is_public_channel: {
+        Args: { channel_id_param: string }
+        Returns: boolean
+      }
       link_stock_scan_to_order: {
         Args: {
           order_id_param: string

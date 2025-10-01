@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Hash } from "lucide-react";
 import { Layout } from "@/components/Layout";
 import { ChannelSidebar } from "@/components/messaging/ChannelSidebar";
 import { TopicsList } from "@/components/messaging/TopicsList";
@@ -14,7 +15,7 @@ export default function Messagerie() {
   if (isMobile) {
     return (
       <Layout>
-        <div className="h-[calc(100vh-4rem)]">
+        <div className="h-[calc(100vh-8rem)]">
           <Tabs defaultValue="channels" className="h-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="channels">Canaux</TabsTrigger>
@@ -52,8 +53,8 @@ export default function Messagerie() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-        <div className="w-64 border-r border-border bg-card flex-shrink-0">
+      <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-lg border border-border shadow-sm bg-background">
+        <div className="w-64 border-r border-border flex-shrink-0">
           <ChannelSidebar 
             selectedChannelId={selectedChannelId}
             onSelectChannel={setSelectedChannelId}
@@ -69,8 +70,12 @@ export default function Messagerie() {
                 onSelectTopic={setSelectedTopicId}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                Sélectionnez un canal pour voir les sujets
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
+                <Hash className="h-12 w-12 mb-4 opacity-50" />
+                <p className="text-lg font-medium mb-2">Bienvenue dans la messagerie</p>
+                <p className="text-sm text-center max-w-sm">
+                  Sélectionnez un canal dans la liste pour commencer à discuter avec votre équipe
+                </p>
               </div>
             )}
           </div>
