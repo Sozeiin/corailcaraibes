@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Ship, CheckCircle, AlertTriangle } from 'lucide-react';
 import { BoatRentalSelector } from './BoatRentalSelector';
-import { TechnicianCheckinSelector } from './TechnicianCheckinSelector';
 import { ChecklistForm } from './ChecklistForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
@@ -56,18 +55,6 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
     setShowChecklist(false);
   };
 
-  const handleFormSelect = (data: { boat: any; rentalData: any }) => {
-    setSelectedBoat(data.boat);
-    setRentalData(data.rentalData);
-    setShowChecklist(true);
-  };
-
-  const handleManualCheckin = (boat: any, rentalData: any) => {
-    setSelectedBoat(boat);
-    setRentalData(rentalData);
-    setShowChecklist(true);
-  };
-
   const handleCheckInComplete = (data: any) => {
     // Handle check-in completion
     onOpenChange(false);
@@ -108,24 +95,16 @@ export function CheckInOutDialog({ open, onOpenChange }: CheckInOutDialogProps) 
               <TabsContent value="checkin" className="h-full m-0 data-[state=active]:flex data-[state=active]:flex-col">
                 <div className="flex-1 overflow-y-auto px-6 py-4">
                   <div className="space-y-4">
-                    {user?.role === 'technicien' ? (
-                      <TechnicianCheckinSelector
-                        boats={boats}
-                        onFormSelect={handleFormSelect}
-                        onManualCheckin={handleManualCheckin}
-                      />
-                    ) : (
-                      <BoatRentalSelector
-                        type="checkin"
-                        onBoatSelect={(boat) => {
-                          setSelectedBoat(boat);
-                        }}
-                        onRentalDataChange={(data) => {
-                          setRentalData(data);
-                          setShowChecklist(true);
-                        }}
-                      />
-                    )}
+                    <BoatRentalSelector
+                      type="checkin"
+                      onBoatSelect={(boat) => {
+                        setSelectedBoat(boat);
+                      }}
+                      onRentalDataChange={(data) => {
+                        setRentalData(data);
+                        setShowChecklist(true);
+                      }}
+                    />
                     
                     {selectedBoat && rentalData && showChecklist && (
                       <ChecklistForm

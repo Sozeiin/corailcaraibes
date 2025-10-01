@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AdministrativeCheckinForm } from '@/components/checkin/AdministrativeCheckinForm';
 import { TechnicianCheckinSelector } from '@/components/checkin/TechnicianCheckinSelector';
 import { CheckinSheet } from '@/components/checkin/CheckinSheet';
+import { ManualCheckinSheet } from '@/components/checkin/ManualCheckinSheet';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
@@ -13,7 +14,8 @@ export default function CheckIn() {
   const { user } = useAuth();
   const [selectedBoat, setSelectedBoat] = useState(null);
   const [rentalData, setRentalData] = useState(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [formSheetOpen, setFormSheetOpen] = useState(false);
+  const [manualSheetOpen, setManualSheetOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
   // Get available boats
@@ -43,18 +45,26 @@ export default function CheckIn() {
     console.log('📝 [CHECKIN] Fiche sélectionnée:', formData);
     setSelectedBoat(formData.boat);
     setRentalData(formData.rentalData);
-    setSheetOpen(true);
+    setFormSheetOpen(true);
   };
 
   const handleManualCheckin = () => {
-    setSheetOpen(true);
+    setManualSheetOpen(true);
+  };
+
+  const handleManualProceed = (boat: any, rentalData: any) => {
+    console.log('📝 [CHECKIN] Check-in manuel:', { boat, rentalData });
+    setSelectedBoat(boat);
+    setRentalData(rentalData);
+    setManualSheetOpen(false);
+    setFormSheetOpen(true);
   };
 
   const handleChecklistComplete = async (data: any) => {
     // Si data est null, c'est une annulation - on fait juste un retour arrière
     if (data === null) {
       console.log('🔙 [CHECKIN] Annulation - Retour à la liste des fiches');
-      setSheetOpen(false);
+      setFormSheetOpen(false);
       setSelectedBoat(null);
       setRentalData(null);
       return;
@@ -64,14 +74,18 @@ export default function CheckIn() {
     console.log('✅ [CHECKIN] Finalisation réussie, reset complet');
     setSelectedBoat(null);
     setRentalData(null);
-    setSheetOpen(false);
+    setFormSheetOpen(false);
     setResetKey(prev => prev + 1);
   };
 
-  const handleSheetClose = () => {
-    setSheetOpen(false);
+  const handleFormSheetClose = () => {
+    setFormSheetOpen(false);
     setSelectedBoat(null);
     setRentalData(null);
+  };
+
+  const handleManualSheetClose = () => {
+    setManualSheetOpen(false);
   };
 
   const handleFormCreated = () => {
@@ -100,9 +114,16 @@ export default function CheckIn() {
           />
         )}
 
+        <ManualCheckinSheet
+          isOpen={manualSheetOpen}
+          onClose={handleManualSheetClose}
+          boats={boats}
+          onProceed={handleManualProceed}
+        />
+
         <CheckinSheet
-          isOpen={sheetOpen}
-          onClose={handleSheetClose}
+          isOpen={formSheetOpen}
+          onClose={handleFormSheetClose}
           boat={selectedBoat}
           rentalData={rentalData}
           onComplete={handleChecklistComplete}
