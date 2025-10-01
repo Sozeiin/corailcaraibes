@@ -28,6 +28,7 @@ import MaintenancePreventive from "./pages/MaintenancePreventive";
 import MaintenanceGantt from "./pages/MaintenanceGantt";
 import MaintenanceHistory from "./pages/MaintenanceHistory";
 import Notifications from "./pages/Notifications";
+import Messagerie from "./pages/Messagerie";
 import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import AdministrativeCheckin from "./pages/AdministrativeCheckin";
@@ -248,6 +249,14 @@ function AppRoutes() {
             <PermissionGate page="notifications">
               <Notifications />
             </PermissionGate>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messagerie"
+        element={
+          <ProtectedRoute>
+            <Messagerie />
           </ProtectedRoute>
         }
       />
