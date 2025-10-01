@@ -34,8 +34,8 @@ export function CheckinDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto p-0">
-        <div className="p-6">
+      <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] h-[98vh] overflow-hidden p-0 gap-0">
+        <div className="h-full overflow-y-auto p-6">
           <ChecklistForm
             boat={boat}
             rentalData={rentalData}
