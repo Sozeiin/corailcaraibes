@@ -8,14 +8,27 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { BoatRentalSelector } from './BoatRentalSelector';
+
 interface TechnicianCheckinSelectorProps {
   boats: any[];
   onFormSelect: (data: { boat: any; rentalData: any }) => void;
-  onManualCheckin: () => void;
+  onManualCheckin: (boat: any, rentalData: any) => void;
 }
 
 export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin }: TechnicianCheckinSelectorProps) {
   const { user } = useAuth();
+  const [showManualForm, setShowManualForm] = useState(false);
+  const [selectedBoat, setSelectedBoat] = useState(null);
+  const [rentalData, setRentalData] = useState(null);
+
+  // Reset des états locaux quand le composant est remonté (via key change)
+  useEffect(() => {
+    console.log('🔄 [TechnicianCheckinSelector] Composant monté/remonté - Reset des états');
+    setShowManualForm(false);
+    setSelectedBoat(null);
+    setRentalData(null);
+  }, []);
 
   // Get ready forms for technician
   const { data: readyForms = [], refetch } = useQuery({
@@ -81,6 +94,35 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
     }
   };
 
+  const handleManualCheckinData = (data: any) => {
+    setRentalData(data);
+    if (selectedBoat && data?.isValid) {
+      onManualCheckin(selectedBoat, data);
+    }
+  };
+
+  if (showManualForm) {
+    return (
+      <div className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-xl font-semibold">Check-in manuel</h2>
+          <Button 
+            variant="outline" 
+            onClick={() => setShowManualForm(false)}
+          >
+            Retour aux fiches prêtes
+          </Button>
+        </div>
+        <BoatRentalSelector
+          type="checkin"
+          mode="technician"
+          onBoatSelect={setSelectedBoat}
+          onRentalDataChange={handleManualCheckinData}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -90,7 +132,7 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
             Sélectionnez une fiche client préparée ou effectuez un check-in manuel
           </p>
         </div>
-        <Button onClick={onManualCheckin}>
+        <Button onClick={() => setShowManualForm(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Check-in manuel
         </Button>
@@ -106,7 +148,7 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
             <p className="text-muted-foreground mb-4">
               Aucune fiche client n'est disponible pour le check-in.
             </p>
-            <Button onClick={onManualCheckin}>
+            <Button onClick={() => setShowManualForm(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Effectuer un check-in manuel
             </Button>

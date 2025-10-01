@@ -1,13 +1,11 @@
 import React from 'react';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
-import { ChecklistForm } from './ChecklistForm';
+  Dialog,
+  DialogContent,
+} from '@/components/ui/dialog';
+import { ChecklistForm } from '@/components/checkin/ChecklistForm';
 
-interface CheckinSheetProps {
+interface CheckinDialogProps {
   isOpen: boolean;
   onClose: () => void;
   boat: any;
@@ -15,13 +13,13 @@ interface CheckinSheetProps {
   onComplete: (data: any) => void;
 }
 
-export function CheckinSheet({
+export function CheckinDialog({
   isOpen,
   onClose,
   boat,
   rentalData,
-  onComplete,
-}: CheckinSheetProps) {
+  onComplete
+}: CheckinDialogProps) {
   const handleComplete = (data: any) => {
     onComplete(data);
     if (data !== null) {
@@ -29,13 +27,15 @@ export function CheckinSheet({
     }
   };
 
+  const handleCancel = () => {
+    onComplete(null);
+    onClose();
+  };
+
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-[85vw] max-w-5xl p-0 overflow-hidden">
+    <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
+      <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] h-[98vh] overflow-hidden p-0 gap-0">
         <div className="h-full overflow-y-auto p-6">
-          <SheetHeader className="mb-6">
-            <SheetTitle>Check-in Technique</SheetTitle>
-          </SheetHeader>
           <ChecklistForm
             boat={boat}
             rentalData={rentalData}
@@ -43,7 +43,7 @@ export function CheckinSheet({
             onComplete={handleComplete}
           />
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }

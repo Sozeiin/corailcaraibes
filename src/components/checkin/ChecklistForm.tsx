@@ -22,7 +22,6 @@ import { ChecklistReviewStep } from './ChecklistReviewStep';
 import { SignatureStep } from './SignatureStep';
 import { EmailStep } from './EmailStep';
 import { useCreateIntervention } from '@/hooks/useCreateIntervention';
-import { ClientInfoHeader } from './ClientInfoHeader';
 
 interface ChecklistFormProps {
   boat: any;
@@ -563,8 +562,6 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
             </AlertDescription>
           </Alert>
         )}
-
-        <ClientInfoHeader rentalData={rentalData} boat={boat} type={type} />
         
         <ChecklistSteps currentStep={currentStep} isComplete={isComplete} />
 
