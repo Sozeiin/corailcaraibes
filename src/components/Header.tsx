@@ -9,6 +9,7 @@ import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationDropdown } from '@/components/notifications/NotificationDropdown';
 import { OfflineStatusIcon } from '@/components/OfflineStatusIcon';
+import logoMiniature from '@/assets/logominiature.png';
 export const Header = () => {
   const {
     user,
@@ -43,8 +44,8 @@ export const Header = () => {
       <div className="flex items-center gap-1 md:gap-2 lg:gap-4 min-w-0 flex-1">
         <SidebarTrigger className="text-marine-600 hover:text-marine-700 flex-shrink-0" />
         <div className="flex items-center gap-1 md:gap-2 lg:gap-3 min-w-0">
-          <div className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-xs lg:text-sm object-contain">CC</span>
+          <div className="w-5 h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 bg-gradient-to-br from-marine-500 to-ocean-500 rounded-lg flex items-center justify-center flex-shrink-0 p-0.5">
+            <img src={logoMiniature} alt="Corail Caraibes" className="w-full h-full object-contain" />
           </div>
           <h1 className="h1-responsive font-semibold text-gray-900 hidden xs:block truncate">Corail Caraibes</h1>
         </div>
