@@ -278,28 +278,14 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('✅ [DEBUG] Location créée:', rental);
       }
 
-      // Update boat status with detailed logging
-      const newBoatStatus = type === 'checkin' ? 'rented' : 'available';
-      console.log('🚤 [CHECKLIST] Mise à jour statut bateau:', {
-        boatId: boat.id,
-        oldStatus: boat.status,
-        newStatus: newBoatStatus,
-        type
-      });
-      
-      await updateBoatStatusMutation.mutateAsync({
-        boatId: boat.id,
-        status: newBoatStatus,
-      });
-
-      console.log('✅ [CHECKLIST] Statut bateau mis à jour avec succès');
-
-      // Update rental status if checkout
+      // Update rental status if checkout FIRST
       if (type === 'checkout' && rental.id) {
+        console.log('📝 [CHECKLIST] Mise à jour statut rental:', rental.id);
         await updateRentalStatusMutation.mutateAsync({
           rentalId: rental.id,
           status: 'completed',
         });
+        console.log('✅ [CHECKLIST] Statut rental mis à jour');
       }
 
       // Create checklist
@@ -316,6 +302,35 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       };
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
+      console.log('✅ [CHECKLIST] Checklist créée:', checklist.id);
+
+      // NOW update boat status AFTER checklist is created successfully
+      const newBoatStatus = type === 'checkin' ? 'rented' : 'available';
+      console.log('🚤 [CHECKLIST] Mise à jour statut bateau:', {
+        boatId: boat.id,
+        boatName: boat.name,
+        oldStatus: boat.status,
+        newStatus: newBoatStatus,
+        type,
+        checklistId: checklist.id
+      });
+      
+      try {
+        await updateBoatStatusMutation.mutateAsync({
+          boatId: boat.id,
+          status: newBoatStatus,
+        });
+        console.log('✅ [CHECKLIST] Statut bateau mis à jour avec succès vers:', newBoatStatus);
+      } catch (boatUpdateError: any) {
+        console.error('❌ [CHECKLIST] ERREUR CRITIQUE - Échec mise à jour bateau:', boatUpdateError);
+        toast({
+          title: 'Attention',
+          description: `Le checklist est créé mais le statut du bateau n'a pas pu être mis à jour: ${boatUpdateError.message}`,
+          variant: 'destructive',
+          duration: 10000,
+        });
+        // Ne pas throw pour ne pas bloquer le reste
+      }
 
       // Check for problems and create intervention if needed
       const problemItems = checklistItems.filter(item => item.status === 'needs_repair');
