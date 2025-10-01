@@ -40,6 +40,7 @@ export default function CheckIn() {
   });
 
   const handleFormSelect = (formData: any) => {
+    console.log('📝 [CHECKIN] Fiche sélectionnée:', formData);
     setSelectedBoat(formData.boat);
     setRentalData(formData.rentalData);
     setShowChecklist(true);
@@ -49,10 +50,33 @@ export default function CheckIn() {
     setShowChecklist(true);
   };
 
-  const handleChecklistComplete = (data: any) => {
+  const handleChecklistComplete = async (data: any) => {
     // Si data est null, c'est une annulation
     if (data === null) {
-      console.log('🔙 [CHECKIN] Annulation - Reset complet des états');
+      console.log('🔙 [CHECKIN] Annulation - Remettre la fiche en "ready"');
+      
+      // Si la fiche vient d'un formulaire administratif, remettre en "ready"
+      if (rentalData?.administrativeFormId) {
+        try {
+          const { error } = await supabase
+            .from('administrative_checkin_forms')
+            .update({
+              status: 'ready',
+              used_at: null,
+              used_by: null
+            })
+            .eq('id', rentalData.administrativeFormId);
+          
+          if (error) {
+            console.error('Erreur lors de la remise en ready:', error);
+          } else {
+            console.log('✅ Fiche remise en "ready"');
+          }
+        } catch (error) {
+          console.error('Erreur:', error);
+        }
+      }
+      
       setShowChecklist(false);
       setSelectedBoat(null);
       setRentalData(null);

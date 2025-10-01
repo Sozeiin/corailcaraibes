@@ -34,6 +34,7 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
   const { data: readyForms = [], refetch } = useQuery({
     queryKey: ['ready-checkin-forms', user?.baseId],
     queryFn: async () => {
+      console.log('🔍 [TechnicianCheckinSelector] Récupération des fiches prêtes');
       if (!user?.baseId) return [];
       
       const { data, error } = await supabase
@@ -47,9 +48,12 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('📋 [TechnicianCheckinSelector] Fiches trouvées:', data?.length || 0);
       return data || [];
     },
-    enabled: !!user?.baseId
+    enabled: !!user?.baseId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
 
   const handleFormSelect = async (form: any) => {
