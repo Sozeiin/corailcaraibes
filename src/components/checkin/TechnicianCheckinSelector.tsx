@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,14 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
   const [showManualForm, setShowManualForm] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState(null);
   const [rentalData, setRentalData] = useState(null);
+
+  // Reset des états locaux quand le composant est remonté (via key change)
+  useEffect(() => {
+    console.log('🔄 [TechnicianCheckinSelector] Composant monté/remonté - Reset des états');
+    setShowManualForm(false);
+    setSelectedBoat(null);
+    setRentalData(null);
+  }, []);
 
   // Get ready forms for technician
   const { data: readyForms = [], refetch } = useQuery({

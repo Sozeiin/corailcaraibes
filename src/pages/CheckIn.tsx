@@ -14,6 +14,7 @@ export default function CheckIn() {
   const [selectedBoat, setSelectedBoat] = useState(null);
   const [rentalData, setRentalData] = useState(null);
   const [showChecklist, setShowChecklist] = useState(false);
+  const [resetKey, setResetKey] = useState(0);
 
   // Get available boats
   const { data: boats = [] } = useQuery({
@@ -51,9 +52,12 @@ export default function CheckIn() {
   const handleChecklistComplete = (data: any) => {
     // Si data est null, c'est une annulation
     if (data === null) {
-      console.log('🔙 [CHECKIN] Retour à la sélection');
+      console.log('🔙 [CHECKIN] Annulation - Reset complet des états');
       setShowChecklist(false);
-      // Ne pas réinitialiser selectedBoat et rentalData pour permettre de reprendre
+      setSelectedBoat(null);
+      setRentalData(null);
+      // Incrémenter la key pour forcer un re-render complet du TechnicianCheckinSelector
+      setResetKey(prev => prev + 1);
       return;
     }
     
@@ -62,6 +66,7 @@ export default function CheckIn() {
     setSelectedBoat(null);
     setRentalData(null);
     setShowChecklist(false);
+    setResetKey(prev => prev + 1);
   };
 
   const handleFormCreated = () => {
@@ -84,6 +89,7 @@ export default function CheckIn() {
             />
           ) : (
             <TechnicianCheckinSelector
+              key={resetKey}
               boats={boats}
               onFormSelect={handleFormSelect}
               onManualCheckin={handleManualCheckin}
