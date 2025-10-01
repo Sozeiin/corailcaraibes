@@ -162,7 +162,7 @@ export function ChecklistCategory({
                       className="h-7 w-7 col-span-2"
                       title="Annotations"
                     >
-                      📝 Notes
+                      📝
                     </Button>
                   </div>
                 </div>
