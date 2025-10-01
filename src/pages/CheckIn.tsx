@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AdministrativeCheckinForm } from '@/components/checkin/AdministrativeCheckinForm';
 import { TechnicianCheckinSelector } from '@/components/checkin/TechnicianCheckinSelector';
-import { ChecklistForm } from '@/components/checkin/ChecklistForm';
+import { CheckinSheet } from '@/components/checkin/CheckinSheet';
 import { PermissionGate } from '@/components/auth/PermissionGate';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
@@ -13,7 +13,7 @@ export default function CheckIn() {
   const { user } = useAuth();
   const [selectedBoat, setSelectedBoat] = useState(null);
   const [rentalData, setRentalData] = useState(null);
-  const [showChecklist, setShowChecklist] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [resetKey, setResetKey] = useState(0);
 
   // Get available boats
@@ -43,18 +43,18 @@ export default function CheckIn() {
     console.log('📝 [CHECKIN] Fiche sélectionnée:', formData);
     setSelectedBoat(formData.boat);
     setRentalData(formData.rentalData);
-    setShowChecklist(true);
+    setSheetOpen(true);
   };
 
   const handleManualCheckin = () => {
-    setShowChecklist(true);
+    setSheetOpen(true);
   };
 
   const handleChecklistComplete = async (data: any) => {
     // Si data est null, c'est une annulation - on fait juste un retour arrière
     if (data === null) {
       console.log('🔙 [CHECKIN] Annulation - Retour à la liste des fiches');
-      setShowChecklist(false);
+      setSheetOpen(false);
       setSelectedBoat(null);
       setRentalData(null);
       return;
@@ -64,8 +64,14 @@ export default function CheckIn() {
     console.log('✅ [CHECKIN] Finalisation réussie, reset complet');
     setSelectedBoat(null);
     setRentalData(null);
-    setShowChecklist(false);
+    setSheetOpen(false);
     setResetKey(prev => prev + 1);
+  };
+
+  const handleSheetClose = () => {
+    setSheetOpen(false);
+    setSelectedBoat(null);
+    setRentalData(null);
   };
 
   const handleFormCreated = () => {
@@ -80,28 +86,27 @@ export default function CheckIn() {
           <h1 className="text-2xl font-bold">Check-in Bateau</h1>
         </div>
 
-        {!showChecklist ? (
-          user?.role === 'administratif' ? (
-            <AdministrativeCheckinForm
-              boats={boats}
-              onFormCreated={handleFormCreated}
-            />
-          ) : (
-            <TechnicianCheckinSelector
-              key={resetKey}
-              boats={boats}
-              onFormSelect={handleFormSelect}
-              onManualCheckin={handleManualCheckin}
-            />
-          )
+        {user?.role === 'administratif' ? (
+          <AdministrativeCheckinForm
+            boats={boats}
+            onFormCreated={handleFormCreated}
+          />
         ) : (
-          <ChecklistForm
-            boat={selectedBoat}
-            rentalData={rentalData}
-            type="checkin"
-            onComplete={handleChecklistComplete}
+          <TechnicianCheckinSelector
+            key={resetKey}
+            boats={boats}
+            onFormSelect={handleFormSelect}
+            onManualCheckin={handleManualCheckin}
           />
         )}
+
+        <CheckinSheet
+          isOpen={sheetOpen}
+          onClose={handleSheetClose}
+          boat={selectedBoat}
+          rentalData={rentalData}
+          onComplete={handleChecklistComplete}
+        />
       </div>
     </PermissionGate>
   );
