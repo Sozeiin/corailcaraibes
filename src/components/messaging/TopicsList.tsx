@@ -48,7 +48,8 @@ export function TopicsList({ channelId, selectedTopicId, onSelectTopic }: Topics
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <div className="p-4 border-b border-border space-y-3">
+      {/* Header avec recherche */}
+      <div className="p-4 border-b border-border space-y-3 bg-card">
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -56,10 +57,10 @@ export function TopicsList({ channelId, selectedTopicId, onSelectTopic }: Topics
               placeholder="Rechercher un sujet..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="pl-9 bg-background"
             />
           </div>
-          <Button size="icon" variant="outline">
+          <Button size="icon" variant="outline" className="flex-shrink-0">
             <Filter className="h-4 w-4" />
           </Button>
         </div>
@@ -67,20 +68,21 @@ export function TopicsList({ channelId, selectedTopicId, onSelectTopic }: Topics
         <Button 
           onClick={() => setShowNewTopic(true)}
           className="w-full"
-          size="sm"
+          size="default"
         >
           <Plus className="h-4 w-4 mr-2" />
           Nouveau sujet
         </Button>
       </div>
 
+      {/* Liste des sujets */}
       <ScrollArea className="flex-1">
         {isLoading ? (
           <div className="flex items-center justify-center p-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : filteredTopics && filteredTopics.length > 0 ? (
-          <div className="p-2 space-y-2">
+          <div className="p-3 space-y-2">
             {filteredTopics.map((topic) => (
               <TopicCard
                 key={topic.id}
@@ -91,15 +93,17 @@ export function TopicsList({ channelId, selectedTopicId, onSelectTopic }: Topics
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-8 text-center">
-            <MessageSquare className="h-12 w-12 mb-4 opacity-50 text-muted-foreground" />
-            <p className="text-sm font-medium mb-1">Aucun sujet</p>
-            <p className="text-xs text-muted-foreground mb-4">
-              Créez un nouveau sujet pour commencer une discussion
+          <div className="flex flex-col items-center justify-center p-12 text-center">
+            <div className="rounded-full bg-muted p-4 w-16 h-16 mb-4 flex items-center justify-center">
+              <MessageSquare className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-sm font-semibold mb-2">Aucun sujet</h3>
+            <p className="text-xs text-muted-foreground mb-4 max-w-[250px]">
+              Créez un nouveau sujet pour commencer une discussion avec votre équipe
             </p>
             <Button 
               onClick={() => setShowNewTopic(true)}
-              variant="outline"
+              variant="default"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-2" />

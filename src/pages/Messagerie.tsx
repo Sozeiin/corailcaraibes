@@ -15,22 +15,22 @@ export default function Messagerie() {
   if (isMobile) {
     return (
       <Layout>
-        <div className="h-[calc(100vh-8rem)]">
-          <Tabs defaultValue="channels" className="h-full">
-            <TabsList className="grid w-full grid-cols-3">
+        <div className="h-[calc(100vh-12rem)]">
+          <Tabs defaultValue="channels" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
               <TabsTrigger value="channels">Canaux</TabsTrigger>
               <TabsTrigger value="topics" disabled={!selectedChannelId}>Sujets</TabsTrigger>
               <TabsTrigger value="thread" disabled={!selectedTopicId}>Discussion</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="channels" className="h-[calc(100%-3rem)] m-0">
+            <TabsContent value="channels" className="flex-1 m-0 overflow-hidden">
               <ChannelSidebar 
                 selectedChannelId={selectedChannelId}
                 onSelectChannel={setSelectedChannelId}
               />
             </TabsContent>
             
-            <TabsContent value="topics" className="h-[calc(100%-3rem)] m-0">
+            <TabsContent value="topics" className="flex-1 m-0 overflow-hidden">
               {selectedChannelId && (
                 <TopicsList 
                   channelId={selectedChannelId}
@@ -40,7 +40,7 @@ export default function Messagerie() {
               )}
             </TabsContent>
             
-            <TabsContent value="thread" className="h-[calc(100%-3rem)] m-0">
+            <TabsContent value="thread" className="flex-1 m-0 overflow-hidden">
               {selectedTopicId && (
                 <TopicThread topicId={selectedTopicId} />
               )}
@@ -53,16 +53,19 @@ export default function Messagerie() {
 
   return (
     <Layout>
-      <div className="flex h-[calc(100vh-10rem)] overflow-hidden rounded-lg border border-border shadow-sm bg-background">
-        <div className="w-64 border-r border-border flex-shrink-0">
+      <div className="flex gap-0 h-[calc(100vh-12rem)] overflow-hidden rounded-xl border border-border/50 shadow-lg bg-card">
+        {/* Sidebar des canaux */}
+        <div className="w-72 border-r border-border flex-shrink-0 bg-card">
           <ChannelSidebar 
             selectedChannelId={selectedChannelId}
             onSelectChannel={setSelectedChannelId}
           />
         </div>
         
-        <div className="flex-1 flex overflow-hidden">
-          <div className={selectedTopicId ? "w-3/5 border-r border-border" : "flex-1"}>
+        {/* Zone principale */}
+        <div className="flex-1 flex overflow-hidden min-w-0">
+          {/* Liste des sujets */}
+          <div className={selectedTopicId ? "w-[400px] lg:w-[450px] border-r border-border flex-shrink-0" : "flex-1"}>
             {selectedChannelId ? (
               <TopicsList 
                 channelId={selectedChannelId}
@@ -70,18 +73,21 @@ export default function Messagerie() {
                 onSelectTopic={setSelectedTopicId}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8">
-                <Hash className="h-12 w-12 mb-4 opacity-50" />
-                <p className="text-lg font-medium mb-2">Bienvenue dans la messagerie</p>
-                <p className="text-sm text-center max-w-sm">
-                  Sélectionnez un canal dans la liste pour commencer à discuter avec votre équipe
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 bg-background">
+                <div className="rounded-full bg-primary/10 p-6 mb-4">
+                  <Hash className="h-10 w-10 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-foreground">Bienvenue dans la messagerie</h3>
+                <p className="text-sm text-center max-w-md text-muted-foreground">
+                  Sélectionnez un canal dans la liste pour commencer à discuter avec votre équipe et suivre l'avancement des tâches
                 </p>
               </div>
             )}
           </div>
           
+          {/* Thread de discussion */}
           {selectedTopicId && (
-            <div className="w-2/5">
+            <div className="flex-1 min-w-0">
               <TopicThread topicId={selectedTopicId} />
             </div>
           )}
