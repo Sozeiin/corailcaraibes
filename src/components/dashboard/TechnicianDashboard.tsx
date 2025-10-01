@@ -5,23 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { 
-  Wrench, 
-  Ship, 
-  Scan,
-  Eye,
-  Anchor
-} from 'lucide-react';
+import { Wrench, Ship, Scan, Eye, Anchor } from 'lucide-react';
 import { TechnicianPlanningView } from './TechnicianPlanningView';
 import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
-
 export function TechnicianDashboard() {
-  const { user } = useAuth();
+  const {
+    user
+  } = useAuth();
   const navigate = useNavigate();
   const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* En-tête personnalisé technicien */}
       <div className="bg-gradient-to-r from-marine-600 to-blue-600 rounded-lg p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -32,17 +25,15 @@ export function TechnicianDashboard() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-3">
-            <Button
-              onClick={() => setCheckInOutDialogOpen(true)}
-              variant="secondary"
-              className="bg-white/10 hover:bg-white/20 border-white/20 text-white"
-            >
+            <Button onClick={() => setCheckInOutDialogOpen(true)} variant="secondary" className="border-white/20 bg-lime-700 hover:bg-lime-600 text-gray-50 font-extralight rounded-xl">
               <Anchor className="h-4 w-4 mr-2" />
               Check-in / Check-out
             </Button>
             <div className="text-right">
               <p className="text-sm text-marine-200">
-                {format(new Date(), 'EEEE dd MMMM yyyy', { locale: fr })}
+                {format(new Date(), 'EEEE dd MMMM yyyy', {
+                locale: fr
+              })}
               </p>
             </div>
           </div>
@@ -59,35 +50,19 @@ export function TechnicianDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col gap-2"
-              onClick={() => navigate('/stock/scanner')}
-            >
+            <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/stock/scanner')}>
               <Scan className="h-6 w-6" />
               <span className="text-xs">Scanner Stock</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col gap-2"
-              onClick={() => navigate('/maintenance')}
-            >
+            <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/maintenance')}>
               <Wrench className="h-6 w-6" />
               <span className="text-xs">Maintenance</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col gap-2"
-              onClick={() => navigate('/boat-preparation')}
-            >
+            <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/boat-preparation')}>
               <Ship className="h-6 w-6" />
               <span className="text-xs">Préparations</span>
             </Button>
-            <Button
-              variant="outline"
-              className="h-20 flex flex-col gap-2"
-              onClick={() => navigate('/boats')}
-            >
+            <Button variant="outline" className="h-20 flex flex-col gap-2" onClick={() => navigate('/boats')}>
               <Eye className="h-6 w-6" />
               <span className="text-xs">Voir Bateaux</span>
             </Button>
@@ -95,10 +70,6 @@ export function TechnicianDashboard() {
         </CardContent>
       </Card>
 
-      <CheckInOutDialog 
-        open={checkInOutDialogOpen}
-        onOpenChange={setCheckInOutDialogOpen}
-      />
-    </div>
-  );
+      <CheckInOutDialog open={checkInOutDialogOpen} onOpenChange={setCheckInOutDialogOpen} />
+    </div>;
 }
