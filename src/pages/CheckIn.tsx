@@ -48,7 +48,17 @@ export default function CheckIn() {
     setShowChecklist(true);
   };
 
-  const handleChecklistComplete = () => {
+  const handleChecklistComplete = (data: any) => {
+    // Si data est null, c'est une annulation
+    if (data === null) {
+      console.log('🔙 [CHECKIN] Retour à la sélection');
+      setShowChecklist(false);
+      // Ne pas réinitialiser selectedBoat et rentalData pour permettre de reprendre
+      return;
+    }
+    
+    // Sinon c'est une finalisation réussie
+    console.log('✅ [CHECKIN] Finalisation réussie, reset complet');
     setSelectedBoat(null);
     setRentalData(null);
     setShowChecklist(false);

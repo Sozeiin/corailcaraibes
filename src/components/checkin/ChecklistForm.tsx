@@ -44,6 +44,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [customerEmail, setCustomerEmail] = useState(rentalData?.customerEmail || '');
   const [sendEmailReport, setSendEmailReport] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [tempChecklistId] = useState(`temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
 
   // Queries and mutations
@@ -277,12 +278,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('✅ [DEBUG] Location créée:', rental);
       }
 
-      // Update boat status
+      // Update boat status with detailed logging
       const newBoatStatus = type === 'checkin' ? 'rented' : 'available';
+      console.log('🚤 [CHECKLIST] Mise à jour statut bateau:', {
+        boatId: boat.id,
+        oldStatus: boat.status,
+        newStatus: newBoatStatus,
+        type
+      });
+      
       await updateBoatStatusMutation.mutateAsync({
         boatId: boat.id,
         status: newBoatStatus,
       });
+
+      console.log('✅ [CHECKLIST] Statut bateau mis à jour avec succès');
 
       // Update rental status if checkout
       if (type === 'checkout' && rental.id) {
@@ -479,19 +489,65 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
 
   const isComplete = isStepComplete('checklist') && isStepComplete('review') && isStepComplete('signatures') && isStepComplete('email');
 
+  const handleCancel = () => {
+    if (checklistItems.some(item => item.status !== 'not_checked') || generalNotes || technicianSignature || customerSignature) {
+      setShowCancelConfirm(true);
+    } else {
+      onComplete(null);
+    }
+  };
+
+  const confirmCancel = () => {
+    console.log('🔙 [CHECKLIST] Annulation du processus');
+    toast({
+      title: 'Processus annulé',
+      description: 'Le check-in/check-out a été annulé',
+    });
+    onComplete(null);
+  };
+
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          <span>
-            {type === 'checkin' ? 'Check-in' : 'Check-out'} - {boat.name}
-          </span>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+              disabled={isProcessing}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Annuler
+            </Button>
+            <span>
+              {type === 'checkin' ? 'Check-in' : 'Check-out'} - {boat.name}
+            </span>
+          </div>
           <div className="text-sm text-muted-foreground">
             {boat.model} • {boat.hin}
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {showCancelConfirm && (
+          <Alert>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription className="flex items-center justify-between">
+              <span>Voulez-vous vraiment annuler ? Les données saisies seront perdues.</span>
+              <div className="flex gap-2 ml-4">
+                <Button size="sm" variant="outline" onClick={() => setShowCancelConfirm(false)}>
+                  Non
+                </Button>
+                <Button size="sm" variant="destructive" onClick={confirmCancel}>
+                  Oui, annuler
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <ChecklistSteps currentStep={currentStep} isComplete={isComplete} />
 
         {currentStep === 'checklist' && (

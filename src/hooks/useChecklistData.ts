@@ -183,28 +183,72 @@ export function useUpdateBoatStatus() {
 
   return useMutation({
     mutationFn: async ({ boatId, status }: { boatId: string; status: 'maintenance' | 'available' | 'rented' | 'out_of_service' }) => {
-      console.log('🚀 [DEBUG] Mise à jour statut bateau:', boatId, status);
+      console.log('🚀 [BOAT STATUS] Début mise à jour:', { boatId, status });
 
-      const { data, error } = await supabase
-        .from('boats')
-        .update({ status })
-        .eq('id', boatId)
-        .select();
+      // Tentative avec retry
+      let lastError: any;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        console.log(`🔄 [BOAT STATUS] Tentative ${attempt}/3`);
+        
+        const { data, error } = await supabase
+          .from('boats')
+          .update({ status })
+          .eq('id', boatId)
+          .select();
 
-      if (error) {
-        console.error('❌ [DEBUG] Erreur mise à jour bateau:', error);
-        throw error;
+        if (error) {
+          console.error(`❌ [BOAT STATUS] Erreur tentative ${attempt}:`, error);
+          lastError = error;
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            continue;
+          }
+          throw error;
+        }
+
+        // Vérification que le statut a bien été mis à jour
+        console.log('✅ [BOAT STATUS] Update réussi, vérification...');
+        const { data: verifyData, error: verifyError } = await supabase
+          .from('boats')
+          .select('status')
+          .eq('id', boatId)
+          .single();
+
+        if (verifyError) {
+          console.error('❌ [BOAT STATUS] Erreur vérification:', verifyError);
+          throw verifyError;
+        }
+
+        if (verifyData.status === status) {
+          console.log('✅ [BOAT STATUS] Statut vérifié et correct:', { 
+            expected: status, 
+            actual: verifyData.status,
+            boatId 
+          });
+          return data;
+        } else {
+          console.error('⚠️ [BOAT STATUS] Statut incorrect après update:', { 
+            expected: status, 
+            actual: verifyData.status,
+            boatId 
+          });
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            continue;
+          }
+          throw new Error(`Le statut du bateau n'a pas été mis à jour correctement (attendu: ${status}, actuel: ${verifyData.status})`);
+        }
       }
 
-      console.log('✅ [DEBUG] Statut bateau mis à jour:', data);
-      return data;
+      throw lastError || new Error('Échec de la mise à jour du statut après 3 tentatives');
     },
     onSuccess: (data) => {
+      console.log('✅ [BOAT STATUS] Mutation réussie, invalidation des queries');
       invalidateBoatQueries(queryClient, data?.[0]?.id);
-      toast.success("Statut du bateau mis à jour");
+      toast.success("Statut du bateau mis à jour avec succès");
     },
     onError: (error: any) => {
-      console.error('❌ [DEBUG] Erreur mutation statut bateau:', error);
+      console.error('❌ [BOAT STATUS] Erreur mutation:', error);
       toast.error(`Erreur: ${error.message || 'Erreur lors de la mise à jour du statut'}`);
     },
   });
