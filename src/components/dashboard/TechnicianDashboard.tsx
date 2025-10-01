@@ -29,8 +29,8 @@ export function TechnicianDashboard() {
               <Anchor className="h-4 w-4 mr-2" />
               Check-in / Check-out
             </Button>
-            <div className="text-right">
-              <p className="text-sm text-marine-200">
+            <div className="text-center">
+              <p className="text-base text-marine-200">
                 {format(new Date(), 'EEEE dd MMMM yyyy', {
                 locale: fr
               })}
