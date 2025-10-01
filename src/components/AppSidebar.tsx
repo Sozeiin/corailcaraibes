@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateAllRelatedQueries } from '@/lib/queryInvalidation';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck, MessageSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -82,6 +82,11 @@ const menuItems = [{
   title: 'Préparation bateaux',
   url: '/boat-preparation',
   icon: Ship,
+  roles: ['direction', 'chef_base', 'technicien', 'administratif']
+}, {
+  title: 'Messagerie',
+  url: '/messagerie',
+  icon: MessageSquare,
   roles: ['direction', 'chef_base', 'technicien', 'administratif']
 }, {
   title: 'Paramètres',

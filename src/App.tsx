@@ -35,6 +35,7 @@ import CheckIn from "./pages/CheckIn";
 import CheckOut from "./pages/CheckOut";
 
 import NotFound from "./pages/NotFound";
+import Messagerie from "./pages/Messagerie";
 
 const queryClient = new QueryClient();
 
@@ -294,6 +295,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base']}>
             <Reports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/messagerie"
+        element={
+          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'technicien', 'administratif']}>
+            <Messagerie />
           </ProtectedRoute>
         }
       />

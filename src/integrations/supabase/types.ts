@@ -1197,6 +1197,83 @@ export type Database = {
           },
         ]
       }
+      channel_members: {
+        Row: {
+          channel_id: string
+          id: string
+          joined_at: string
+          last_read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          id?: string
+          joined_at?: string
+          last_read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_members_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          channel_type: Database["public"]["Enums"]["channel_type"]
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          channel_type?: Database["public"]["Enums"]["channel_type"]
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checkin_checkout_orders: {
         Row: {
           base_id: string
@@ -1956,6 +2033,57 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          attachments: Json | null
+          author_id: string
+          content: string
+          created_at: string
+          edited: boolean | null
+          id: string
+          mentions: Json | null
+          topic_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json | null
+          author_id: string
+          content: string
+          created_at?: string
+          edited?: boolean | null
+          id?: string
+          mentions?: Json | null
+          topic_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json | null
+          author_id?: string
+          content?: string
+          created_at?: string
+          edited?: boolean | null
+          id?: string
+          mentions?: Json | null
+          topic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -2701,6 +2829,63 @@ export type Database = {
           },
         ]
       }
+      response_templates: {
+        Row: {
+          base_id: string | null
+          category: string
+          content: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_global: boolean | null
+          name: string
+          updated_at: string | null
+          usage_count: number | null
+          variables: Json | null
+        }
+        Insert: {
+          base_id?: string | null
+          category: string
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_global?: boolean | null
+          name: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Update: {
+          base_id?: string | null
+          category?: string
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_global?: boolean | null
+          name?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "response_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "response_templates_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_control_categories: {
         Row: {
           color_code: string | null
@@ -2993,6 +3178,44 @@ export type Database = {
             columns: ["source_base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      smart_thread_entities: {
+        Row: {
+          entity_id: string
+          entity_type: string
+          id: string
+          linked_at: string | null
+          linked_by: string | null
+          notes: string | null
+          topic_id: string
+        }
+        Insert: {
+          entity_id: string
+          entity_type: string
+          id?: string
+          linked_at?: string | null
+          linked_by?: string | null
+          notes?: string | null
+          topic_id: string
+        }
+        Update: {
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          linked_at?: string | null
+          linked_by?: string | null
+          notes?: string | null
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_thread_entities_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
             referencedColumns: ["id"]
           },
         ]
@@ -3734,6 +3957,264 @@ export type Database = {
         }
         Relationships: []
       }
+      thread_assignments: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          completed_at: string | null
+          id: string
+          is_active: boolean | null
+          notes: string | null
+          role: string | null
+          topic_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          completed_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          role?: string | null
+          topic_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          completed_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          notes?: string | null
+          role?: string | null
+          topic_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_assignments_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      thread_workflow_states: {
+        Row: {
+          actual_response_time: number | null
+          assigned_at: string | null
+          assigned_to: string | null
+          category: string | null
+          created_at: string | null
+          due_date: string | null
+          estimated_response_time: number | null
+          id: string
+          priority: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          topic_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          actual_response_time?: number | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          estimated_response_time?: number | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          topic_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          actual_response_time?: number | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          category?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          estimated_response_time?: number | null
+          id?: string
+          priority?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          topic_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_workflow_states_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: true
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_checklist_items: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          display_order: number | null
+          id: string
+          label: string
+          topic_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          label: string
+          topic_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          label?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_checklist_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_checklist_items_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topics: {
+        Row: {
+          assigned_to: string | null
+          base_id: string | null
+          boat_id: string | null
+          channel_id: string
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_date: string | null
+          id: string
+          message_count: number | null
+          priority: Database["public"]["Enums"]["topic_priority"]
+          status: Database["public"]["Enums"]["topic_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          base_id?: string | null
+          boat_id?: string | null
+          channel_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          message_count?: number | null
+          priority?: Database["public"]["Enums"]["topic_priority"]
+          status?: Database["public"]["Enums"]["topic_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          base_id?: string | null
+          boat_id?: string | null
+          channel_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          message_count?: number | null
+          priority?: Database["public"]["Enums"]["topic_priority"]
+          status?: Database["public"]["Enums"]["topic_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topics_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_closed_by_fkey"
+            columns: ["closed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_permissions: {
         Row: {
           created_at: string
@@ -4059,6 +4540,14 @@ export type Database = {
         Args: { order_id_param: string }
         Returns: undefined
       }
+      is_channel_member: {
+        Args: { channel_id_param: string; user_id_param: string }
+        Returns: boolean
+      }
+      is_public_channel: {
+        Args: { channel_id_param: string }
+        Returns: boolean
+      }
       link_stock_scan_to_order: {
         Args: {
           order_id_param: string
@@ -4149,6 +4638,7 @@ export type Database = {
       alert_severity: "info" | "warning" | "error"
       alert_type: "stock" | "maintenance" | "document" | "system"
       boat_status: "available" | "rented" | "maintenance" | "out_of_service"
+      channel_type: "public" | "private"
       checklist_overall_status: "ok" | "needs_attention" | "major_issues"
       checklist_status: "ok" | "needs_repair" | "not_checked"
       intervention_status:
@@ -4208,6 +4698,8 @@ export type Database = {
         | "completed"
         | "rejected"
         | "cancelled"
+      topic_priority: "low" | "medium" | "high" | "critical"
+      topic_status: "todo" | "in_progress" | "waiting" | "validation" | "closed"
       user_role: "direction" | "chef_base" | "technicien" | "administratif"
     }
     CompositeTypes: {
@@ -4355,6 +4847,7 @@ export const Constants = {
       alert_severity: ["info", "warning", "error"],
       alert_type: ["stock", "maintenance", "document", "system"],
       boat_status: ["available", "rented", "maintenance", "out_of_service"],
+      channel_type: ["public", "private"],
       checklist_overall_status: ["ok", "needs_attention", "major_issues"],
       checklist_status: ["ok", "needs_repair", "not_checked"],
       intervention_status: [
@@ -4418,6 +4911,8 @@ export const Constants = {
         "rejected",
         "cancelled",
       ],
+      topic_priority: ["low", "medium", "high", "critical"],
+      topic_status: ["todo", "in_progress", "waiting", "validation", "closed"],
       user_role: ["direction", "chef_base", "technicien", "administratif"],
     },
   },
