@@ -122,7 +122,7 @@ export function TechnicianPlanningView() {
         data: interventions,
         error: interventionsError
       } = await supabase.from('interventions').select(`
-          id, title, description, scheduled_date, status, intervention_type,
+          id, title, description, scheduled_date, scheduled_time, status, intervention_type,
           boats(id, name, model)
         `).eq('technician_id', user.id).eq('scheduled_date', currentDay.toISOString().split('T')[0]).order('scheduled_date');
       if (interventionsError) throw interventionsError;
@@ -140,18 +140,22 @@ export function TechnicianPlanningView() {
       const allTasks: TechnicianTask[] = [
       // Convert interventions
       ...(interventions || []).map(intervention => {
-        const scheduledDate = new Date(intervention.scheduled_date);
-        scheduledDate.setHours(9, 0, 0, 0);
-        const endDate = new Date(scheduledDate);
-        endDate.setHours(17, 0, 0, 0);
+        // Use the actual scheduled_time from database
+        const scheduledDateTime = intervention.scheduled_time 
+          ? new Date(`${intervention.scheduled_date}T${intervention.scheduled_time}`)
+          : new Date(`${intervention.scheduled_date}T09:00:00`); // Fallback to 9AM if no time set
+        
+        // Default duration of 1 hour
+        const endDateTime = new Date(scheduledDateTime.getTime() + (60 * 60 * 1000));
+        
         return {
           id: `intervention-${intervention.id}`,
           original_id: intervention.id,
           type: 'intervention' as const,
           title: intervention.title,
           description: intervention.description,
-          scheduled_start: scheduledDate.toISOString(),
-          scheduled_end: endDate.toISOString(),
+          scheduled_start: scheduledDateTime.toISOString(),
+          scheduled_end: endDateTime.toISOString(),
           status: intervention.status,
           priority: intervention.intervention_type === 'emergency' ? 'high' : 'medium',
           color_code: '#dc2626',
