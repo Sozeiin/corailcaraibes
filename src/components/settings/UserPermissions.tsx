@@ -14,6 +14,16 @@ interface UserPermissionsProps {
   userRole: string;
 }
 
+const PERMISSION_SECTIONS = {
+  'Tableau de bord': ['dashboard'],
+  'Check-in / Check-out': ['checkin', 'checkout', 'administrative_checkin'],
+  'Bateaux': ['boats', 'boats_dashboard', 'boats_fleet', 'boats_safety_controls', 'safety_controls', 'boat_preparation'],
+  'Stock': ['stock', 'stock_inventory', 'stock_scanner', 'stock_shipments', 'distribution'],
+  'Maintenance': ['maintenance', 'maintenance_interventions', 'maintenance_preventive', 'maintenance_gantt', 'maintenance_history'],
+  'Approvisionnement': ['suppliers', 'orders', 'supply_requests'],
+  'Notifications': ['notifications']
+};
+
 export const UserPermissions: React.FC<UserPermissionsProps> = ({
   userId,
   userName,
@@ -21,14 +31,14 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
 }) => {
   const queryClient = useQueryClient();
 
-  // Only show permissions for technicians
-  if (userRole !== 'technicien') {
+  // Only show permissions for technicians, chef_base and administratif
+  if (userRole === 'direction') {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Permissions des pages</CardTitle>
           <CardDescription>
-            Les utilisateurs {userRole} ont automatiquement accès à toutes les pages.
+            Les utilisateurs direction ont automatiquement accès à toutes les pages.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -99,35 +109,38 @@ export const UserPermissions: React.FC<UserPermissionsProps> = ({
       <CardHeader>
         <CardTitle>Permissions des pages - {userName}</CardTitle>
         <CardDescription>
-          Gérez l'accès aux différentes pages de l'application pour ce technicien.
-          Par défaut, tous les techniciens ont accès à toutes les pages.
+          Gérez l'accès aux différentes pages de l'application pour cet utilisateur.
+          Par défaut, tous les utilisateurs ont accès à toutes les pages.
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {Object.entries(PAGE_PERMISSIONS).map(([page, label], index) => {
-          const isGranted = permissions[page as PagePermission] !== false;
-          
-          return (
-            <div key={page}>
-              <div className="flex items-center justify-between">
-                <Label htmlFor={`permission-${page}`} className="text-sm font-medium">
-                  {label}
-                </Label>
-                <Switch
-                  id={`permission-${page}`}
-                  checked={isGranted}
-                  onCheckedChange={(checked) => 
-                    handlePermissionChange(page as PagePermission, checked)
-                  }
-                  disabled={updatePermissionMutation.isPending}
-                />
-              </div>
-              {index < Object.entries(PAGE_PERMISSIONS).length - 1 && (
-                <Separator className="mt-4" />
-              )}
+      <CardContent className="space-y-6">
+        {Object.entries(PERMISSION_SECTIONS).map(([sectionName, pageKeys]) => (
+          <div key={sectionName} className="space-y-3">
+            <h3 className="font-semibold text-sm text-muted-foreground">{sectionName}</h3>
+            <div className="space-y-3 pl-4 border-l-2 border-border">
+              {pageKeys.map((page) => {
+                const isGranted = permissions[page as PagePermission] !== false;
+                const label = PAGE_PERMISSIONS[page as PagePermission];
+                
+                return (
+                  <div key={page} className="flex items-center justify-between py-2">
+                    <Label htmlFor={`permission-${page}`} className="text-sm font-medium cursor-pointer">
+                      {label}
+                    </Label>
+                    <Switch
+                      id={`permission-${page}`}
+                      checked={isGranted}
+                      onCheckedChange={(checked) => 
+                        handlePermissionChange(page as PagePermission, checked)
+                      }
+                      disabled={updatePermissionMutation.isPending}
+                    />
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

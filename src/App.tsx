@@ -86,7 +86,7 @@ function AppRoutes() {
         path="/boats/dashboard"
         element={
           <ProtectedRoute>
-            <PermissionGate page="boats">
+            <PermissionGate page="boats_dashboard">
               <BoatsDashboard />
             </PermissionGate>
           </ProtectedRoute>
@@ -96,7 +96,7 @@ function AppRoutes() {
         path="/boats"
         element={
           <ProtectedRoute>
-            <PermissionGate page="boats">
+            <PermissionGate page="boats_fleet">
               <Boats />
             </PermissionGate>
           </ProtectedRoute>
@@ -116,7 +116,7 @@ function AppRoutes() {
         path="/safety-controls"
         element={
           <ProtectedRoute>
-            <PermissionGate page="safety_controls">
+            <PermissionGate page="boats_safety_controls">
               <SafetyControls />
             </PermissionGate>
           </ProtectedRoute>
@@ -126,7 +126,7 @@ function AppRoutes() {
         path="/boats/:boatId/safety-controls"
         element={
           <ProtectedRoute>
-            <PermissionGate page="safety_controls">
+            <PermissionGate page="boats_safety_controls">
               <BoatSafetyControls />
             </PermissionGate>
           </ProtectedRoute>
@@ -173,7 +173,7 @@ function AppRoutes() {
         path="/stock"
         element={
           <ProtectedRoute>
-            <PermissionGate page="stock">
+            <PermissionGate page="stock_inventory">
               <Stock />
             </PermissionGate>
           </ProtectedRoute>
@@ -183,7 +183,7 @@ function AppRoutes() {
         path="/preparations-expeditions"
         element={
           <ProtectedRoute>
-            <PermissionGate page="stock">
+            <PermissionGate page="stock_shipments">
               <ShipmentPreparations />
             </PermissionGate>
           </ProtectedRoute>
@@ -203,7 +203,7 @@ function AppRoutes() {
         path="/maintenance"
         element={
           <ProtectedRoute>
-            <PermissionGate page="maintenance">
+            <PermissionGate page="maintenance_interventions">
               <Maintenance />
             </PermissionGate>
           </ProtectedRoute>
@@ -253,7 +253,9 @@ function AppRoutes() {
         path="/checkin"
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
-            <CheckIn />
+            <PermissionGate page="checkin">
+              <CheckIn />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -261,7 +263,9 @@ function AppRoutes() {
         path="/checkout"
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
-            <CheckOut />
+            <PermissionGate page="checkout">
+              <CheckOut />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />
@@ -269,7 +273,9 @@ function AppRoutes() {
         path="/administrative-checkin"
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
-            <AdministrativeCheckin />
+            <PermissionGate page="administrative_checkin">
+              <AdministrativeCheckin />
+            </PermissionGate>
           </ProtectedRoute>
         }
       />

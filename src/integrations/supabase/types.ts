@@ -4189,6 +4189,15 @@ export type Database = {
         | "supply_requests"
         | "distribution"
         | "boat_preparation"
+        | "checkin"
+        | "checkout"
+        | "administrative_checkin"
+        | "boats_dashboard"
+        | "boats_fleet"
+        | "boats_safety_controls"
+        | "stock_inventory"
+        | "stock_shipments"
+        | "maintenance_interventions"
       purchase_workflow_status:
         | "draft"
         | "pending_approval"
@@ -4388,6 +4397,15 @@ export const Constants = {
         "supply_requests",
         "distribution",
         "boat_preparation",
+        "checkin",
+        "checkout",
+        "administrative_checkin",
+        "boats_dashboard",
+        "boats_fleet",
+        "boats_safety_controls",
+        "stock_inventory",
+        "stock_shipments",
+        "maintenance_interventions",
       ],
       purchase_workflow_status: [
         "draft",

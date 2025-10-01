@@ -5,36 +5,54 @@ import { useAuth } from '@/contexts/AuthContext';
 export type PagePermission = 
   | 'dashboard'
   | 'boats'
+  | 'boats_dashboard'
+  | 'boats_fleet'
+  | 'boats_safety_controls'
   | 'safety_controls'
   | 'suppliers'
   | 'orders'
   | 'stock'
+  | 'stock_inventory'
   | 'stock_scanner'
+  | 'stock_shipments'
   | 'distribution'
   | 'maintenance'
+  | 'maintenance_interventions'
   | 'maintenance_gantt'
   | 'maintenance_history'
   | 'maintenance_preventive'
   | 'notifications'
   | 'supply_requests'
-  | 'boat_preparation';
+  | 'boat_preparation'
+  | 'checkin'
+  | 'checkout'
+  | 'administrative_checkin';
 
 export const PAGE_PERMISSIONS: Record<PagePermission, string> = {
   dashboard: 'Tableau de bord',
   boats: 'Bateaux',
+  boats_dashboard: 'Bateaux - Dashboard',
+  boats_fleet: 'Bateaux - Flotte',
+  boats_safety_controls: 'Bateaux - Contrôles de sécurité',
   safety_controls: 'Contrôles de sécurité',
   suppliers: 'Fournisseurs',
   orders: 'Commandes',
   stock: 'Stock',
-  stock_scanner: 'Scanner stock',
+  stock_inventory: 'Stock - Inventaire',
+  stock_scanner: 'Stock - Scanner',
+  stock_shipments: 'Stock - Préparation d\'expéditions',
   distribution: 'Distribution',
   maintenance: 'Maintenance',
-  maintenance_gantt: 'Planning Gantt',
-  maintenance_history: 'Historique maintenance',
-  maintenance_preventive: 'Maintenance préventive',
+  maintenance_interventions: 'Maintenance - Interventions',
+  maintenance_gantt: 'Maintenance - Planning Gantt',
+  maintenance_history: 'Maintenance - Historique',
+  maintenance_preventive: 'Maintenance - Préventive',
   notifications: 'Notifications',
   supply_requests: 'Demandes approvisionnement',
-  boat_preparation: 'Préparation des bateaux'
+  boat_preparation: 'Préparation des bateaux',
+  checkin: 'Check-in',
+  checkout: 'Check-out',
+  administrative_checkin: 'Check-in administratif'
 };
 
 export function usePermissions() {
@@ -63,12 +81,12 @@ export function usePermissions() {
   });
 
   const hasPermission = (page: PagePermission): boolean => {
-    // Direction, chef_base and administratif always have access
-    if (user?.role === 'direction' || user?.role === 'chef_base' || user?.role === 'administratif') {
+    // Direction always has access
+    if (user?.role === 'direction') {
       return true;
     }
     
-    // For technicians, check permissions (default to true if not set)
+    // For chef_base, administratif, and technicians, check permissions (default to true if not set)
     return permissions[page] !== false;
   };
 
