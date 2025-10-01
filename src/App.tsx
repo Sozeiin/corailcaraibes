@@ -212,7 +212,7 @@ function AppRoutes() {
       <Route
         path="/maintenance/preventive"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+          <ProtectedRoute>
             <PermissionGate page="maintenance_preventive">
               <MaintenancePreventive />
             </PermissionGate>
@@ -252,7 +252,7 @@ function AppRoutes() {
       <Route
         path="/checkin"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+          <ProtectedRoute>
             <PermissionGate page="checkin">
               <CheckIn />
             </PermissionGate>
@@ -262,7 +262,7 @@ function AppRoutes() {
       <Route
         path="/checkout"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+          <ProtectedRoute>
             <PermissionGate page="checkout">
               <CheckOut />
             </PermissionGate>
@@ -272,7 +272,7 @@ function AppRoutes() {
       <Route
         path="/administrative-checkin"
         element={
-          <ProtectedRoute allowedRoles={['direction', 'chef_base', 'administratif']}>
+          <ProtectedRoute>
             <PermissionGate page="administrative_checkin">
               <AdministrativeCheckin />
             </PermissionGate>
