@@ -18,7 +18,7 @@ export function TechnicianDashboard() {
       {/* En-tête personnalisé technicien */}
       <div className="bg-gradient-to-r from-marine-600 to-blue-600 rounded-lg p-6 text-white">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+          <div className="bg-green-600 hover:bg-green-500">
             <h1 className="text-2xl font-bold">Bonjour {user?.name} 👋</h1>
             <p className="text-marine-100 mt-1">
               Voici votre planning de la semaine
