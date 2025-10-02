@@ -1,0 +1,73 @@
+import React from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import type { Channel } from '@/types/messaging';
+
+interface ChannelDeleteDialogProps {
+  channel: Channel | null;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteDialogProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const deleteChannel = useMutation({
+    mutationFn: async () => {
+      if (!channel) return;
+      
+      const { error } = await supabase
+        .from('channels')
+        .delete()
+        .eq('id', channel.id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['messaging-channels'] });
+      toast({
+        title: 'Canal supprimé',
+        description: 'Le canal a été supprimé avec succès',
+      });
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erreur',
+        description: error.message || 'Impossible de supprimer le canal',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={onClose}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Supprimer le canal ?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Êtes-vous sûr de vouloir supprimer le canal "<strong>{channel?.name}</strong>" ?
+            <br />
+            <span className="text-destructive font-medium">
+              Tous les sujets et messages associés seront également supprimés.
+            </span>
+            <br />
+            Cette action est irréversible.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => deleteChannel.mutate()}
+            className="bg-destructive hover:bg-destructive/90"
+          >
+            {deleteChannel.isPending ? 'Suppression...' : 'Supprimer'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}

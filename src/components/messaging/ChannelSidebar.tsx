@@ -1,8 +1,12 @@
-import React from 'react';
-import { Hash, Lock, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Hash, Lock, Users, Edit, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ChannelManagementDialog } from './ChannelManagementDialog';
+import { ChannelEditDialog } from './ChannelEditDialog';
+import { ChannelDeleteDialog } from './ChannelDeleteDialog';
+import { useAuth } from '@/contexts/AuthContext';
 import type { Channel } from '@/types/messaging';
 
 interface ChannelSidebarProps {
@@ -12,6 +16,11 @@ interface ChannelSidebarProps {
 }
 
 export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }: ChannelSidebarProps) {
+  const { user } = useAuth();
+  const [editChannel, setEditChannel] = useState<Channel | null>(null);
+  const [deleteChannel, setDeleteChannel] = useState<Channel | null>(null);
+  
+  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
   const publicChannels = channels.filter(c => c.channel_type === 'public');
   const privateChannels = channels.filter(c => c.channel_type === 'private');
 
@@ -24,6 +33,12 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
       </div>
 
       <ScrollArea className="flex-1">
+        {canManage && (
+          <div className="p-2">
+            <ChannelManagementDialog />
+          </div>
+        )}
+        
         {/* Tous les canaux */}
         <div className="p-2">
           <Button
@@ -48,18 +63,45 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
               </p>
             </div>
             {publicChannels.map((channel) => (
-              <Button
-                key={channel.id}
-                variant={selectedChannelId === channel.id ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-2 mb-1",
-                  selectedChannelId === channel.id && "bg-primary/10 text-primary"
+              <div key={channel.id} className="group relative">
+                <Button
+                  variant={selectedChannelId === channel.id ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-2 mb-1 pr-16",
+                    selectedChannelId === channel.id && "bg-primary/10 text-primary"
+                  )}
+                  onClick={() => onChannelSelect(channel.id)}
+                >
+                  <Hash className="h-4 w-4" />
+                  <span className="truncate">{channel.name}</span>
+                </Button>
+                {canManage && (
+                  <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditChannel(channel);
+                      }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteChannel(channel);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 )}
-                onClick={() => onChannelSelect(channel.id)}
-              >
-                <Hash className="h-4 w-4" />
-                <span className="truncate">{channel.name}</span>
-              </Button>
+              </div>
             ))}
           </div>
         )}
@@ -73,22 +115,63 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
               </p>
             </div>
             {privateChannels.map((channel) => (
-              <Button
-                key={channel.id}
-                variant={selectedChannelId === channel.id ? "secondary" : "ghost"}
-                className={cn(
-                  "w-full justify-start gap-2 mb-1",
-                  selectedChannelId === channel.id && "bg-primary/10 text-primary"
+              <div key={channel.id} className="group relative">
+                <Button
+                  variant={selectedChannelId === channel.id ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-2 mb-1 pr-16",
+                    selectedChannelId === channel.id && "bg-primary/10 text-primary"
+                  )}
+                  onClick={() => onChannelSelect(channel.id)}
+                >
+                  <Lock className="h-4 w-4" />
+                  <span className="truncate">{channel.name}</span>
+                </Button>
+                {canManage && (
+                  <div className="absolute right-1 top-1 opacity-0 group-hover:opacity-100 flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditChannel(channel);
+                      }}
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteChannel(channel);
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
                 )}
-                onClick={() => onChannelSelect(channel.id)}
-              >
-                <Lock className="h-4 w-4" />
-                <span className="truncate">{channel.name}</span>
-              </Button>
+              </div>
             ))}
           </div>
         )}
       </ScrollArea>
+      
+      {editChannel && (
+        <ChannelEditDialog
+          channel={editChannel}
+          isOpen={!!editChannel}
+          onClose={() => setEditChannel(null)}
+        />
+      )}
+      
+      <ChannelDeleteDialog
+        channel={deleteChannel}
+        isOpen={!!deleteChannel}
+        onClose={() => setDeleteChannel(null)}
+      />
     </div>
   );
 }

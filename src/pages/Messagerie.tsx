@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { MessageSquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { ChannelSidebar } from '@/components/messaging/ChannelSidebar';
 import { ThreadsList } from '@/components/messaging/ThreadsList';
 import { ThreadDetail } from '@/components/messaging/ThreadDetail';
 import { CreateThreadDialog } from '@/components/messaging/CreateThreadDialog';
+import { CollapsibleColumn, ExpandColumnButton } from '@/components/messaging/CollapsibleColumn';
+import { useColumnVisibility } from '@/hooks/useColumnVisibility';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Channel } from '@/types/messaging';
@@ -14,6 +16,7 @@ export default function Messagerie() {
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { visibility, toggleColumn } = useColumnVisibility();
 
   const { data: channels = [], isLoading } = useQuery({
     queryKey: ['messaging-channels'],
@@ -57,28 +60,20 @@ export default function Messagerie() {
         </Button>
       </div>
 
-      {/* Main Layout - 3 colonnes */}
+      {/* Main Layout - 3 colonnes réductibles */}
       <Card className="flex-1 flex overflow-hidden">
-        <CardContent className="flex w-full p-0">
-          {/* Colonne 1: Canaux */}
-          <div className="w-64 border-r bg-muted/30">
-            <ChannelSidebar
-              channels={channels}
-              selectedChannelId={selectedChannelId}
-              onChannelSelect={setSelectedChannelId}
-            />
-          </div>
+        <CardContent className="flex w-full p-0 relative">
+          {!visibility.channels && <ExpandColumnButton onClick={() => toggleColumn('channels')} title="canaux" />}
+          {!visibility.threads && visibility.channels && <ExpandColumnButton onClick={() => toggleColumn('threads')} title="sujets" />}
+          
+          <CollapsibleColumn isVisible={visibility.channels} onToggle={() => toggleColumn('channels')} className="w-64 bg-muted/30" title="canaux">
+            <ChannelSidebar channels={channels} selectedChannelId={selectedChannelId} onChannelSelect={setSelectedChannelId} />
+          </CollapsibleColumn>
 
-          {/* Colonne 2: Liste des threads */}
-          <div className="w-96 border-r flex flex-col">
-            <ThreadsList
-              channelId={selectedChannelId}
-              selectedThreadId={selectedThreadId}
-              onThreadSelect={setSelectedThreadId}
-            />
-          </div>
+          <CollapsibleColumn isVisible={visibility.threads} onToggle={() => toggleColumn('threads')} className="w-96" title="sujets">
+            <ThreadsList channelId={selectedChannelId} selectedThreadId={selectedThreadId} onThreadSelect={setSelectedThreadId} />
+          </CollapsibleColumn>
 
-          {/* Colonne 3: Détail du thread */}
           <div className="flex-1 flex flex-col">
             {selectedThreadId ? (
               <ThreadDetail threadId={selectedThreadId} />

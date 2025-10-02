@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThreadCard } from './ThreadCard';
+import { ThreadFiltersDialog } from './ThreadFiltersDialog';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import type { SmartThread } from '@/types/messaging';
+import { useThreadFilters } from '@/hooks/useThreadFilters';
+import type { SmartThread, ThreadStatus, ThreadPriority, ThreadCategory } from '@/types/messaging';
 
 interface ThreadsListProps {
   channelId: string | null;
@@ -16,6 +19,10 @@ interface ThreadsListProps {
 
 export function ThreadsList({ channelId, selectedThreadId, onThreadSelect }: ThreadsListProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<ThreadStatus[]>([]);
+  const [selectedPriority, setSelectedPriority] = useState<ThreadPriority[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<ThreadCategory[]>([]);
 
   const { data: threads = [], isLoading } = useQuery({
     queryKey: ['messaging-threads', channelId],
@@ -45,9 +52,9 @@ export function ThreadsList({ channelId, selectedThreadId, onThreadSelect }: Thr
     enabled: true,
   });
 
-  const filteredThreads = threads.filter(thread => 
+  const { filteredThreads, hasActiveFilters, clearFilters } = useThreadFilters(threads.filter(thread => 
     thread.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ));
 
   if (isLoading) {
     return (
@@ -70,10 +77,36 @@ export function ThreadsList({ channelId, selectedThreadId, onThreadSelect }: Thr
             className="pl-9"
           />
         </div>
-        <Button variant="outline" size="sm" className="w-full">
-          <Filter className="h-4 w-4 mr-2" />
-          Filtres
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            onClick={() => setShowFilters(true)}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Filtres
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="ml-2">
+                {(selectedStatus.length + selectedPriority.length + selectedCategory.length)}
+              </Badge>
+            )}
+          </Button>
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectedStatus([]);
+                setSelectedPriority([]);
+                setSelectedCategory([]);
+                clearFilters();
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Threads List */}
@@ -95,6 +128,23 @@ export function ThreadsList({ channelId, selectedThreadId, onThreadSelect }: Thr
           )}
         </div>
       </ScrollArea>
+      
+      <ThreadFiltersDialog
+        isOpen={showFilters}
+        onClose={() => setShowFilters(false)}
+        selectedStatus={selectedStatus}
+        selectedPriority={selectedPriority}
+        selectedCategory={selectedCategory}
+        onStatusChange={setSelectedStatus}
+        onPriorityChange={setSelectedPriority}
+        onCategoryChange={setSelectedCategory}
+        onClearAll={() => {
+          setSelectedStatus([]);
+          setSelectedPriority([]);
+          setSelectedCategory([]);
+          clearFilters();
+        }}
+      />
     </div>
   );
 }
