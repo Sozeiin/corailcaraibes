@@ -11,11 +11,16 @@ import { toast } from 'sonner';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import './DashboardGridLayout.css';
-
 const ResponsiveGridLayout = WidthProvider(Responsive);
-
 export const DashboardGridLayout = () => {
-  const { layout, loading, removeWidget, updateWidget, savePreferences, resetToDefault } = useDashboardPreferences();
+  const {
+    layout,
+    loading,
+    removeWidget,
+    updateWidget,
+    savePreferences,
+    resetToDefault
+  } = useDashboardPreferences();
   const [isEditing, setIsEditing] = useState(false);
   const [showCustomizer, setShowCustomizer] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -24,24 +29,29 @@ export const DashboardGridLayout = () => {
 
   // Convert our widgets to grid layout format
   const gridLayouts = useMemo(() => {
-    const layoutData = layout.widgets.map((widget) => ({
+    const layoutData = layout.widgets.map(widget => ({
       i: widget.id,
       x: widget.position?.x || 0,
       y: widget.position?.y || 0,
       w: widget.position?.w || getSizeConfig(widget.size).w,
       h: widget.position?.h || getSizeConfig(widget.size).h,
       minW: 2,
-      minH: 2,
+      minH: 2
     }));
-
     return {
       lg: layoutData,
       md: layoutData,
-      sm: layoutData.map(item => ({ ...item, w: Math.min(item.w, 6) })),
-      xs: layoutData.map(item => ({ ...item, w: 4, x: 0 })),
+      sm: layoutData.map(item => ({
+        ...item,
+        w: Math.min(item.w, 6)
+      })),
+      xs: layoutData.map(item => ({
+        ...item,
+        w: 4,
+        x: 0
+      }))
     };
   }, [layout.widgets]);
-
   const handleLayoutChange = useCallback((currentLayout: any, layouts: any) => {
     // Stocker seulement le layout en cours pour sauvegarde manuelle
     if (!isEditing) {
@@ -50,20 +60,17 @@ export const DashboardGridLayout = () => {
 
     // Store the pending layout for manual save on edit mode exit
     pendingLayoutRef.current = currentLayout;
-    
+
     // PAS de sauvegarde automatique - seulement stockage pour plus tard
   }, [isEditing]);
-
   const saveLayoutFromGrid = useCallback(async (currentLayout: any) => {
     if (!currentLayout) {
       console.log('No layout to save');
       return;
     }
-
     try {
       console.log('Starting saveLayoutFromGrid with:', currentLayout);
       setIsSaving(true);
-      
       const updatedWidgets = layout.widgets.map(widget => {
         const layoutItem = currentLayout.find((item: any) => item.i === widget.id);
         if (layoutItem) {
@@ -73,7 +80,7 @@ export const DashboardGridLayout = () => {
               x: layoutItem.x,
               y: layoutItem.y,
               w: layoutItem.w,
-              h: layoutItem.h,
+              h: layoutItem.h
             }
           });
           return {
@@ -82,21 +89,19 @@ export const DashboardGridLayout = () => {
               x: layoutItem.x,
               y: layoutItem.y,
               w: layoutItem.w,
-              h: layoutItem.h,
+              h: layoutItem.h
             }
           };
         }
         return widget;
       });
-
-      const newLayout = { widgets: updatedWidgets };
+      const newLayout = {
+        widgets: updatedWidgets
+      };
       console.log('Attempting to save new layout:', newLayout);
-      
       await savePreferences(newLayout);
-      
       console.log('Layout saved successfully');
       // Pas de toast ici pour éviter les notifications répétitives
-      
     } catch (error: any) {
       console.error('Error in saveLayoutFromGrid:', error);
       toast.error('Erreur lors de la sauvegarde: ' + (error?.message || 'Erreur inconnue'));
@@ -126,149 +131,97 @@ export const DashboardGridLayout = () => {
         navigator.sendBeacon('/api/save-layout', JSON.stringify(pendingLayoutRef.current));
       }
     };
-
     const handleVisibilityChange = () => {
       if (document.hidden && pendingLayoutRef.current && isEditing) {
         saveLayoutFromGrid(pendingLayoutRef.current);
       }
     };
-
     window.addEventListener('beforeunload', handleBeforeUnload);
     document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isEditing, saveLayoutFromGrid]);
-  
+
   // Debug logs pour tracer les changements
   useEffect(() => {
     console.log('DashboardGridLayout - Layout changed:', layout);
   }, [layout]);
-
   useEffect(() => {
     console.log('DashboardGridLayout - Loading state:', loading);
   }, [loading]);
-
   const handleRemoveWidget = (widgetId: string) => {
     removeWidget(widgetId);
     toast.success('Widget supprimé');
   };
-
   const renderWidget = (widget: WidgetConfig) => {
     const widgetType = getWidgetByType(widget.type);
     if (!widgetType) return null;
-
     const WidgetComponent = widgetType.component;
-
-    return (
-      <div key={widget.id} className="relative">
-        {isEditing && (
-          <div className="absolute top-2 right-2 z-10 flex space-x-1">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => handleRemoveWidget(widget.id)}
-              className="h-6 w-6 p-0"
-            >
+    return <div key={widget.id} className="relative">
+        {isEditing && <div className="absolute top-2 right-2 z-10 flex space-x-1">
+            <Button size="sm" variant="destructive" onClick={() => handleRemoveWidget(widget.id)} className="h-6 w-6 p-0">
               <X className="h-3 w-3" />
             </Button>
-          </div>
-        )}
+          </div>}
         <div className={`h-full w-full overflow-hidden ${isEditing ? 'editing' : ''}`}>
-          <WidgetComponent
-            config={widget}
-            isEditing={isEditing}
-            onConfigChange={(newConfig) => updateWidget(widget.id, newConfig)}
-            onRemove={() => handleRemoveWidget(widget.id)}
-          />
+          <WidgetComponent config={widget} isEditing={isEditing} onConfigChange={newConfig => updateWidget(widget.id, newConfig)} onRemove={() => handleRemoveWidget(widget.id)} />
         </div>
-      </div>
-    );
+      </div>;
   };
-
   if (loading) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {[...Array(6)].map((_, i) => (
-          <div key={i} className="h-64 animate-pulse bg-muted rounded-lg" />
-        ))}
-      </div>
-    );
+    return <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[...Array(6)].map((_, i) => <div key={i} className="h-64 animate-pulse bg-muted rounded-lg" />)}
+      </div>;
   }
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       {/* Header with controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <h2 className="text-lg font-semibold">Mon Tableau de Bord</h2>
-          <Badge variant="secondary" className="text-xs">
-            {layout.widgets.length} widget(s)
-          </Badge>
-          {isEditing && (
-            <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
+          
+          {isEditing && <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700">
               Mode édition - Glissez pour repositionner
-            </Badge>
-          )}
+            </Badge>}
         </div>
         <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowCustomizer(true)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setShowCustomizer(true)}>
             <Plus className="h-4 w-4 mr-1" />
             Ajouter
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetToDefault}
-            title="Remettre à zéro"
-          >
+          <Button variant="outline" size="sm" onClick={resetToDefault} title="Remettre à zéro">
             <RotateCcw className="h-4 w-4" />
           </Button>
-          <Button
-            variant={isEditing ? "default" : "outline"}
-            size="sm"
-            disabled={isSaving}
-            onClick={async () => {
-              if (isEditing) {
-                // Force save before exiting edit mode - une seule fois
-                setIsSaving(true);
-                try {
-                  if (pendingLayoutRef.current) {
-                    await saveLayoutFromGrid(pendingLayoutRef.current);
-                    pendingLayoutRef.current = null;
-                  }
-                  toast.success('Modifications sauvegardées');
-                  setIsEditing(false);
-                } catch (error) {
-                  toast.error('Erreur lors de la sauvegarde');
-                } finally {
-                  setIsSaving(false);
-                }
-              } else {
-                toast.info('Mode édition activé - Glissez les widgets pour les repositionner');
-                setIsEditing(true);
+          <Button variant={isEditing ? "default" : "outline"} size="sm" disabled={isSaving} onClick={async () => {
+          if (isEditing) {
+            // Force save before exiting edit mode - une seule fois
+            setIsSaving(true);
+            try {
+              if (pendingLayoutRef.current) {
+                await saveLayoutFromGrid(pendingLayoutRef.current);
+                pendingLayoutRef.current = null;
               }
-            }}
-          >
-            {isSaving ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-            ) : (
-              <Settings className="h-4 w-4 mr-1" />
-            )}
+              toast.success('Modifications sauvegardées');
+              setIsEditing(false);
+            } catch (error) {
+              toast.error('Erreur lors de la sauvegarde');
+            } finally {
+              setIsSaving(false);
+            }
+          } else {
+            toast.info('Mode édition activé - Glissez les widgets pour les repositionner');
+            setIsEditing(true);
+          }
+        }}>
+            {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Settings className="h-4 w-4 mr-1" />}
             {isEditing ? 'Terminer' : 'Personnaliser'}
           </Button>
         </div>
       </div>
 
       {/* Widgets Grid */}
-      {layout.widgets.length === 0 ? (
-        <div className="text-center py-12 bg-muted/30 rounded-lg border-2 border-dashed">
+      {layout.widgets.length === 0 ? <div className="text-center py-12 bg-muted/30 rounded-lg border-2 border-dashed">
           <div className="space-y-4">
             <div className="text-muted-foreground">
               <Plus className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
@@ -279,42 +232,45 @@ export const DashboardGridLayout = () => {
               Ajouter votre premier widget
             </Button>
           </div>
-        </div>
-      ) : (
-        <ResponsiveGridLayout
-          layouts={gridLayouts}
-          onLayoutChange={handleLayoutChange}
-          cols={{ lg: 12, md: 10, sm: 6, xs: 4 }}
-          rowHeight={60}
-          isDraggable={isEditing}
-          isResizable={isEditing}
-          margin={[16, 16]}
-          containerPadding={[0, 0]}
-          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480 }}
-        >
+        </div> : <ResponsiveGridLayout layouts={gridLayouts} onLayoutChange={handleLayoutChange} cols={{
+      lg: 12,
+      md: 10,
+      sm: 6,
+      xs: 4
+    }} rowHeight={60} isDraggable={isEditing} isResizable={isEditing} margin={[16, 16]} containerPadding={[0, 0]} breakpoints={{
+      lg: 1200,
+      md: 996,
+      sm: 768,
+      xs: 480
+    }}>
           {layout.widgets.map(renderWidget)}
-        </ResponsiveGridLayout>
-      )}
+        </ResponsiveGridLayout>}
 
       {/* Customizer Modal */}
-      <DashboardCustomizer
-        isOpen={showCustomizer}
-        onClose={() => setShowCustomizer(false)}
-      />
-    </div>
-  );
+      <DashboardCustomizer isOpen={showCustomizer} onClose={() => setShowCustomizer(false)} />
+    </div>;
 };
-
-
 const getSizeConfig = (size: 'small' | 'medium' | 'large') => {
   switch (size) {
     case 'small':
-      return { w: 3, h: 4 };
+      return {
+        w: 3,
+        h: 4
+      };
     case 'medium':
-      return { w: 6, h: 4 };
+      return {
+        w: 6,
+        h: 4
+      };
     case 'large':
-      return { w: 12, h: 6 };
+      return {
+        w: 12,
+        h: 6
+      };
     default:
-      return { w: 6, h: 4 };
+      return {
+        w: 6,
+        h: 4
+      };
   }
 };
