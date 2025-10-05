@@ -75,6 +75,20 @@ export function ThreadDetail({ threadId }: ThreadDetailProps) {
     },
   });
 
+  // Fetch channels for the edit dialog
+  const { data: channels = [] } = useQuery({
+    queryKey: ['messaging-channels'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('channels')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   if (threadLoading || !thread) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -86,7 +100,7 @@ export function ThreadDetail({ threadId }: ThreadDetailProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Header avec infos du thread */}
-      <ThreadHeader thread={thread} />
+      <ThreadHeader thread={thread} channels={channels} />
 
       {/* Messages */}
       <ScrollArea className="flex-1 p-4">

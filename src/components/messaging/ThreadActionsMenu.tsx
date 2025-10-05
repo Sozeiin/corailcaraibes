@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Tag, AlertCircle, UserPlus, Link2, Trash2 } from 'lucide-react';
+import { MoreVertical, Tag, AlertCircle, UserPlus, Link2, Trash2, Edit } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,20 +13,23 @@ import { ThreadPriorityDialog } from './ThreadPriorityDialog';
 import { ThreadAssignmentDialog } from './ThreadAssignmentDialog';
 import { EntityLinkDialog } from './EntityLinkDialog';
 import { ThreadDeleteDialog } from './ThreadDeleteDialog';
-import type { SmartThread } from '@/types/messaging';
+import { ThreadEditDialog } from './ThreadEditDialog';
+import type { SmartThread, Channel } from '@/types/messaging';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ThreadActionsMenuProps {
   thread: SmartThread;
+  channels?: Channel[];
 }
 
-export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
+export function ThreadActionsMenu({ thread, channels = [] }: ThreadActionsMenuProps) {
   const { user } = useAuth();
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [priorityDialogOpen, setPriorityDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [entityDialogOpen, setEntityDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   // Check permissions (direction and chef_base can manage)
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
@@ -45,6 +48,11 @@ export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Modifier le sujet
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setStatusDialogOpen(true)}>
             <Tag className="h-4 w-4 mr-2" />
             Modifier le statut
@@ -107,6 +115,13 @@ export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
         thread={thread}
         isOpen={deleteDialogOpen}
         onClose={() => setDeleteDialogOpen(false)}
+      />
+
+      <ThreadEditDialog
+        thread={thread}
+        channels={channels}
+        isOpen={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
       />
     </>
   );

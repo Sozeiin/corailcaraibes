@@ -3,16 +3,17 @@ import { User, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { SmartThread } from '@/types/messaging';
+import type { SmartThread, Channel } from '@/types/messaging';
 import { ThreadActionsMenu } from './ThreadActionsMenu';
 import { ThreadAssignees } from './ThreadAssignees';
 import { ThreadEntitiesBadges } from './ThreadEntitiesBadges';
 
 interface ThreadHeaderProps {
   thread: SmartThread;
+  channels?: Channel[];
 }
 
-export function ThreadHeader({ thread }: ThreadHeaderProps) {
+export function ThreadHeader({ thread, channels = [] }: ThreadHeaderProps) {
   const status = thread.workflow_state?.status || 'new';
   const priority = thread.workflow_state?.priority || 'medium';
   const category = thread.workflow_state?.category;
@@ -33,7 +34,7 @@ export function ThreadHeader({ thread }: ThreadHeaderProps) {
             </div>
           </div>
         </div>
-        <ThreadActionsMenu thread={thread} />
+        <ThreadActionsMenu thread={thread} channels={channels} />
       </div>
 
       {/* Badges de statut */}
