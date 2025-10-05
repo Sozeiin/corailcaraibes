@@ -1,16 +1,10 @@
 import React from 'react';
-import { MoreVertical, User, Calendar } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { User, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { SmartThread } from '@/types/messaging';
+import { ThreadActionsMenu } from './ThreadActionsMenu';
 
 interface ThreadHeaderProps {
   thread: SmartThread;
@@ -37,19 +31,7 @@ export function ThreadHeader({ thread }: ThreadHeaderProps) {
             </div>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>Modifier le statut</DropdownMenuItem>
-            <DropdownMenuItem>Changer la priorité</DropdownMenuItem>
-            <DropdownMenuItem>Assigner à quelqu'un</DropdownMenuItem>
-            <DropdownMenuItem>Lier une entité</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <ThreadActionsMenu thread={thread} />
       </div>
 
       {/* Badges de statut */}
