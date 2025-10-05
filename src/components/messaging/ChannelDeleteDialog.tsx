@@ -1,9 +1,18 @@
 import React from 'react';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Channel } from '@/types/messaging';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ChannelDeleteDialogProps {
   channel: Channel | null;
@@ -16,18 +25,13 @@ export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteD
   const queryClient = useQueryClient();
 
   const deleteChannel = useMutation({
-    mutationFn: async () => {
-      if (!channel) {
-        console.error('No channel to delete');
-        return;
-      }
-      
-      console.log('Attempting to delete channel:', channel);
+    mutationFn: async (channelId: string) => {
+      console.log('Attempting to delete channel with ID:', channelId);
       
       const { error } = await supabase
         .from('channels')
         .delete()
-        .eq('id', channel.id);
+        .eq('id', channelId);
 
       if (error) {
         console.error('Delete error:', error);
@@ -55,6 +59,15 @@ export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteD
     },
   });
 
+  const handleDelete = () => {
+    if (!channel) {
+      console.error('No channel to delete');
+      return;
+    }
+    console.log('Deleting channel:', channel);
+    deleteChannel.mutate(channel.id);
+  };
+
   return (
     <AlertDialog open={isOpen} onOpenChange={onClose}>
       <AlertDialogContent>
@@ -73,7 +86,7 @@ export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteD
         <AlertDialogFooter>
           <AlertDialogCancel>Annuler</AlertDialogCancel>
           <AlertDialogAction
-            onClick={() => deleteChannel.mutate()}
+            onClick={handleDelete}
             className="bg-destructive hover:bg-destructive/90"
           >
             {deleteChannel.isPending ? 'Suppression...' : 'Supprimer'}
