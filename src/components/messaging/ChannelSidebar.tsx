@@ -125,6 +125,7 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
                         className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                         onClick={(e) => {
                           e.stopPropagation();
+                          console.log('Delete button clicked for channel:', channel);
                           setDeleteChannel(channel);
                         }}
                       >

@@ -17,17 +17,28 @@ export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteD
 
   const deleteChannel = useMutation({
     mutationFn: async () => {
-      if (!channel) return;
+      if (!channel) {
+        console.error('No channel to delete');
+        return;
+      }
+      
+      console.log('Attempting to delete channel:', channel);
       
       const { error } = await supabase
         .from('channels')
         .delete()
         .eq('id', channel.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Delete error:', error);
+        throw error;
+      }
+      
+      console.log('Channel deleted successfully');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messaging-channels'] });
+      queryClient.invalidateQueries({ queryKey: ['messaging-threads'] });
       toast({
         title: 'Canal supprimé',
         description: 'Le canal a été supprimé avec succès',
@@ -35,6 +46,7 @@ export function ChannelDeleteDialog({ channel, isOpen, onClose }: ChannelDeleteD
       onClose();
     },
     onError: (error: any) => {
+      console.error('Delete mutation error:', error);
       toast({
         title: 'Erreur',
         description: error.message || 'Impossible de supprimer le canal',
