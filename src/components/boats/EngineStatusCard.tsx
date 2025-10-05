@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Cog, Wrench, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Cog, Wrench, Clock, Edit } from 'lucide-react';
 import { getOilChangeStatusBadge, calculateOilChangeProgress } from '@/utils/engineMaintenanceUtils';
+import { useAuth } from '@/contexts/AuthContext';
+import { EngineHoursDialog } from './EngineHoursDialog';
+import { useUpdateEngineHours } from '@/hooks/useEngineHoursMutations';
 
 interface EngineStatusCardProps {
   engine: {
@@ -13,12 +17,24 @@ interface EngineStatusCardProps {
     last_oil_change_hours: number;
     status: string;
   };
+  boatId: string;
   className?: string;
 }
 
-export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, className = '' }) => {
+export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boatId, className = '' }) => {
+  const { user } = useAuth();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const updateEngineHours = useUpdateEngineHours(boatId);
+  
   const oilStatus = getOilChangeStatusBadge(engine.current_engine_hours, engine.last_oil_change_hours);
   const oilProgress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours);
+
+  // Show edit button only for chef_base and direction
+  const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
+
+  const handleSave = async (engineId: string, data: { current_engine_hours: number; last_oil_change_hours: number }) => {
+    await updateEngineHours.mutateAsync({ engineId, data });
+  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch ((status || '').toLowerCase()) {
@@ -56,18 +72,32 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, clas
   };
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center justify-between text-sm">
-          <div className="flex items-center">
-            <Cog className="h-4 w-4 mr-2" />
-            {engine.component_name}
-          </div>
-          <Badge variant={getStatusBadgeVariant(engine.status)}>
-            {engine.status}
-          </Badge>
-        </CardTitle>
-      </CardHeader>
+    <>
+      <Card className={className}>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <Cog className="h-4 w-4 mr-2" />
+              {engine.component_name}
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusBadgeVariant(engine.status)}>
+                {engine.status}
+              </Badge>
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setIsDialogOpen(true)}
+                  title="Modifier les heures moteur"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </CardTitle>
+        </CardHeader>
       <CardContent className="space-y-4">
         {/* Heures moteur */}
         <div className="space-y-2">
@@ -110,5 +140,13 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, clas
         </div>
       </CardContent>
     </Card>
+
+    <EngineHoursDialog
+      isOpen={isDialogOpen}
+      onClose={() => setIsDialogOpen(false)}
+      engine={engine}
+      onSave={handleSave}
+    />
+  </>
   );
 };
