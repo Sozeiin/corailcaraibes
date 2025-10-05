@@ -208,7 +208,7 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-2">
               {stats.engineComponents.map((engine: any) => (
-                <EngineStatusCard key={engine.id} engine={engine} />
+                <EngineStatusCard key={engine.id} engine={engine} boatId={boatId} />
               ))}
             </div>
           </CardContent>
