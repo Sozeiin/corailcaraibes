@@ -22,15 +22,28 @@ export function ThreadDetail({ threadId }: ThreadDetailProps) {
           channel:channels(*),
           workflow_state:thread_workflow_states(*),
           entities:smart_thread_entities(*),
-          assignments:thread_assignments(
-            *,
-            user:profiles(id, name, role)
-          )
+          assignments:thread_assignments(*)
         `)
         .eq('id', threadId)
         .single();
 
       if (error) throw error;
+
+      // Récupérer les profils utilisateurs pour les assignations
+      if (data.assignments && data.assignments.length > 0) {
+        const userIds = data.assignments.map((a: any) => a.user_id);
+        const { data: users } = await supabase
+          .from('profiles')
+          .select('id, name, role')
+          .in('id', userIds);
+
+        const usersMap = new Map(users?.map(u => [u.id, u]) || []);
+        data.assignments = data.assignments.map((a: any) => ({
+          ...a,
+          user: usersMap.get(a.user_id)
+        }));
+      }
+
       return data as any;
     },
   });
