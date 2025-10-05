@@ -22,7 +22,10 @@ export function ThreadDetail({ threadId }: ThreadDetailProps) {
           channel:channels(*),
           workflow_state:thread_workflow_states(*),
           entities:smart_thread_entities(*),
-          assignments:thread_assignments(*)
+          assignments:thread_assignments(
+            *,
+            user:profiles(id, name, role)
+          )
         `)
         .eq('id', threadId)
         .single();

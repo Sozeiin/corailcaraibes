@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { SmartThread } from '@/types/messaging';
 import { ThreadActionsMenu } from './ThreadActionsMenu';
+import { ThreadAssignees } from './ThreadAssignees';
 
 interface ThreadHeaderProps {
   thread: SmartThread;
@@ -47,13 +48,10 @@ export function ThreadHeader({ thread }: ThreadHeaderProps) {
             {category}
           </Badge>
         )}
-        {thread.workflow_state?.assignee && (
-          <Badge variant="secondary">
-            <User className="h-3 w-3 mr-1" />
-            {thread.workflow_state.assignee.name}
-          </Badge>
-        )}
       </div>
+
+      {/* Personnes assignées */}
+      <ThreadAssignees assignments={thread.assignments} />
     </div>
   );
 }
