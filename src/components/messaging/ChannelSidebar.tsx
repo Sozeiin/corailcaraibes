@@ -23,6 +23,7 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
   const [deleteChannel, setDeleteChannel] = useState<Channel | null>(null);
   
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  const canDelete = user?.role === 'direction';
 
   // Récupérer les canaux privés dont l'utilisateur est membre
   const { data: userChannelMemberships = [] } = useQuery({
@@ -117,17 +118,19 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteChannel(channel);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteChannel(channel);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
@@ -169,17 +172,19 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
                     >
                       <Edit className="h-3 w-3" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteChannel(channel);
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    {canDelete && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteChannel(channel);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
