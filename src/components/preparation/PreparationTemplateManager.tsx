@@ -162,6 +162,19 @@ export function PreparationTemplateManager() {
   // Delete template mutation
   const deleteTemplateMutation = useMutation({
     mutationFn: async (id: string) => {
+      // Check if template is used in any checklists
+      const { data: usedChecklists, error: checkError } = await supabase
+        .from('boat_preparation_checklists')
+        .select('id')
+        .eq('template_id', id)
+        .limit(1);
+      
+      if (checkError) throw checkError;
+      
+      if (usedChecklists && usedChecklists.length > 0) {
+        throw new Error('Ce modèle est utilisé par des checklists existantes et ne peut pas être supprimé. Vous pouvez le désactiver à la place.');
+      }
+      
       const { error } = await supabase
         .from('preparation_checklist_templates')
         .delete()
@@ -173,8 +186,8 @@ export function PreparationTemplateManager() {
       queryClient.invalidateQueries({ queryKey: ['preparation-templates'] });
       toast.success('Modèle supprimé');
     },
-    onError: () => {
-      toast.error('Erreur lors de la suppression');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Erreur lors de la suppression');
     }
   });
 
