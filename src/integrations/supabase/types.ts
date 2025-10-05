@@ -4248,6 +4248,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          assigned_at: string
+          assigned_by: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       weather_adjustment_rules: {
         Row: {
           action: string
@@ -4558,6 +4582,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       initialize_purchase_workflow: {
         Args: { order_id_param: string }
         Returns: undefined
@@ -4659,6 +4690,7 @@ export type Database = {
         | "preparation"
       alert_severity: "info" | "warning" | "error"
       alert_type: "stock" | "maintenance" | "document" | "system"
+      app_role: "direction" | "chef_base" | "technicien" | "administratif"
       boat_status: "available" | "rented" | "maintenance" | "out_of_service"
       channel_type: "public" | "private"
       checklist_overall_status: "ok" | "needs_attention" | "major_issues"
@@ -4868,6 +4900,7 @@ export const Constants = {
       ],
       alert_severity: ["info", "warning", "error"],
       alert_type: ["stock", "maintenance", "document", "system"],
+      app_role: ["direction", "chef_base", "technicien", "administratif"],
       boat_status: ["available", "rented", "maintenance", "out_of_service"],
       channel_type: ["public", "private"],
       checklist_overall_status: ["ok", "needs_attention", "major_issues"],
