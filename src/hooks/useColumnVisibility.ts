@@ -1,55 +1,68 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 
-export type ColumnVisibility = {
-  channels: boolean;
-  threads: boolean;
-  detail: boolean;
+export type PanelState = {
+  channels: { collapsed: boolean; size: number };
+  threads: { collapsed: boolean; size: number };
 };
 
-const STORAGE_KEY = 'messagerie-columns-visibility';
+const STORAGE_KEY = 'messagerie-panels-state';
+const DEFAULT_STATE: PanelState = {
+  channels: { collapsed: false, size: 20 },
+  threads: { collapsed: false, size: 30 },
+};
 
-export function useColumnVisibility() {
-  const [visibility, setVisibility] = useState<ColumnVisibility>(() => {
+export function usePanelState() {
+  const channelsRef = useRef<ImperativePanelHandle>(null);
+  const threadsRef = useRef<ImperativePanelHandle>(null);
+
+  const [panelState, setPanelState] = useState<PanelState>(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
         return JSON.parse(stored);
       } catch {
-        // Ignore parse errors
+        return DEFAULT_STATE;
       }
     }
-    return { channels: true, threads: true, detail: true };
+    return DEFAULT_STATE;
   });
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(visibility));
-  }, [visibility]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(panelState));
+  }, [panelState]);
 
-  const toggleColumn = (column: keyof ColumnVisibility) => {
-    setVisibility((prev) => ({
+  const togglePanel = (panel: keyof PanelState) => {
+    const ref = panel === 'channels' ? channelsRef : threadsRef;
+    const isCollapsed = panelState[panel].collapsed;
+
+    if (isCollapsed) {
+      ref.current?.expand();
+    } else {
+      ref.current?.collapse();
+    }
+
+    setPanelState((prev) => ({
       ...prev,
-      [column]: !prev[column],
+      [panel]: {
+        ...prev[panel],
+        collapsed: !isCollapsed,
+      },
     }));
   };
 
-  const showColumn = (column: keyof ColumnVisibility) => {
-    setVisibility((prev) => ({
-      ...prev,
-      [column]: true,
-    }));
-  };
-
-  const hideColumn = (column: keyof ColumnVisibility) => {
-    setVisibility((prev) => ({
-      ...prev,
-      [column]: false,
+  const onLayout = (sizes: number[]) => {
+    setPanelState((prev) => ({
+      channels: { ...prev.channels, size: sizes[0] },
+      threads: { ...prev.threads, size: sizes[1] },
     }));
   };
 
   return {
-    visibility,
-    toggleColumn,
-    showColumn,
-    hideColumn,
+    channelsRef,
+    threadsRef,
+    panelState,
+    togglePanel,
+    onLayout,
   };
 }
