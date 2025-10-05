@@ -6,6 +6,7 @@ import { fr } from 'date-fns/locale';
 import type { SmartThread } from '@/types/messaging';
 import { ThreadActionsMenu } from './ThreadActionsMenu';
 import { ThreadAssignees } from './ThreadAssignees';
+import { ThreadEntitiesBadges } from './ThreadEntitiesBadges';
 
 interface ThreadHeaderProps {
   thread: SmartThread;
@@ -52,6 +53,9 @@ export function ThreadHeader({ thread }: ThreadHeaderProps) {
 
       {/* Personnes assignées */}
       <ThreadAssignees assignments={thread.assignments} />
+
+      {/* Entités liées */}
+      <ThreadEntitiesBadges entities={thread.entities} threadId={thread.id} />
     </div>
   );
 }

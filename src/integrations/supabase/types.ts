@@ -4435,6 +4435,28 @@ export type Database = {
           },
         ]
       }
+      thread_entities_detailed: {
+        Row: {
+          entity_id: string | null
+          entity_name: string | null
+          entity_status: string | null
+          entity_type: string | null
+          id: string | null
+          linked_at: string | null
+          linked_by: string | null
+          notes: string | null
+          topic_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_thread_entities_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_item_by_scan: {
