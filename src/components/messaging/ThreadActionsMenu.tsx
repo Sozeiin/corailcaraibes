@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Tag, AlertCircle, UserPlus, Link2 } from 'lucide-react';
+import { MoreVertical, Tag, AlertCircle, UserPlus, Link2, Trash2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import { ThreadStatusDialog } from './ThreadStatusDialog';
 import { ThreadPriorityDialog } from './ThreadPriorityDialog';
 import { ThreadAssignmentDialog } from './ThreadAssignmentDialog';
 import { EntityLinkDialog } from './EntityLinkDialog';
+import { ThreadDeleteDialog } from './ThreadDeleteDialog';
 import type { SmartThread } from '@/types/messaging';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -25,9 +26,11 @@ export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
   const [priorityDialogOpen, setPriorityDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [entityDialogOpen, setEntityDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Check permissions (direction and chef_base can manage)
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  const canDelete = user?.role === 'direction';
 
   if (!canManage) {
     return null;
@@ -59,6 +62,18 @@ export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
             <Link2 className="h-4 w-4 mr-2" />
             Lier une entité
           </DropdownMenuItem>
+          {canDelete && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => setDeleteDialogOpen(true)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Supprimer le sujet
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -86,6 +101,12 @@ export function ThreadActionsMenu({ thread }: ThreadActionsMenuProps) {
         threadId={thread.id}
         isOpen={entityDialogOpen}
         onClose={() => setEntityDialogOpen(false)}
+      />
+
+      <ThreadDeleteDialog
+        thread={thread}
+        isOpen={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
       />
     </>
   );
