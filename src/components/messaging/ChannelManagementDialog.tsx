@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { Channel } from '@/types/messaging';
+import { ChannelMembersSelector } from './ChannelMembersSelector';
 
 interface ChannelManagementDialogProps {
   onChannelCreated?: (channel: Channel) => void;
@@ -20,6 +21,7 @@ export function ChannelManagementDialog({ onChannelCreated }: ChannelManagementD
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [channelType, setChannelType] = useState<'public' | 'private'>('public');
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -40,6 +42,21 @@ export function ChannelManagementDialog({ onChannelCreated }: ChannelManagementD
         .single();
 
       if (error) throw error;
+
+      // Si canal privé, ajouter les membres sélectionnés
+      if (channelType === 'private' && selectedMemberIds.length > 0) {
+        const members = selectedMemberIds.map(userId => ({
+          channel_id: data.id,
+          user_id: userId,
+        }));
+
+        const { error: membersError } = await supabase
+          .from('channel_members')
+          .insert(members);
+
+        if (membersError) throw membersError;
+      }
+
       return data as Channel;
     },
     onSuccess: (data) => {
@@ -52,6 +69,7 @@ export function ChannelManagementDialog({ onChannelCreated }: ChannelManagementD
       setName('');
       setDescription('');
       setChannelType('public');
+      setSelectedMemberIds([]);
       onChannelCreated?.(data);
     },
     onError: (error: any) => {
@@ -126,6 +144,13 @@ export function ChannelManagementDialog({ onChannelCreated }: ChannelManagementD
               </SelectContent>
             </Select>
           </div>
+
+          {channelType === 'private' && (
+            <ChannelMembersSelector
+              selectedUserIds={selectedMemberIds}
+              onChange={setSelectedMemberIds}
+            />
+          )}
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>

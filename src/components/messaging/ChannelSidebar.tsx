@@ -7,6 +7,8 @@ import { ChannelManagementDialog } from './ChannelManagementDialog';
 import { ChannelEditDialog } from './ChannelEditDialog';
 import { ChannelDeleteDialog } from './ChannelDeleteDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import type { Channel } from '@/types/messaging';
 
 interface ChannelSidebarProps {
@@ -21,8 +23,35 @@ export function ChannelSidebar({ channels, selectedChannelId, onChannelSelect }:
   const [deleteChannel, setDeleteChannel] = useState<Channel | null>(null);
   
   const canManage = user?.role === 'direction' || user?.role === 'chef_base';
-  const publicChannels = channels.filter(c => c.channel_type === 'public');
-  const privateChannels = channels.filter(c => c.channel_type === 'private');
+
+  // Récupérer les canaux privés dont l'utilisateur est membre
+  const { data: userChannelMemberships = [] } = useQuery({
+    queryKey: ['user-channel-memberships', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('channel_members')
+        .select('channel_id')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      return data.map(m => m.channel_id);
+    },
+    enabled: !!user?.id,
+  });
+
+  // Filtrer les canaux selon les permissions
+  const visibleChannels = channels.filter(channel => {
+    // Les canaux publics sont visibles par tous
+    if (channel.channel_type === 'public') return true;
+    
+    // Les canaux privés sont visibles si l'utilisateur est direction, chef_base, ou membre
+    return canManage || userChannelMemberships.includes(channel.id);
+  });
+
+  const publicChannels = visibleChannels.filter(c => c.channel_type === 'public');
+  const privateChannels = visibleChannels.filter(c => c.channel_type === 'private');
 
   return (
     <div className="flex flex-col h-full">
