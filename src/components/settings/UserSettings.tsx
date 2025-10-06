@@ -21,12 +21,24 @@ export function UserSettings() {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
+      // Get current user's tenant_id
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('tenant_id')
+        .eq('id', user.id)
+        .single();
+
+      // Fetch users with same tenant_id
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
           bases(name)
         `)
+        .eq('tenant_id', profile?.tenant_id)
         .order('name');
       
       if (error) throw error;
