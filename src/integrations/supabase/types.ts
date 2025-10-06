@@ -2739,13 +2739,6 @@ export type Database = {
             referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "profiles_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
         ]
       }
       purchasing_templates: {
@@ -4316,15 +4309,7 @@ export type Database = {
           tenant_id?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_tenant_id_fkey"
-            columns: ["tenant_id"]
-            isOneToOne: false
-            referencedRelation: "tenants"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       weather_adjustment_rules: {
         Row: {
