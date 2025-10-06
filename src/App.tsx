@@ -36,6 +36,7 @@ import CheckOut from "./pages/CheckOut";
 
 import NotFound from "./pages/NotFound";
 import Messagerie from "./pages/Messagerie";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -303,6 +304,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['direction', 'chef_base', 'technicien', 'administratif']}>
             <Messagerie />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Admin />
           </ProtectedRoute>
         }
       />

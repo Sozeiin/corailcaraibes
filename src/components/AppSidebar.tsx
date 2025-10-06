@@ -3,7 +3,8 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateAllRelatedQueries } from '@/lib/queryInvalidation';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck, MessageSquare } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck, MessageSquare, Shield } from 'lucide-react';
+import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -102,6 +103,7 @@ export function AppSidebar() {
   const queryClient = useQueryClient();
   const [baseName, setBaseName] = useState<string>('');
   const [openSubMenus, setOpenSubMenus] = useState<Record<string, boolean>>({});
+  const { isSuperAdmin } = useIsSuperAdmin();
   useEffect(() => {
     const fetchBaseName = async () => {
       if (user?.baseId && user.role !== 'direction') {
@@ -187,7 +189,25 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        
+        {isSuperAdmin && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-2 sm:mb-3 lg:mb-4">
+              Super Admin
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <NavLink to="/admin" className={getNavClass('/admin')} onClick={handleNavClick}>
+                      <Shield className="h-4 w-4 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm lg:text-base truncate">Administration</span>
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
     </Sidebar>;
 }
