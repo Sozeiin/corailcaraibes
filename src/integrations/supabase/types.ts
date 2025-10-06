@@ -4690,7 +4690,12 @@ export type Database = {
         | "preparation"
       alert_severity: "info" | "warning" | "error"
       alert_type: "stock" | "maintenance" | "document" | "system"
-      app_role: "direction" | "chef_base" | "technicien" | "administratif"
+      app_role:
+        | "direction"
+        | "chef_base"
+        | "technicien"
+        | "administratif"
+        | "super_admin"
       boat_status: "available" | "rented" | "maintenance" | "out_of_service"
       channel_type: "public" | "private"
       checklist_overall_status: "ok" | "needs_attention" | "major_issues"
@@ -4900,7 +4905,13 @@ export const Constants = {
       ],
       alert_severity: ["info", "warning", "error"],
       alert_type: ["stock", "maintenance", "document", "system"],
-      app_role: ["direction", "chef_base", "technicien", "administratif"],
+      app_role: [
+        "direction",
+        "chef_base",
+        "technicien",
+        "administratif",
+        "super_admin",
+      ],
       boat_status: ["available", "rented", "maintenance", "out_of_service"],
       channel_type: ["public", "private"],
       checklist_overall_status: ["ok", "needs_attention", "major_issues"],
