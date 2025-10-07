@@ -58,7 +58,7 @@ const handler = async (req: Request): Promise<Response> => {
       .upsert({
         user_id: user.id,
         base_id: profile?.base_id,
-        tenant_id: profile?.tenant_id,
+        tenant_id: null,
         endpoint: endpoint,
         p256dh: p256dh,
         auth: auth,
