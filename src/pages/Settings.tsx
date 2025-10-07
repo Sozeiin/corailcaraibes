@@ -13,6 +13,7 @@ import { StockSettings } from '@/components/settings/StockSettings';
 import { ProfileSettings } from '@/components/settings/ProfileSettings';
 import { OfflineSettings } from '@/components/settings/OfflineSettings';
 import { MobileSystemDashboard } from '@/components/mobile/MobileSystemDashboard';
+import { PushNotificationsManager } from '@/components/notifications/PushNotificationsManager';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -88,6 +89,13 @@ export default function Settings() {
               </CardHeader>
               <CardContent>
                 <tab.component />
+                
+                {/* Push Notifications - only on profile tab */}
+                {tab.id === 'profile' && (
+                  <div className="mt-6 pt-6 border-t">
+                    <PushNotificationsManager />
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

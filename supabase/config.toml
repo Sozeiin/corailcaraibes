@@ -31,3 +31,11 @@ enable_confirmations = false
 [functions.generate-checklist-pdf]
 
 [functions.send-checklist-report]
+
+[functions.subscribe-push]
+
+[functions.unsubscribe-push]
+
+[functions.send-web-push]
+
+[functions.test-push]

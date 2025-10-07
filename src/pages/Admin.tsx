@@ -4,6 +4,7 @@ import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { TenantManager } from '@/components/admin/TenantManager';
 import { UserManagement } from '@/components/admin/UserManagement';
 import { Building2 } from 'lucide-react';
+import AdminPush from '@/pages/AdminPush';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function Admin() {
@@ -35,6 +36,7 @@ export default function Admin() {
         <TabsList>
           <TabsTrigger value="tenants">Sociétés</TabsTrigger>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="push">Push Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="tenants" className="mt-6">
@@ -43,6 +45,10 @@ export default function Admin() {
 
         <TabsContent value="users" className="mt-6">
           <UserManagement />
+        </TabsContent>
+
+        <TabsContent value="push" className="mt-6">
+          <AdminPush />
         </TabsContent>
       </Tabs>
     </div>
