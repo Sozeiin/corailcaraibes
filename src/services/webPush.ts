@@ -1,8 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // TODO: Replace with your actual VAPID public key after running: node scripts/generate-vapid.js
-const VAPID_PUBLIC_KEY = '5yiyPJR3if8WCvJUbBFbeUrFakpHn8P3Ev36iZmvd5Bcux6_Q0yN-7Is1cjNO_dfX-C_9PAnZ_EO
-ItVZA04kc28=';
+const VAPID_PUBLIC_KEY = 'YOUR_VAPID_PUBLIC_KEY_HERE';
 
 /**
  * Convert a base64 string to Uint8Array
