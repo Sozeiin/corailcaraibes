@@ -1,4 +1,4 @@
-npm import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 // VAPID public key for web push notifications
 const VAPID_PUBLIC_KEY = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECJKuQgz_WIGahRg0WRUpq5vC6XrxM0V087KZ6mC6R4SerSBNwlnPOFHONv-xPXEk3_GwMddgP9WLD7sz6IPdoQ";
