@@ -21,11 +21,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Verify admin token
+    // Verify authentication: either admin token OR valid service role authorization
     const adminToken = req.headers.get('x-admin-token');
+    const authHeader = req.headers.get('authorization');
     const expectedToken = Deno.env.get('PUSH_ADMIN_TOKEN');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
-    if (!adminToken || adminToken !== expectedToken) {
+    const isAdminTokenValid = adminToken && adminToken === expectedToken;
+    const isServiceRoleValid = authHeader && authHeader.replace('Bearer ', '') === serviceRoleKey;
+    
+    if (!isAdminTokenValid && !isServiceRoleValid) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         {
