@@ -14,10 +14,10 @@
  *   - VAPID_PRIVATE_KEY
  */
 
-const crypto = require('crypto');
+import { generateKeyPairSync } from 'crypto';
 
 function generateVapidKeys() {
-  const { publicKey, privateKey } = crypto.generateKeyPairSync('ec', {
+  const { publicKey, privateKey } = generateKeyPairSync('ec', {
     namedCurve: 'prime256v1',
     publicKeyEncoding: {
       type: 'spki',
@@ -30,8 +30,8 @@ function generateVapidKeys() {
   });
 
   // Convert to base64url format
-  const publicKeyBase64 = publicKey.toString('base64url');
-  const privateKeyBase64 = privateKey.toString('base64url');
+  const publicKeyBase64 = Buffer.from(publicKey).toString('base64url');
+  const privateKeyBase64 = Buffer.from(privateKey).toString('base64url');
 
   return {
     publicKey: publicKeyBase64,
