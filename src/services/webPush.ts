@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // VAPID public key for web push notifications
-const VAPID_PUBLIC_KEY = "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAECJKuQgz_WIGahRg0WRUpq5vC6XrxM0V087KZ6mC6R4SerSBNwlnPOFHONv-xPXEk3_GwMddgP9WLD7sz6IPdoQ";
+const VAPID_PUBLIC_KEY = "BBx2K5K2tGm1EHmgwfThkLudnWs-9AUwgBdtat75XdHziPMapgLjjoStrIeMcl7ohUCFkmDCsknm7Om6axkuwAM";
 
 /**
  * Convert a base64 string to Uint8Array
