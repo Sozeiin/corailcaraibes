@@ -61,9 +61,11 @@ self.addEventListener('push', (event) => {
         title: 'Fermer',
       },
     ],
-    requireInteraction: false,
-    tag: 'fleet-manager-notification',
+    requireInteraction: true, // Notifications persistent sur macOS
+    tag: `fleet-notification-${Date.now()}`, // Tag unique pour chaque notification
     renotify: true,
+    silent: false, // Activer le son
+    timestamp: Date.now(),
   };
 
   event.waitUntil(

@@ -17,6 +17,7 @@ import {
   useRealtimeBoatPreparationUpdates,
   useRealtimeStockMovementUpdates
 } from '@/hooks/useRealtimeUpdates';
+import { useNotificationSync } from '@/hooks/useNotificationSync';
 
 interface GlobalRealtimeProviderProps {
   children: React.ReactNode;
@@ -45,6 +46,9 @@ export function GlobalRealtimeProvider({ children }: GlobalRealtimeProviderProps
   useRealtimeNotificationUpdates();
   useRealtimeBoatPreparationUpdates();
   useRealtimeStockMovementUpdates();
+  
+  // Synchronisation des notifications push côté application
+  useNotificationSync();
 
   // Système de heartbeat pour vérifier la connexion
   useEffect(() => {
