@@ -2785,6 +2785,27 @@ export type Database = {
           },
         ]
       }
+      push_notification_config: {
+        Row: {
+          admin_token: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          admin_token: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          admin_token?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           active: boolean | null
