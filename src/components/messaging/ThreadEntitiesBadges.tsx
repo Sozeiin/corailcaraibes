@@ -59,6 +59,8 @@ export function ThreadEntitiesBadges({ entities, threadId }: ThreadEntitiesBadge
             const colorClass = entityColors[entity.entity_type];
             const label = entityLabels[entity.entity_type];
 
+            const displayName = entity.entity_details?.name || label;
+            
             return (
               <Tooltip key={entity.id}>
                 <TooltipTrigger asChild>
@@ -67,12 +69,15 @@ export function ThreadEntitiesBadges({ entities, threadId }: ThreadEntitiesBadge
                     className={`gap-1.5 cursor-pointer hover:opacity-80 transition-opacity ${colorClass}`}
                   >
                     {Icon && <Icon className="h-3 w-3" />}
-                    <span className="capitalize">{label}</span>
+                    <span>{displayName}</span>
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div className="text-sm">
-                    <div className="font-semibold">{label}</div>
+                    <div className="font-semibold">{displayName}</div>
+                    {entity.entity_details?.reference && (
+                      <div className="text-muted-foreground">Réf: {entity.entity_details.reference}</div>
+                    )}
                     {entity.notes && (
                       <div className="text-muted-foreground mt-1">{entity.notes}</div>
                     )}

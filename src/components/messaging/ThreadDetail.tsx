@@ -44,6 +44,83 @@ export function ThreadDetail({ threadId }: ThreadDetailProps) {
         }));
       }
 
+      // Enrichir les entités avec leurs détails
+      if (data.entities && data.entities.length > 0) {
+        const enrichedEntities = await Promise.all(
+          data.entities.map(async (entity: any) => {
+            let entityDetails = null;
+
+            try {
+              switch (entity.entity_type) {
+                case 'boat': {
+                  const { data: boat } = await supabase
+                    .from('boats')
+                    .select('name, serial_number')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (boat) entityDetails = { name: boat.name, reference: boat.serial_number };
+                  break;
+                }
+                case 'order': {
+                  const { data: order } = await supabase
+                    .from('orders')
+                    .select('order_number')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (order) entityDetails = { name: order.order_number, reference: order.order_number };
+                  break;
+                }
+                case 'intervention': {
+                  const { data: intervention } = await supabase
+                    .from('interventions')
+                    .select('title')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (intervention) entityDetails = { name: intervention.title };
+                  break;
+                }
+                case 'stock_item': {
+                  const { data: stock } = await supabase
+                    .from('stock_items')
+                    .select('name, reference')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (stock) entityDetails = { name: stock.name, reference: stock.reference };
+                  break;
+                }
+                case 'supply_request': {
+                  const { data: supply } = await supabase
+                    .from('supply_requests')
+                    .select('request_number, item_name')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (supply) entityDetails = { name: supply.item_name, reference: supply.request_number };
+                  break;
+                }
+                case 'checklist': {
+                  const { data: checklist } = await supabase
+                    .from('boat_checklists')
+                    .select('id')
+                    .eq('id', entity.entity_id)
+                    .single();
+                  if (checklist) entityDetails = { name: `Checklist ${checklist.id.substring(0, 8)}` };
+                  break;
+                }
+              }
+            } catch (err) {
+              console.error('Error fetching entity details:', err);
+            }
+
+            return {
+              ...entity,
+              entity_details: entityDetails
+            };
+          })
+        );
+
+        data.entities = enrichedEntities;
+      }
+
       return data as any;
     },
   });

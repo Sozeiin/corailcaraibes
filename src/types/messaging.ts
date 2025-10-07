@@ -93,6 +93,10 @@ export interface SmartThreadEntity {
   linked_at: string;
   linked_by?: string;
   notes?: string;
+  entity_details?: {
+    name: string;
+    reference?: string;
+  };
 }
 
 export interface ThreadAssignment {
