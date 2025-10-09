@@ -248,17 +248,28 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
           if (authError || !currentUser) {
             throw new Error('Utilisateur non authentifié. Veuillez vous reconnecter.');
           }
-          
+
           console.log(`[useOfflineData] User authenticated, proceeding with delete`);
-          
-          // En ligne : supprimer de Supabase
-          const { error, data: deletedData } = await (supabase as any)
-            .from(table)
-            .delete()
-            .eq('id', id);
-          
+
+          let error: any = null;
+          let deletedData: any = null;
+
+          if (table === 'boats') {
+            const { data: rpcData, error: rpcError } = await (supabase as any)
+              .rpc('delete_boat_cascade', { p_boat_id: id });
+            error = rpcError;
+            deletedData = rpcData;
+          } else {
+            const { error: deleteError, data: supabaseData } = await (supabase as any)
+              .from(table)
+              .delete()
+              .eq('id', id);
+            error = deleteError;
+            deletedData = supabaseData;
+          }
+
           console.log(`[useOfflineData] Delete result:`, { error, deletedData });
-          
+
           if (error) {
             console.error(`[useOfflineData] Supabase delete error:`, error);
             
@@ -269,8 +280,10 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
               throw new Error('Accès refusé. Vérifiez vos permissions.');
             } else if (error.code === 'PGRST301' || error.message?.includes('JWT')) {
               throw new Error('Session expirée. Veuillez vous reconnecter.');
+            } else if (error.code === 'P0002') {
+              throw new Error('Le bateau est introuvable ou a déjà été supprimé.');
             }
-            
+
             throw new Error(`Erreur lors de la suppression: ${error.message}`);
           }
           

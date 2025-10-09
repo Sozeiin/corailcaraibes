@@ -10,13 +10,12 @@ export function useDeleteBoat() {
     mutationFn: async (boatId: string) => {
       console.log('🗑️ Suppression bateau:', boatId);
       
-      const { error } = await supabase
-        .from('boats')
-        .delete()
-        .eq('id', boatId);
+      const { data, error } = await supabase.rpc('delete_boat_cascade', {
+        p_boat_id: boatId
+      });
 
       if (error) throw error;
-      return boatId;
+      return data ?? boatId;
     },
     onSuccess: (boatId) => {
       invalidateBoatQueries(queryClient, boatId);
@@ -28,6 +27,8 @@ export function useDeleteBoat() {
       let errorMessage = "Impossible de supprimer le bateau.";
       if (error.code === '23503') {
         errorMessage = "Ce bateau est utilisé dans d'autres données et ne peut pas être supprimé.";
+      } else if (error.code === 'P0002') {
+        errorMessage = 'Bateau introuvable.';
       } else if (error.message?.includes('permission')) {
         errorMessage = "Vous n'avez pas les permissions nécessaires.";
       }
