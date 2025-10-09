@@ -186,6 +186,17 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
     setIsSubmitting(true);
 
     try {
+      // Validation pour les techniciens : ne peuvent créer que dans leur base
+      if (user?.role === 'technicien' && data.baseId !== user.baseId) {
+        toast({
+          title: 'Erreur',
+          description: 'Vous ne pouvez créer des interventions que dans votre base.',
+          variant: 'destructive',
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       if (interventionParts.some(p => p.stockItemId && p.availableQuantity !== undefined && p.quantity > p.availableQuantity)) {
         toast({
           title: "Stock insuffisant",

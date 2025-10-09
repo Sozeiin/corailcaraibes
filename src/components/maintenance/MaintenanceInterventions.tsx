@@ -127,7 +127,13 @@ export function MaintenanceInterventions() {
     }
   };
 
-  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  // ID de la base Martinique
+  const MARTINIQUE_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
+  
+  const canManage = 
+    user?.role === 'direction' || 
+    user?.role === 'chef_base' ||
+    (user?.role === 'technicien' && user?.baseId === MARTINIQUE_BASE_ID);
 
   return (
     <div className="space-y-6">
