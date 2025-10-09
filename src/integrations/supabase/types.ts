@@ -4647,6 +4647,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      delete_boat_cascade: {
+        Args: { p_boat_id: string }
+        Returns: string
+      }
       evaluate_weather_for_maintenance: {
         Args: { base_id_param: string; maintenance_date: string }
         Returns: Json
