@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { 
   Wrench, 
   Calendar, 
@@ -12,14 +13,18 @@ import {
   FileText,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Eye
 } from 'lucide-react';
+import { InterventionDetailsDialog } from '@/components/maintenance/InterventionDetailsDialog';
 
 interface BoatInterventionHistoryProps {
   boatId: string;
 }
 
 export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps) => {
+  const [selectedInterventionId, setSelectedInterventionId] = useState<string | null>(null);
+  
   const { data: history, isLoading } = useQuery({
     queryKey: ['boat-intervention-history', boatId],
     queryFn: async () => {
@@ -126,7 +131,17 @@ export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps
                     </div>
                   </div>
                 </div>
-                {getStatusBadge(intervention.status)}
+                <div className="flex items-center gap-2">
+                  {getStatusBadge(intervention.status)}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedInterventionId(intervention.id)}
+                  >
+                    <Eye className="h-4 w-4 mr-1" />
+                    Voir détails
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             
@@ -191,6 +206,12 @@ export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps
           </Card>
         ))}
       </div>
+
+      <InterventionDetailsDialog
+        isOpen={!!selectedInterventionId}
+        onClose={() => setSelectedInterventionId(null)}
+        interventionId={selectedInterventionId || ''}
+      />
     </div>
   );
 };
