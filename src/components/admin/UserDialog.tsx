@@ -29,7 +29,7 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
     email: "",
     password: "",
     role: "technicien" as "direction" | "chef_base" | "technicien" | "administratif",
-    tenant_id: "" as string,
+    tenant_id: null as string | null,
   });
 
   // Fetch tenants for super admin
@@ -54,7 +54,7 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
         email: user.email || "",
         password: "",
         role: (user.role || "technicien") as "direction" | "chef_base" | "technicien" | "administratif",
-        tenant_id: user.tenant_id || "",
+        tenant_id: user.tenant_id || null,
       });
     } else {
       setFormData({
@@ -62,7 +62,7 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
         email: "",
         password: "",
         role: "technicien",
-        tenant_id: "",
+        tenant_id: null,
       });
     }
   }, [user, open]);
@@ -185,14 +185,16 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
             <div className="space-y-2">
               <Label htmlFor="tenant">Société</Label>
               <Select
-                value={formData.tenant_id}
-                onValueChange={(value) => setFormData({ ...formData, tenant_id: value })}
+                value={formData.tenant_id ?? "none"}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, tenant_id: value === "none" ? null : value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner une société" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Aucune (Super Admin)</SelectItem>
+                  <SelectItem value="none">Aucune (Super Admin)</SelectItem>
                   {tenants?.map((tenant) => (
                     <SelectItem key={tenant.id} value={tenant.id}>
                       {tenant.company_name}
