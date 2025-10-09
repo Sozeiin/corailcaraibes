@@ -32,20 +32,32 @@ export const InterventionDetailsDialog = ({
         .select(`
           *,
           boats (name, model),
-          profiles (name),
-          intervention_parts (
-            quantity,
-            unit_cost,
-            total_cost,
-            part_name,
-            stock_items (name, reference, unit)
-          )
+          profiles (name)
         `)
         .eq('id', interventionId)
         .single();
       
       if (error) throw error;
-      return data;
+
+      // Fetch intervention parts separately with better query
+      const { data: parts, error: partsError } = await supabase
+        .from('intervention_parts')
+        .select(`
+          *,
+          stock_items:stock_item_id (
+            name,
+            reference,
+            unit
+          )
+        `)
+        .eq('intervention_id', interventionId);
+
+      if (partsError) console.error('Error fetching parts:', partsError);
+
+      return {
+        ...data,
+        intervention_parts: parts || []
+      };
     },
     enabled: isOpen && !!interventionId
   });
