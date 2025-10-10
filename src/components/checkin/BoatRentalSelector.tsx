@@ -34,13 +34,26 @@ export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, on
   const customerName = useSecureTextInput("", { required: true, maxLength: 100 });
   const customerEmail = useSecureEmailInput("", { required: true });
   const customerPhone = useSecurePhoneInput("", { required: true });
+  const { setValue: setCustomerName } = customerName;
+  const { setValue: setCustomerEmail } = customerEmail;
+  const { setValue: setCustomerPhone } = customerPhone;
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedRental, setSelectedRental] = useState<any>(null);
+  const [specialInstructions, setSpecialInstructions] = useState('');
+
+  const formatDateForInput = (isoString: string | null) => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '';
+    const tzOffset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - tzOffset * 60000);
+    return localDate.toISOString().slice(0, 16);
+  };
 
   // Get boats for checkin/checkout
-  const { data: boats = [], refetch: refetchBoats } = useQuery({
+  const { data: boats = [] } = useQuery({
     queryKey: ['boats-checkin-checkout', user?.baseId, type],
     queryFn: async () => {
       if (!user) return [];
@@ -119,6 +132,27 @@ export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, on
 
   const selectedBoat = boats.find(b => b.id === selectedBoatId);
 
+  const { data: existingAdministrativeForm } = useQuery({
+    queryKey: ['administrative-form-for-boat', user?.baseId, selectedBoatId],
+    queryFn: async () => {
+      if (!user?.baseId || !selectedBoatId) return null;
+
+      const { data, error } = await supabase
+        .from('administrative_checkin_forms')
+        .select('*')
+        .eq('base_id', user.baseId)
+        .eq('boat_id', selectedBoatId)
+        .eq('status', 'ready')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      return data?.[0] || null;
+    },
+    enabled: type === 'checkin' && !!user?.baseId && !!selectedBoatId,
+    staleTime: 0,
+  });
+
   useEffect(() => {
     if (selectedBoat) {
       onBoatSelect(selectedBoat);
@@ -126,14 +160,40 @@ export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, on
   }, [selectedBoat, onBoatSelect]);
 
   useEffect(() => {
+    if (type !== 'checkin') return;
+
+    setCustomerName('');
+    setCustomerEmail('');
+    setCustomerPhone('');
+    setStartDate('');
+    setEndDate('');
+    setNotes('');
+    setSpecialInstructions('');
+  }, [type, selectedBoatId, setCustomerEmail, setCustomerName, setCustomerPhone, setStartDate, setEndDate, setNotes, setSpecialInstructions]);
+
+  useEffect(() => {
+    if (type !== 'checkin' || !existingAdministrativeForm) return;
+
+    setCustomerName(existingAdministrativeForm.customer_name || '');
+    setCustomerEmail(existingAdministrativeForm.customer_email || '');
+    setCustomerPhone(existingAdministrativeForm.customer_phone || '');
+    setStartDate(formatDateForInput(existingAdministrativeForm.planned_start_date));
+    setEndDate(formatDateForInput(existingAdministrativeForm.planned_end_date));
+    setNotes(existingAdministrativeForm.rental_notes || '');
+    setSpecialInstructions(existingAdministrativeForm.special_instructions || '');
+  }, [type, existingAdministrativeForm, setCustomerEmail, setCustomerName, setCustomerPhone, setStartDate, setEndDate, setNotes, setSpecialInstructions]);
+
+  useEffect(() => {
     const rentalData = type === 'checkin' ? {
       boatId: selectedBoatId,
       customerName: customerName.sanitizedValue,
       customerEmail: customerEmail.sanitizedValue,
       customerPhone: customerPhone.sanitizedValue,
-      startDate: startDate,
-      endDate: endDate,
-      notes: notes,
+      startDate,
+      endDate,
+      notes,
+      specialInstructions,
+      administrativeFormId: existingAdministrativeForm?.id,
       baseId: user?.baseId
     } : selectedRental;
 
@@ -145,7 +205,7 @@ export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, on
     if (isValidForCheckin || isValidForCheckout) {
       onRentalDataChange({ ...rentalData, isValid: true });
     }
-  }, [type, selectedBoatId, customerName.sanitizedValue, customerEmail.sanitizedValue, customerPhone.sanitizedValue, startDate, endDate, notes, selectedRental, user?.baseId, onRentalDataChange]);
+  }, [type, selectedBoatId, customerName.sanitizedValue, customerEmail.sanitizedValue, customerPhone.sanitizedValue, startDate, endDate, notes, specialInstructions, existingAdministrativeForm, selectedRental, user?.baseId, onRentalDataChange]);
 
   const handleRentalSelect = (rentalId: string) => {
     const rental = activeRentals.find(r => r.id === rentalId);
@@ -270,6 +330,18 @@ export function BoatRentalSelector({ type, mode = 'technician', onBoatSelect, on
                 rows={3}
               />
             </div>
+
+            {specialInstructions && (
+              <div>
+                <Label htmlFor="specialInstructions">Instructions spéciales</Label>
+                <Textarea
+                  id="specialInstructions"
+                  value={specialInstructions}
+                  readOnly
+                  rows={3}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
