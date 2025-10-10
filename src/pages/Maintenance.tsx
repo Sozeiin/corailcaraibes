@@ -9,16 +9,10 @@ const MARTINIQUE_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
 export default function Maintenance() {
   const { user } = useAuth();
 
-  // Détection des techniciens Martinique
-  const isMartiniqueTechnician = 
-    user?.role === 'technicien' && 
-    user?.baseId === MARTINIQUE_BASE_ID;
-  
-  // Afficher l'interface complète pour Direction, Chef de base, et techniciens Martinique
+  // Afficher l'interface complète pour Direction et Chef de base uniquement
   const showFullInterface = 
     user?.role === 'direction' || 
-    user?.role === 'chef_base' || 
-    isMartiniqueTechnician;
+    user?.role === 'chef_base';
 
   return (
     <div className="space-y-4 sm:space-y-6">

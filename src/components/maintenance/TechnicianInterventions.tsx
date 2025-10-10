@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle, Clock, Settings, AlertTriangle, Eye } from 'lucide-react';
+import { CheckCircle, Clock, Settings, AlertTriangle, Eye, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { InterventionDialog } from './InterventionDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,11 +51,17 @@ export function TechnicianInterventions() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // ID de la base Martinique
+  const MARTINIQUE_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
+  const isMartiniqueTechnician = user?.baseId === MARTINIQUE_BASE_ID;
+  
   const [completingInterventions, setCompletingInterventions] = useState<Set<string>>(new Set());
   const [selectedIntervention, setSelectedIntervention] = useState<InterventionWithBoats | null>(null);
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [completionIntervention, setCompletionIntervention] = useState<InterventionWithBoats | null>(null);
   const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
+  const [isInterventionDialogOpen, setIsInterventionDialogOpen] = useState(false);
 
   // Récupération de toutes les interventions pertinentes pour le technicien
   const { data: interventions = [], isLoading } = useQuery({
@@ -144,7 +151,27 @@ export function TechnicianInterventions() {
   }
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header avec bouton création si Martinique */}
+      {isMartiniqueTechnician && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Mes Interventions</h2>
+            <p className="text-gray-600 mt-1">
+              Gérez vos interventions et créez de nouvelles demandes
+            </p>
+          </div>
+          <Button
+            onClick={() => setIsInterventionDialogOpen(true)}
+            className="bg-marine-600 hover:bg-marine-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle intervention
+          </Button>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
       {/* Mes Interventions */}
       <Card>
         <CardHeader>
@@ -393,6 +420,7 @@ export function TechnicianInterventions() {
           )}
         </CardContent>
       </Card>
+      </div>
 
       {/* Dialog de détails */}
       <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
@@ -480,6 +508,18 @@ export function TechnicianInterventions() {
           isOpen={isCompletionDialogOpen}
           onClose={handleCloseCompletion}
           intervention={completionIntervention}
+        />
+      )}
+
+      {/* Dialog de création d'intervention (Martinique uniquement) */}
+      {isMartiniqueTechnician && (
+        <InterventionDialog
+          isOpen={isInterventionDialogOpen}
+          onClose={() => {
+            setIsInterventionDialogOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['technician-interventions'] });
+          }}
+          intervention={null}
         />
       )}
     </div>
