@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { FormStateProvider } from "@/contexts/FormStateContext";
 import { Layout } from "@/components/Layout";
 import { GlobalRealtimeProvider } from "@/components/GlobalRealtimeProvider";
 import { NavigationRefresh } from "@/components/NavigationRefresh";
@@ -337,15 +338,17 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <GlobalRealtimeProvider>
-          <NavigationRefresh />
-          <Layout>
-            <AppRoutes />
-            <Sonner />
-          </Layout>
-        </GlobalRealtimeProvider>
-      </AuthProvider>
+      <FormStateProvider>
+        <AuthProvider>
+          <GlobalRealtimeProvider>
+            <NavigationRefresh />
+            <Layout>
+              <AppRoutes />
+              <Sonner />
+            </Layout>
+          </GlobalRealtimeProvider>
+        </AuthProvider>
+      </FormStateProvider>
     </QueryClientProvider>
   );
 };

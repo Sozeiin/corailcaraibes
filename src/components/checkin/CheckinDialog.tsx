@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
 import { ChecklistForm } from '@/components/checkin/ChecklistForm';
+import { useFormState } from '@/contexts/FormStateContext';
 
 interface CheckinDialogProps {
   isOpen: boolean;
@@ -20,6 +21,23 @@ export function CheckinDialog({
   rentalData,
   onComplete
 }: CheckinDialogProps) {
+  const { registerForm, unregisterForm } = useFormState();
+
+  // Enregistrer/désenregistrer le formulaire pour suspendre le refresh
+  useEffect(() => {
+    if (isOpen) {
+      registerForm();
+      console.log('📝 CheckinDialog enregistré');
+    } else {
+      unregisterForm();
+      console.log('📝 CheckinDialog désenregistré');
+    }
+    
+    return () => {
+      unregisterForm();
+    };
+  }, [isOpen, registerForm, unregisterForm]);
+
   const handleComplete = (data: any) => {
     onComplete(data);
     if (data !== null) {

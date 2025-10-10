@@ -242,10 +242,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Idle timer for automatic logout (30 minutes)
+  // Idle timer for automatic logout (2 hours - augmenté pour techniciens)
   const { isWarning, remainingTime, resetTimer } = useIdleTimer({
-    timeout: 30 * 60 * 1000, // 30 minutes
-    warningTime: 60 * 1000, // 1 minute warning
+    timeout: 2 * 60 * 60 * 1000, // 2 heures (au lieu de 30 minutes)
+    warningTime: 5 * 60 * 1000, // 5 minutes warning (au lieu de 1 minute)
     onIdle: () => {
       setShowIdleWarning(false);
       logout();

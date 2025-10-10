@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFormState } from '@/contexts/FormStateContext';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
 import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
@@ -56,6 +58,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   const { user } = useAuth();
   const { toast } = useToast();
   const { createNotification } = useNotifications();
+  const { registerForm, unregisterForm } = useFormState();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interventionParts, setInterventionParts] = useState<InterventionPart[]>([]);
 
@@ -71,6 +74,31 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       interventionType: 'maintenance',
     },
   });
+
+  // Persistance des données du formulaire
+  const { loadSavedData, clearSavedData } = useFormPersistence(
+    `intervention_${intervention?.id || 'new'}`,
+    {
+      ...form.getValues(),
+      parts: interventionParts
+    },
+    isOpen
+  );
+
+  // Enregistrer/désenregistrer le formulaire pour suspendre le refresh
+  useEffect(() => {
+    if (isOpen) {
+      registerForm();
+      console.log('📝 InterventionDialog enregistré');
+    } else {
+      unregisterForm();
+      console.log('📝 InterventionDialog désenregistré');
+    }
+    
+    return () => {
+      unregisterForm();
+    };
+  }, [isOpen, registerForm, unregisterForm]);
 
   const { data: boats = [], isLoading: boatsLoading } = useQuery({
     queryKey: ['boats'],
@@ -161,19 +189,45 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       });
       setInterventionParts(existingParts);
     } else {
-      form.reset({
-        title: '',
-        description: '',
-        boatId: '',
-        technicianId: '',
-        status: 'scheduled',
-        scheduledDate: new Date().toISOString().split('T')[0],
-        baseId: user?.baseId || '',
-        interventionType: 'maintenance'
-      });
-      setInterventionParts([]);
+      // Essayer de charger le brouillon sauvegardé
+      const savedData = loadSavedData();
+      
+      if (savedData && typeof savedData === 'object') {
+        const formData = savedData as any;
+        form.reset({
+          title: formData.title || '',
+          description: formData.description || '',
+          boatId: formData.boatId || '',
+          technicianId: formData.technicianId || '',
+          status: formData.status || 'scheduled',
+          scheduledDate: formData.scheduledDate || new Date().toISOString().split('T')[0],
+          baseId: formData.baseId || user?.baseId || '',
+          interventionType: formData.interventionType || 'maintenance'
+        });
+        
+        if (formData.parts && Array.isArray(formData.parts)) {
+          setInterventionParts(formData.parts);
+        }
+        
+        toast({
+          title: 'Brouillon restauré',
+          description: 'Vos données ont été récupérées.',
+        });
+      } else {
+        form.reset({
+          title: '',
+          description: '',
+          boatId: '',
+          technicianId: '',
+          status: 'scheduled',
+          scheduledDate: new Date().toISOString().split('T')[0],
+          baseId: user?.baseId || '',
+          interventionType: 'maintenance'
+        });
+        setInterventionParts([]);
+      }
     }
-  }, [intervention, form, user]);
+  }, [intervention, form, user, isOpen]);
 
   // Separate effect for handling existing parts to avoid infinite loop
   useEffect(() => {
@@ -305,6 +359,9 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         }
       }
 
+      // Nettoyer le brouillon après succès
+      clearSavedData();
+
       toast({
         title: intervention ? "Intervention modifiée" : "Intervention créée",
         description: intervention 
@@ -330,6 +387,11 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       .filter(p => p.reservationId && !p.id)
       .map(p => p.reservationId as string);
     // Stock reservations cleanup removed
+    
+    // Ne PAS nettoyer le brouillon lors de la fermeture
+    // Les données seront préservées pour une réouverture ultérieure
+    // Le nettoyage est fait uniquement après succès de l'envoi
+    
     form.reset();
     setInterventionParts([]);
     onClose();
