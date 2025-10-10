@@ -332,20 +332,27 @@ function AppRoutes() {
   );
 }
 
-const App = () => {
-  // Active le refresh automatique global
+// Wrapper component pour activer le refresh à l'intérieur des providers
+function AppWithAutoRefresh() {
   useAutoRefresh();
+  return (
+    <>
+      <NavigationRefresh />
+      <Layout>
+        <AppRoutes />
+        <Sonner />
+      </Layout>
+    </>
+  );
+}
 
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <FormStateProvider>
         <AuthProvider>
           <GlobalRealtimeProvider>
-            <NavigationRefresh />
-            <Layout>
-              <AppRoutes />
-              <Sonner />
-            </Layout>
+            <AppWithAutoRefresh />
           </GlobalRealtimeProvider>
         </AuthProvider>
       </FormStateProvider>
