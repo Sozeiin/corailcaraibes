@@ -32,6 +32,7 @@ import Settings from "./pages/Settings";
 import Reports from "./pages/Reports";
 import AdministrativeCheckin from "./pages/AdministrativeCheckin";
 import CheckIn from "./pages/CheckIn";
+import CheckInProcess from "./pages/CheckInProcess";
 import CheckOut from "./pages/CheckOut";
 
 import NotFound from "./pages/NotFound";
@@ -259,6 +260,16 @@ function AppRoutes() {
           <ProtectedRoute>
             <PermissionGate page="checkin">
               <CheckIn />
+            </PermissionGate>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkin/process"
+        element={
+          <ProtectedRoute>
+            <PermissionGate page="checkin">
+              <CheckInProcess />
             </PermissionGate>
           </ProtectedRoute>
         }

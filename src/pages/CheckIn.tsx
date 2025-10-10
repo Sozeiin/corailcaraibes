@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AdministrativeCheckinForm } from '@/components/checkin/AdministrativeCheckinForm';
 import { TechnicianCheckinSelector } from '@/components/checkin/TechnicianCheckinSelector';
-import { CheckinDialog } from '@/components/checkin/CheckinDialog';
 import { PermissionGate } from '@/components/auth/PermissionGate';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function CheckIn() {
   const { user } = useAuth();
-  const [selectedBoat, setSelectedBoat] = useState(null);
-  const [rentalData, setRentalData] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [resetKey, setResetKey] = useState(0);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [resetKey, setResetKey] = React.useState(0);
+
+  React.useEffect(() => {
+    if ((location.state as { resetChecklist?: boolean } | null)?.resetChecklist) {
+      setResetKey(prev => prev + 1);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
 
   // Get available boats
   const { data: boats = [] } = useQuery({
@@ -39,39 +44,13 @@ export default function CheckIn() {
     enabled: !!user,
   });
 
-  const handleFormSelect = (formData: any) => {
-    console.log('📝 [CHECKIN] Fiche sélectionnée:', formData);
-    setSelectedBoat(formData.boat);
-    setRentalData(formData.rentalData);
-    setDialogOpen(true);
-  };
-
-  const handleManualCheckin = () => {
-    setSelectedBoat(null);
-    setRentalData(null);
-    setDialogOpen(true);
-  };
-
-  const handleChecklistComplete = async (data: any) => {
-    // Si data est null, c'est une annulation
-    if (data === null) {
-      console.log('🔙 [CHECKIN] Annulation');
-      setSelectedBoat(null);
-      setRentalData(null);
-      return;
-    }
-    
-    // Sinon c'est une finalisation réussie
-    console.log('✅ [CHECKIN] Finalisation réussie, reset complet');
-    setSelectedBoat(null);
-    setRentalData(null);
-    setResetKey(prev => prev + 1);
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setSelectedBoat(null);
-    setRentalData(null);
+  const startCheckinFlow = (boat: any, rentalData: any) => {
+    navigate('/checkin/process', {
+      state: {
+        boat,
+        rentalData
+      }
+    });
   };
 
   const handleFormCreated = () => {
@@ -95,18 +74,10 @@ export default function CheckIn() {
           <TechnicianCheckinSelector
             key={resetKey}
             boats={boats}
-            onFormSelect={handleFormSelect}
-            onManualCheckin={handleManualCheckin}
+            onFormSelect={({ boat, rentalData }) => startCheckinFlow(boat, rentalData)}
+            onManualCheckin={(boat, rentalData) => startCheckinFlow(boat, rentalData)}
           />
         )}
-
-        <CheckinDialog
-          isOpen={dialogOpen}
-          onClose={handleDialogClose}
-          boat={selectedBoat}
-          rentalData={rentalData}
-          onComplete={handleChecklistComplete}
-        />
       </div>
     </PermissionGate>
   );
