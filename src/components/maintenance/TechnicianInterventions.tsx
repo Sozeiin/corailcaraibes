@@ -67,21 +67,47 @@ export function TechnicianInterventions() {
     queryFn: async () => {
       if (!user || user.role !== 'technicien') return [];
 
-
-      const { data, error } = await supabase
+      const baseQuery = supabase
         .from('interventions')
         .select(`
           *,
           boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
         `)
-        .or(`technician_id.eq.${user.id},and(base_id.eq.${user.baseId},technician_id.is.null)`)
         .order('scheduled_date', { ascending: true });
+
+      // Lorsque la base du technicien est connue, on récupère toutes les interventions de cette base
+      // pour s'assurer que la section "Interventions disponibles" contient l'intégralité des tâches
+      // non assignées de la base.
+      const query = user.baseId ? baseQuery.eq('base_id', user.baseId) : baseQuery.eq('technician_id', user.id);
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching technician interventions:', error);
         throw error;
       }
-      
+
+      if (!user.baseId) {
+        // Si la base n'est pas définie (cas exceptionnel), on complète avec les interventions assignées au technicien
+        const { data: assignedData, error: assignedError } = await supabase
+          .from('interventions')
+          .select(`
+            *,
+            boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
+          `)
+          .eq('technician_id', user.id)
+          .order('scheduled_date', { ascending: true });
+
+        if (assignedError) {
+          console.error('Error fetching technician interventions:', assignedError);
+          throw assignedError;
+        }
+
+        const combined = [...(data || []), ...(assignedData || [])];
+        const uniqueById = Array.from(new Map(combined.map((item) => [item.id, item])).values());
+        return uniqueById;
+      }
+
       return data || [];
     },
     enabled: !!user && user.role === 'technicien'
@@ -91,12 +117,13 @@ export function TechnicianInterventions() {
   const myInterventions = interventions.filter(i => i.technician_id === user?.id);
   
   // Interventions disponibles (non assignées dans ma base)
-  const availableInterventions = interventions.filter(i => 
-    i.technician_id === null && 
+  const availableInterventions = interventions.filter(i => {
+    const isUnassigned = i.technician_id === null || i.technician_id === undefined || i.technician_id === '';
+    return isUnassigned &&
     i.base_id === user?.baseId &&
     i.status !== 'completed' &&
     i.status !== 'cancelled'
-  );
+  });
 
 
   const handleCompleteIntervention = (intervention: InterventionWithBoats) => {
