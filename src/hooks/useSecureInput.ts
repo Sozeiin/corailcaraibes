@@ -37,6 +37,16 @@ export function useSecureInput(
         return sanitizeDisplayText(rawValue);
       case 'number':
         return rawValue; // Let sanitizeNumber handle this separately
+      case 'text':
+      case 'email':
+      case 'phone':
+        // Pour les champs texte normaux, on garde les espaces simples
+        // et on sanitize seulement les caractères dangereux
+        return rawValue
+          .replace(/<[^>]*>/g, '') // Remove HTML tags
+          .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // Remove event handlers
+          .replace(/javascript:/gi, '') // Remove javascript: protocols
+          .replace(/vbscript:/gi, ''); // Remove vbscript: protocols
       default:
         return sanitizeInput(rawValue);
     }
