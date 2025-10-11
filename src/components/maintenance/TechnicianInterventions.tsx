@@ -118,11 +118,14 @@ export function TechnicianInterventions() {
   
   // Interventions disponibles (non assignées dans ma base)
   const availableInterventions = interventions.filter(i => {
-    const isUnassigned = i.technician_id === null || i.technician_id === undefined || i.technician_id === '';
-    return isUnassigned &&
-    i.base_id === user?.baseId &&
-    i.status !== 'completed' &&
-    i.status !== 'cancelled'
+    // Interventions disponibles = toutes les interventions actives de la base
+    // SAUF celles déjà assignées au technicien actuel
+    const isNotMine = i.technician_id !== user?.id;
+    const isActive = i.status !== 'completed' && i.status !== 'cancelled';
+    
+    return isNotMine && 
+      i.base_id === user?.baseId && 
+      isActive;
   });
 
 
