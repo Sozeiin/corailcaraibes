@@ -92,7 +92,11 @@ export function StockTable({
                       {/* Informations complémentaires visibles uniquement sur mobile/tablet */}
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground sm:hidden">
                         {item.reference && <span className="bg-muted px-2 py-1 rounded">Réf: {item.reference}</span>}
+                        {item.supplierReference && <span className="bg-muted px-2 py-1 rounded">Fournisseur: {item.supplierReference}</span>}
                         {item.category && <span className="bg-muted px-2 py-1 rounded">{item.category}</span>}
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        {item.brand && <span className="bg-muted px-2 py-1 rounded">Marque: {item.brand}</span>}
                       </div>
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground md:hidden">
                         {item.location && <span className="bg-muted px-2 py-1 rounded">📍 {item.location}</span>}
@@ -101,7 +105,12 @@ export function StockTable({
                   </div>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell text-muted-foreground text-sm">
-                  {item.reference || '-'}
+                  <div className="flex flex-col gap-1">
+                    <span>{item.reference || '-'}</span>
+                    {item.supplierReference && (
+                      <span className="text-xs text-muted-foreground">Réf. fournisseur : {item.supplierReference}</span>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell className="hidden md:table-cell">
                   {item.category && <Badge variant="outline" className="text-xs">{item.category}</Badge>}

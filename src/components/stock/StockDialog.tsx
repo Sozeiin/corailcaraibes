@@ -30,6 +30,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StockItem, Base } from '@/types';
 import { StockPhotoUpload } from './StockPhotoUpload';
+import { executeWithSchemaReload } from '@/lib/supabase/schemaReload';
 
 interface StockDialogProps {
   isOpen: boolean;
@@ -40,6 +41,8 @@ interface StockDialogProps {
 interface StockFormData {
   name: string;
   reference: string;
+  brand: string;
+  supplierReference: string;
   category: string;
   quantity: number;
   minThreshold: number;
@@ -58,6 +61,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     defaultValues: {
       name: '',
       reference: '',
+      brand: '',
+      supplierReference: '',
       category: '',
       quantity: 0,
       minThreshold: 0,
@@ -123,6 +128,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       form.reset({
         name: item.name,
         reference: item.reference || '',
+        brand: item.brand || '',
+        supplierReference: item.supplierReference || '',
         category: item.category || '',
         quantity: item.quantity,
         minThreshold: item.minThreshold,
@@ -136,6 +143,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       form.reset({
         name: '',
         reference: '',
+        brand: '',
+        supplierReference: '',
         category: '',
         quantity: 0,
         minThreshold: 0,
@@ -156,6 +165,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       const stockData = {
         name: data.name,
         reference: data.reference || null,
+        brand: data.brand || null,
+        supplier_reference: data.supplierReference || null,
         category: data.category,
         quantity: data.quantity,
         min_threshold: data.minThreshold,
@@ -168,19 +179,18 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
 
       console.log('Stock data to save:', stockData);
 
-      let result;
-      if (item) {
-        result = await supabase
-          .from('stock_items')
-          .update(stockData)
-          .eq('id', item.id)
-          .select();
-      } else {
-        result = await supabase
-          .from('stock_items')
-          .insert([stockData])
-          .select();
-      }
+      const result = await executeWithSchemaReload(supabase, () =>
+        item
+          ? supabase
+              .from('stock_items')
+              .update(stockData)
+              .eq('id', item.id)
+              .select()
+          : supabase
+              .from('stock_items')
+              .insert([stockData])
+              .select()
+      );
 
       const { error } = result;
 
@@ -244,6 +254,34 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Référence</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marque</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="supplierReference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Référence fournisseur</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>

@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { StockItem } from '@/types';
+import { executeWithSchemaReload } from '@/lib/supabase/schemaReload';
 
 interface StockDuplicateDialogProps {
   isOpen: boolean;
@@ -65,19 +66,23 @@ export function StockDuplicateDialog({ isOpen, onClose, item }: StockDuplicateDi
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('stock_items')
-        .insert({
-          name: item.name,
-          reference: item.reference,
-          category: item.category,
-          quantity: formData.quantity,
-          min_threshold: item.minThreshold,
-          unit: item.unit,
-          location: formData.location,
-          base_id: formData.baseId,
-          last_updated: new Date().toISOString(),
-        });
+      const { error } = await executeWithSchemaReload(supabase, () =>
+        supabase
+          .from('stock_items')
+          .insert({
+            name: item.name,
+            reference: item.reference,
+            brand: item.brand,
+            supplier_reference: item.supplierReference,
+            category: item.category,
+            quantity: formData.quantity,
+            min_threshold: item.minThreshold,
+            unit: item.unit,
+            location: formData.location,
+            base_id: formData.baseId,
+            last_updated: new Date().toISOString(),
+          })
+      );
 
       if (error) throw error;
 
