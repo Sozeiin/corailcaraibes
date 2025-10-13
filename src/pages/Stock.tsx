@@ -86,6 +86,8 @@ export default function Stock() {
       id: item.id,
       name: item.name,
       reference: item.reference || '',
+      brand: item.brand || '',
+      supplierReference: item.supplier_reference || '',
       category: item.category || '',
       quantity: item.quantity || 0,
       minThreshold: item.min_threshold || 0,
@@ -109,10 +111,12 @@ export default function Stock() {
 
   // Filter stock items based on search, category, base, and low stock
   const filteredItems = stockItems.filter(item => {
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchTerm.toLowerCase());
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.supplierReference?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
     const matchesBase = selectedBase === 'all' || item.baseId === selectedBase;

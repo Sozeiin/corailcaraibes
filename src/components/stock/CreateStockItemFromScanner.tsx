@@ -40,6 +40,8 @@ interface CreateStockItemFromScannerProps {
 interface StockFormData {
   name: string;
   reference: string;
+  brand: string;
+  supplierReference: string;
   category: string;
   quantity: number;
   minThreshold: number;
@@ -63,6 +65,8 @@ export function CreateStockItemFromScanner({
     defaultValues: {
       name: '',
       reference: scannedCode,
+      brand: '',
+      supplierReference: '',
       category: '',
       quantity: 0,
       minThreshold: 1,
@@ -128,6 +132,8 @@ export function CreateStockItemFromScanner({
       form.reset({
         name: '',
         reference: scannedCode,
+        brand: '',
+        supplierReference: '',
         category: '',
         quantity: 0,
         minThreshold: 1,
@@ -146,6 +152,8 @@ export function CreateStockItemFromScanner({
       const stockData = {
         name: data.name,
         reference: data.reference || null,
+        brand: data.brand || null,
+        supplier_reference: data.supplierReference || null,
         category: data.category || null,
         quantity: data.quantity,
         min_threshold: data.minThreshold,
@@ -229,6 +237,34 @@ export function CreateStockItemFromScanner({
                         placeholder="Référence du produit" 
                         {...field} 
                       />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marque</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Marque du produit" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="supplierReference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Référence fournisseur</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Code fournisseur" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -46,6 +46,16 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
                   Référence: {item.reference}
                 </p>
               )}
+              {item.supplierReference && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  Référence fournisseur: {item.supplierReference}
+                </p>
+              )}
+              {item.brand && (
+                <p className="text-sm text-muted-foreground mb-2">
+                  Marque: {item.brand}
+                </p>
+              )}
               <div className="flex flex-wrap gap-2">
                 <Badge variant={status.variant}>{status.label}</Badge>
                 {item.category && (

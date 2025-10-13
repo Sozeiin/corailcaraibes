@@ -121,6 +121,8 @@ class SQLiteService {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         reference TEXT,
+        brand TEXT,
+        supplier_reference TEXT,
         category TEXT,
         quantity INTEGER DEFAULT 0,
         min_threshold INTEGER DEFAULT 1,

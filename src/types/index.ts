@@ -81,6 +81,8 @@ export interface StockItem {
   id: string;
   name: string;
   reference: string;
+  brand?: string;
+  supplierReference?: string;
   category: string;
   quantity: number;
   minThreshold: number;
