@@ -1,22 +1,21 @@
 import React, { useState } from 'react';
-import { MessageSquare, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MessageSquare, Plus, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChannelSidebar } from '@/components/messaging/ChannelSidebar';
+import { ChannelSelector } from '@/components/messaging/ChannelSelector';
 import { ThreadsList } from '@/components/messaging/ThreadsList';
 import { ThreadDetail } from '@/components/messaging/ThreadDetail';
 import { CreateThreadDialog } from '@/components/messaging/CreateThreadDialog';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
-import { usePanelState } from '@/hooks/useColumnVisibility';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Channel } from '@/types/messaging';
+import { cn } from '@/lib/utils';
 
 export default function Messagerie() {
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const { channelsRef, threadsRef, panelState, togglePanel, onLayout } = usePanelState();
+  const [isMobileThreadView, setIsMobileThreadView] = useState(false);
 
   const { data: channels = [], isLoading } = useQuery({
     queryKey: ['messaging-channels'],
@@ -60,123 +59,74 @@ export default function Messagerie() {
         </Button>
       </div>
 
-      {/* Main Layout - 3 colonnes responsives */}
+      {/* Sélecteur de canal */}
+      <div className="mb-4">
+        <ChannelSelector
+          channels={channels}
+          selectedChannelId={selectedChannelId}
+          onChannelSelect={setSelectedChannelId}
+        />
+      </div>
+
+      {/* Main Layout - 2 colonnes responsives */}
       <Card className="flex-1 flex overflow-hidden">
-        <CardContent className="flex w-full p-0 relative">
-          <ResizablePanelGroup 
-            direction="horizontal" 
-            onLayout={onLayout}
-            className="w-full"
-          >
-            {/* Colonne Canaux */}
-            <ResizablePanel
-              ref={channelsRef}
-              defaultSize={panelState.channels.size}
-              minSize={15}
-              collapsible
-              collapsedSize={0}
-              onCollapse={() => {}}
-              onExpand={() => {}}
-              className="relative"
-            >
-              <div className="h-full bg-muted/30 relative">
-                {!panelState.channels.collapsed && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => togglePanel('channels')}
-                      className="absolute top-2 right-2 z-10 h-6 w-6 p-0"
-                      title="Réduire les canaux"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <ChannelSidebar 
-                      channels={channels} 
-                      selectedChannelId={selectedChannelId} 
-                      onChannelSelect={setSelectedChannelId} 
-                    />
-                  </>
-                )}
-                {panelState.channels.collapsed && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => togglePanel('channels')}
-                    className="absolute top-2 left-2 z-10 h-8 w-8 p-0"
-                    title="Afficher les canaux"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
+        <CardContent className="flex w-full p-0">
+          {/* Mobile: afficher soit la liste, soit le détail */}
+          <div className={cn(
+            "flex w-full h-full",
+            "md:flex"
+          )}>
             {/* Colonne Sujets */}
-            <ResizablePanel
-              ref={threadsRef}
-              defaultSize={panelState.threads.size}
-              minSize={20}
-              collapsible
-              collapsedSize={0}
-              onCollapse={() => {}}
-              onExpand={() => {}}
-              className="relative"
-            >
-              <div className="h-full relative">
-                {!panelState.threads.collapsed && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => togglePanel('threads')}
-                      className="absolute top-2 right-2 z-10 h-6 w-6 p-0"
-                      title="Réduire les sujets"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <ThreadsList 
-                      channelId={selectedChannelId} 
-                      selectedThreadId={selectedThreadId} 
-                      onThreadSelect={setSelectedThreadId} 
-                    />
-                  </>
-                )}
-                {panelState.threads.collapsed && (
+            <div className={cn(
+              "w-full md:w-1/3 md:min-w-[320px] lg:w-[30%] border-r",
+              isMobileThreadView && selectedThreadId && "hidden md:flex"
+            )}>
+              <ThreadsList 
+                channelId={selectedChannelId} 
+                selectedThreadId={selectedThreadId} 
+                onThreadSelect={(threadId) => {
+                  setSelectedThreadId(threadId);
+                  setIsMobileThreadView(true);
+                }} 
+              />
+            </div>
+
+            {/* Colonne Détail */}
+            <div className={cn(
+              "w-full md:w-2/3 lg:w-[70%] flex flex-col",
+              !isMobileThreadView && selectedThreadId && "hidden md:flex"
+            )}>
+              {/* Bouton retour mobile */}
+              {selectedThreadId && (
+                <div className="md:hidden p-2 border-b">
                   <Button
+                    variant="ghost"
                     size="sm"
-                    variant="outline"
-                    onClick={() => togglePanel('threads')}
-                    className="absolute top-2 left-2 z-10 h-8 w-8 p-0"
-                    title="Afficher les sujets"
+                    onClick={() => {
+                      setIsMobileThreadView(false);
+                      setSelectedThreadId(null);
+                    }}
+                    className="gap-2"
                   >
-                    <ChevronRight className="h-4 w-4" />
+                    <ArrowLeft className="h-4 w-4" />
+                    Retour aux sujets
                   </Button>
-                )}
-              </div>
-            </ResizablePanel>
-
-            <ResizableHandle withHandle />
-
-            {/* Colonne Détail (toujours visible) */}
-            <ResizablePanel defaultSize={50} minSize={30}>
-              <div className="h-full flex flex-col">
-                {selectedThreadId ? (
-                  <ThreadDetail threadId={selectedThreadId} />
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                      <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">Sélectionnez un sujet</p>
-                      <p className="text-sm">Choisissez un canal et un sujet pour commencer</p>
-                    </div>
+                </div>
+              )}
+              
+              {selectedThreadId ? (
+                <ThreadDetail threadId={selectedThreadId} />
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                  <div className="text-center px-4">
+                    <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">Sélectionnez un sujet</p>
+                    <p className="text-sm">Choisissez un sujet pour commencer la conversation</p>
                   </div>
-                )}
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+                </div>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
