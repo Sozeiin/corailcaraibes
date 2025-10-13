@@ -70,6 +70,8 @@ export function StockDuplicateDialog({ isOpen, onClose, item }: StockDuplicateDi
         .insert({
           name: item.name,
           reference: item.reference,
+          brand: item.brand,
+          supplier_reference: item.supplierReference,
           category: item.category,
           quantity: formData.quantity,
           min_threshold: item.minThreshold,

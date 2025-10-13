@@ -30,6 +30,8 @@ interface CreateStockItemDialogProps {
 interface StockItemFormData {
   name: string;
   reference: string;
+  brand: string;
+  supplierReference: string;
   category: string;
   unit: string;
   location: string;
@@ -50,6 +52,8 @@ export function CreateStockItemDialog({
     defaultValues: {
       name: productName,
       reference: '',
+      brand: '',
+      supplierReference: '',
       category: '',
       unit: 'pièce',
       location: '',
@@ -64,6 +68,8 @@ export function CreateStockItemDialog({
       const stockItemData = {
         name: data.name,
         reference: data.reference || null,
+        brand: data.brand || null,
+        supplier_reference: data.supplierReference || null,
         category: data.category || null,
         quantity: 0, // Initial stock is 0, will be updated when order is delivered
         min_threshold: data.minThreshold,
@@ -103,6 +109,8 @@ export function CreateStockItemDialog({
     form.reset({
       name: productName,
       reference: '',
+      brand: '',
+      supplierReference: '',
       category: '',
       unit: 'pièce',
       location: '',
@@ -151,6 +159,36 @@ export function CreateStockItemDialog({
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="brand"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Marque</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Marque du produit" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="supplierReference"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Référence fournisseur</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Code fournisseur" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

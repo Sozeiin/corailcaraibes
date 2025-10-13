@@ -8,6 +8,8 @@ interface StockItem {
   id: string;
   name: string;
   reference?: string;
+  brand?: string;
+  supplierReference?: string;
   quantity: number;
   category?: string;
   location?: string;
@@ -89,6 +91,8 @@ export function StockItemAutocomplete({
   const getDisplayInfo = (item: StockItem) => {
     const parts = [];
     if (item.reference) parts.push(`Réf: ${item.reference}`);
+    if (item.supplierReference) parts.push(`Réf fournisseur: ${item.supplierReference}`);
+    if (item.brand) parts.push(`Marque: ${item.brand}`);
     if (item.category) parts.push(item.category);
     return parts.join(' • ');
   };
