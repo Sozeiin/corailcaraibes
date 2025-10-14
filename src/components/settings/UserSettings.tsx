@@ -87,8 +87,10 @@ export function UserSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      // First delete from auth.users (this will cascade to profiles via trigger)
-      const { error } = await supabase.auth.admin.deleteUser(id);
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', id);
       
       if (error) throw error;
     },
@@ -99,10 +101,20 @@ export function UserSettings() {
         description: "L'utilisateur a été supprimé avec succès."
       });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      let description = "Impossible de supprimer l'utilisateur.";
+      
+      if (error.message?.includes('policy')) {
+        description = "Vous n'avez pas les permissions nécessaires pour supprimer cet utilisateur.";
+      } else if (error.message?.includes('foreign key')) {
+        description = "Impossible de supprimer cet utilisateur car il a des données associées.";
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
-        title: "Erreur",
-        description: "Impossible de supprimer l'utilisateur.",
+        title: "Erreur de suppression",
+        description,
         variant: "destructive"
       });
     }

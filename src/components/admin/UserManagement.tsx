@@ -111,10 +111,20 @@ export function UserManagement() {
       setUserToDelete(null);
     },
     onError: (error: any) => {
+      let description = "Impossible de supprimer l'utilisateur.";
+      
+      if (error.message?.includes('policy')) {
+        description = "Vous n'avez pas les permissions nécessaires pour supprimer cet utilisateur.";
+      } else if (error.message?.includes('foreign key')) {
+        description = "Impossible de supprimer cet utilisateur car il a des données associées.";
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
         variant: "destructive",
-        title: "Erreur",
-        description: error.message || "Impossible de supprimer l'utilisateur",
+        title: "Erreur de suppression",
+        description,
       });
     },
   });
