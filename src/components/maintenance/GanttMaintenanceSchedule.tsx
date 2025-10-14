@@ -187,35 +187,23 @@ export function GanttMaintenanceSchedule() {
     });
   }, [currentWeek]);
 
-  // Fetch technicians - temporarily fetch all to debug
+  // Fetch technicians filtered by base_id
   const {
     data: technicians = []
   } = useQuery({
     queryKey: ['technicians', user?.baseId],
     queryFn: async () => {
-      console.log('Fetching technicians for base_id:', user?.baseId);
-      console.log('Current user data:', user);
-
-      // First, let's see all technicians in the database
-      const {
-        data: allTechnicians,
-        error: allError
-      } = await supabase.from('profiles').select('id, name, role, base_id').eq('role', 'technicien');
-      console.log('All technicians in database:', allTechnicians);
-
-      // Then fetch for current base_id
       const {
         data,
         error
-      } = await supabase.from('profiles').select('id, name, role, base_id').eq('role', 'technicien').eq('base_id', user?.baseId);
-      if (error) {
-        console.error('Error fetching technicians:', error);
-        throw error;
-      }
-      console.log('Technicians for current base_id:', data);
-
-      // For now, return all technicians to see them all
-      return allTechnicians as Technician[];
+      } = await supabase
+        .from('profiles')
+        .select('id, name, role, base_id')
+        .eq('role', 'technicien')
+        .eq('base_id', user?.baseId);
+      
+      if (error) throw error;
+      return data as Technician[];
     },
     enabled: !!user?.baseId
   });

@@ -144,18 +144,20 @@ export function GanttPlanningView() {
     return days;
   }, [currentWeek]);
 
-  // Fetch technicians
+  // Fetch technicians filtered by base_id
   const { data: technicians = [] } = useQuery({
-    queryKey: ['technicians'],
+    queryKey: ['technicians', user.baseId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, role')
-        .eq('role', 'technicien');
+        .select('id, name, role, base_id')
+        .eq('role', 'technicien')
+        .eq('base_id', user.baseId);
       
       if (error) throw error;
       return data;
-    }
+    },
+    enabled: !!user?.baseId
   });
 
   // Fetch planning activities for the current two weeks
