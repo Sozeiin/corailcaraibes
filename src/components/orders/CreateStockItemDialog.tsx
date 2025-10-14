@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { withBrandColumnFallback } from '@/lib/supabaseFallbacks';
 import {
   Dialog,
   DialogContent,
@@ -78,13 +79,34 @@ export function CreateStockItemDialog({
         base_id: user?.baseId || null
       };
 
-      const { data: newItem, error } = await supabase
-        .from('stock_items')
-        .insert(stockItemData)
-        .select()
-        .single();
+      const response = await withBrandColumnFallback(
+        () =>
+          supabase
+            .from('stock_items')
+            .insert(stockItemData)
+            .select()
+            .single(),
+        () => {
+          const { brand: _brand, ...fallbackStockItemData } = stockItemData;
+          return supabase
+            .from('stock_items')
+            .insert(fallbackStockItemData)
+            .select()
+            .single();
+        }
+      );
+
+      const { data: newItem, error } = response.result;
 
       if (error) throw error;
+
+      if (response.usedFallback) {
+        toast({
+          title: "Marque non enregistrée",
+          description:
+            "La colonne 'Marque' n'est pas disponible sur la base de données. L'article a été enregistré sans cette information.",
+        });
+      }
 
       toast({
         title: "Article créé",

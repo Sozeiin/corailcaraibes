@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { StockItem } from '@/types';
+import { withBrandColumnFallback } from '@/lib/supabaseFallbacks';
 
 interface StockDuplicateDialogProps {
   isOpen: boolean;
@@ -65,23 +66,44 @@ export function StockDuplicateDialog({ isOpen, onClose, item }: StockDuplicateDi
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('stock_items')
-        .insert({
-          name: item.name,
-          reference: item.reference,
-          brand: item.brand,
-          supplier_reference: item.supplierReference,
-          category: item.category,
-          quantity: formData.quantity,
-          min_threshold: item.minThreshold,
-          unit: item.unit,
-          location: formData.location,
-          base_id: formData.baseId,
-          last_updated: new Date().toISOString(),
-        });
+      const stockData = {
+        name: item.name,
+        reference: item.reference,
+        brand: item.brand,
+        supplier_reference: item.supplierReference,
+        category: item.category,
+        quantity: formData.quantity,
+        min_threshold: item.minThreshold,
+        unit: item.unit,
+        location: formData.location,
+        base_id: formData.baseId,
+        last_updated: new Date().toISOString(),
+      };
+
+      const response = await withBrandColumnFallback(
+        () =>
+          supabase
+            .from('stock_items')
+            .insert(stockData),
+        () => {
+          const { brand: _brand, ...fallbackStockData } = stockData;
+          return supabase
+            .from('stock_items')
+            .insert(fallbackStockData);
+        }
+      );
+
+      const { error } = response.result;
 
       if (error) throw error;
+
+      if (response.usedFallback) {
+        toast({
+          title: 'Marque non enregistrée',
+          description:
+            "La colonne 'Marque' n'est pas disponible sur la base de données. L'article dupliqué a été enregistré sans cette information.",
+        });
+      }
 
       toast({
         title: 'Article dupliqué',
