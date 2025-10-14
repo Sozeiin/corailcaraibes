@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, AlertTriangle, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, AlertTriangle, FileSpreadsheet, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { useDeleteStockItem, useUpdateStockQuantity } from '@/hooks/useStockMutations';
 import { useRealtimeStockUpdates } from '@/hooks/useRealtimeUpdates';
+import { downloadStockImportTemplate } from '@/utils/downloadStockImportTemplate';
 
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
@@ -214,6 +215,15 @@ export default function Stock() {
         </div>
         {canManageStock && (
           <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={downloadStockImportTemplate}
+              className="border-gray-200 text-gray-700 hover:bg-gray-50 text-sm"
+            >
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden xs:inline">Modèle Excel</span>
+              <span className="xs:hidden">Modèle</span>
+            </Button>
             <Button
               variant="outline"
               onClick={() => setIsImportDialogOpen(true)}

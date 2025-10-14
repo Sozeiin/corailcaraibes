@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import {
   Dialog,
@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { downloadStockImportTemplate } from '@/utils/downloadStockImportTemplate';
 
 interface StockImportDialogProps {
   isOpen: boolean;
@@ -290,6 +291,15 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               <div>• <strong>Fournisseur</strong> (optionnel) : Nom du fournisseur</div>
               <div>• <strong>Base</strong> (optionnel) : Guadeloupe, Martinique ou Saint-Martin</div>
             </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-4"
+              onClick={downloadStockImportTemplate}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Télécharger le modèle Excel
+            </Button>
           </div>
 
           {/* Upload de fichier */}
