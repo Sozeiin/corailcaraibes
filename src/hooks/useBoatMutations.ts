@@ -10,12 +10,13 @@ export function useDeleteBoat() {
     mutationFn: async (boatId: string) => {
       console.log('🗑️ Suppression bateau:', boatId);
       
-      const { data, error } = await supabase.rpc('delete_boat_cascade', {
-        p_boat_id: boatId
-      });
+      const { error } = await supabase
+        .from('boats')
+        .delete()
+        .eq('id', boatId);
 
       if (error) throw error;
-      return data ?? boatId;
+      return boatId;
     },
     onSuccess: (boatId) => {
       invalidateBoatQueries(queryClient, boatId);
