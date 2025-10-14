@@ -29,6 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { StockItem, Base } from '@/types';
+import { withBrandColumnFallback } from '@/lib/supabaseFallbacks';
 import { StockPhotoUpload } from './StockPhotoUpload';
 
 interface StockDialogProps {
@@ -179,17 +180,46 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       console.log('Stock data to save:', stockData);
 
       let result;
+      let usedBrandFallback = false;
+
       if (item) {
-        result = await supabase
-          .from('stock_items')
-          .update(stockData)
-          .eq('id', item.id)
-          .select();
+        const response = await withBrandColumnFallback(
+          () =>
+            supabase
+              .from('stock_items')
+              .update(stockData)
+              .eq('id', item.id)
+              .select(),
+          () => {
+            const { brand: _brand, ...fallbackStockData } = stockData;
+            return supabase
+              .from('stock_items')
+              .update(fallbackStockData)
+              .eq('id', item.id)
+              .select();
+          }
+        );
+
+        result = response.result;
+        usedBrandFallback = response.usedFallback;
       } else {
-        result = await supabase
-          .from('stock_items')
-          .insert([stockData])
-          .select();
+        const response = await withBrandColumnFallback(
+          () =>
+            supabase
+              .from('stock_items')
+              .insert([stockData])
+              .select(),
+          () => {
+            const { brand: _brand, ...fallbackStockData } = stockData;
+            return supabase
+              .from('stock_items')
+              .insert([fallbackStockData])
+              .select();
+          }
+        );
+
+        result = response.result;
+        usedBrandFallback = response.usedFallback;
       }
 
       const { error } = result;
@@ -197,6 +227,14 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       console.log('Save result:', { data: result.data, error });
 
       if (error) throw error;
+
+      if (usedBrandFallback) {
+        toast({
+          title: "Marque non enregistrée",
+          description:
+            "La colonne 'Marque' n'est pas disponible sur la base de données. L'article a été enregistré sans cette information.",
+        });
+      }
 
       toast({
         title: item ? 'Article modifié' : 'Article ajouté',

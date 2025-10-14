@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Base } from '@/types';
+import { withBrandColumnFallback } from '@/lib/supabaseFallbacks';
 import { StockPhotoUpload } from './StockPhotoUpload';
 
 interface CreateStockItemFromScannerProps {
@@ -164,11 +165,30 @@ export function CreateStockItemFromScanner({
         last_updated: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('stock_items')
-        .insert(stockData);
+      const response = await withBrandColumnFallback(
+        () =>
+          supabase
+            .from('stock_items')
+            .insert(stockData),
+        () => {
+          const { brand: _brand, ...fallbackStockData } = stockData;
+          return supabase
+            .from('stock_items')
+            .insert(fallbackStockData);
+        }
+      );
+
+      const { error } = response.result;
 
       if (error) throw error;
+
+      if (response.usedFallback) {
+        toast({
+          title: "Marque non enregistrée",
+          description:
+            "La colonne 'Marque' n'est pas disponible sur la base de données. L'article a été enregistré sans cette information.",
+        });
+      }
 
       toast({
         title: "Article créé",
