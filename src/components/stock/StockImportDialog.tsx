@@ -15,6 +15,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { downloadStockTemplate } from '@/utils/stockTemplate';
 
 interface StockImportDialogProps {
   isOpen: boolean;
@@ -45,37 +46,6 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
     errors: { row: number; message: string }[];
     suppliersCreated: number;
   } | null>(null);
-
-  const handleDownloadTemplate = () => {
-    const headers = [[
-      'Nom',
-      'Référence',
-      'Catégorie',
-      'Quantité',
-      'Seuil minimum',
-      'Unité',
-      'Emplacement',
-      'Fournisseur',
-      'Base (Guadeloupe, Martinique, Saint-Martin)',
-    ]];
-
-    const exampleRow = [[
-      'Bouteille Oxygène',
-      'OXY-001',
-      'Plongée',
-      12,
-      4,
-      'pièce',
-      'Magasin A',
-      'Air Liquide',
-      'Guadeloupe',
-    ]];
-
-    const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...exampleRow]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Modèle');
-    XLSX.writeFile(workbook, 'modele_import_stock.xlsx');
-  };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -325,7 +295,7 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               variant="secondary"
               size="sm"
               className="mt-4"
-              onClick={handleDownloadTemplate}
+              onClick={downloadStockTemplate}
             >
               <Download className="mr-2 h-4 w-4" />
               Télécharger le modèle Excel
