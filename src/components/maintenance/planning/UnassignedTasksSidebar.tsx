@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Plus, X, AlertTriangle, Clock } from 'lucide-react';
 import { PlanningActivityCard } from './PlanningActivityCard';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface PlanningActivity {
   id: string;
@@ -67,14 +74,41 @@ interface UnassignedTasksSidebarProps {
   onCreateMaintenance: () => void;
 }
 
-export function UnassignedTasksSidebar({ 
-  activities, 
-  onClose, 
+export function UnassignedTasksSidebar({
+  activities,
+  onClose,
   onCreateActivity,
-  onCreateMaintenance 
+  onCreateMaintenance
 }: UnassignedTasksSidebarProps) {
-  const urgentActivities = activities.filter(a => a.priority === 'high' || a.activity_type === 'emergency');
-  const regularActivities = activities.filter(a => a.priority !== 'high' && a.activity_type !== 'emergency');
+  const [selectedBoatId, setSelectedBoatId] = useState<string>('all');
+
+  const boatOptions = useMemo(() => {
+    const boats = new Map<string, string>();
+    activities.forEach(activity => {
+      if (activity.boat?.id && activity.boat?.name) {
+        boats.set(activity.boat.id, activity.boat.name);
+      }
+    });
+
+    return Array.from(boats.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }, [activities]);
+
+  const filteredActivities = useMemo(() => {
+    if (selectedBoatId === 'all') {
+      return activities;
+    }
+
+    return activities.filter(activity => activity.boat?.id === selectedBoatId);
+  }, [activities, selectedBoatId]);
+
+  const urgentActivities = filteredActivities.filter(
+    activity => activity.priority === 'high' || activity.activity_type === 'emergency'
+  );
+  const regularActivities = filteredActivities.filter(
+    activity => activity.priority !== 'high' && activity.activity_type !== 'emergency'
+  );
 
   return (
     <Card className="w-80 rounded-none border-r border-t-0 border-b-0 border-l-0 h-full">
@@ -94,6 +128,24 @@ export function UnassignedTasksSidebar({
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle maintenance
           </Button>
+          <div className="pt-1">
+            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
+              Filtrer par bateau
+            </p>
+            <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
+              <SelectTrigger className="w-full border-muted bg-muted/20 hover:bg-muted/40">
+                <SelectValue placeholder="Tous les bateaux" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les bateaux</SelectItem>
+                {boatOptions.map(boat => (
+                  <SelectItem key={boat.id} value={boat.id}>
+                    {boat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
 
@@ -130,7 +182,7 @@ export function UnassignedTasksSidebar({
               </div>
             )}
 
-            {activities.length === 0 && (
+            {filteredActivities.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>Aucune tâche non assignée</p>
