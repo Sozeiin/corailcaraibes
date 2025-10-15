@@ -688,6 +688,17 @@ export function GanttMaintenanceSchedule() {
   const getUnassignedTasks = useMemo(() => {
     const unassigned = interventions.filter(intervention => !intervention.technician_id);
     
+    console.log('🔍 GET UNASSIGNED - RAW:', {
+      totalInterventions: interventions.length,
+      unassignedCount: unassigned.length,
+      unassignedTasks: unassigned.map(t => ({
+        id: t.id,
+        title: t.title,
+        boat: t.boats?.name,
+        boatId: t.boats?.id
+      }))
+    });
+    
     // Dédupliquer par ID pour éviter les doublons
     const uniqueMap = new Map();
     unassigned.forEach(task => {
@@ -696,7 +707,15 @@ export function GanttMaintenanceSchedule() {
       }
     });
     
-    return Array.from(uniqueMap.values());
+    const deduplicated = Array.from(uniqueMap.values());
+    
+    console.log('🔍 GET UNASSIGNED - DEDUPLICATED:', {
+      before: unassigned.length,
+      after: deduplicated.length,
+      removed: unassigned.length - deduplicated.length
+    });
+    
+    return deduplicated;
   }, [interventions]);
 
   // Extract boat options for filter
@@ -715,27 +734,40 @@ export function GanttMaintenanceSchedule() {
 
   // Filter unassigned tasks by boat
   const filteredUnassignedTasks = useMemo(() => {
+    console.log('🎯 FILTERING UNASSIGNED TASKS:', {
+      selectedBoatId,
+      totalUnassigned: getUnassignedTasks.length,
+      unassignedBoats: getUnassignedTasks.map(t => ({
+        id: t.id,
+        title: t.title,
+        boatName: t.boats?.name,
+        boatId: t.boats?.id
+      }))
+    });
+    
     if (selectedBoatId === 'all') {
+      console.log('🎯 FILTER RESULT: ALL BOATS', getUnassignedTasks.length);
       return getUnassignedTasks;
     }
-    return getUnassignedTasks.filter(task => task.boats?.id === selectedBoatId);
+    
+    const filtered = getUnassignedTasks.filter(task => {
+      const matches = task.boats?.id === selectedBoatId;
+      console.log(`🎯 FILTER CHECK: ${task.title} | boat: ${task.boats?.name} (${task.boats?.id}) | selected: ${selectedBoatId} | MATCH: ${matches}`);
+      return matches;
+    });
+    
+    console.log('🎯 FILTER RESULT:', {
+      selectedBoatId,
+      filteredCount: filtered.length,
+      filteredTasks: filtered.map(t => ({
+        id: t.id,
+        title: t.title,
+        boat: t.boats?.name
+      }))
+    });
+    
+    return filtered;
   }, [getUnassignedTasks, selectedBoatId]);
-
-  // Debug log pour vérifier le filtrage
-  console.log('🎯 FILTERED UNASSIGNED TASKS:', {
-    selectedBoatId,
-    totalUnassigned: getUnassignedTasks.length,
-    filteredCount: filteredUnassignedTasks.length,
-    filteredTasks: filteredUnassignedTasks.map(t => ({
-      id: t.id,
-      title: t.title,
-      boat: t.boats?.name
-    })),
-    // Détecter les doublons
-    duplicates: filteredUnassignedTasks.filter((task, index, self) => 
-      self.findIndex(t => t.id === task.id) !== index
-    ).map(t => t.id)
-  });
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
