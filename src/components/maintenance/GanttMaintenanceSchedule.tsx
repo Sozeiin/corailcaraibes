@@ -985,7 +985,7 @@ export function GanttMaintenanceSchedule() {
                   )}
                 </div>
               </div>
-              <ScrollArea className="max-h-48 p-3">
+              <div className="max-h-48 p-3 overflow-x-auto overflow-y-hidden">
                 <div className="flex gap-2">
                   {filteredUnassignedTasks.map((task, index) => <div key={`unassigned-${task.id}-${index}`} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
@@ -994,7 +994,7 @@ export function GanttMaintenanceSchedule() {
                       {selectedBoatId === 'all' ? 'Aucune tâche non assignée' : 'Aucune tâche non assignée pour ce bateau'}
                     </p>}
                 </div>
-              </ScrollArea>
+              </div>
             </div>}
 
           {/* Main table */}
