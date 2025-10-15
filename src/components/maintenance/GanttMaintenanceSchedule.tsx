@@ -557,7 +557,7 @@ export function GanttMaintenanceSchedule() {
 
     // Debug: Check if task is in interventions list
     console.log('🔍 DRAG DEBUG - All interventions count:', interventions.length);
-    console.log('🔍 DRAG DEBUG - Unassigned tasks:', getUnassignedTasks().map(t => ({
+    console.log('🔍 DRAG DEBUG - Unassigned tasks:', getUnassignedTasks.map(t => ({
       id: t.id,
       title: t.title
     })));
@@ -685,14 +685,14 @@ export function GanttMaintenanceSchedule() {
     console.log('📊 Final tasksBySlot groups:', Object.keys(grouped).length, grouped);
     return grouped;
   }, [interventions]);
-  const getUnassignedTasks = () => {
+  const getUnassignedTasks = useMemo(() => {
     return interventions.filter(intervention => !intervention.technician_id);
-  };
+  }, [interventions]);
 
   // Extract boat options for filter
   const boatOptions = useMemo(() => {
     const boats = new Map<string, string>();
-    getUnassignedTasks().forEach(task => {
+    getUnassignedTasks.forEach(task => {
       if (task.boats?.id && task.boats?.name) {
         boats.set(task.boats.id, task.boats.name);
       }
@@ -701,16 +701,15 @@ export function GanttMaintenanceSchedule() {
     return Array.from(boats.entries())
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-  }, [interventions]);
+  }, [getUnassignedTasks]);
 
   // Filter unassigned tasks by boat
   const filteredUnassignedTasks = useMemo(() => {
-    const unassigned = getUnassignedTasks();
     if (selectedBoatId === 'all') {
-      return unassigned;
+      return getUnassignedTasks;
     }
-    return unassigned.filter(task => task.boats?.id === selectedBoatId);
-  }, [interventions, selectedBoatId]);
+    return getUnassignedTasks.filter(task => task.boats?.id === selectedBoatId);
+  }, [getUnassignedTasks, selectedBoatId]);
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
