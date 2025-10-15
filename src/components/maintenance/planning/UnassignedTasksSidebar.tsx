@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Plus, X, AlertTriangle, Clock } from 'lucide-react';
+import {
+  Plus,
+  X,
+  AlertTriangle,
+  Clock,
+  Ship,
+  ChevronsUpDown,
+  Check
+} from 'lucide-react';
 import { PlanningActivityCard } from './PlanningActivityCard';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 
 interface PlanningActivity {
   id: string;
@@ -23,6 +41,8 @@ interface PlanningActivity {
     id: string;
     name: string;
   };
+  boat_id?: string | null;
+  boat_name?: string | null;
   preparation_status?: 'in_progress' | 'ready' | 'anomaly';
   anomalies_count?: number;
 }
@@ -67,14 +87,71 @@ interface UnassignedTasksSidebarProps {
   onCreateMaintenance: () => void;
 }
 
-export function UnassignedTasksSidebar({ 
-  activities, 
-  onClose, 
+export function UnassignedTasksSidebar({
+  activities,
+  onClose,
   onCreateActivity,
-  onCreateMaintenance 
+  onCreateMaintenance
 }: UnassignedTasksSidebarProps) {
-  const urgentActivities = activities.filter(a => a.priority === 'high' || a.activity_type === 'emergency');
-  const regularActivities = activities.filter(a => a.priority !== 'high' && a.activity_type !== 'emergency');
+  const [selectedBoatId, setSelectedBoatId] = useState<string>('all');
+  const [boatFilterOpen, setBoatFilterOpen] = useState(false);
+
+  const boatOptions = useMemo(() => {
+    const boats = new Map<string, string>();
+    activities.forEach(activity => {
+      const boatId = activity.boat?.id ?? activity.boat_id ?? undefined;
+      if (!boatId) return;
+
+      const boatName = activity.boat?.name ?? activity.boat_name ?? 'Bateau sans nom';
+      if (!boats.has(boatId)) {
+        boats.set(boatId, boatName);
+      }
+    });
+
+    return Array.from(boats.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }, [activities]);
+
+  const boatActivityCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    activities.forEach(activity => {
+      const boatId = activity.boat?.id ?? activity.boat_id ?? undefined;
+      if (!boatId) return;
+
+      counts.set(boatId, (counts.get(boatId) ?? 0) + 1);
+    });
+
+    return counts;
+  }, [activities]);
+
+  const selectedBoat = useMemo(() => {
+    if (selectedBoatId === 'all') return null;
+    return boatOptions.find(boat => boat.id === selectedBoatId) ?? null;
+  }, [boatOptions, selectedBoatId]);
+
+  const handleBoatSelect = (value: string) => {
+    setSelectedBoatId(value);
+    setBoatFilterOpen(false);
+  };
+
+  const filteredActivities = useMemo(() => {
+    if (selectedBoatId === 'all') {
+      return activities;
+    }
+
+    return activities.filter(activity => {
+      const boatId = activity.boat?.id ?? activity.boat_id ?? undefined;
+      return boatId === selectedBoatId;
+    });
+  }, [activities, selectedBoatId]);
+
+  const urgentActivities = filteredActivities.filter(
+    activity => activity.priority === 'high' || activity.activity_type === 'emergency'
+  );
+  const regularActivities = filteredActivities.filter(
+    activity => activity.priority !== 'high' && activity.activity_type !== 'emergency'
+  );
 
   return (
     <Card className="w-80 rounded-none border-r border-t-0 border-b-0 border-l-0 h-full">
@@ -85,7 +162,7 @@ export function UnassignedTasksSidebar({
             <X className="w-4 h-4" />
           </Button>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <Button onClick={onCreateActivity} className="w-full">
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle activité
@@ -94,6 +171,82 @@ export function UnassignedTasksSidebar({
             <Plus className="w-4 h-4 mr-2" />
             Nouvelle maintenance
           </Button>
+          <div className="pt-1">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Filtrer par bateau
+              </p>
+              {selectedBoatId !== 'all' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => handleBoatSelect('all')}
+                >
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
+            <Popover open={boatFilterOpen} onOpenChange={setBoatFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={boatFilterOpen}
+                  className="w-full justify-between border-muted bg-muted/20 hover:bg-muted/40"
+                >
+                  <span className="flex items-center gap-2 truncate">
+                    <Ship className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">
+                      {selectedBoat?.name ?? 'Tous les bateaux'}
+                    </span>
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Rechercher un bateau..." />
+                  <CommandList>
+                    <CommandEmpty>Aucun bateau trouvé</CommandEmpty>
+                    <CommandGroup heading="Bateaux">
+                      <CommandItem value="Tous les bateaux" onSelect={() => handleBoatSelect('all')}>
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            selectedBoatId === 'all' ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <span className="flex-1">Tous les bateaux</span>
+                        <span className="text-xs text-muted-foreground">
+                          {activities.length}
+                        </span>
+                      </CommandItem>
+                      {boatOptions.map(boat => (
+                        <CommandItem
+                          key={boat.id}
+                          value={`${boat.id} ${boat.name}`}
+                          onSelect={() => handleBoatSelect(boat.id)}
+                        >
+                          <Check
+                            className={cn(
+                              'mr-2 h-4 w-4',
+                              selectedBoatId === boat.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <span className="flex-1 truncate">{boat.name}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {boatActivityCounts.get(boat.id) ?? 0}
+                          </span>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
       </CardHeader>
 
@@ -130,7 +283,7 @@ export function UnassignedTasksSidebar({
               </div>
             )}
 
-            {activities.length === 0 && (
+            {filteredActivities.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="w-12 h-12 mx-auto mb-2 opacity-50" />
                 <p>Aucune tâche non assignée</p>
