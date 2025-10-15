@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, TrendingUp, Wrench, User, Package } from 'lucide-react';
+import { ShoppingCart, TrendingUp, Wrench, User, Package, Barcode } from 'lucide-react';
 import { StockItem } from '@/types';
 import { PurchaseHistory } from './PurchaseHistory';
 import { SupplierHistory } from './SupplierHistory';
@@ -10,6 +10,7 @@ import { PriceAnalysis } from './PriceAnalysis';
 import { UsageAnalysis } from './UsageAnalysis';
 import { StockItemQuotes } from './StockItemQuotes';
 import { OptimizedImage } from '@/components/ui/optimized-image';
+import { BarcodeDownloader } from './BarcodeDownloader';
 
 interface StockItemDetailsDialogProps {
   item: StockItem | null;
@@ -122,8 +123,12 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
           </div>
         </div>
 
-        <Tabs defaultValue="purchases" className="mt-4">
-          <TabsList className="grid w-full grid-cols-5">
+        <Tabs defaultValue="barcode" className="mt-4">
+          <TabsList className="grid w-full grid-cols-6">
+            <TabsTrigger value="barcode" className="flex items-center gap-2">
+              <Barcode className="h-4 w-4" />
+              Code-barres
+            </TabsTrigger>
             <TabsTrigger value="purchases" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
               Achats
@@ -145,6 +150,14 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
               Utilisation
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="barcode" className="mt-6">
+            <BarcodeDownloader 
+              barcode={item.barcode || item.reference || ''} 
+              itemName={item.name}
+              reference={item.reference}
+            />
+          </TabsContent>
 
           <TabsContent value="purchases" className="mt-6">
             <PurchaseHistory stockItemId={item.id} />

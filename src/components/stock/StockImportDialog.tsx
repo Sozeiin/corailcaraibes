@@ -25,6 +25,7 @@ interface StockImportDialogProps {
 interface ImportItem {
   name: string;
   reference?: string;
+  barcode?: string;
   category?: string;
   quantity?: number;
   minThreshold?: number;
@@ -205,6 +206,7 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
             .insert({
               name: item.name,
               reference: item.reference || null,
+              barcode: item.barcode || null,
               category: item.category || null,
               quantity: item.quantity || 0,
               min_threshold: item.minThreshold || 0,
@@ -291,6 +293,7 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
             <div className="text-sm text-gray-600 space-y-1">
               <div>• <strong>Nom</strong> (obligatoire) : Nom de l'article</div>
               <div>• <strong>Référence</strong> (optionnel) : Référence de l'article</div>
+              <div>• <strong>Code-barres</strong> (optionnel) : Code-barres (auto-généré si vide)</div>
               <div>• <strong>Catégorie</strong> (optionnel) : Catégorie de l'article</div>
               <div>• <strong>Quantité</strong> (optionnel) : Quantité en stock</div>
               <div>• <strong>Seuil minimum</strong> (optionnel) : Seuil d'alerte</div>

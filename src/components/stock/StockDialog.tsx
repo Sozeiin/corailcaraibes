@@ -184,19 +184,21 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
 
       if (item) {
         const response = await withBrandColumnFallback(
-          () =>
-            supabase
+          async () =>
+            await supabase
               .from('stock_items')
               .update(stockData)
               .eq('id', item.id)
-              .select(),
-          () => {
+              .select()
+              .single(),
+          async () => {
             const { brand: _brand, ...fallbackStockData } = stockData;
-            return supabase
+            return await supabase
               .from('stock_items')
               .update(fallbackStockData)
               .eq('id', item.id)
-              .select();
+              .select()
+              .single();
           }
         );
 
@@ -204,17 +206,19 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         usedBrandFallback = response.usedFallback;
       } else {
         const response = await withBrandColumnFallback(
-          () =>
-            supabase
+          async () =>
+            await supabase
               .from('stock_items')
               .insert([stockData])
-              .select(),
-          () => {
+              .select()
+              .single(),
+          async () => {
             const { brand: _brand, ...fallbackStockData } = stockData;
-            return supabase
+            return await supabase
               .from('stock_items')
               .insert([fallbackStockData])
-              .select();
+              .select()
+              .single();
           }
         );
 

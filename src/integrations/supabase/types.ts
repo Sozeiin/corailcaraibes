@@ -3385,7 +3385,9 @@ export type Database = {
       }
       stock_items: {
         Row: {
+          barcode: string | null
           base_id: string | null
+          brand: string | null
           category: string | null
           id: string
           last_purchase_cost: number | null
@@ -3398,11 +3400,14 @@ export type Database = {
           photo_url: string | null
           quantity: number | null
           reference: string | null
+          supplier_reference: string | null
           unit: string | null
           unit_price: number | null
         }
         Insert: {
+          barcode?: string | null
           base_id?: string | null
+          brand?: string | null
           category?: string | null
           id?: string
           last_purchase_cost?: number | null
@@ -3415,11 +3420,14 @@ export type Database = {
           photo_url?: string | null
           quantity?: number | null
           reference?: string | null
+          supplier_reference?: string | null
           unit?: string | null
           unit_price?: number | null
         }
         Update: {
+          barcode?: string | null
           base_id?: string | null
+          brand?: string | null
           category?: string | null
           id?: string
           last_purchase_cost?: number | null
@@ -3432,6 +3440,7 @@ export type Database = {
           photo_url?: string | null
           quantity?: number | null
           reference?: string | null
+          supplier_reference?: string | null
           unit?: string | null
           unit_price?: number | null
         }
@@ -4660,6 +4669,10 @@ export type Database = {
         Returns: string
       }
       generate_supply_request_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_unique_barcode: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

@@ -81,15 +81,19 @@ export function StockDuplicateDialog({ isOpen, onClose, item }: StockDuplicateDi
       };
 
       const response = await withBrandColumnFallback(
-        () =>
-          supabase
+        async () =>
+          await supabase
             .from('stock_items')
-            .insert(stockData),
-        () => {
+            .insert(stockData)
+            .select()
+            .single(),
+        async () => {
           const { brand: _brand, ...fallbackStockData } = stockData;
-          return supabase
+          return await supabase
             .from('stock_items')
-            .insert(fallbackStockData);
+            .insert(fallbackStockData)
+            .select()
+            .single();
         }
       );
 

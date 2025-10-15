@@ -383,14 +383,26 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     
     console.log('📦 Available stock items:', stockItems.length);
     
-    // 1. Recherche locale d'abord (logique existante)
+    // 1. Recherche locale d'abord - PRIORITÉ AU CODE-BARRES
+    // a) Recherche par code-barres exact (priorité absolue)
     let stockItem = stockItems.find(item => 
-      item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
+      item.barcode && item.barcode.toLowerCase() === trimmedCode.toLowerCase()
     );
     if (stockItem) {
-      matchType = 'Référence exacte (local)';
+      matchType = 'Code-barres exact';
     }
     
+    // b) Recherche par référence exacte
+    if (!stockItem) {
+      stockItem = stockItems.find(item => 
+        item.reference && item.reference.toLowerCase() === trimmedCode.toLowerCase()
+      );
+      if (stockItem) {
+        matchType = 'Référence exacte (local)';
+      }
+    }
+    
+    // c) Recherche par référence partielle
     if (!stockItem) {
       stockItem = stockItems.find(item => 
         item.reference && 
@@ -402,6 +414,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
       }
     }
     
+    // d) Recherche par nom d'article
     if (!stockItem) {
       stockItem = stockItems.find(item => 
         item.name.toLowerCase().includes(trimmedCode.toLowerCase()) &&

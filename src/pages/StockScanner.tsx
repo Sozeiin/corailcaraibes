@@ -17,6 +17,7 @@ export default function StockScannerPage() {
     id: item.id,
     name: item.name,
     reference: item.reference || '',
+    barcode: item.barcode || '',
     category: item.category || '',
     quantity: item.quantity || 0,
     minThreshold: item.min_threshold || 0,

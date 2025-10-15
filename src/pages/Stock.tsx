@@ -87,6 +87,7 @@ export default function Stock() {
       id: item.id,
       name: item.name,
       reference: item.reference || '',
+      barcode: item.barcode || '',
       brand: item.brand || '',
       supplierReference: item.supplier_reference || '',
       category: item.category || '',

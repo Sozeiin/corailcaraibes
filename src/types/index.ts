@@ -81,6 +81,7 @@ export interface StockItem {
   id: string;
   name: string;
   reference: string;
+  barcode?: string;
   brand?: string;
   supplierReference?: string;
   category: string;

@@ -80,15 +80,15 @@ export function CreateStockItemDialog({
       };
 
       const response = await withBrandColumnFallback(
-        () =>
-          supabase
+        async () =>
+          await supabase
             .from('stock_items')
             .insert(stockItemData)
             .select()
             .single(),
-        () => {
+        async () => {
           const { brand: _brand, ...fallbackStockItemData } = stockItemData;
-          return supabase
+          return await supabase
             .from('stock_items')
             .insert(fallbackStockItemData)
             .select()
@@ -113,7 +113,9 @@ export function CreateStockItemDialog({
         description: "Le nouvel article a été ajouté au stock."
       });
 
-      onItemCreated(newItem.name, newItem.reference || '');
+      if (newItem && !Array.isArray(newItem)) {
+        onItemCreated(newItem.name, newItem.reference || '');
+      }
       handleClose();
     } catch (error) {
       console.error('Error creating stock item:', error);

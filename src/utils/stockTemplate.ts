@@ -7,6 +7,7 @@ export const downloadStockTemplate = () => {
   const headers = [[
     'Nom',
     'Référence',
+    'Code-barres',
     'Catégorie',
     'Quantité',
     'Seuil minimum',
@@ -21,6 +22,7 @@ export const downloadStockTemplate = () => {
   const exampleRow = [[
     'Bouteille Oxygène',
     'OXY-001',
+    '', // Code-barres vide = auto-généré
     'Plongée',
     12,
     4,
