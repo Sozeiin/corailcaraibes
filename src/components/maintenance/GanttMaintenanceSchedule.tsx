@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -592,6 +592,32 @@ export function GanttMaintenanceSchedule() {
     try {
       const dropId = over.id.toString();
       console.log('🎯 DROP ANALYSIS - DropId:', dropId);
+
+      // Cas spécial : drop sur la zone "unassigned"
+      if (dropId === 'unassigned-zone') {
+        console.log('🔄 UNASSIGNING task:', draggedTask.id);
+        
+        const updateData = {
+          id: draggedTask.id,
+          updates: {
+            technician_id: null,
+            // Garder la date et l'heure actuelles
+            scheduled_date: draggedTask.scheduled_date,
+            scheduled_time: draggedTask.scheduled_time
+          }
+        };
+        
+        await updateInterventionMutation.mutateAsync(updateData);
+        
+        toast({
+          title: "Tâche désassignée",
+          description: `"${draggedTask.title}" a été remise dans les tâches non assignées`,
+        });
+        
+        setDraggedTask(null);
+        return;
+      }
+
       const parts = dropId.split('|');
       console.log('🎯 DROP ANALYSIS - Parts:', parts);
       if (parts.length !== 3) {
@@ -683,8 +709,14 @@ export function GanttMaintenanceSchedule() {
       grouped[slotId].push(intervention);
     });
     console.log('📊 Final tasksBySlot groups:', Object.keys(grouped).length, grouped);
-    return grouped;
+      return grouped;
   }, [interventions]);
+
+  // Zone droppable pour désassigner les tâches
+  const { setNodeRef: setUnassignedRef, isOver: isOverUnassigned } = useDroppable({
+    id: 'unassigned-zone'
+  });
+
   const getUnassignedTasks = useMemo(() => {
     const unassigned = interventions.filter(intervention => !intervention.technician_id);
     
@@ -985,7 +1017,14 @@ export function GanttMaintenanceSchedule() {
                   )}
                 </div>
               </div>
-              <div className="max-h-48 p-3 overflow-x-auto overflow-y-hidden">
+              <div 
+                ref={setUnassignedRef}
+                className={`max-h-48 p-3 overflow-x-auto overflow-y-hidden transition-all rounded-b-2xl ${
+                  isOverUnassigned 
+                    ? 'bg-blue-100 border-2 border-blue-400 border-dashed' 
+                    : ''
+                }`}
+              >
                 <div className="flex gap-2">
                   {filteredUnassignedTasks.map((task, index) => <div key={`unassigned-${task.id}-${index}`} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
