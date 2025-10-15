@@ -196,12 +196,7 @@ export function GanttMaintenanceSchedule() {
       const {
         data,
         error
-      } = await supabase
-        .from('profiles')
-        .select('id, name, role, base_id')
-        .eq('role', 'technicien')
-        .eq('base_id', user?.baseId);
-      
+      } = await supabase.from('profiles').select('id, name, role, base_id').eq('role', 'technicien').eq('base_id', user?.baseId);
       if (error) throw error;
       return data as Technician[];
     },
@@ -871,9 +866,7 @@ export function GanttMaintenanceSchedule() {
         </div>
         
         {/* Weather Widget moderne */}
-        <div className="bg-white rounded-2xl p-4 shadow-md">
-          <WeatherWidget compact />
-        </div>
+        
       </div>
 
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>

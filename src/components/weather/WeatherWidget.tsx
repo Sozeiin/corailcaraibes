@@ -44,96 +44,111 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   };
   const getWeatherIcon = (condition: string, size = "h-8 w-8") => {
     const lowerCondition = condition.toLowerCase();
-    if (
-      lowerCondition.includes('rain') ||
-      lowerCondition.includes('drizzle') ||
-      lowerCondition.includes('pluie') ||
-      lowerCondition.includes('bruine')
-    ) {
+    if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle') || lowerCondition.includes('pluie') || lowerCondition.includes('bruine')) {
       return <CloudRain className={`${size} text-blue-500`} />;
     }
     if (lowerCondition.includes('snow') || lowerCondition.includes('neige')) {
       return <Snowflake className={`${size} text-blue-200`} />;
     }
-    if (
-      lowerCondition.includes('cloud') ||
-      lowerCondition.includes('nuage') ||
-      lowerCondition.includes('couvert')
-    ) {
+    if (lowerCondition.includes('cloud') || lowerCondition.includes('nuage') || lowerCondition.includes('couvert')) {
       return <Cloud className={`${size} text-gray-500`} />;
     }
     return <Sun className={`${size} text-yellow-500`} />;
   };
-    const fetchWeather = async ({ baseId, lat, lon }: { baseId?: string; lat?: number; lon?: number }) => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-weather', {
-          body: { baseId, lat, lon }
-        });
-        if (error) {
-          console.error('WeatherWidget: Supabase function error:', error);
-          throw error;
+  const fetchWeather = async ({
+    baseId,
+    lat,
+    lon
+  }: {
+    baseId?: string;
+    lat?: number;
+    lon?: number;
+  }) => {
+    try {
+      const {
+        data,
+        error
+      } = await supabase.functions.invoke('get-weather', {
+        body: {
+          baseId,
+          lat,
+          lon
         }
-        if (data) {
-          console.log('WeatherWidget: Weather data received:', data);
-          setWeather(data);
-          setLocation(data.location);
-        } else {
-          throw new Error('No data received from weather function');
-        }
-      } catch (error) {
-        console.error('WeatherWidget: Error in fetchWeather:', error);
-        console.log('WeatherWidget: Error occurred, falling back to static data');
-        const fallbackLocation = baseId && baseLocations[baseId]
-          ? baseLocations[baseId]
-          : lat !== undefined && lon !== undefined
-            ? `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`
-            : baseLocations.default;
-        const staticWeather = {
-          location: fallbackLocation,
-          temperature: 18,
-          condition: 'Partiellement nuageux',
-          humidity: 65,
-          windSpeed: 12,
-          forecast: [
-            { date: 'Auj', temp_max: 22, temp_min: 14, condition: 'Nuageux' },
-            { date: 'Dem', temp_max: 25, temp_min: 16, condition: 'Ensoleillé' },
-            { date: 'Mer', temp_max: 19, temp_min: 13, condition: 'Pluie' }
-          ]
-        };
-        setWeather(staticWeather);
-        setLocation('Données de démonstration - ' + fallbackLocation);
+      });
+      if (error) {
+        console.error('WeatherWidget: Supabase function error:', error);
+        throw error;
       }
-    };
-
-    const getLocationAndWeather = async () => {
-      setLoading(true);
-      try {
-        try {
-          if (navigator?.geolocation) {
-            const position = await new Promise<GeolocationPosition>((resolve, reject) =>
-              navigator.geolocation.getCurrentPosition(resolve, reject)
-            );
-            await fetchWeather({ lat: position.coords.latitude, lon: position.coords.longitude });
-            return;
-          }
-        } catch (geoError) {
-          console.error('WeatherWidget: Geolocation error:', geoError);
-        }
-        const baseId = user?.baseId;
-        const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
-        setLocation(expectedLocation);
-        await fetchWeather({ baseId });
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        toast({
-          title: "Erreur météo",
-          description: "Impossible de récupérer les données météo",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
+      if (data) {
+        console.log('WeatherWidget: Weather data received:', data);
+        setWeather(data);
+        setLocation(data.location);
+      } else {
+        throw new Error('No data received from weather function');
       }
-    };
+    } catch (error) {
+      console.error('WeatherWidget: Error in fetchWeather:', error);
+      console.log('WeatherWidget: Error occurred, falling back to static data');
+      const fallbackLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : lat !== undefined && lon !== undefined ? `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}` : baseLocations.default;
+      const staticWeather = {
+        location: fallbackLocation,
+        temperature: 18,
+        condition: 'Partiellement nuageux',
+        humidity: 65,
+        windSpeed: 12,
+        forecast: [{
+          date: 'Auj',
+          temp_max: 22,
+          temp_min: 14,
+          condition: 'Nuageux'
+        }, {
+          date: 'Dem',
+          temp_max: 25,
+          temp_min: 16,
+          condition: 'Ensoleillé'
+        }, {
+          date: 'Mer',
+          temp_max: 19,
+          temp_min: 13,
+          condition: 'Pluie'
+        }]
+      };
+      setWeather(staticWeather);
+      setLocation('Données de démonstration - ' + fallbackLocation);
+    }
+  };
+  const getLocationAndWeather = async () => {
+    setLoading(true);
+    try {
+      try {
+        if (navigator?.geolocation) {
+          const position = await new Promise<GeolocationPosition>((resolve, reject) => navigator.geolocation.getCurrentPosition(resolve, reject));
+          await fetchWeather({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+          return;
+        }
+      } catch (geoError) {
+        console.error('WeatherWidget: Geolocation error:', geoError);
+      }
+      const baseId = user?.baseId;
+      const expectedLocation = baseId && baseLocations[baseId] ? baseLocations[baseId] : baseLocations.default;
+      setLocation(expectedLocation);
+      await fetchWeather({
+        baseId
+      });
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      toast({
+        title: "Erreur météo",
+        description: "Impossible de récupérer les données météo",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   useEffect(() => {
     console.log('WeatherWidget: useEffect triggered');
     console.log('WeatherWidget: Current user object:', user);
@@ -189,43 +204,7 @@ const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       </Card>;
   }
   if (compact) {
-    return <Card className="h-auto h-auto ">
-        <CardContent className="p-2 flex items-center justify-between w-full">
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col items-center gap-1">
-              {getWeatherIcon(weather.condition)}
-              <span className="text-sm font-medium">{weather.temperature}°C</span>
-              <span className="text-xs text-muted-foreground">{weather.condition}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              {location}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-xs">
-              <span>Humidité: {weather.humidity}%</span>
-              <span>Vent: {weather.windSpeed} km/h</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {weather?.forecast?.map((day, index) => {
-              if (!day) return null;
-              return <div key={index} className="flex flex-col items-center text-center text-xs">
-                    <div className="font-medium text-[10px]">{day.date || ''}</div>
-                    <div className="my-1">{getWeatherIcon(day.condition || '', 'h-4 w-4')}</div>
-                    <div className="text-[10px] mt-0.5">{day.temp_max || 0}°/{day.temp_min || 0}°</div>
-                  </div>;
-            }) || []}
-            </div>
-
-            <Button variant="ghost" size="sm" onClick={getLocationAndWeather} disabled={loading} className="h-8 w-8 p-0">
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>;
+    return;
   }
   return <Card>
       <CardHeader className="pb-2">
