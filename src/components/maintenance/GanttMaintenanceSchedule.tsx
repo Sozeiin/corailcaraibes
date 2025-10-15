@@ -686,7 +686,17 @@ export function GanttMaintenanceSchedule() {
     return grouped;
   }, [interventions]);
   const getUnassignedTasks = useMemo(() => {
-    return interventions.filter(intervention => !intervention.technician_id);
+    const unassigned = interventions.filter(intervention => !intervention.technician_id);
+    
+    // Dédupliquer par ID pour éviter les doublons
+    const uniqueMap = new Map();
+    unassigned.forEach(task => {
+      if (!uniqueMap.has(task.id)) {
+        uniqueMap.set(task.id, task);
+      }
+    });
+    
+    return Array.from(uniqueMap.values());
   }, [interventions]);
 
   // Extract boat options for filter
@@ -710,6 +720,22 @@ export function GanttMaintenanceSchedule() {
     }
     return getUnassignedTasks.filter(task => task.boats?.id === selectedBoatId);
   }, [getUnassignedTasks, selectedBoatId]);
+
+  // Debug log pour vérifier le filtrage
+  console.log('🎯 FILTERED UNASSIGNED TASKS:', {
+    selectedBoatId,
+    totalUnassigned: getUnassignedTasks.length,
+    filteredCount: filteredUnassignedTasks.length,
+    filteredTasks: filteredUnassignedTasks.map(t => ({
+      id: t.id,
+      title: t.title,
+      boat: t.boats?.name
+    })),
+    // Détecter les doublons
+    duplicates: filteredUnassignedTasks.filter((task, index, self) => 
+      self.findIndex(t => t.id === task.id) !== index
+    ).map(t => t.id)
+  });
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
@@ -929,7 +955,7 @@ export function GanttMaintenanceSchedule() {
               </div>
               <ScrollArea className="max-h-24 p-3">
                 <div className="flex gap-2">
-                  {filteredUnassignedTasks.map(task => <div key={task.id} className="w-40 flex-none">
+                  {filteredUnassignedTasks.map((task, index) => <div key={`unassigned-${task.id}-${index}`} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
                     </div>)}
                   {filteredUnassignedTasks.length === 0 && <p className="text-sm text-gray-500 text-center py-4 w-full">
