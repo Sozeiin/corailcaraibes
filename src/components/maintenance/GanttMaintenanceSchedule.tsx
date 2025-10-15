@@ -992,7 +992,14 @@ export function GanttMaintenanceSchedule() {
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Panel tâches non assignées - compact et efficace */}
-          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-64 rounded-t-2xl m-4 mb-0 shadow-md">
+          {showUnassignedPanel && <div 
+              ref={setUnassignedRef}
+              className={`flex-none border-b bg-gray-50 max-h-64 rounded-t-2xl m-4 mb-0 shadow-md transition-all ${
+                isOverUnassigned 
+                  ? 'bg-blue-100 border-4 border-blue-500 border-dashed shadow-lg' 
+                  : ''
+              }`}
+            >
               <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
                 <div className="flex items-center justify-between gap-4">
                   <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
@@ -1017,14 +1024,7 @@ export function GanttMaintenanceSchedule() {
                   )}
                 </div>
               </div>
-              <div 
-                ref={setUnassignedRef}
-                className={`max-h-48 p-3 overflow-x-auto overflow-y-hidden transition-all rounded-b-2xl ${
-                  isOverUnassigned 
-                    ? 'bg-blue-100 border-2 border-blue-400 border-dashed' 
-                    : ''
-                }`}
-              >
+              <div className="max-h-48 p-3 overflow-x-auto overflow-y-hidden">
                 <div className="flex gap-2">
                   {filteredUnassignedTasks.map((task, index) => <div key={`unassigned-${task.id}-${index}`} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
