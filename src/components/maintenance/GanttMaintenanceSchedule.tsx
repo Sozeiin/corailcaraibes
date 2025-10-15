@@ -592,9 +592,12 @@ export function GanttMaintenanceSchedule() {
     try {
       const dropId = over.id.toString();
       console.log('🎯 DROP ANALYSIS - DropId:', dropId);
+      console.log('🎯 DROP ANALYSIS - DropId type:', typeof dropId);
+      console.log('🎯 DROP ANALYSIS - Is unassigned zone?', dropId === 'unassigned-zone');
 
       // Cas spécial : drop sur la zone "unassigned"
       if (dropId === 'unassigned-zone') {
+        console.log('✅ DETECTED DROP ON UNASSIGNED ZONE!');
         console.log('🔄 UNASSIGNING task:', draggedTask.id);
         
         const updateData = {
@@ -607,6 +610,7 @@ export function GanttMaintenanceSchedule() {
           }
         };
         
+        console.log('📤 Sending update:', updateData);
         await updateInterventionMutation.mutateAsync(updateData);
         
         toast({
@@ -716,6 +720,11 @@ export function GanttMaintenanceSchedule() {
   const { setNodeRef: setUnassignedRef, isOver: isOverUnassigned } = useDroppable({
     id: 'unassigned-zone'
   });
+
+  // Debug: Log when zone is being hovered
+  useEffect(() => {
+    console.log('🎯 UNASSIGNED ZONE - isOver:', isOverUnassigned);
+  }, [isOverUnassigned]);
 
   const getUnassignedTasks = useMemo(() => {
     const unassigned = interventions.filter(intervention => !intervention.technician_id);
