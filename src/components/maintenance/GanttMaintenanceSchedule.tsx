@@ -18,6 +18,13 @@ import { InterventionContextMenu } from './gantt/InterventionContextMenu';
 import { InterventionDetailsModal } from './gantt/InterventionDetailsModal';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 import type { WeatherData } from '@/types/weather';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 interface WeatherEvaluation {
   suitable: boolean;
   weather_data?: WeatherData;
@@ -131,6 +138,7 @@ export function GanttMaintenanceSchedule() {
   const [selectedInterventionForDetails, setSelectedInterventionForDetails] = useState<Intervention | null>(null);
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
+  const [selectedBoatId, setSelectedBoatId] = useState<string>('all');
   const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string>>(() => {
     try {
       const stored = localStorage.getItem('fleetcat_last_dropped_technician');
@@ -680,6 +688,29 @@ export function GanttMaintenanceSchedule() {
   const getUnassignedTasks = () => {
     return interventions.filter(intervention => !intervention.technician_id);
   };
+
+  // Extract boat options for filter
+  const boatOptions = useMemo(() => {
+    const boats = new Map<string, string>();
+    getUnassignedTasks().forEach(task => {
+      if (task.boats?.id && task.boats?.name) {
+        boats.set(task.boats.id, task.boats.name);
+      }
+    });
+
+    return Array.from(boats.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+  }, [interventions]);
+
+  // Filter unassigned tasks by boat
+  const filteredUnassignedTasks = useMemo(() => {
+    const unassigned = getUnassignedTasks();
+    if (selectedBoatId === 'all') {
+      return unassigned;
+    }
+    return unassigned.filter(task => task.boats?.id === selectedBoatId);
+  }, [interventions, selectedBoatId]);
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
@@ -872,20 +903,38 @@ export function GanttMaintenanceSchedule() {
       <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Panel tâches non assignées - compact et efficace */}
-          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-32 rounded-t-2xl m-4 mb-0 shadow-md">
-              <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl px-0 py-0">
-                <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
-                  <Clock className="h-4 w-4 text-blue-600" />
-                  Tâches non assignées ({getUnassignedTasks().length})
-                </h3>
+          {showUnassignedPanel && <div className="flex-none border-b bg-gray-50 max-h-40 rounded-t-2xl m-4 mb-0 shadow-md">
+              <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
+                <div className="flex items-center justify-between gap-4">
+                  <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    Tâches non assignées ({filteredUnassignedTasks.length})
+                  </h3>
+                  
+                  {boatOptions.length > 0 && (
+                    <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
+                      <SelectTrigger className="w-48 h-8 bg-white border-gray-300">
+                        <SelectValue placeholder="Tous les bateaux" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les bateaux</SelectItem>
+                        {boatOptions.map(boat => (
+                          <SelectItem key={boat.id} value={boat.id}>
+                            {boat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
-              <ScrollArea className="max-h-24 p-3 my-0 py-0 px-0">
-                <div className="flex w-100 h-auto ">
-                  {getUnassignedTasks().map(task => <div key={task.id} className="w-40 flex-none">
+              <ScrollArea className="max-h-24 p-3">
+                <div className="flex gap-2">
+                  {filteredUnassignedTasks.map(task => <div key={task.id} className="w-40 flex-none">
                       <SimpleDraggableTask task={task} onTaskClick={() => setSelectedTask(task)} getTaskTypeConfig={getTaskTypeConfig} />
                     </div>)}
-                  {getUnassignedTasks().length === 0 && <p className="text-sm text-gray-500 text-center py-4 w-full">
-                      Aucune tâche non assignée
+                  {filteredUnassignedTasks.length === 0 && <p className="text-sm text-gray-500 text-center py-4 w-full">
+                      {selectedBoatId === 'all' ? 'Aucune tâche non assignée' : 'Aucune tâche non assignée pour ce bateau'}
                     </p>}
                 </div>
               </ScrollArea>
