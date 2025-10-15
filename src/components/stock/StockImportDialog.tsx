@@ -32,6 +32,8 @@ interface ImportItem {
   location?: string;
   supplier?: string;
   base?: string;
+  brand?: string;
+  supplierReference?: string;
 }
 
 export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
@@ -100,6 +102,10 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
                   item.supplier = String(value).trim();
                 } else if (headerLower.includes('base') || headerLower.includes('guadeloupe') || headerLower.includes('martinique') || headerLower.includes('saint-martin')) {
                   item.base = String(value).trim();
+                } else if (headerLower.includes('marque') || headerLower.includes('brand')) {
+                  item.brand = String(value).trim();
+                } else if (headerLower.includes('référence fournisseur') || headerLower.includes('supplier reference') || headerLower.includes('ref fournisseur')) {
+                  item.supplierReference = String(value).trim();
                 }
               });
 
@@ -206,6 +212,8 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               location: item.location || null,
               base_id: baseId,
               last_updated: new Date().toISOString(),
+              brand: item.brand || null,
+              supplier_reference: item.supplierReference || null,
             });
 
           if (error) {
@@ -290,6 +298,8 @@ export function StockImportDialog({ isOpen, onClose }: StockImportDialogProps) {
               <div>• <strong>Emplacement</strong> (optionnel) : Localisation</div>
               <div>• <strong>Fournisseur</strong> (optionnel) : Nom du fournisseur</div>
               <div>• <strong>Base</strong> (optionnel) : Guadeloupe, Martinique ou Saint-Martin</div>
+              <div>• <strong>Marque</strong> (optionnel) : Marque du produit</div>
+              <div>• <strong>Référence Fournisseur</strong> (optionnel) : Référence chez le fournisseur</div>
             </div>
             <Button
               variant="secondary"

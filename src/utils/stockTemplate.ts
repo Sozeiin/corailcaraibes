@@ -14,6 +14,8 @@ export const downloadStockTemplate = () => {
     'Emplacement',
     'Fournisseur',
     'Base (Guadeloupe, Martinique, Saint-Martin)',
+    'Marque',
+    'Référence Fournisseur',
   ]];
 
   const exampleRow = [[
@@ -26,6 +28,8 @@ export const downloadStockTemplate = () => {
     'Magasin A',
     'Air Liquide',
     'Guadeloupe',
+    'Air Liquide',
+    'AL-OXY-001-FR',
   ]];
 
   const worksheet = XLSX.utils.aoa_to_sheet([...headers, ...exampleRow]);
