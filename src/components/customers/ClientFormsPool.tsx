@@ -3,16 +3,39 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, AlertCircle, Anchor } from 'lucide-react';
+import { Calendar, User, AlertCircle, Anchor, MoreVertical, Edit, Trash2, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { EditFormDialog } from '@/components/checkin/EditFormDialog';
 
 export function ClientFormsPool() {
   const { user } = useAuth();
   const [loadingAssign, setLoadingAssign] = useState<string | null>(null);
+  const [editingForm, setEditingForm] = useState<any>(null);
+  const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  
+  const canManage = user?.role === 'administratif' || user?.role === 'chef_base' || user?.role === 'direction';
 
   const { data: poolForms = [], refetch } = useQuery({
     queryKey: ['client-forms-pool', user?.baseId],
@@ -57,6 +80,30 @@ export function ClientFormsPool() {
       toast.error(error.message || 'Impossible d\'assigner le bateau');
     } finally {
       setLoadingAssign(null);
+    }
+  };
+
+  const handleEditForm = (form: any) => {
+    setEditingForm(form);
+    setShowEditDialog(true);
+  };
+
+  const handleDeleteForm = async (formId: string) => {
+    try {
+      const { error } = await supabase
+        .from('administrative_checkin_forms')
+        .delete()
+        .eq('id', formId);
+
+      if (error) throw error;
+
+      toast.success('Fiche supprimée avec succès');
+      refetch();
+    } catch (error: any) {
+      console.error('Error deleting form:', error);
+      toast.error(error.message || 'Impossible de supprimer la fiche');
+    } finally {
+      setDeletingFormId(null);
     }
   };
 
@@ -157,20 +204,58 @@ export function ClientFormsPool() {
                 </div>
 
                 <div className="flex flex-col gap-2">
-                  {suggestedBoat && suggestedBoat.status === 'available' && (
-                    <Button
-                      size="sm"
-                      onClick={() => handleAssignBoat(form.id, suggestedBoat.id)}
-                      disabled={loadingAssign === form.id}
-                    >
-                      {loadingAssign === form.id ? 'Assignation...' : 'Assigner maintenant'}
-                    </Button>
-                  )}
-                  {suggestedBoat && suggestedBoat.status !== 'available' && (
-                    <div className="flex items-center gap-1 text-sm text-amber-600">
-                      <AlertCircle className="h-4 w-4" />
-                      <span>Bateau non disponible</span>
-                    </div>
+                  {canManage ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleEditForm(form)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Modifier
+                        </DropdownMenuItem>
+                        
+                        {suggestedBoat?.status === 'available' && (
+                          <DropdownMenuItem 
+                            onClick={() => handleAssignBoat(form.id, suggestedBoat.id)}
+                            disabled={loadingAssign === form.id}
+                          >
+                            <Check className="mr-2 h-4 w-4" />
+                            {loadingAssign === form.id ? 'Assignation...' : 'Assigner le bateau'}
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuSeparator />
+                        
+                        <DropdownMenuItem 
+                          onClick={() => setDeletingFormId(form.id)}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <>
+                      {suggestedBoat && suggestedBoat.status === 'available' && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAssignBoat(form.id, suggestedBoat.id)}
+                          disabled={loadingAssign === form.id}
+                        >
+                          {loadingAssign === form.id ? 'Assignation...' : 'Assigner maintenant'}
+                        </Button>
+                      )}
+                      {suggestedBoat && suggestedBoat.status !== 'available' && (
+                        <div className="flex items-center gap-1 text-sm text-amber-600">
+                          <AlertCircle className="h-4 w-4" />
+                          <span>Bateau non disponible</span>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -178,6 +263,39 @@ export function ClientFormsPool() {
           </Card>
         );
       })}
+
+      <AlertDialog open={!!deletingFormId} onOpenChange={(open) => !open && setDeletingFormId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette fiche client ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingFormId && handleDeleteForm(deletingFormId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {editingForm && (
+        <EditFormDialog
+          form={editingForm}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          onSuccess={() => {
+            setShowEditDialog(false);
+            setEditingForm(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }
