@@ -5,11 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Package, Clock, CheckCircle, XCircle, Truck, Eye } from 'lucide-react';
+import { Plus, Package, Clock, CheckCircle, XCircle, Truck, Eye, Trash2 } from 'lucide-react';
 import { SupplyRequestDialog } from '@/components/supply/SupplyRequestDialog';
 import { SupplyRequestDetailsDialog } from '@/components/supply/SupplyRequestDetailsDialog';
 import { SupplyRequestFilters } from '@/components/supply/SupplyRequestFilters';
 import { SupplyManagementDialog } from '@/components/supply/SupplyManagementDialog';
+import { SupplyRequestDeleteDialog } from '@/components/supply/SupplyRequestDeleteDialog';
+import { useDeleteSupplyRequest } from '@/hooks/useSupplyRequestMutations';
 
 export interface SupplyRequest {
   id: string;
@@ -22,6 +24,7 @@ export interface SupplyRequest {
   description?: string;
   quantity_needed: number;
   urgency_level: string;
+  urgency: string; // Alias for urgency_level for dialog compatibility
   photo_url?: string;
   status: string;
   validated_at?: string;
@@ -45,10 +48,42 @@ export default function SupplyRequests() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isManagementDialogOpen, setIsManagementDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupplyRequest | null>(null);
   const [statusFilter, setStatusFilter] = useState('all');
   const [urgencyFilter, setUrgencyFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const deleteMutation = useDeleteSupplyRequest();
+
+  const handleDelete = (request: SupplyRequest) => {
+    setSelectedRequest(request);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (selectedRequest) {
+      deleteMutation.mutate(selectedRequest.id, {
+        onSuccess: () => {
+          setIsDeleteDialogOpen(false);
+          setSelectedRequest(null);
+        },
+      });
+    }
+  };
+
+  const canDelete = (request: SupplyRequest) => {
+    // Direction can delete any request
+    if (user?.role === 'direction') return true;
+    
+    // Users can delete their own pending requests
+    if (request.requested_by === user?.id && request.status === 'pending') return true;
+    
+    // Chef_base can delete pending requests in their base
+    if (user?.role === 'chef_base' && request.base_id === user?.baseId && request.status === 'pending') return true;
+    
+    return false;
+  };
 
   // Fetch supply requests
   const { data: requests = [], isLoading, refetch, error } = useQuery({
@@ -126,9 +161,10 @@ export default function SupplyRequests() {
           }
         }
 
-        // Map requests with profile data
+        // Map requests with profile data and add urgency alias
         const enrichedRequests = requests.map((r: any) => ({
           ...r,
+          urgency: r.urgency_level, // Add alias for dialog compatibility
           requester: { name: requesterMap[r.requested_by] || 'Utilisateur inconnu' },
         }));
 
@@ -298,6 +334,15 @@ export default function SupplyRequests() {
                       Gérer
                     </Button>
                   )}
+                  {canDelete(request) && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(request)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -346,6 +391,13 @@ export default function SupplyRequests() {
           refetch();
           setIsManagementDialogOpen(false);
         }}
+      />
+
+      <SupplyRequestDeleteDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        request={selectedRequest}
+        onConfirm={handleConfirmDelete}
       />
     </div>
   );
