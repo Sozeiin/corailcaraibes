@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Plus, Search, History, Wrench, Shield, AlertCircle } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, History, Shield, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
 const getStatusBadge = (status: string) => {
   const statusConfig = {
     available: {
@@ -44,6 +45,7 @@ const getStatusBadge = (status: string) => {
   const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.available;
   return <Badge className={config.class}>{config.label}</Badge>;
 };
+
 interface BoatCardProps {
   boat: any;
   onEdit: (boat: any) => void;
@@ -51,6 +53,7 @@ interface BoatCardProps {
   onHistory: (boatId: string) => void;
   onMaintenance: (boatId: string) => void;
 }
+
 const BoatCard = ({
   boat,
   onEdit,
@@ -98,6 +101,7 @@ const BoatCard = ({
       </div>
     </Card>;
 };
+
 export const Boats = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,18 +109,16 @@ export const Boats = () => {
   const [filterBase, setFilterBase] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [boatToDelete, setBoatToDelete] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const deleteBoatMutation = useDeleteBoat();
 
   const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
+  const deleteBoatMutation = useDeleteBoat();
 
   const {
     data: rawBoats = [],
     loading: isLoading,
-    remove: removeBoat,
     refetch: refetchBoats
   } = useOfflineData<any>({ table: 'boats', baseId, dependencies: [user?.role, user?.baseId] });
 
@@ -126,6 +128,7 @@ export const Boats = () => {
     ...boat,
     base: bases.find((b: any) => b.id === boat.base_id)
   }));
+
   const filteredBoats = boats?.filter(boat => {
     const matchesSearch = !searchTerm || 
       boat.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -138,6 +141,7 @@ export const Boats = () => {
     
     return matchesSearch && matchesStatus && matchesBase;
   }) || [];
+
   const handleEdit = (boat: any) => {
     setSelectedBoat({
       id: boat.id,
@@ -154,9 +158,9 @@ export const Boats = () => {
     });
     setIsDialogOpen(true);
   };
+
   const handleDelete = (boatId: string, boatName: string) => {
     setBoatToDelete({ id: boatId, name: boatName });
-    setDeleteDialogOpen(true);
   };
 
   const confirmDelete = async () => {
@@ -164,25 +168,29 @@ export const Boats = () => {
 
     try {
       await deleteBoatMutation.mutateAsync(boatToDelete.id);
-      await refetchBoats();
-      setDeleteDialogOpen(false);
+      refetchBoats();
       setBoatToDelete(null);
     } catch (error) {
       console.error('Error deleting boat:', error);
     }
   };
+
   const handleHistory = (boatId: string) => {
     navigate(`/boats/${boatId}?tab=history`);
   };
+
   const handleMaintenance = (boatId: string) => {
     navigate(`/boats/${boatId}?tab=maintenance`);
   };
+
   const canManageBoats = user?.role === 'direction' || user?.role === 'chef_base';
+
   if (isLoading) {
     return <div className="flex justify-center items-center min-h-[400px]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>;
   }
+
   return <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
@@ -237,31 +245,28 @@ export const Boats = () => {
         boat={selectedBoat} 
       />
 
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+      <AlertDialog open={!!boatToDelete} onOpenChange={(open) => !open && setBoatToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
               Confirmer la suppression
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <p>
                 Êtes-vous sûr de vouloir supprimer le bateau <strong>"{boatToDelete?.name}"</strong> ?
               </p>
-              <p className="text-sm font-medium text-destructive">
-                ⚠️ Cette action supprimera définitivement :
+              <p className="text-destructive font-medium">
+                ⚠️ Cette action est irréversible et supprimera également :
               </p>
-              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                <li>Tous les composants et sous-composants du bateau</li>
+              <ul className="list-disc list-inside text-sm space-y-1 ml-2">
+                <li>Tous les composants et sous-composants</li>
                 <li>Tous les contrôles de sécurité</li>
-                <li>Toutes les interventions et leur historique</li>
                 <li>Toutes les checklists et préparations</li>
-                <li>Tous les documents associés</li>
-                <li>Toutes les activités de planification</li>
+                <li>Toutes les interventions et maintenances</li>
+                <li>Tous les documents et locations</li>
+                <li>Toutes les données liées à ce bateau</li>
               </ul>
-              <p className="text-sm font-semibold text-destructive">
-                Cette action est irréversible !
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -271,9 +276,9 @@ export const Boats = () => {
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteBoatMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90"
             >
-              {deleteBoatMutation.isPending ? "Suppression..." : "Supprimer définitivement"}
+              {deleteBoatMutation.isPending ? 'Suppression...' : 'Supprimer définitivement'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

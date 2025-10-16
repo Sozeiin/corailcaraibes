@@ -8,26 +8,30 @@ export function useDeleteBoat() {
 
   return useMutation({
     mutationFn: async (boatId: string) => {
-      console.log('🗑️ Suppression bateau:', boatId);
+      console.log('🗑️ Suppression bateau via RPC:', boatId);
       
-      const { data, error } = await supabase
-        .rpc('delete_boat_cascade', { boat_id_param: boatId });
+      const { data, error } = await supabase.rpc('delete_boat_cascade', {
+        boat_id_param: boatId
+      });
 
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
-      invalidateBoatQueries(queryClient, data?.boat_id);
+    onSuccess: (data) => {
+      console.log('✅ Bateau supprimé:', data);
+      queryClient.invalidateQueries({ queryKey: ['boats'] });
+      queryClient.invalidateQueries({ queryKey: ['interventions'] });
+      queryClient.invalidateQueries({ queryKey: ['boat-components'] });
+      queryClient.invalidateQueries({ queryKey: ['boat-checklists'] });
       toast.success("Bateau et toutes ses données supprimés avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression bateau:', error);
       
       let errorMessage = "Impossible de supprimer le bateau.";
-      
       if (error.message?.includes('Permission refusée')) {
         errorMessage = error.message;
-      } else if (error.message?.includes('Bateau introuvable')) {
+      } else if (error.message?.includes('introuvable')) {
         errorMessage = 'Bateau introuvable.';
       } else if (error.message) {
         errorMessage = error.message;
