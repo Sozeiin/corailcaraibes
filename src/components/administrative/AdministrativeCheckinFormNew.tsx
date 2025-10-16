@@ -12,11 +12,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Ship, Plus, AlertCircle } from 'lucide-react';
+import { Ship, Plus, AlertCircle, Edit } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CustomerAutocomplete } from '@/components/customers/CustomerAutocomplete';
+import { CustomerDialog } from '@/components/customers/CustomerDialog';
 import { Customer } from '@/types/customer';
 
 interface AdministrativeCheckinFormNewProps {
@@ -33,8 +34,9 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
   const [notes, setNotes] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
 
-  // Fetch all boats (not just available ones - Plan 3)
+  // Fetch all boats (not just available ones)
   const [boats, setBoats] = useState<any[]>([]);
   React.useEffect(() => {
     const fetchBoats = async () => {
@@ -69,9 +71,6 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
         .insert([{
           base_id: user.baseId,
           customer_id: selectedCustomer.id,
-          customer_name: `${selectedCustomer.first_name} ${selectedCustomer.last_name}`,
-          customer_email: selectedCustomer.email || null,
-          customer_phone: selectedCustomer.phone || null,
           boat_id: canAssignNow ? suggestedBoatId : null,
           suggested_boat_id: suggestedBoatId || null,
           is_boat_assigned: canAssignNow,
@@ -133,9 +132,44 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
             onChange={setSelectedCustomer}
             placeholder="Rechercher ou créer un client..."
           />
+          
           {selectedCustomer && (
-            <div className="text-sm text-muted-foreground">
-              ✓ Client sélectionné : {selectedCustomer.first_name} {selectedCustomer.last_name}
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="font-medium">Informations client</h4>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCustomerDialog(true)}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Modifier
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Nom:</span>
+                  <p>{selectedCustomer.first_name} {selectedCustomer.last_name}</p>
+                </div>
+                {selectedCustomer.email && (
+                  <div>
+                    <span className="text-muted-foreground">Email:</span>
+                    <p>{selectedCustomer.email}</p>
+                  </div>
+                )}
+                {selectedCustomer.phone && (
+                  <div>
+                    <span className="text-muted-foreground">Téléphone:</span>
+                    <p>{selectedCustomer.phone}</p>
+                  </div>
+                )}
+                {selectedCustomer.vip_status && (
+                  <div>
+                    <Badge variant="default">VIP</Badge>
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -240,6 +274,18 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
           {isSubmitting ? 'Création...' : 'Créer la fiche'}
         </Button>
       </CardContent>
+      
+      {selectedCustomer && (
+        <CustomerDialog
+          open={showCustomerDialog}
+          onOpenChange={setShowCustomerDialog}
+          customer={selectedCustomer}
+          onSuccess={() => {
+            toast.success('Client modifié avec succès');
+            setShowCustomerDialog(false);
+          }}
+        />
+      )}
     </Card>
   );
 }

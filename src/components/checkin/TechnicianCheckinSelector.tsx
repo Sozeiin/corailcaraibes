@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User, Calendar, Plus, CheckCircle } from 'lucide-react';
@@ -42,6 +42,16 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
         .from('administrative_checkin_forms')
         .select(`
           *,
+          customer:customers!customer_id(
+            id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            customer_type,
+            company_name,
+            vip_status
+          ),
           boats:boats!boat_id(id, name, model, year, base_id)
         `)
         .eq('base_id', user.baseId)
@@ -74,9 +84,9 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
       // Convert form to rental data format
       const rentalData = {
         boatId: form.boat_id,
-        customerName: form.customer_name,
-        customerEmail: form.customer_email,
-        customerPhone: form.customer_phone,
+        customerName: `${form.customer?.first_name} ${form.customer?.last_name}`,
+        customerEmail: form.customer?.email,
+        customerPhone: form.customer?.phone,
         startDate: form.planned_start_date,
         endDate: form.planned_end_date,
         notes: form.rental_notes,
@@ -180,7 +190,14 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
                       <User className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">{form.customer_name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-semibold">
+                          {form.customer?.first_name} {form.customer?.last_name}
+                        </h3>
+                        {form.customer?.vip_status && (
+                          <Badge variant="default">VIP</Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-muted-foreground">
                         Fiche prête pour check-in
                       </p>
@@ -199,8 +216,8 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Contact</p>
-                    <p className="text-sm">{form.customer_email || 'Non renseigné'}</p>
-                    <p className="text-sm">{form.customer_phone || 'Non renseigné'}</p>
+                    <p className="text-sm">{form.customer?.email || 'Non renseigné'}</p>
+                    <p className="text-sm">{form.customer?.phone || 'Non renseigné'}</p>
                   </div>
                 </div>
 

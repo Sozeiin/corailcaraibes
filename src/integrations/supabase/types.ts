@@ -20,12 +20,7 @@ export type Database = {
           boat_id: string | null
           created_at: string | null
           created_by: string
-          customer_address: string | null
-          customer_email: string | null
-          customer_id: string | null
-          customer_id_number: string | null
-          customer_name: string
-          customer_phone: string | null
+          customer_id: string
           id: string
           is_boat_assigned: boolean | null
           planned_end_date: string | null
@@ -43,12 +38,7 @@ export type Database = {
           boat_id?: string | null
           created_at?: string | null
           created_by: string
-          customer_address?: string | null
-          customer_email?: string | null
-          customer_id?: string | null
-          customer_id_number?: string | null
-          customer_name: string
-          customer_phone?: string | null
+          customer_id: string
           id?: string
           is_boat_assigned?: boolean | null
           planned_end_date?: string | null
@@ -66,12 +56,7 @@ export type Database = {
           boat_id?: string | null
           created_at?: string | null
           created_by?: string
-          customer_address?: string | null
-          customer_email?: string | null
-          customer_id?: string | null
-          customer_id_number?: string | null
-          customer_name?: string
-          customer_phone?: string | null
+          customer_id?: string
           id?: string
           is_boat_assigned?: boolean | null
           planned_end_date?: string | null
@@ -118,6 +103,13 @@ export type Database = {
             columns: ["suggested_boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_administrative_checkin_customer"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]

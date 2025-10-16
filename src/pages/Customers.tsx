@@ -117,6 +117,21 @@ export default function Customers() {
     if (!customerToDelete) return;
 
     try {
+      // Vérifier s'il y a des fiches actives
+      const { data: activeForms } = await supabase
+        .from('administrative_checkin_forms')
+        .select('id, status')
+        .eq('customer_id', customerToDelete.id)
+        .in('status', ['draft', 'ready', 'used']);
+
+      if (activeForms && activeForms.length > 0) {
+        toast.error('Impossible de supprimer', {
+          description: `Ce client a ${activeForms.length} fiche(s) de check-in active(s).`
+        });
+        setCustomerToDelete(null);
+        return;
+      }
+
       const { error } = await supabase
         .from('customers')
         .delete()
