@@ -49,7 +49,7 @@ export function AdministrativeCheckinForm({ boats, onFormCreated }: Administrati
         .from('administrative_checkin_forms')
         .select(`
           *,
-          boats(name, model)
+          boats:boats!boat_id(name, model)
         `)
         .eq('base_id', user.baseId)
         .eq('status', 'ready')

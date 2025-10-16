@@ -22,15 +22,18 @@ export type Database = {
           created_by: string
           customer_address: string | null
           customer_email: string | null
+          customer_id: string | null
           customer_id_number: string | null
           customer_name: string
           customer_phone: string | null
           id: string
+          is_boat_assigned: boolean | null
           planned_end_date: string | null
           planned_start_date: string | null
           rental_notes: string | null
           special_instructions: string | null
           status: string | null
+          suggested_boat_id: string | null
           updated_at: string | null
           used_at: string | null
           used_by: string | null
@@ -42,15 +45,18 @@ export type Database = {
           created_by: string
           customer_address?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_id_number?: string | null
           customer_name: string
           customer_phone?: string | null
           id?: string
+          is_boat_assigned?: boolean | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
           special_instructions?: string | null
           status?: string | null
+          suggested_boat_id?: string | null
           updated_at?: string | null
           used_at?: string | null
           used_by?: string | null
@@ -62,15 +68,18 @@ export type Database = {
           created_by?: string
           customer_address?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_id_number?: string | null
           customer_name?: string
           customer_phone?: string | null
           id?: string
+          is_boat_assigned?: boolean | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
           special_instructions?: string | null
           status?: string | null
+          suggested_boat_id?: string | null
           updated_at?: string | null
           used_at?: string | null
           used_by?: string | null
@@ -93,6 +102,20 @@ export type Database = {
           {
             foreignKeyName: "administrative_checkin_forms_boat_id_fkey"
             columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_suggested_boat_id_fkey"
+            columns: ["suggested_boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
             referencedColumns: ["id"]
@@ -513,6 +536,7 @@ export type Database = {
           boat_id: string
           created_at: string | null
           customer_email: string | null
+          customer_id: string | null
           customer_name: string
           customer_phone: string | null
           end_date: string
@@ -530,6 +554,7 @@ export type Database = {
           boat_id: string
           created_at?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
           end_date: string
@@ -547,6 +572,7 @@ export type Database = {
           boat_id?: string
           created_at?: string | null
           customer_email?: string | null
+          customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
           end_date?: string
@@ -579,6 +605,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_rentals_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
             referencedColumns: ["id"]
           },
         ]
@@ -1628,6 +1661,99 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          base_id: string
+          city: string | null
+          company_name: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_type: string | null
+          email: string | null
+          first_name: string
+          first_rental_date: string | null
+          id: string
+          id_number: string | null
+          id_type: string | null
+          last_name: string
+          last_rental_date: string | null
+          notes: string | null
+          phone: string | null
+          postal_code: string | null
+          preferred_language: string | null
+          total_rentals: number | null
+          updated_at: string | null
+          vip_status: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          base_id: string
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_type?: string | null
+          email?: string | null
+          first_name: string
+          first_rental_date?: string | null
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          last_name: string
+          last_rental_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_language?: string | null
+          total_rentals?: number | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          base_id?: string
+          city?: string | null
+          company_name?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_type?: string | null
+          email?: string | null
+          first_name?: string
+          first_rental_date?: string | null
+          id?: string
+          id_number?: string | null
+          id_type?: string | null
+          last_name?: string
+          last_rental_date?: string | null
+          notes?: string | null
+          phone?: string | null
+          postal_code?: string | null
+          preferred_language?: string | null
+          total_rentals?: number | null
+          updated_at?: string | null
+          vip_status?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customers_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
         ]

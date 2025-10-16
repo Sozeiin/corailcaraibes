@@ -85,7 +85,7 @@ export function AdministrativeCheckinManager() {
         .from('administrative_checkin_forms')
         .select(`
           *,
-          boat:boats(name)
+          boat:boats!boat_id(name)
         `)
         .eq('base_id', user.baseId)
         .order('created_at', { ascending: false });
