@@ -31,8 +31,8 @@ export function ThreadActionsMenu({ thread, channels = [] }: ThreadActionsMenuPr
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
-  // Check permissions (direction and chef_base can manage)
-  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  // Check permissions (direction, chef_base and administratif can manage)
+  const canManage = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canDelete = user?.role === 'direction';
 
   if (!canManage) {

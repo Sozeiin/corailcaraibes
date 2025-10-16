@@ -73,9 +73,9 @@ export function InterventionContextMenu({
   const [isOpen, setIsOpen] = React.useState(false);
   const [position, setPosition] = React.useState({ x: 0, y: 0 });
   
-  const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
-  const canDelete = user?.role === 'direction' || user?.role === 'chef_base';
-  const canReassign = user?.role === 'direction' || user?.role === 'chef_base';
+  const canEdit = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
+  const canDelete = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
+  const canReassign = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
 
   const statusOptions = [
     { value: 'scheduled', label: 'Programmé', icon: Clock, color: 'text-blue-600' },

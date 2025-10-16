@@ -123,7 +123,7 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
     queryClient.invalidateQueries({ queryKey: ['boat-upcoming-interventions', boat?.id] });
   };
 
-  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  const canManage = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
 
   if (!boat) return null;
 

@@ -36,7 +36,7 @@ export function ChannelSelector({
   const [editChannel, setEditChannel] = useState<Channel | null>(null);
   const [deleteChannel, setDeleteChannel] = useState<Channel | null>(null);
   
-  const canManage = user?.role === 'direction' || user?.role === 'chef_base';
+  const canManage = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canDelete = user?.role === 'direction';
 
   // Récupérer les canaux privés dont l'utilisateur est membre

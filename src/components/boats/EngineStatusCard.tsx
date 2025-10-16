@@ -30,7 +30,7 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boat
   const oilProgress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours);
 
   // Show edit button only for chef_base and direction
-  const canEdit = user?.role === 'direction' || user?.role === 'chef_base';
+  const canEdit = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
 
   const handleSave = async (engineId: string, data: { current_engine_hours: number; last_oil_change_hours: number }) => {
     await updateEngineHours.mutateAsync({ engineId, data });

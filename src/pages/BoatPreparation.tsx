@@ -11,7 +11,7 @@ export default function BoatPreparation() {
   } = useAuth();
   const isDirection = user?.role === 'direction';
   const isTechnician = user?.role === 'technicien';
-  const isChefBase = user?.role === 'chef_base';
+  const canManagePreparations = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -31,7 +31,7 @@ export default function BoatPreparation() {
           <TabsContent value="templates" className="mt-6">
             <PreparationTemplateManager />
           </TabsContent>
-        </Tabs> : isChefBase ? <BoatPreparationManager /> : <div className="text-center py-8">
+        </Tabs> : canManagePreparations ? <BoatPreparationManager /> : <div className="text-center py-8">
           <p className="text-gray-500">Accès non autorisé</p>
         </div>}
     </div>;
