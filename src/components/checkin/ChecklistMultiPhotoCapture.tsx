@@ -50,15 +50,39 @@ export function ChecklistMultiPhotoCapture({
 
   // Connecter le stream à la vidéo quand il change
   useEffect(() => {
-    if (stream && videoRef.current && showCamera) {
-      console.log('📹 Connexion du stream à la vidéo');
-      videoRef.current.srcObject = stream;
-      
-      // S'assurer que la vidéo joue
-      videoRef.current.play().catch(err => {
-        console.error('Erreur lecture vidéo:', err);
+    const video = videoRef.current;
+    if (!video || !stream || !showCamera) {
+      console.log('📹 Conditions non remplies:', { 
+        hasVideo: !!video, 
+        hasStream: !!stream, 
+        showCamera 
       });
+      return;
     }
+
+    console.log('📹 Connexion du stream à la vidéo...', {
+      streamActive: stream.active,
+      streamTracks: stream.getTracks().length
+    });
+    
+    video.srcObject = stream;
+    
+    // Attendre que les métadonnées soient chargées avant de lire
+    const handleLoadedMetadata = () => {
+      console.log('📹 Métadonnées vidéo chargées:', {
+        videoWidth: video.videoWidth,
+        videoHeight: video.videoHeight
+      });
+      video.play()
+        .then(() => console.log('✅ Vidéo en lecture'))
+        .catch(err => console.error('❌ Erreur lecture vidéo:', err));
+    };
+
+    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    
+    return () => {
+      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
+    };
   }, [stream, showCamera]);
 
   /**
@@ -321,12 +345,20 @@ export function ChecklistMultiPhotoCapture({
           </DialogHeader>
           <div className="space-y-4">
             <div className="relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+              {!stream && (
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              )}
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
                 muted
                 className="w-full h-full object-cover"
+                onLoadedMetadata={() => console.log('📹 Event: loadedmetadata')}
+                onPlay={() => console.log('📹 Event: play')}
+                onError={(e) => console.error('📹 Event: error', e)}
               />
             </div>
             <canvas ref={canvasRef} className="hidden" />
