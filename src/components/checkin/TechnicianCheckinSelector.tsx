@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { BoatRentalSelector } from './BoatRentalSelector';
+import { ClientFormsPool } from '@/components/customers/ClientFormsPool';
 
 interface TechnicianCheckinSelectorProps {
   boats: any[];
@@ -125,6 +126,16 @@ export function TechnicianCheckinSelector({ boats, onFormSelect, onManualCheckin
 
   return (
     <div className="space-y-6">
+      {/* Pool de fiches en attente d'assignation */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">Pool de fiches en attente</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Fiches créées en attente d'assignation de bateau
+        </p>
+        <ClientFormsPool />
+      </div>
+
+      {/* Fiches prêtes pour check-in */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl font-semibold">Fiches prêtes pour check-in</h2>
