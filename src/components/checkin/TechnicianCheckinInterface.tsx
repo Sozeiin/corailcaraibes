@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, User, Anchor, Play } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Calendar, User, Anchor, Play, LogIn, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CheckinDialog } from './CheckinDialog';
@@ -14,8 +15,10 @@ import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
 
 export function TechnicianCheckinInterface() {
   const { user } = useAuth();
+  const [mode, setMode] = useState<'checkin' | 'checkout'>('checkin');
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   const [selectedForm, setSelectedForm] = useState<AdministrativeCheckinFormWithRelations | null>(null);
+  const [selectedRental, setSelectedRental] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   // Fetch boats from user's base
@@ -34,8 +37,8 @@ export function TechnicianCheckinInterface() {
     enabled: !!user?.baseId,
   });
 
-  // Fetch ready forms for selected boat
-  const { data: readyForms = [], isLoading } = useQuery({
+  // Fetch ready forms for selected boat (Check-in mode)
+  const { data: readyForms = [], isLoading: isLoadingForms } = useQuery({
     queryKey: ['ready-forms-for-boat', selectedBoatId, user?.baseId],
     queryFn: async () => {
       if (!selectedBoatId) return [];
@@ -68,16 +71,42 @@ export function TechnicianCheckinInterface() {
 
       return formsWithRelations as AdministrativeCheckinFormWithRelations[];
     },
-    enabled: !!selectedBoatId && !!user?.baseId,
+    enabled: !!selectedBoatId && !!user?.baseId && mode === 'checkin',
+  });
+
+  // Fetch active rentals for selected boat (Check-out mode)
+  const { data: activeRentals = [], isLoading: isLoadingRentals } = useQuery({
+    queryKey: ['active-rentals-for-boat', selectedBoatId, user?.baseId],
+    queryFn: async () => {
+      if (!selectedBoatId) return [];
+
+      const { data, error } = await supabase
+        .from('boat_rentals')
+        .select('*, boat:boats(*), customer:customers(*)')
+        .eq('boat_id', selectedBoatId)
+        .eq('status', 'confirmed')
+        .order('start_date', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedBoatId && !!user?.baseId && mode === 'checkout',
   });
 
   const handleStartCheckin = (form: AdministrativeCheckinFormWithRelations) => {
     setSelectedForm(form);
+    setSelectedRental(null);
     setIsDialogOpen(true);
   };
 
-  const handleCompleteCheckin = async (data: any) => {
-    if (data && selectedForm) {
+  const handleStartCheckout = (rental: any) => {
+    setSelectedRental(rental);
+    setSelectedForm(null);
+    setIsDialogOpen(true);
+  };
+
+  const handleComplete = async (data: any) => {
+    if (mode === 'checkin' && data && selectedForm) {
       // Mark form as used
       await supabase
         .from('administrative_checkin_forms')
@@ -87,136 +116,223 @@ export function TechnicianCheckinInterface() {
           used_at: new Date().toISOString(),
         })
         .eq('id', selectedForm.id);
+    } else if (mode === 'checkout' && data && selectedRental) {
+      // Update rental status to completed
+      await supabase
+        .from('boat_rentals')
+        .update({ status: 'completed' })
+        .eq('id', selectedRental.id);
     }
     setIsDialogOpen(false);
     setSelectedForm(null);
+    setSelectedRental(null);
   };
+
+  const isLoading = mode === 'checkin' ? isLoadingForms : isLoadingRentals;
+  const items = mode === 'checkin' ? readyForms : activeRentals;
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Anchor className="h-5 w-5" />
-            Sélectionner un bateau
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Choisir un bateau..." />
-            </SelectTrigger>
-            <SelectContent>
-              {boats.map((boat) => (
-                <SelectItem key={boat.id} value={boat.id}>
-                  {boat.name} - {boat.model}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <Tabs value={mode} onValueChange={(value) => setMode(value as 'checkin' | 'checkout')}>
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="checkin" className="flex items-center gap-2">
+            <LogIn className="h-4 w-4" />
+            Check-in
+          </TabsTrigger>
+          <TabsTrigger value="checkout" className="flex items-center gap-2">
+            <LogOut className="h-4 w-4" />
+            Check-out
+          </TabsTrigger>
+        </TabsList>
 
-      {selectedBoatId && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              Fiches clients disponibles
+              <Anchor className="h-5 w-5" />
+              Sélectionner un bateau
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {isLoading && (
-              <p className="text-muted-foreground">Chargement...</p>
-            )}
-
-            {!isLoading && readyForms.length === 0 && (
-              <p className="text-muted-foreground">
-                Aucune fiche disponible pour ce bateau
-              </p>
-            )}
-
-            {!isLoading && readyForms.length > 0 && (
-              <div className="grid gap-4">
-                {readyForms.map((form) => (
-                  <Card key={form.id} className="border-l-4 border-l-primary">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2 flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-lg">
-                              {form.customer.first_name} {form.customer.last_name}
-                            </h3>
-                            {form.customer.vip_status && (
-                              <Badge className="bg-yellow-500">VIP</Badge>
-                            )}
-                          </div>
-
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            {form.customer.email && (
-                              <div>📧 {form.customer.email}</div>
-                            )}
-                            {form.customer.phone && (
-                              <div>📞 {form.customer.phone}</div>
-                            )}
-                          </div>
-
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {format(new Date(form.planned_start_date), 'dd MMM', { locale: fr })}
-                              {' → '}
-                              {format(new Date(form.planned_end_date), 'dd MMM yyyy', { locale: fr })}
-                            </span>
-                          </div>
-
-                          {form.rental_notes && (
-                            <div className="text-sm text-muted-foreground mt-2">
-                              💬 {form.rental_notes}
-                            </div>
-                          )}
-
-                          {form.special_instructions && (
-                            <div className="text-sm text-amber-600 mt-2">
-                              ⚠️ {form.special_instructions}
-                            </div>
-                          )}
-                        </div>
-
-                        <Button
-                          onClick={() => handleStartCheckin(form)}
-                          className="ml-4"
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          Démarrer check-in
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+            <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Choisir un bateau..." />
+              </SelectTrigger>
+              <SelectContent>
+                {boats.map((boat) => (
+                  <SelectItem key={boat.id} value={boat.id}>
+                    {boat.name} - {boat.model}
+                  </SelectItem>
                 ))}
-              </div>
-            )}
+              </SelectContent>
+            </Select>
           </CardContent>
         </Card>
-      )}
 
-      {selectedForm && (
+        {selectedBoatId && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {mode === 'checkin' ? 'Fiches clients disponibles' : 'Locations actives'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading && (
+                <p className="text-muted-foreground">Chargement...</p>
+              )}
+
+              {!isLoading && items.length === 0 && (
+                <p className="text-muted-foreground">
+                  {mode === 'checkin' 
+                    ? 'Aucune fiche disponible pour ce bateau' 
+                    : 'Aucune location active pour ce bateau'}
+                </p>
+              )}
+
+              {!isLoading && items.length > 0 && mode === 'checkin' && (
+                <div className="grid gap-4">
+                  {readyForms.map((form) => (
+                    <Card key={form.id} className="border-l-4 border-l-primary">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-lg">
+                                {form.customer.first_name} {form.customer.last_name}
+                              </h3>
+                              {form.customer.vip_status && (
+                                <Badge className="bg-yellow-500">VIP</Badge>
+                              )}
+                            </div>
+
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              {form.customer.email && (
+                                <div>📧 {form.customer.email}</div>
+                              )}
+                              {form.customer.phone && (
+                                <div>📞 {form.customer.phone}</div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {format(new Date(form.planned_start_date), 'dd MMM', { locale: fr })}
+                                {' → '}
+                                {format(new Date(form.planned_end_date), 'dd MMM yyyy', { locale: fr })}
+                              </span>
+                            </div>
+
+                            {form.rental_notes && (
+                              <div className="text-sm text-muted-foreground mt-2">
+                                💬 {form.rental_notes}
+                              </div>
+                            )}
+
+                            {form.special_instructions && (
+                              <div className="text-sm text-amber-600 mt-2">
+                                ⚠️ {form.special_instructions}
+                              </div>
+                            )}
+                          </div>
+
+                          <Button
+                            onClick={() => handleStartCheckin(form)}
+                            className="ml-4"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Démarrer check-in
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              {!isLoading && items.length > 0 && mode === 'checkout' && (
+                <div className="grid gap-4">
+                  {activeRentals.map((rental) => (
+                    <Card key={rental.id} className="border-l-4 border-l-amber-500">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-semibold text-lg">
+                                {rental.customer_name}
+                              </h3>
+                            </div>
+
+                            <div className="text-sm text-muted-foreground space-y-1">
+                              {rental.customer_email && (
+                                <div>📧 {rental.customer_email}</div>
+                              )}
+                              {rental.customer_phone && (
+                                <div>📞 {rental.customer_phone}</div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4" />
+                              <span>
+                                {format(new Date(rental.start_date), 'dd MMM', { locale: fr })}
+                                {' → '}
+                                {format(new Date(rental.end_date), 'dd MMM yyyy', { locale: fr })}
+                              </span>
+                            </div>
+
+                            {rental.notes && (
+                              <div className="text-sm text-muted-foreground mt-2">
+                                💬 {rental.notes}
+                              </div>
+                            )}
+                          </div>
+
+                          <Button
+                            onClick={() => handleStartCheckout(rental)}
+                            variant="destructive"
+                            className="ml-4"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Démarrer check-out
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </Tabs>
+
+      {(selectedForm || selectedRental) && (
         <CheckinDialog
           isOpen={isDialogOpen}
           onClose={() => {
             setIsDialogOpen(false);
             setSelectedForm(null);
+            setSelectedRental(null);
           }}
-          boat={selectedForm.boat}
-          rentalData={{
+          boat={selectedForm?.boat || selectedRental?.boat}
+          rentalData={selectedForm ? {
             customerName: `${selectedForm.customer.first_name} ${selectedForm.customer.last_name}`,
             customerEmail: selectedForm.customer.email,
             customerPhone: selectedForm.customer.phone,
             startDate: selectedForm.planned_start_date,
             endDate: selectedForm.planned_end_date,
             notes: selectedForm.rental_notes,
+          } : {
+            customerName: selectedRental.customer_name,
+            customerEmail: selectedRental.customer_email,
+            customerPhone: selectedRental.customer_phone,
+            startDate: selectedRental.start_date,
+            endDate: selectedRental.end_date,
+            notes: selectedRental.notes,
           }}
-          onComplete={handleCompleteCheckin}
+          type={mode}
+          onComplete={handleComplete}
         />
       )}
     </div>

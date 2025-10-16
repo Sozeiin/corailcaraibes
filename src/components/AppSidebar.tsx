@@ -28,16 +28,10 @@ const menuItems = [{
     url: '/safety-controls'
   }]
 }, {
-  title: 'Check-in/out',
+  title: 'Check-in / Check-out',
+  url: '/checkin',
   icon: ClipboardCheck,
-  roles: ['direction', 'chef_base', 'technicien', 'administratif'],
-  subItems: [{
-    title: 'Check-in',
-    url: '/checkin'
-  }, {
-    title: 'Check-out',
-    url: '/checkout'
-  }]
+  roles: ['direction', 'chef_base', 'technicien', 'administratif']
 }, {
   title: 'Fichier Clients',
   url: '/customers',
