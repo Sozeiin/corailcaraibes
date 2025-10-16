@@ -254,24 +254,22 @@ export function ChecklistMultiPhotoCapture({
         <div className="flex gap-2">
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={startCamera}
             disabled={isUploading}
-            className="flex-1"
+            title="Prendre une photo"
           >
-            <Camera className="h-4 w-4 mr-2" />
-            Prendre une photo
+            <Camera className="h-4 w-4" />
           </Button>
           
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="flex-1"
+            title="Choisir un fichier"
           >
-            <Upload className="h-4 w-4 mr-2" />
-            Choisir un fichier
+            <Upload className="h-4 w-4" />
           </Button>
         </div>
       )}
