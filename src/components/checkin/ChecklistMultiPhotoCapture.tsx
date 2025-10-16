@@ -305,12 +305,15 @@ export function ChecklistMultiPhotoCapture({
             <DialogTitle>Prendre une photo</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              className="w-full rounded-lg"
-            />
+            <div className="relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '400px' }}>
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+            </div>
             <canvas ref={canvasRef} className="hidden" />
             <div className="flex gap-2">
               <Button onClick={capturePhoto} className="flex-1">
