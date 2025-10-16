@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { invalidateAllRelatedQueries } from '@/lib/queryInvalidation';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubItem, SidebarMenuSubButton, useSidebar } from '@/components/ui/sidebar';
-import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck, MessageSquare, Shield } from 'lucide-react';
+import { BarChart3, Ship, Users, Package, Wrench, ShoppingCart, Settings, ChevronDown, Truck, AlertTriangle, FileText, Clock, ClipboardCheck, MessageSquare, Shield, UserCheck } from 'lucide-react';
 import { useIsSuperAdmin } from '@/hooks/useIsSuperAdmin';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,9 +36,14 @@ const menuItems = [{
     url: '/checkin'
   }]
 }, {
+  title: 'Fichier Clients',
+  url: '/customers',
+  icon: UserCheck,
+  roles: ['direction', 'chef_base', 'administratif']
+}, {
   title: 'Fournisseurs',
   url: '/suppliers',
-  icon: Users,
+  icon: Truck,
   roles: ['direction', 'chef_base', 'administratif']
 }, {
   title: 'Commandes',
