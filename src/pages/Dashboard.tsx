@@ -18,7 +18,6 @@ import {
   Anchor
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { CheckInOutDialog } from '@/components/checkin/CheckInOutDialog';
 import { DashboardGridLayout } from '@/components/dashboard/DashboardGridLayout';
 import WeatherWidget from '@/components/weather/WeatherWidget';
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
@@ -86,7 +85,6 @@ function StandardDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [baseName, setBaseName] = useState<string>('');
-  const [checkInOutDialogOpen, setCheckInOutDialogOpen] = useState(false);
 
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
@@ -224,23 +222,18 @@ function StandardDashboard() {
             Planification
           </Button>
           <Button 
-            onClick={() => setCheckInOutDialogOpen(true)}
+            onClick={() => navigate('/checkin')}
             className="btn-ocean text-xs sm:text-sm" 
             size="sm"
           >
             <Anchor className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            Check-in / Check-out
+            Check-in Bateau
           </Button>
         </div>
       </div>
 
       {/* Customizable Dashboard Grid with Drag & Drop */}
       <DashboardGridLayout />
-
-      <CheckInOutDialog 
-        open={checkInOutDialogOpen}
-        onOpenChange={setCheckInOutDialogOpen}
-      />
     </div>
   );
 }

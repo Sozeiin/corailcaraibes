@@ -30,5 +30,5 @@ export interface AdministrativeCheckinForm {
 export interface AdministrativeCheckinFormWithRelations extends AdministrativeCheckinForm {
   customer: Customer;
   boat: Boat | null;
-  suggested_boat: Boat | null;
+  suggested_boat?: Boat | null;
 }
