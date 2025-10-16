@@ -400,7 +400,15 @@ export type Database = {
           status?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "boat_components_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       boat_documents: {
         Row: {
@@ -705,6 +713,13 @@ export type Database = {
           validated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "boat_safety_controls_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "boat_safety_controls_category_id_fkey"
             columns: ["category_id"]
@@ -4773,6 +4788,10 @@ export type Database = {
       cleanup_old_logs: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      delete_boat_cascade: {
+        Args: { boat_id_param: string }
+        Returns: Json
       }
       evaluate_weather_for_maintenance: {
         Args: { base_id_param: string; maintenance_date: string }

@@ -4,13 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Plus, Search, History, Wrench, Shield } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, History, Wrench, Shield, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
 import { BoatFilters } from '@/components/boats/BoatFilters';
 import { Boat } from '@/types';
+import { useDeleteBoat } from '@/hooks/useBoatMutations';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 const getStatusBadge = (status: string) => {
   const statusConfig = {
     available: {
@@ -94,8 +105,11 @@ export const Boats = () => {
   const [filterBase, setFilterBase] = useState('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [boatToDelete, setBoatToDelete] = useState<{ id: string; name: string } | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const deleteBoatMutation = useDeleteBoat();
 
   const baseId = user?.role !== 'direction' ? user?.baseId : undefined;
 
@@ -140,22 +154,21 @@ export const Boats = () => {
     });
     setIsDialogOpen(true);
   };
-  const handleDelete = async (boatId: string, boatName: string) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le bateau "${boatName}" ?`)) {
-      try {
-        await removeBoat(boatId);
-        toast({
-          title: "Bateau supprimé",
-          description: "Le bateau a été supprimé avec succès."
-        });
-      } catch (error) {
-        console.error('Error deleting boat:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de supprimer le bateau.",
-          variant: "destructive"
-        });
-      }
+  const handleDelete = (boatId: string, boatName: string) => {
+    setBoatToDelete({ id: boatId, name: boatName });
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!boatToDelete) return;
+
+    try {
+      await deleteBoatMutation.mutateAsync(boatToDelete.id);
+      await refetchBoats();
+      setDeleteDialogOpen(false);
+      setBoatToDelete(null);
+    } catch (error) {
+      console.error('Error deleting boat:', error);
     }
   };
   const handleHistory = (boatId: string) => {
@@ -219,10 +232,51 @@ export const Boats = () => {
         onClose={() => {
           setIsDialogOpen(false);
           setSelectedBoat(null);
-          // Rafraîchir les données après fermeture du dialog
           refetchBoats();
         }} 
         boat={selectedBoat} 
       />
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              Confirmer la suppression
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                Êtes-vous sûr de vouloir supprimer le bateau <strong>"{boatToDelete?.name}"</strong> ?
+              </p>
+              <p className="text-sm font-medium text-destructive">
+                ⚠️ Cette action supprimera définitivement :
+              </p>
+              <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                <li>Tous les composants et sous-composants du bateau</li>
+                <li>Tous les contrôles de sécurité</li>
+                <li>Toutes les interventions et leur historique</li>
+                <li>Toutes les checklists et préparations</li>
+                <li>Tous les documents associés</li>
+                <li>Toutes les activités de planification</li>
+              </ul>
+              <p className="text-sm font-semibold text-destructive">
+                Cette action est irréversible !
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteBoatMutation.isPending}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteBoatMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteBoatMutation.isPending ? "Suppression..." : "Supprimer définitivement"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>;
 };

@@ -10,31 +10,30 @@ export function useDeleteBoat() {
     mutationFn: async (boatId: string) => {
       console.log('🗑️ Suppression bateau:', boatId);
       
-      const { error } = await supabase
-        .from('boats')
-        .delete()
-        .eq('id', boatId);
+      const { data, error } = await supabase
+        .rpc('delete_boat_cascade', { boat_id_param: boatId });
 
       if (error) throw error;
-      return boatId;
+      return data;
     },
-    onSuccess: (boatId) => {
-      invalidateBoatQueries(queryClient, boatId);
-      toast.success("Bateau supprimé avec succès");
+    onSuccess: (data: any) => {
+      invalidateBoatQueries(queryClient, data?.boat_id);
+      toast.success("Bateau et toutes ses données supprimés avec succès");
     },
     onError: (error: any) => {
       console.error('❌ Erreur suppression bateau:', error);
       
       let errorMessage = "Impossible de supprimer le bateau.";
-      if (error.code === '23503') {
-        errorMessage = "Ce bateau est utilisé dans d'autres données et ne peut pas être supprimé.";
-      } else if (error.code === 'P0002') {
+      
+      if (error.message?.includes('Permission refusée')) {
+        errorMessage = error.message;
+      } else if (error.message?.includes('Bateau introuvable')) {
         errorMessage = 'Bateau introuvable.';
-      } else if (error.message?.includes('permission')) {
-        errorMessage = "Vous n'avez pas les permissions nécessaires.";
+      } else if (error.message) {
+        errorMessage = error.message;
       }
       
-      toast.error(`Erreur: ${errorMessage}`);
+      toast.error(errorMessage);
     },
   });
 }
