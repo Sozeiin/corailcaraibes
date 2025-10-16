@@ -19,7 +19,7 @@ export interface AdministrativeCheckinForm {
   planned_end_date: string;
   rental_notes: string | null;
   special_instructions: string | null;
-  status: 'draft' | 'ready' | 'used' | 'completed';
+  status: 'draft' | 'ready' | 'used' | 'completed' | 'expired';
   created_by: string;
   used_by: string | null;
   created_at: string;
