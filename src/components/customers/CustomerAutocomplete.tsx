@@ -3,8 +3,10 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Star, Plus } from 'lucide-react';
+import { Search, Star, Plus, Building2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Customer } from '@/types/customer';
 import { CustomerDialog } from './CustomerDialog';
 
@@ -21,12 +23,27 @@ export function CustomerAutocomplete({
   placeholder = 'Rechercher un client...',
   className,
 }: CustomerAutocompleteProps) {
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch all bases for display
+  const { data: bases = [] } = useQuery({
+    queryKey: ['bases'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('bases')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     if (value) {
@@ -39,18 +56,10 @@ export function CustomerAutocomplete({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('base_id')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile?.base_id) return;
-
+      // Fetch ALL customers (inter-base visibility)
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .eq('base_id', profile.base_id)
         .order('last_rental_date', { ascending: false, nullsFirst: false });
 
       if (data) {
@@ -105,18 +114,10 @@ export function CustomerAutocomplete({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('base_id')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!profile?.base_id) return;
-
+      // Fetch ALL customers (inter-base)
       const { data } = await supabase
         .from('customers')
         .select('*')
-        .eq('base_id', profile.base_id)
         .order('created_at', { ascending: false });
 
       if (data) {
@@ -165,6 +166,12 @@ export function CustomerAutocomplete({
                           </span>
                           {customer.vip_status && (
                             <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                          )}
+                          {customer.base_id !== user?.baseId && (
+                            <Badge variant="outline" className="text-xs gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {bases.find((b) => b.id === customer.base_id)?.name}
+                            </Badge>
                           )}
                         </div>
                         <div className="text-sm text-muted-foreground">

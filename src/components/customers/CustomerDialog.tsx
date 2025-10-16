@@ -91,15 +91,26 @@ export function CustomerDialog({ open, onOpenChange, customer, onSuccess }: Cust
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('base_id')
+        .select('base_id, role')
         .eq('id', session.user.id)
         .single();
 
       if (!profile?.base_id) throw new Error('Base non trouvée');
 
+      // Protection contre modification inter-bases
+      if (customer && customer.base_id !== profile.base_id && profile.role !== 'direction') {
+        toast({
+          title: 'Modification interdite',
+          description: 'Ce client a été créé par une autre base. Seule la Direction peut le modifier.',
+          variant: 'destructive',
+        });
+        setLoading(false);
+        return;
+      }
+
       const customerData = {
         ...formData,
-        base_id: profile.base_id,
+        base_id: customer ? customer.base_id : profile.base_id, // Garder la base d'origine lors de la modification
         created_by: customer ? undefined : session.user.id,
       };
 

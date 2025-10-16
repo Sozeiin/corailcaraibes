@@ -12,7 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Search, Star, Eye, Edit, Calendar } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Users, Plus, Search, Star, Eye, Edit, Calendar, Building2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomerDialog } from '@/components/customers/CustomerDialog';
@@ -26,26 +27,38 @@ import { fr } from 'date-fns/locale';
 export default function Customers() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+  const [selectedBase, setSelectedBase] = useState<string>('all');
   const [showDialog, setShowDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyCustomer, setHistoryCustomer] = useState<string | null>(null);
 
-  const { data: customers = [], refetch } = useQuery({
-    queryKey: ['customers', user?.baseId],
+  // Fetch all bases for the filter
+  const { data: bases = [] } = useQuery({
+    queryKey: ['bases'],
     queryFn: async () => {
-      if (!user?.baseId) return [];
+      const { data, error } = await supabase
+        .from('bases')
+        .select('*')
+        .order('name');
 
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch all customers (inter-base visibility)
+  const { data: customers = [], refetch } = useQuery({
+    queryKey: ['customers'],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('customers')
         .select('*')
-        .eq('base_id', user.baseId)
         .order('last_rental_date', { ascending: false, nullsFirst: false });
 
       if (error) throw error;
       return data as Customer[];
     },
-    enabled: !!user?.baseId,
   });
 
   const filteredCustomers = customers.filter((customer) => {
@@ -54,12 +67,16 @@ export default function Customers() {
     const email = customer.email?.toLowerCase() || '';
     const phone = customer.phone || '';
 
-    return (
+    const matchesSearch = (
       fullName.includes(searchLower) ||
       email.includes(searchLower) ||
       phone.includes(searchLower) ||
       (customer.company_name && customer.company_name.toLowerCase().includes(searchLower))
     );
+
+    const matchesBase = selectedBase === 'all' || customer.base_id === selectedBase;
+
+    return matchesSearch && matchesBase;
   });
 
   const handleEdit = (customer: Customer) => {
@@ -115,6 +132,21 @@ export default function Customers() {
                   className="pl-9"
                 />
               </div>
+              
+              <Select value={selectedBase} onValueChange={setSelectedBase}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Toutes les bases" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les bases</SelectItem>
+                  {bases.map((base) => (
+                    <SelectItem key={base.id} value={base.id}>
+                      {base.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
               <Badge variant="secondary" className="text-lg px-3 py-1">
                 {filteredCustomers.length} client{filteredCustomers.length > 1 ? 's' : ''}
               </Badge>
@@ -129,6 +161,7 @@ export default function Customers() {
                     <TableHead>Client</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead>Type</TableHead>
+                    <TableHead>Base d'origine</TableHead>
                     <TableHead className="text-center">Locations</TableHead>
                     <TableHead>Dernière location</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -168,6 +201,15 @@ export default function Customers() {
                         <TableCell>
                           <Badge variant="outline">
                             {customer.customer_type === 'individual' ? 'Particulier' : 'Entreprise'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={customer.base_id === user?.baseId ? 'default' : 'outline'}
+                            className="gap-1"
+                          >
+                            <Building2 className="h-3 w-3" />
+                            {bases.find((b) => b.id === customer.base_id)?.name || 'Inconnue'}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center">
