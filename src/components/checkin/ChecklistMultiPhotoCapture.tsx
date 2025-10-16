@@ -93,39 +93,54 @@ export function ChecklistMultiPhotoCapture({
     setShowCamera(true);
   };
 
-  // Démarrer le stream quand le dialog s'ouvre et que la vidéo est prête
+  // Démarrer le stream quand le dialog s'ouvre ET que la vidéo est prête
   useEffect(() => {
-    if (!showCamera || !videoRef.current || stream) {
+    if (!showCamera) {
       return;
     }
 
-    console.log('🎥 Dialog ouvert, démarrage du stream...');
-    
-    const initCamera = async () => {
-      try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { 
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
-          audio: false
-        });
-        
-        console.log('✅ Stream caméra obtenu');
-        setStream(mediaStream);
-      } catch (error: any) {
-        console.error('❌ Erreur accès caméra:', error);
-        toast({
-          title: 'Erreur',
-          description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
-          variant: 'destructive'
-        });
-        setShowCamera(false);
+    // Attendre que le videoRef soit disponible
+    const timer = setTimeout(() => {
+      if (!videoRef.current) {
+        console.log('⏳ videoRef pas encore prêt');
+        return;
       }
-    };
 
-    initCamera();
+      if (stream) {
+        console.log('✅ Stream déjà existant');
+        return;
+      }
+
+      console.log('🎥 VideoRef prêt, démarrage du stream...');
+      
+      const initCamera = async () => {
+        try {
+          const mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: { 
+              facingMode: 'environment',
+              width: { ideal: 1920 },
+              height: { ideal: 1080 }
+            },
+            audio: false
+          });
+          
+          console.log('✅ Stream caméra obtenu');
+          setStream(mediaStream);
+        } catch (error: any) {
+          console.error('❌ Erreur accès caméra:', error);
+          toast({
+            title: 'Erreur',
+            description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
+            variant: 'destructive'
+          });
+          setShowCamera(false);
+        }
+      };
+
+      initCamera();
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [showCamera, stream, toast]);
 
   /**
