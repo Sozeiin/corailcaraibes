@@ -5,17 +5,29 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Play } from 'lucide-react';
+import { Edit, Play, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { EditFormDialog } from './EditFormDialog';
 import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export function ReadyFormsSection() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [editingForm, setEditingForm] = useState<AdministrativeCheckinFormWithRelations | null>(null);
+  const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
 
   const { data: readyForms, isLoading, refetch } = useQuery({
     queryKey: ['ready-checkin-forms', user?.baseId],
@@ -67,6 +79,26 @@ export function ReadyFormsSection() {
       },
     });
   };
+
+  const handleDeleteForm = async (formId: string) => {
+    try {
+      const { error } = await supabase
+        .from('administrative_checkin_forms')
+        .delete()
+        .eq('id', formId);
+
+      if (error) throw error;
+
+      toast.success('Fiche supprimée avec succès');
+      refetch();
+      setDeletingFormId(null);
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      toast.error('Erreur lors de la suppression de la fiche');
+    }
+  };
+
+  const canDelete = user?.role === 'administratif' || user?.role === 'chef_base';
 
   if (isLoading) {
     return <div>Chargement...</div>;
@@ -148,6 +180,16 @@ export function ReadyFormsSection() {
                         <Edit className="h-4 w-4 mr-1" />
                         Modifier
                       </Button>
+                      {canDelete && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => setDeletingFormId(form.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Supprimer
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         onClick={() => handleStartCheckin(form)}
@@ -163,6 +205,27 @@ export function ReadyFormsSection() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!deletingFormId} onOpenChange={(open) => !open && setDeletingFormId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer cette fiche de check-in ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deletingFormId && handleDeleteForm(deletingFormId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {editingForm && (
         <EditFormDialog
