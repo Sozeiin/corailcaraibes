@@ -12,6 +12,7 @@ interface CheckinDialogProps {
   boat: any;
   rentalData: any;
   onComplete: (data: any) => void;
+  type?: 'checkin' | 'checkout';
 }
 
 export function CheckinDialog({
@@ -19,7 +20,8 @@ export function CheckinDialog({
   onClose,
   boat,
   rentalData,
-  onComplete
+  onComplete,
+  type = 'checkin'
 }: CheckinDialogProps) {
   const { registerForm, unregisterForm } = useFormState();
 
@@ -57,7 +59,7 @@ export function CheckinDialog({
           <ChecklistForm
             boat={boat}
             rentalData={rentalData}
-            type="checkin"
+            type={type}
             onComplete={handleComplete}
           />
         </div>
