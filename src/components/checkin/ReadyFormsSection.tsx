@@ -99,6 +99,8 @@ export function ReadyFormsSection() {
   };
 
   const canDelete = user?.role === 'administratif' || user?.role === 'chef_base';
+  
+  console.log('ReadyFormsSection - User role:', user?.role, 'Can delete:', canDelete);
 
   if (isLoading) {
     return <div>Chargement...</div>;
