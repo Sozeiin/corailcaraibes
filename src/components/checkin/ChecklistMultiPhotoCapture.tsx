@@ -88,30 +88,45 @@ export function ChecklistMultiPhotoCapture({
   /**
    * Démarrer la caméra
    */
-  const startCamera = async () => {
-    try {
-      console.log('📸 Demande d\'accès à la caméra...');
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
-        },
-        audio: false
-      });
-      
-      console.log('✅ Caméra accessible, stream obtenu');
-      setStream(mediaStream);
-      setShowCamera(true);
-    } catch (error: any) {
-      console.error('❌ Erreur accès caméra:', error);
-      toast({
-        title: 'Erreur',
-        description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
-        variant: 'destructive'
-      });
-    }
+  const startCamera = () => {
+    console.log('📸 Ouverture du dialog caméra...');
+    setShowCamera(true);
   };
+
+  // Démarrer le stream quand le dialog s'ouvre et que la vidéo est prête
+  useEffect(() => {
+    if (!showCamera || !videoRef.current || stream) {
+      return;
+    }
+
+    console.log('🎥 Dialog ouvert, démarrage du stream...');
+    
+    const initCamera = async () => {
+      try {
+        const mediaStream = await navigator.mediaDevices.getUserMedia({
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        
+        console.log('✅ Stream caméra obtenu');
+        setStream(mediaStream);
+      } catch (error: any) {
+        console.error('❌ Erreur accès caméra:', error);
+        toast({
+          title: 'Erreur',
+          description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
+          variant: 'destructive'
+        });
+        setShowCamera(false);
+      }
+    };
+
+    initCamera();
+  }, [showCamera, stream, toast]);
 
   /**
    * Capturer une photo depuis la caméra
