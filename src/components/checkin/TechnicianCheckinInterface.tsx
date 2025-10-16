@@ -21,21 +21,66 @@ export function TechnicianCheckinInterface() {
   const [selectedRental, setSelectedRental] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  // Fetch boats from user's base
-  const { data: boats = [] } = useQuery({
-    queryKey: ['boats', user?.baseId],
+  // Fetch boats with ready forms (Check-in mode)
+  const { data: boatsWithReadyForms = [] } = useQuery({
+    queryKey: ['boats-with-ready-forms', user?.baseId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('boats')
-        .select('*')
+        .select(`
+          id,
+          name,
+          model,
+          status,
+          administrative_checkin_forms!inner(id)
+        `)
         .eq('base_id', user?.baseId)
+        .eq('administrative_checkin_forms.status', 'ready')
         .order('name');
 
       if (error) throw error;
-      return data || [];
+      
+      // Dédupliquer les bateaux (un bateau peut avoir plusieurs fiches)
+      const uniqueBoats = Array.from(
+        new Map(data?.map(boat => [boat.id, boat])).values()
+      );
+      
+      return uniqueBoats || [];
     },
-    enabled: !!user?.baseId,
+    enabled: !!user?.baseId && mode === 'checkin',
   });
+
+  // Fetch boats with active rentals (Check-out mode)
+  const { data: boatsWithActiveRentals = [] } = useQuery({
+    queryKey: ['boats-with-active-rentals', user?.baseId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boats')
+        .select(`
+          id,
+          name,
+          model,
+          status,
+          boat_rentals!inner(id)
+        `)
+        .eq('base_id', user?.baseId)
+        .eq('boat_rentals.status', 'confirmed')
+        .order('name');
+
+      if (error) throw error;
+      
+      // Dédupliquer les bateaux
+      const uniqueBoats = Array.from(
+        new Map(data?.map(boat => [boat.id, boat])).values()
+      );
+      
+      return uniqueBoats || [];
+    },
+    enabled: !!user?.baseId && mode === 'checkout',
+  });
+
+  // Liste des bateaux selon le mode
+  const boats = mode === 'checkin' ? boatsWithReadyForms : boatsWithActiveRentals;
 
   // Fetch ready forms for selected boat (Check-in mode)
   const { data: readyForms = [], isLoading: isLoadingForms } = useQuery({
@@ -133,7 +178,10 @@ export function TechnicianCheckinInterface() {
 
   return (
     <div className="space-y-6">
-      <Tabs value={mode} onValueChange={(value) => setMode(value as 'checkin' | 'checkout')}>
+      <Tabs value={mode} onValueChange={(value) => {
+        setMode(value as 'checkin' | 'checkout');
+        setSelectedBoatId(''); // Réinitialiser la sélection lors du changement de mode
+      }}>
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="checkin" className="flex items-center gap-2">
             <LogIn className="h-4 w-4" />
@@ -158,11 +206,19 @@ export function TechnicianCheckinInterface() {
                 <SelectValue placeholder="Choisir un bateau..." />
               </SelectTrigger>
               <SelectContent>
-                {boats.map((boat) => (
-                  <SelectItem key={boat.id} value={boat.id}>
-                    {boat.name} - {boat.model}
-                  </SelectItem>
-                ))}
+                {boats.length === 0 ? (
+                  <div className="p-2 text-sm text-muted-foreground text-center">
+                    {mode === 'checkin' 
+                      ? 'Aucun bateau avec des fiches prêtes' 
+                      : 'Aucun bateau avec des locations actives'}
+                  </div>
+                ) : (
+                  boats.map((boat) => (
+                    <SelectItem key={boat.id} value={boat.id}>
+                      {boat.name} - {boat.model}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </CardContent>
