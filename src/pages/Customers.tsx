@@ -13,7 +13,18 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, Search, Star, Eye, Edit, Calendar, Building2 } from 'lucide-react';
+import { Users, Plus, Search, Star, Eye, Edit, Calendar, Building2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { CustomerDialog } from '@/components/customers/CustomerDialog';
@@ -32,6 +43,7 @@ export default function Customers() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [historyCustomer, setHistoryCustomer] = useState<string | null>(null);
+  const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
 
   // Fetch all bases for the filter
   const { data: bases = [] } = useQuery({
@@ -98,6 +110,26 @@ export default function Customers() {
     setShowDialog(open);
     if (!open) {
       setSelectedCustomer(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!customerToDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerToDelete.id);
+
+      if (error) throw error;
+
+      toast.success('Client supprimé avec succès');
+      refetch();
+      setCustomerToDelete(null);
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      toast.error('Erreur lors de la suppression du client');
     }
   };
 
@@ -243,6 +275,13 @@ export default function Customers() {
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setCustomerToDelete(customer)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -272,6 +311,24 @@ export default function Customers() {
             {historyCustomer && <CustomerHistory customerId={historyCustomer} />}
           </DialogContent>
         </Dialog>
+
+        <AlertDialog open={!!customerToDelete} onOpenChange={() => setCustomerToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+              <AlertDialogDescription>
+                Êtes-vous sûr de vouloir supprimer le client {customerToDelete?.first_name} {customerToDelete?.last_name} ?
+                Cette action est irréversible.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuler</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </PermissionGate>
   );
