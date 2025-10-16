@@ -10,7 +10,7 @@ export interface ChecklistItem {
   isRequired: boolean;
   status: 'ok' | 'needs_repair' | 'not_checked';
   notes?: string;
-  photoUrl?: string;
+  photos?: Array<{ id?: string; url: string; displayOrder: number }>;
 }
 
 export interface BoatRental {
@@ -114,7 +114,7 @@ export function useCreateChecklist() {
           item_id: item.id,
           status: item.status,
           notes: item.notes || null,
-          photo_url: item.photoUrl || null,
+          photo_url: null, // Garder NULL car on utilise la nouvelle table
         }));
 
       if (itemsToInsert.length === 0) {
@@ -133,6 +133,32 @@ export function useCreateChecklist() {
       }
 
       console.log('✅ [DEBUG] Items créés avec succès');
+
+      // APRÈS l'insertion des items, insérer les photos
+      if (checklistData.items.some(item => item.photos && item.photos.length > 0)) {
+        const photosToInsert = checklistData.items
+          .filter(item => item.photos && item.photos.length > 0)
+          .flatMap(item => 
+            item.photos!.map(photo => ({
+              checklist_id: checklist.id,
+              item_id: item.id,
+              photo_url: photo.url,
+              display_order: photo.displayOrder
+            }))
+          );
+        
+        const { error: photosError } = await supabase
+          .from('checklist_item_photos')
+          .insert(photosToInsert);
+        
+        if (photosError) {
+          console.error('❌ [DEBUG] Erreur création photos:', photosError);
+          // Ne pas throw pour ne pas bloquer la création de la checklist
+        } else {
+          console.log('✅ [DEBUG] Photos créées avec succès');
+        }
+      }
+
       return checklist;
     },
     onSuccess: () => {

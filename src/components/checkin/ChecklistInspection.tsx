@@ -13,7 +13,7 @@ interface ChecklistInspectionProps {
   checklistItems: ChecklistItem[];
   onItemStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
   onItemNotesChange: (itemId: string, notes: string) => void;
-  onItemPhotoChange: (itemId: string, photoUrl: string | null) => void;
+  onItemPhotoChange: (itemId: string, photos: Array<{ id?: string; url: string; displayOrder: number }>) => void;
   generalNotes: string;
   onGeneralNotesChange: (notes: string) => void;
   overallStatus: 'ok' | 'needs_attention' | 'major_issues';

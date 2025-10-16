@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, X, AlertTriangle, ChevronDown } from 'lucide-react';
-import { ChecklistPhotoCapture } from './ChecklistPhotoCapture';
+import { ChecklistMultiPhotoCapture } from './ChecklistMultiPhotoCapture';
 import { cn } from '@/lib/utils';
 
 interface ChecklistItem {
@@ -12,14 +12,14 @@ interface ChecklistItem {
   isRequired: boolean;
   status: 'ok' | 'needs_repair' | 'not_checked';
   notes?: string;
-  photoUrl?: string;
+  photos?: Array<{ id?: string; url: string; displayOrder: number }>;
 }
 
 interface ModernChecklistItemProps {
   item: ChecklistItem;
   onStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
   onNotesChange: (itemId: string, notes: string) => void;
-  onPhotoChange: (itemId: string, photoUrl: string | null) => void;
+  onPhotoChange: (itemId: string, photos: Array<{ id?: string; url: string; displayOrder: number }>) => void;
   checklistId?: string;
 }
 
@@ -110,11 +110,12 @@ export function ModernChecklistItem({
 
           {/* Photo and notes row */}
           <div className="flex items-center gap-2 mb-2">
-            <ChecklistPhotoCapture
-              photoUrl={item.photoUrl || null}
-              onPhotoChange={(photoUrl) => onPhotoChange(item.id, photoUrl)}
-              checklistId={checklistId}
+            <ChecklistMultiPhotoCapture
+              photos={item.photos || []}
+              onPhotosChange={(photos) => onPhotoChange(item.id, photos)}
+              checklistId={checklistId || 'temp-' + Date.now()}
               itemId={item.id}
+              maxPhotos={5}
             />
             
             <Button

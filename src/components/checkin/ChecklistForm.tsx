@@ -68,7 +68,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           isRequired: item.is_required,
           status: 'not_checked' as const,
           notes: '',
-          photoUrl: '',
+          photos: [],
         }))
       );
     }
@@ -113,10 +113,10 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
     ));
   };
 
-  const handleItemPhotoChange = (itemId: string, photoUrl: string | null) => {
-    console.log('📷 [DEBUG] Changement photo item:', itemId, photoUrl);
+  const handleItemPhotoChange = (itemId: string, photos: Array<{ id?: string; url: string; displayOrder: number }>) => {
+    console.log('📷 [DEBUG] Changement photos item:', itemId, photos);
     setChecklistItems(prev => prev.map(item => 
-      item.id === itemId ? { ...item, photoUrl: photoUrl || '' } : item
+      item.id === itemId ? { ...item, photos } : item
     ));
   };
 

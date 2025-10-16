@@ -1408,6 +1408,48 @@ export type Database = {
           },
         ]
       }
+      checklist_item_photos: {
+        Row: {
+          checklist_id: string
+          display_order: number | null
+          id: string
+          item_id: string
+          photo_url: string
+          uploaded_at: string | null
+        }
+        Insert: {
+          checklist_id: string
+          display_order?: number | null
+          id?: string
+          item_id: string
+          photo_url: string
+          uploaded_at?: string | null
+        }
+        Update: {
+          checklist_id?: string
+          display_order?: number | null
+          id?: string
+          item_id?: string
+          photo_url?: string
+          uploaded_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_item_photos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "boat_checklists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_item_photos_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_items: {
         Row: {
           category: string | null
