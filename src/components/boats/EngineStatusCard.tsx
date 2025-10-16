@@ -13,6 +13,7 @@ interface EngineStatusCardProps {
   engine: {
     id: string;
     component_name: string;
+    component_type?: string;
     current_engine_hours: number;
     last_oil_change_hours: number;
     status: string;
@@ -78,7 +79,7 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boat
           <CardTitle className="flex items-center justify-between text-sm">
             <div className="flex items-center">
               <Cog className="h-4 w-4 mr-2" />
-              {engine.component_name}
+              {engine.component_type || engine.component_name}
             </div>
             <div className="flex items-center gap-2">
               <Badge variant={getStatusBadgeVariant(engine.status)}>
