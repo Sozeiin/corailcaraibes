@@ -23,7 +23,7 @@ export function ClientFormsPool() {
         .from('administrative_checkin_forms')
         .select(`
           *,
-          customer:customers(first_name, last_name, email, phone, vip_status),
+          customer:customers!fk_administrative_checkin_customer(first_name, last_name, email, phone, vip_status),
           suggested_boat:boats!suggested_boat_id(id, name, model, status)
         `)
         .eq('base_id', user.baseId)

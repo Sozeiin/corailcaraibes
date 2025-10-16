@@ -59,6 +59,12 @@ export function CreateCheckinFormSimple() {
       const selectedBoat = boats?.find((b) => b.id === selectedBoatId);
       const isBoatAvailable = selectedBoat?.status === 'available';
 
+      // Déterminer le statut correct
+      let formStatus: 'draft' | 'ready' = 'draft';
+      if (selectedBoatId && isBoatAvailable) {
+        formStatus = 'ready';
+      }
+
       const { error } = await supabase
         .from('administrative_checkin_forms')
         .insert({
@@ -69,9 +75,9 @@ export function CreateCheckinFormSimple() {
           is_boat_assigned: isBoatAvailable && !!selectedBoatId,
           planned_start_date: startDate.toISOString(),
           planned_end_date: endDate.toISOString(),
-          rental_notes: rentalNotes,
-          special_instructions: specialInstructions,
-          status: isBoatAvailable && selectedBoatId ? 'ready' : 'draft',
+          rental_notes: rentalNotes || null,
+          special_instructions: specialInstructions || null,
+          status: formStatus,
           created_by: user?.id!,
         });
 
