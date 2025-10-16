@@ -25,27 +25,42 @@ export function TechnicianCheckinInterface() {
   const { data: boatsWithReadyForms = [] } = useQuery({
     queryKey: ['boats-with-ready-forms', user?.baseId],
     queryFn: async () => {
+      // Récupérer les fiches ready avec leurs bateaux
       const { data, error } = await supabase
-        .from('boats')
+        .from('administrative_checkin_forms')
         .select(`
           id,
-          name,
-          model,
-          status,
-          administrative_checkin_forms!inner(id)
+          boat_id,
+          boats!administrative_checkin_forms_boat_id_fkey (
+            id,
+            name,
+            model,
+            status
+          )
         `)
         .eq('base_id', user?.baseId)
-        .eq('administrative_checkin_forms.status', 'ready')
-        .order('name');
+        .eq('status', 'ready')
+        .not('boat_id', 'is', null);
 
-      if (error) throw error;
-      
-      // Dédupliquer les bateaux (un bateau peut avoir plusieurs fiches)
-      const uniqueBoats = Array.from(
-        new Map(data?.map(boat => [boat.id, boat])).values()
+      if (error) {
+        console.error('Error fetching ready forms:', error);
+        throw error;
+      }
+
+      // Extraire les bateaux uniques
+      const boatsMap = new Map();
+      data?.forEach(form => {
+        if (form.boats && !boatsMap.has(form.boats.id)) {
+          boatsMap.set(form.boats.id, form.boats);
+        }
+      });
+
+      const uniqueBoats = Array.from(boatsMap.values()).sort((a, b) => 
+        a.name.localeCompare(b.name)
       );
-      
-      return uniqueBoats || [];
+
+      console.log('Boats with ready forms:', uniqueBoats);
+      return uniqueBoats;
     },
     enabled: !!user?.baseId && mode === 'checkin',
   });
