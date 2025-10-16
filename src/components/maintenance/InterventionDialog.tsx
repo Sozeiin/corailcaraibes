@@ -127,8 +127,8 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
         .order('name');
 
       // Filtrage selon le rôle de l'utilisateur
-      if (user.role === 'chef_base') {
-        // Chef de base : seulement les techniciens de sa base
+      if (user.role === 'chef_base' || user.role === 'administratif') {
+        // Chef de base et administratif : seulement les techniciens de leur base
         query = query.eq('base_id', user.baseId);
       }
       // Direction : tous les techniciens (pas de filtre)

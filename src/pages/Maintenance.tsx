@@ -9,10 +9,11 @@ const MARTINIQUE_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
 export default function Maintenance() {
   const { user } = useAuth();
 
-  // Afficher l'interface complète pour Direction et Chef de base uniquement
+  // Afficher l'interface complète pour Direction, Chef de base et Administratif
   const showFullInterface = 
     user?.role === 'direction' || 
-    user?.role === 'chef_base';
+    user?.role === 'chef_base' ||
+    user?.role === 'administratif';
 
   return (
     <div className="space-y-4 sm:space-y-6">

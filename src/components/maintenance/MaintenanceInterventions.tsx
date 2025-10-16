@@ -133,6 +133,7 @@ export function MaintenanceInterventions() {
   const canManage = 
     user?.role === 'direction' || 
     user?.role === 'chef_base' ||
+    user?.role === 'administratif' ||
     (user?.role === 'technicien' && user?.baseId === MARTINIQUE_BASE_ID);
 
   return (
