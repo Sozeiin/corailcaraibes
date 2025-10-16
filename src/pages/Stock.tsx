@@ -203,7 +203,7 @@ export default function Stock() {
     });
   };
 
-  const canManageStock = user?.role === 'direction' || user?.role === 'chef_base';
+  const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
 
   return (
     <div className="space-y-4 sm:space-y-6">

@@ -262,7 +262,8 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
     }
   };
 
-  const showBaseSelection = user?.role === 'direction' || (user?.role === 'chef_base' && bases.length > 1);
+  const showBaseSelection = user?.role === 'direction' || 
+    ((user?.role === 'chef_base' || user?.role === 'administratif') && bases.length > 1);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

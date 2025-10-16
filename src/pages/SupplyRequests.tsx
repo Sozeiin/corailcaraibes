@@ -189,7 +189,7 @@ export default function SupplyRequests() {
     setIsManagementDialogOpen(true);
   };
 
-  const canCreate = user?.role === 'chef_base' || user?.role === 'direction';
+  const canCreate = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canManage = user?.role === 'direction';
 
   return (
