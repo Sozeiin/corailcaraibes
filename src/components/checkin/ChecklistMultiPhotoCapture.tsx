@@ -48,27 +48,42 @@ export function ChecklistMultiPhotoCapture({
     };
   }, [stream]);
 
+  // Connecter le stream à la vidéo quand il change
+  useEffect(() => {
+    if (stream && videoRef.current && showCamera) {
+      console.log('📹 Connexion du stream à la vidéo');
+      videoRef.current.srcObject = stream;
+      
+      // S'assurer que la vidéo joue
+      videoRef.current.play().catch(err => {
+        console.error('Erreur lecture vidéo:', err);
+      });
+    }
+  }, [stream, showCamera]);
+
   /**
    * Démarrer la caméra
    */
   const startCamera = async () => {
     try {
+      console.log('📸 Demande d\'accès à la caméra...');
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: { 
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false
       });
       
+      console.log('✅ Caméra accessible, stream obtenu');
       setStream(mediaStream);
       setShowCamera(true);
-      
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
     } catch (error: any) {
-      console.error('Erreur accès caméra:', error);
+      console.error('❌ Erreur accès caméra:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible d\'accéder à la caméra',
+        description: 'Impossible d\'accéder à la caméra. Vérifiez les permissions.',
         variant: 'destructive'
       });
     }
