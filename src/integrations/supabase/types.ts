@@ -4837,7 +4837,7 @@ export type Database = {
       }
       delete_user_cascade: {
         Args: { user_id_param: string }
-        Returns: boolean
+        Returns: undefined
       }
       evaluate_weather_for_maintenance: {
         Args: { base_id_param: string; maintenance_date: string }
