@@ -95,11 +95,11 @@ export function UserManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      const { data, error } = await supabase
+        .rpc('delete_user_cascade', { user_id_param: userId });
       if (error) throw error;
+      if (!data) throw new Error('La suppression a échoué');
+      return data;
     },
     onSuccess: () => {
       toast({

@@ -87,12 +87,13 @@ export function UserSettings() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', id);
+      const { data, error } = await supabase
+        .rpc('delete_user_cascade', { user_id_param: id });
       
       if (error) throw error;
+      if (!data) throw new Error('La suppression a échoué');
+      
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
