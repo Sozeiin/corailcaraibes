@@ -88,7 +88,7 @@ export function UserSettings() {
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { data, error } = await supabase
-        .rpc('delete_user_cascade', { user_id_param: id });
+        .rpc('delete_user_cascade' as any, { user_id_param: id });
       
       if (error) throw error;
       if (!data) throw new Error('La suppression a échoué');
