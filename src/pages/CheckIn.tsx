@@ -4,12 +4,20 @@ import { LogIn } from 'lucide-react';
 import { CheckinFormsManager } from '@/components/checkin/CheckinFormsManager';
 import { TechnicianCheckinInterface } from '@/components/checkin/TechnicianCheckinInterface';
 import { useAuth } from '@/contexts/AuthContext';
+import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function CheckIn() {
   const { user } = useAuth();
   
-  // Interface simplifiée pour techniciens et chefs de base
-  const showSimplifiedInterface = user?.role === 'technicien' || user?.role === 'chef_base';
+  // Interface complète pour administratif et direction (gestion uniquement)
+  const showFullInterface = user?.role === 'administratif' || user?.role === 'direction';
+  
+  // Interface hybride pour chef_base (gestion + check-in/out)
+  const showHybridInterface = user?.role === 'chef_base';
+  
+  // Interface simplifiée pour techniciens (check-in/out uniquement)
+  const showSimplifiedInterface = user?.role === 'technicien';
 
   return (
     <PermissionGate page="dashboard">
@@ -21,10 +29,36 @@ export default function CheckIn() {
           </h1>
         </div>
         
-        {showSimplifiedInterface ? (
-          <TechnicianCheckinInterface />
-        ) : (
+        {showFullInterface && (
           <CheckinFormsManager />
+        )}
+        
+        {showHybridInterface && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Gestion des fiches clients</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CheckinFormsManager />
+              </CardContent>
+            </Card>
+            
+            <Separator className="my-8" />
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Check-in / Check-out rapide</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TechnicianCheckinInterface />
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        
+        {showSimplifiedInterface && (
+          <TechnicianCheckinInterface />
         )}
       </div>
     </PermissionGate>
