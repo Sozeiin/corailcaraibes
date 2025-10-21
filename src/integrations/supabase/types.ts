@@ -2510,6 +2510,8 @@ export type Database = {
           performance_rating: number | null
           planned_by: string | null
           priority: string | null
+          reference_id: string | null
+          reference_type: string | null
           rental_id: string | null
           scheduled_end: string
           scheduled_start: string
@@ -2537,6 +2539,8 @@ export type Database = {
           performance_rating?: number | null
           planned_by?: string | null
           priority?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
           rental_id?: string | null
           scheduled_end: string
           scheduled_start: string
@@ -2564,6 +2568,8 @@ export type Database = {
           performance_rating?: number | null
           planned_by?: string | null
           priority?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
           rental_id?: string | null
           scheduled_end?: string
           scheduled_start?: string
