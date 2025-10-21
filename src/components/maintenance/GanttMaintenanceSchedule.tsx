@@ -140,6 +140,7 @@ export function GanttMaintenanceSchedule() {
   const [showUnassignedPanel, setShowUnassignedPanel] = useState(true);
   const [collapsedTechnicians, setCollapsedTechnicians] = useState<Set<string>>(new Set());
   const [selectedBoatId, setSelectedBoatId] = useState<string>('all');
+  const [selectedActivityType, setSelectedActivityType] = useState<string>('all');
   const [lastDroppedTechnician, setLastDroppedTechnician] = useState<Record<string, string>>(() => {
     try {
       const stored = localStorage.getItem('fleetcat_last_dropped_technician');
@@ -765,42 +766,55 @@ export function GanttMaintenanceSchedule() {
       .sort((a, b) => a.name.localeCompare(b.name, 'fr'));
   }, [getUnassignedTasks]);
 
-  // Filter unassigned tasks by boat
+  // Filter unassigned tasks by boat and activity type
   const filteredUnassignedTasks = useMemo(() => {
     console.log('🎯 FILTERING UNASSIGNED TASKS:', {
       selectedBoatId,
+      selectedActivityType,
       totalUnassigned: getUnassignedTasks.length,
       unassignedBoats: getUnassignedTasks.map(t => ({
         id: t.id,
         title: t.title,
         boatName: t.boats?.name,
-        boatId: t.boats?.id
+        boatId: t.boats?.id,
+        activityType: t.activity_type
       }))
     });
     
-    if (selectedBoatId === 'all') {
-      console.log('🎯 FILTER RESULT: ALL BOATS', getUnassignedTasks.length);
-      return getUnassignedTasks;
+    let filtered = getUnassignedTasks;
+    
+    // Filter by boat
+    if (selectedBoatId !== 'all') {
+      filtered = filtered.filter(task => {
+        const matches = task.boats?.id === selectedBoatId;
+        console.log(`🎯 BOAT FILTER: ${task.title} | boat: ${task.boats?.name} (${task.boats?.id}) | selected: ${selectedBoatId} | MATCH: ${matches}`);
+        return matches;
+      });
     }
     
-    const filtered = getUnassignedTasks.filter(task => {
-      const matches = task.boats?.id === selectedBoatId;
-      console.log(`🎯 FILTER CHECK: ${task.title} | boat: ${task.boats?.name} (${task.boats?.id}) | selected: ${selectedBoatId} | MATCH: ${matches}`);
-      return matches;
-    });
+    // Filter by activity type
+    if (selectedActivityType !== 'all') {
+      filtered = filtered.filter(task => {
+        const matches = task.activity_type === selectedActivityType;
+        console.log(`🎯 TYPE FILTER: ${task.title} | type: ${task.activity_type} | selected: ${selectedActivityType} | MATCH: ${matches}`);
+        return matches;
+      });
+    }
     
     console.log('🎯 FILTER RESULT:', {
       selectedBoatId,
+      selectedActivityType,
       filteredCount: filtered.length,
       filteredTasks: filtered.map(t => ({
         id: t.id,
         title: t.title,
-        boat: t.boats?.name
+        boat: t.boats?.name,
+        type: t.activity_type
       }))
     });
     
     return filtered;
-  }, [getUnassignedTasks, selectedBoatId]);
+  }, [getUnassignedTasks, selectedBoatId, selectedActivityType]);
   const navigateWeek = (direction: 'prev' | 'next') => {
     setCurrentWeek(prev => direction === 'next' ? addDays(prev, 7) : addDays(prev, -7));
   };
@@ -998,6 +1012,8 @@ export function GanttMaintenanceSchedule() {
               filteredTasks={filteredUnassignedTasks}
               selectedBoatId={selectedBoatId}
               setSelectedBoatId={setSelectedBoatId}
+              selectedActivityType={selectedActivityType}
+              setSelectedActivityType={setSelectedActivityType}
               boatOptions={boatOptions}
               onTaskClick={(task) => setSelectedTask(task as Intervention)}
               getTaskTypeConfig={getTaskTypeConfig}

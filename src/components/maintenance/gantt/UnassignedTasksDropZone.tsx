@@ -35,6 +35,8 @@ interface UnassignedTasksDropZoneProps {
   filteredTasks: Task[];
   selectedBoatId: string;
   setSelectedBoatId: (id: string) => void;
+  selectedActivityType: string;
+  setSelectedActivityType: (type: string) => void;
   boatOptions: BoatOption[];
   onTaskClick: (task: Task) => void;
   getTaskTypeConfig: (type: string) => {
@@ -49,6 +51,8 @@ export function UnassignedTasksDropZone({
   filteredTasks,
   selectedBoatId,
   setSelectedBoatId,
+  selectedActivityType,
+  setSelectedActivityType,
   boatOptions,
   onTaskClick,
   getTaskTypeConfig,
@@ -67,28 +71,49 @@ export function UnassignedTasksDropZone({
       }`}
     >
       <div className="p-3 border-b bg-gradient-to-r from-blue-50 to-gray-50 rounded-t-2xl">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-blue-600" />
             Tâches non assignées ({filteredTasks.length})
             {isOver && <span className="text-blue-600 animate-pulse ml-2">← Déposer ici</span>}
           </h3>
           
-          {boatOptions.length > 0 && (
-            <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
-              <SelectTrigger className="w-48 h-8 bg-white border-gray-300">
-                <SelectValue placeholder="Tous les bateaux" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les bateaux</SelectItem>
-                {boatOptions.map(boat => (
-                  <SelectItem key={boat.id} value={boat.id}>
-                    {boat.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <div className="flex gap-2 flex-wrap">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500 px-1">Type d'activité</label>
+              <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
+                <SelectTrigger className="w-40 h-8 bg-white border-gray-300">
+                  <SelectValue placeholder="Tous les types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="checkin">Check-in</SelectItem>
+                  <SelectItem value="checkout">Check-out</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="preparation">Préparation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {boatOptions.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500 px-1">Bateau</label>
+                <Select value={selectedBoatId} onValueChange={setSelectedBoatId}>
+                  <SelectTrigger className="w-40 h-8 bg-white border-gray-300">
+                    <SelectValue placeholder="Tous les bateaux" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les bateaux</SelectItem>
+                    {boatOptions.map(boat => (
+                      <SelectItem key={boat.id} value={boat.id}>
+                        {boat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <div className="max-h-48 p-3 overflow-x-auto overflow-y-hidden">
@@ -104,7 +129,9 @@ export function UnassignedTasksDropZone({
           ))}
           {filteredTasks.length === 0 && (
             <p className="text-sm text-gray-500 text-center py-4 w-full">
-              {selectedBoatId === 'all' ? 'Aucune tâche non assignée' : 'Aucune tâche non assignée pour ce bateau'}
+              {selectedBoatId === 'all' && selectedActivityType === 'all' 
+                ? 'Aucune tâche non assignée' 
+                : 'Aucune tâche non assignée pour cette sélection'}
             </p>
           )}
         </div>
