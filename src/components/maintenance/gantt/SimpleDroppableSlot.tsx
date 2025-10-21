@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SimpleDraggableTask } from './SimpleDraggableTask';
+import { InterventionContextMenu } from './InterventionContextMenu';
 
 interface Task {
   id: string;
@@ -18,25 +19,43 @@ interface Task {
   activity_type?: 'maintenance' | 'preparation' | 'checkin' | 'checkout';
 }
 
+interface Technician {
+  id: string;
+  name: string;
+  role: string;
+}
+
 interface SimpleDroppableSlotProps {
   id: string;
   tasks: Task[];
   onTaskClick?: (task: Task) => void;
-  onTaskContextMenu?: (task: Task, e: React.MouseEvent) => void;
   getTaskTypeConfig?: (type: string) => {
     bg: string;
     border: string;
     text: string;
     icon: React.ComponentType<any>;
   };
+  technicians?: Technician[];
+  onViewDetails?: (task: Task) => void;
+  onEdit?: (task: Task) => void;
+  onStatusChange?: (task: Task, status: string) => void;
+  onReassign?: (task: Task, technicianId: string) => void;
+  onDelete?: (task: Task) => void;
+  onWeatherEvaluation?: (task: Task) => void;
 }
 
 export function SimpleDroppableSlot({ 
   id, 
   tasks, 
   onTaskClick, 
-  onTaskContextMenu,
-  getTaskTypeConfig 
+  getTaskTypeConfig,
+  technicians = [],
+  onViewDetails,
+  onEdit,
+  onStatusChange,
+  onReassign,
+  onDelete,
+  onWeatherEvaluation
 }: SimpleDroppableSlotProps) {
   const { isOver, setNodeRef } = useDroppable({
     id,
@@ -52,13 +71,23 @@ export function SimpleDroppableSlot({
     >
       <div className="space-y-2">
         {tasks.map(task => (
-          <SimpleDraggableTask
+          <InterventionContextMenu
             key={task.id}
-            task={task}
-            onTaskClick={onTaskClick}
-            onTaskContextMenu={onTaskContextMenu}
-            getTaskTypeConfig={getTaskTypeConfig}
-          />
+            intervention={task as any}
+            technicians={technicians}
+            onViewDetails={() => onViewDetails?.(task)}
+            onEdit={() => onEdit?.(task)}
+            onStatusChange={(status) => onStatusChange?.(task, status)}
+            onReassign={(technicianId) => onReassign?.(task, technicianId)}
+            onDelete={() => onDelete?.(task)}
+            onWeatherEvaluation={() => onWeatherEvaluation?.(task)}
+          >
+            <SimpleDraggableTask
+              task={task}
+              onTaskClick={onTaskClick}
+              getTaskTypeConfig={getTaskTypeConfig}
+            />
+          </InterventionContextMenu>
         ))}
       </div>
       

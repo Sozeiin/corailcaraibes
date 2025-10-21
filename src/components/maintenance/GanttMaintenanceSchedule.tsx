@@ -1129,10 +1129,19 @@ export function GanttMaintenanceSchedule() {
                         });
                       }
                       return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
-                                      <SimpleDroppableSlot id={slotId} tasks={tasks} onTaskClick={task => setSelectedTask(task as Intervention)} onTaskContextMenu={(task, e) => {
-                          setSelectedTask(task as Intervention);
-                          // Handle context menu here if needed
-                        }} getTaskTypeConfig={getTaskTypeConfig} />
+                                      <SimpleDroppableSlot 
+                                        id={slotId} 
+                                        tasks={tasks} 
+                                        onTaskClick={task => setSelectedTask(task as Intervention)}
+                                        getTaskTypeConfig={getTaskTypeConfig}
+                                        technicians={technicians}
+                                        onViewDetails={(task) => handleViewDetails(task as Intervention)}
+                                        onEdit={(task) => handleEditIntervention(task as Intervention)}
+                                        onStatusChange={(task, status) => handleStatusChange(task as Intervention, status)}
+                                        onReassign={(task, technicianId) => handleReassign(task as Intervention, technicianId)}
+                                        onDelete={(task) => handleDeleteIntervention(task as Intervention)}
+                                        onWeatherEvaluation={(task) => handleWeatherEvaluation(task as Intervention)}
+                                      />
                                   </div>;
                     })}
                            </div>)}

@@ -22,7 +22,6 @@ interface Task {
 interface SimpleDraggableTaskProps {
   task: Task;
   onTaskClick?: (task: Task) => void;
-  onTaskContextMenu?: (task: Task, e: React.MouseEvent) => void;
   getTaskTypeConfig?: (type: string) => {
     bg: string;
     border: string;
@@ -34,7 +33,6 @@ interface SimpleDraggableTaskProps {
 export function SimpleDraggableTask({ 
   task, 
   onTaskClick, 
-  onTaskContextMenu, 
   getTaskTypeConfig 
 }: SimpleDraggableTaskProps) {
   const {
@@ -82,14 +80,6 @@ export function SimpleDraggableTask({
     }
   };
 
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      onTaskContextMenu?.(task, e);
-    }
-  };
-
   return (
     <Card
       ref={setNodeRef}
@@ -97,7 +87,6 @@ export function SimpleDraggableTask({
       {...listeners}
       {...attributes}
       onClick={handleClick}
-      onContextMenu={handleContextMenu}
       className={`
         relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
         ${isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.01]'}
