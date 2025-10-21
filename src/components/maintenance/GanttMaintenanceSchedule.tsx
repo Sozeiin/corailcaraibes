@@ -795,8 +795,15 @@ export function GanttMaintenanceSchedule() {
     // Filter by activity type
     if (selectedActivityType !== 'all') {
       filtered = filtered.filter(task => {
-        const matches = task.activity_type === selectedActivityType;
-        console.log(`🎯 TYPE FILTER: ${task.title} | type: ${task.activity_type} | selected: ${selectedActivityType} | MATCH: ${matches}`);
+        // Pour les planning_activities, utiliser activity_type
+        if (task.activity_type) {
+          const matches = task.activity_type === selectedActivityType;
+          console.log(`🎯 TYPE FILTER: ${task.title} | activity_type: ${task.activity_type} | selected: ${selectedActivityType} | MATCH: ${matches}`);
+          return matches;
+        }
+        // Pour les interventions traditionnelles (sans activity_type), les inclure dans "maintenance"
+        const matches = selectedActivityType === 'maintenance';
+        console.log(`🎯 TYPE FILTER: ${task.title} | intervention_type: ${task.intervention_type} | activity_type: none | selected: ${selectedActivityType} | MATCH: ${matches}`);
         return matches;
       });
     }

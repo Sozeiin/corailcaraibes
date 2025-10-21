@@ -89,7 +89,7 @@ export function UnassignedTasksDropZone({
                   <SelectItem value="all">Tous les types</SelectItem>
                   <SelectItem value="checkin">Check-in</SelectItem>
                   <SelectItem value="checkout">Check-out</SelectItem>
-                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="maintenance">Maintenance (vidanges, réparations...)</SelectItem>
                   <SelectItem value="preparation">Préparation</SelectItem>
                 </SelectContent>
               </Select>
