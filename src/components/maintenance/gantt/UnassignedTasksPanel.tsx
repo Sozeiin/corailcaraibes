@@ -42,7 +42,6 @@ interface UnassignedTasksPanelProps {
 
 export function UnassignedTasksPanel({ tasks, isVisible, onTaskClick, getTaskTypeConfig }: UnassignedTasksPanelProps) {
   const [selectedBoatId, setSelectedBoatId] = useState<string>('all');
-  const [selectedActivityType, setSelectedActivityType] = useState<string>('all');
 
   const boatOptions = useMemo(() => {
     const boats = new Map<string, string>();
@@ -58,18 +57,11 @@ export function UnassignedTasksPanel({ tasks, isVisible, onTaskClick, getTaskTyp
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    let filtered = tasks;
-    
-    if (selectedBoatId !== 'all') {
-      filtered = filtered.filter(task => task.boats?.id === selectedBoatId);
+    if (selectedBoatId === 'all') {
+      return tasks;
     }
-    
-    if (selectedActivityType !== 'all') {
-      filtered = filtered.filter(task => task.intervention_type === selectedActivityType);
-    }
-    
-    return filtered;
-  }, [tasks, selectedBoatId, selectedActivityType]);
+    return tasks.filter(task => task.boats?.id === selectedBoatId);
+  }, [tasks, selectedBoatId]);
 
   if (!isVisible) {
     return null;
@@ -87,25 +79,6 @@ export function UnassignedTasksPanel({ tasks, isVisible, onTaskClick, getTaskTyp
             </Badge>
           </CardTitle>
           
-          <div className="pt-1">
-            <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
-              Type d'activité
-            </p>
-            <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
-              <SelectTrigger className="w-full border-muted bg-muted/20 hover:bg-muted/40 h-8">
-                <SelectValue placeholder="Tous les types" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="checkin">Check-in</SelectItem>
-                <SelectItem value="checkout">Check-out</SelectItem>
-                <SelectItem value="maintenance">Maintenance</SelectItem>
-                <SelectItem value="repair">Réparation</SelectItem>
-                <SelectItem value="inspection">Inspection</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {boatOptions.length > 0 && (
             <div className="pt-1">
               <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wide">
