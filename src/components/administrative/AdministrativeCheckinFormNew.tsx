@@ -55,12 +55,21 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
       if (boatsData) setBoats(boatsData);
 
       // Fetch all bases for ONE WAY destination
-      const { data: basesData } = await supabase
+      const { data: basesData, error: basesError } = await supabase
         .from('bases')
         .select('id, name, location')
         .order('name');
       
-      if (basesData) setBases(basesData);
+      if (basesError) {
+        console.error('Error fetching bases:', basesError);
+        toast.error('Impossible de charger les bases');
+        return;
+      }
+      
+      if (basesData) {
+        setBases(basesData);
+        console.log('Bases loaded:', basesData.length);
+      }
     };
 
     fetchBoatsAndBases();
