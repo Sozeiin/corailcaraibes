@@ -186,6 +186,7 @@ export function useRealtimeAdministrativeCheckinUpdates() {
           console.log('📡 Mise à jour temps réel fiches administratives:', payload);
           queryClient.invalidateQueries({ queryKey: ['administrative-checkin-forms'] });
           queryClient.invalidateQueries({ queryKey: ['ready-checkin-forms'] });
+          queryClient.invalidateQueries({ queryKey: ['client-forms-pool'] });
           queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
           
           if (payload.eventType === 'INSERT') {
