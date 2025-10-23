@@ -28,7 +28,7 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
   const { user } = useAuth();
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [suggestedBoatId, setSuggestedBoatId] = useState<string>('');
+  const [suggestedBoatId, setSuggestedBoatId] = useState<string>('none');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -67,6 +67,7 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
   }, [user?.baseId]);
 
   const suggestedBoat = boats.find(b => b.id === suggestedBoatId);
+  const actualBoatId = suggestedBoatId === 'none' ? null : suggestedBoatId;
 
   const isFormValid = selectedCustomer && startDate && endDate;
 
@@ -76,15 +77,15 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
     setIsSubmitting(true);
     try {
       // Determine if we can assign immediately
-      const canAssignNow = suggestedBoatId && suggestedBoat?.status === 'available';
+      const canAssignNow = actualBoatId && suggestedBoat?.status === 'available';
 
       const { error } = await supabase
         .from('administrative_checkin_forms')
         .insert([{
           base_id: user.baseId,
           customer_id: selectedCustomer.id,
-          boat_id: canAssignNow ? suggestedBoatId : null,
-          suggested_boat_id: suggestedBoatId || null,
+          boat_id: canAssignNow ? actualBoatId : null,
+          suggested_boat_id: actualBoatId,
           is_boat_assigned: canAssignNow,
           planned_start_date: new Date(startDate).toISOString(),
           planned_end_date: new Date(endDate).toISOString(),
@@ -112,7 +113,7 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
 
       // Reset form
       setSelectedCustomer(null);
-      setSuggestedBoatId('');
+      setSuggestedBoatId('none');
       setStartDate('');
       setEndDate('');
       setNotes('');
@@ -201,7 +202,7 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
               <SelectValue placeholder="Sélectionner un bateau (facultatif)" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Aucun bateau suggéré</SelectItem>
+              <SelectItem value="none">Aucun bateau suggéré</SelectItem>
               {boats.map((boat) => (
                 <SelectItem key={boat.id} value={boat.id}>
                   <div className="flex items-center justify-between w-full gap-2">
