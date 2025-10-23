@@ -21,8 +21,10 @@ export type Database = {
           created_at: string | null
           created_by: string
           customer_id: string
+          destination_base_id: string | null
           id: string
           is_boat_assigned: boolean | null
+          is_one_way: boolean | null
           planned_end_date: string | null
           planned_start_date: string | null
           rental_notes: string | null
@@ -39,8 +41,10 @@ export type Database = {
           created_at?: string | null
           created_by: string
           customer_id: string
+          destination_base_id?: string | null
           id?: string
           is_boat_assigned?: boolean | null
+          is_one_way?: boolean | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
@@ -57,8 +61,10 @@ export type Database = {
           created_at?: string | null
           created_by?: string
           customer_id?: string
+          destination_base_id?: string | null
           id?: string
           is_boat_assigned?: boolean | null
+          is_one_way?: boolean | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
@@ -96,6 +102,20 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_destination_base_id_fkey"
+            columns: ["destination_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
           {
@@ -230,6 +250,75 @@ export type Database = {
           phone?: string | null
         }
         Relationships: []
+      }
+      boat_base_transfers: {
+        Row: {
+          boat_id: string
+          created_at: string | null
+          from_base_id: string
+          id: string
+          reason: string | null
+          to_base_id: string
+          transfer_date: string
+          transferred_by: string | null
+        }
+        Insert: {
+          boat_id: string
+          created_at?: string | null
+          from_base_id: string
+          id?: string
+          reason?: string | null
+          to_base_id: string
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Update: {
+          boat_id?: string
+          created_at?: string | null
+          from_base_id?: string
+          id?: string
+          reason?: string | null
+          to_base_id?: string
+          transfer_date?: string
+          transferred_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_base_transfers_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_base_transfers_from_base_id_fkey"
+            columns: ["from_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_base_transfers_from_base_id_fkey"
+            columns: ["from_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_base_transfers_to_base_id_fkey"
+            columns: ["to_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_base_transfers_to_base_id_fkey"
+            columns: ["to_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       boat_checklist_items: {
         Row: {
@@ -739,6 +828,88 @@ export type Database = {
             columns: ["validated_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      boat_sharing: {
+        Row: {
+          boat_id: string
+          checkin_form_id: string | null
+          created_at: string | null
+          id: string
+          owner_base_id: string
+          shared_with_base_id: string
+          sharing_end_date: string | null
+          sharing_start_date: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          boat_id: string
+          checkin_form_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_base_id: string
+          shared_with_base_id: string
+          sharing_end_date?: string | null
+          sharing_start_date: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          boat_id?: string
+          checkin_form_id?: string | null
+          created_at?: string | null
+          id?: string
+          owner_base_id?: string
+          shared_with_base_id?: string
+          sharing_end_date?: string | null
+          sharing_start_date?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boat_sharing_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_sharing_checkin_form_id_fkey"
+            columns: ["checkin_form_id"]
+            isOneToOne: false
+            referencedRelation: "administrative_checkin_forms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_sharing_owner_base_id_fkey"
+            columns: ["owner_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_sharing_owner_base_id_fkey"
+            columns: ["owner_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_sharing_shared_with_base_id_fkey"
+            columns: ["shared_with_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_sharing_shared_with_base_id_fkey"
+            columns: ["shared_with_base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
         ]
@@ -3255,7 +3426,7 @@ export type Database = {
           details: Json | null
           event_type: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           target_user_id: string | null
           user_agent: string | null
           user_id: string | null
@@ -3265,7 +3436,7 @@ export type Database = {
           details?: Json | null
           event_type: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_user_id?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -3275,7 +3446,7 @@ export type Database = {
           details?: Json | null
           event_type?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           target_user_id?: string | null
           user_agent?: string | null
           user_id?: string | null
@@ -4747,6 +4918,20 @@ export type Database = {
         }
         Relationships: []
       }
+      boat_complete_history: {
+        Row: {
+          base_name: string | null
+          boat_id: string | null
+          event_base_id: string | null
+          event_date: string | null
+          event_type: string | null
+          id: string | null
+          notes: string | null
+          status: string | null
+          technician_name: string | null
+        }
+        Relationships: []
+      }
       purchasing_analytics: {
         Row: {
           avg_order_value: number | null
@@ -4825,22 +5010,10 @@ export type Database = {
         Args: { current_hours: number; last_change_hours: number }
         Returns: string
       }
-      can_complete_interventions: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
-      }
-      cleanup_inactive_subscriptions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_logs: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      delete_boat_cascade: {
-        Args: { boat_id_param: string }
-        Returns: Json
-      }
+      can_complete_interventions: { Args: never; Returns: boolean }
+      cleanup_inactive_subscriptions: { Args: never; Returns: undefined }
+      cleanup_old_logs: { Args: never; Returns: undefined }
+      delete_boat_cascade: { Args: { boat_id_param: string }; Returns: Json }
       delete_user_cascade: {
         Args: { user_id_param: string }
         Returns: undefined
@@ -4849,26 +5022,11 @@ export type Database = {
         Args: { base_id_param: string; maintenance_date: string }
         Returns: Json
       }
-      generate_shipment_reference: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_stock_reference: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_supply_request_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_unique_barcode: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_user_base_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_shipment_reference: { Args: never; Returns: string }
+      generate_stock_reference: { Args: never; Returns: string }
+      generate_supply_request_number: { Args: never; Returns: string }
+      generate_unique_barcode: { Args: never; Returns: string }
+      get_user_base_id: { Args: never; Returns: string }
       get_user_page_permissions: {
         Args: { user_id_param: string }
         Returns: {
@@ -4877,33 +5035,10 @@ export type Database = {
         }[]
       }
       get_user_role: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
-      get_user_tenant_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      gtrgm_compress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_decompress: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { "": unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { "": unknown }
-        Returns: unknown
-      }
+      get_user_tenant_id: { Args: never; Returns: string }
       handle_shipment_item_reception: {
         Args: {
           destination_base_id: string
@@ -4946,30 +5081,30 @@ export type Database = {
         }
         Returns: Json
       }
-      link_stock_scan_to_supply_request: {
-        Args:
-          | {
+      link_stock_scan_to_supply_request:
+        | {
+            Args: {
               p_quantity_received: number
               p_stock_item_id: string
               p_supply_request_id: string
               p_unit_cost?: number
             }
-          | {
+            Returns: Json
+          }
+        | {
+            Args: { scan_data: Json; supply_request_id: string }
+            Returns: Json
+          }
+        | {
+            Args: {
               quantity_received_param: number
               request_id_param: string
               stock_item_id_param: string
             }
-          | { scan_data: Json; supply_request_id: string }
-        Returns: Json
-      }
-      mark_shipped: {
-        Args: { p_shipment_id: string }
-        Returns: boolean
-      }
-      process_workflow_automation: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+            Returns: Json
+          }
+      mark_shipped: { Args: { p_shipment_id: string }; Returns: boolean }
+      process_workflow_automation: { Args: never; Returns: undefined }
       receive_scan: {
         Args: {
           p_package_code?: string
@@ -4980,26 +5115,13 @@ export type Database = {
         }
         Returns: string
       }
-      refresh_purchasing_analytics: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      refresh_purchasing_analytics: { Args: never; Returns: undefined }
       resolve_workflow_alert: {
         Args: { alert_id_param: string }
         Returns: undefined
       }
-      set_limit: {
-        Args: { "": number }
-        Returns: number
-      }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { "": string }
-        Returns: string[]
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       update_user_profile: {
         Args: {
           new_base_id?: string

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BoatDialog } from '@/components/boats/BoatDialog';
 import { BoatFilters } from '@/components/boats/BoatFilters';
+import { SharedBoatsIndicator } from '@/components/boats/SharedBoatsIndicator';
 import { Boat } from '@/types';
 import { useDeleteBoat } from '@/hooks/useBoatMutations';
 import {
@@ -52,6 +55,8 @@ interface BoatCardProps {
   onDelete: (boatId: string, boatName: string) => void;
   onHistory: (boatId: string) => void;
   onMaintenance: (boatId: string) => void;
+  isShared?: boolean;
+  ownerBaseName?: string;
 }
 
 const BoatCard = ({
@@ -59,17 +64,26 @@ const BoatCard = ({
   onEdit,
   onDelete,
   onHistory,
-  onMaintenance
+  onMaintenance,
+  isShared,
+  ownerBaseName
 }: BoatCardProps) => {
   const navigate = useNavigate();
   return <Card className="p-6 hover:shadow-md transition-shadow cursor-pointer" onClick={() => navigate(`/boats/${boat.id}`)}>
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="text-lg font-semibold">{boat.name}</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-lg font-semibold">{boat.name}</h3>
+            {isShared && ownerBaseName && (
+              <SharedBoatsIndicator ownerBaseName={ownerBaseName} variant="compact" />
+            )}
+          </div>
           <p className="text-gray-600">{boat.model} ({boat.year})</p>
           <p className="text-sm text-gray-500">N° de série: {boat.serial_number}</p>
         </div>
-        {getStatusBadge(boat.status)}
+        <div className="flex flex-col gap-2 items-end">
+          {getStatusBadge(boat.status)}
+        </div>
       </div>
       
       <div className="mb-4">
@@ -124,10 +138,43 @@ export const Boats = () => {
 
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
-  const boats = rawBoats.map((boat: any) => ({
+  // Fetch shared boats (ONE WAY)
+  const { data: sharedBoats = [] } = useQuery({
+    queryKey: ['shared-boats', user?.baseId],
+    queryFn: async () => {
+      if (!user?.baseId) return [];
+      
+      const { data, error } = await supabase
+        .from('boat_sharing')
+        .select(`
+          *,
+          boat:boats(*),
+          owner_base:bases!boat_sharing_owner_base_id_fkey(*)
+        `)
+        .eq('shared_with_base_id', user.baseId)
+        .eq('status', 'active');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user?.baseId && user?.role !== 'direction',
+  });
+
+  // Combine owned boats + shared boats
+  const ownedBoats = rawBoats.map((boat: any) => ({
     ...boat,
-    base: bases.find((b: any) => b.id === boat.base_id)
+    base: bases.find((b: any) => b.id === boat.base_id),
+    isShared: false
   }));
+
+  const sharedBoatsWithBase = sharedBoats.map((sharing: any) => ({
+    ...sharing.boat,
+    base: bases.find((b: any) => b.id === sharing.boat.base_id),
+    isShared: true,
+    ownerBaseName: sharing.owner_base?.name
+  }));
+
+  const boats = [...ownedBoats, ...sharedBoatsWithBase];
 
   const filteredBoats = boats?.filter(boat => {
     const matchesSearch = !searchTerm || 
@@ -232,7 +279,18 @@ export const Boats = () => {
             </div>
           </CardContent>
         </Card> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBoats.map(boat => <BoatCard key={boat.id} boat={boat} onEdit={handleEdit} onDelete={handleDelete} onHistory={handleHistory} onMaintenance={handleMaintenance} />)}
+          {filteredBoats.map(boat => (
+            <BoatCard 
+              key={boat.id} 
+              boat={boat} 
+              onEdit={handleEdit} 
+              onDelete={handleDelete} 
+              onHistory={handleHistory} 
+              onMaintenance={handleMaintenance}
+              isShared={boat.isShared}
+              ownerBaseName={boat.ownerBaseName}
+            />
+          ))}
         </div>}
 
       <BoatDialog 

@@ -25,6 +25,8 @@ export interface AdministrativeCheckinForm {
   created_at: string;
   updated_at: string;
   used_at: string | null;
+  is_one_way: boolean;
+  destination_base_id: string | null;
 }
 
 export interface AdministrativeCheckinFormWithRelations extends AdministrativeCheckinForm {

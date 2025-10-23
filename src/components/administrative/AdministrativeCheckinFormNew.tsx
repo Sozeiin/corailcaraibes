@@ -35,23 +35,35 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  const [isOneWay, setIsOneWay] = useState(false);
+  const [destinationBaseId, setDestinationBaseId] = useState<string>('');
 
   // Fetch all boats (not just available ones)
   const [boats, setBoats] = useState<any[]>([]);
+  const [bases, setBases] = useState<any[]>([]);
   React.useEffect(() => {
-    const fetchBoats = async () => {
+    const fetchBoatsAndBases = async () => {
       if (!user?.baseId) return;
       
-      const { data, error } = await supabase
+      // Fetch boats
+      const { data: boatsData } = await supabase
         .from('boats')
         .select('id, name, model, status')
         .eq('base_id', user.baseId)
         .order('name');
       
-      if (data) setBoats(data);
+      if (boatsData) setBoats(boatsData);
+
+      // Fetch all bases for ONE WAY destination
+      const { data: basesData } = await supabase
+        .from('bases')
+        .select('id, name, location')
+        .order('name');
+      
+      if (basesData) setBases(basesData);
     };
 
-    fetchBoats();
+    fetchBoatsAndBases();
   }, [user?.baseId]);
 
   const suggestedBoat = boats.find(b => b.id === suggestedBoatId);
@@ -79,7 +91,9 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
           rental_notes: notes || null,
           special_instructions: specialInstructions || null,
           created_by: user.id,
-          status: canAssignNow ? 'ready' : 'draft'
+          status: canAssignNow ? 'ready' : 'draft',
+          is_one_way: isOneWay,
+          destination_base_id: isOneWay ? destinationBaseId : null
         }]);
 
       if (error) throw error;
@@ -103,6 +117,8 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
       setEndDate('');
       setNotes('');
       setSpecialInstructions('');
+      setIsOneWay(false);
+      setDestinationBaseId('');
 
       onFormCreated();
     } catch (error: any) {
@@ -263,6 +279,51 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
             placeholder="Instructions spéciales pour le technicien..."
             rows={2}
           />
+        </div>
+
+        {/* ONE WAY Section */}
+        <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="is_one_way"
+              checked={isOneWay}
+              onChange={(e) => {
+                setIsOneWay(e.target.checked);
+                if (!e.target.checked) setDestinationBaseId('');
+              }}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            <Label htmlFor="is_one_way" className="font-medium cursor-pointer">
+              Location ONE WAY (vers une autre base)
+            </Label>
+          </div>
+
+          {isOneWay && (
+            <div className="space-y-2 pl-6">
+              <Label htmlFor="destination_base">Base de destination *</Label>
+              <Select
+                value={destinationBaseId}
+                onValueChange={setDestinationBaseId}
+              >
+                <SelectTrigger id="destination_base">
+                  <SelectValue placeholder="Sélectionner la base de destination" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bases
+                    .filter(base => base.id !== user?.baseId)
+                    .map((base) => (
+                      <SelectItem key={base.id} value={base.id}>
+                        {base.name} - {base.location}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Le bateau sera partagé avec la base de destination pendant la période de location.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Submit */}

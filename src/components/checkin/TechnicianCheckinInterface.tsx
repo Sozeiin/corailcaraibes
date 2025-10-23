@@ -182,6 +182,27 @@ export function TechnicianCheckinInterface() {
         .from('boat_rentals')
         .update({ status: 'completed' })
         .eq('id', selectedRental.id);
+
+      // Check if this is a ONE WAY checkout
+      const { data: formData } = await supabase
+        .from('administrative_checkin_forms')
+        .select('id, is_one_way, destination_base_id, boat_id, customer_id, planned_end_date')
+        .eq('id', selectedForm?.id || '')
+        .maybeSingle();
+
+      if (formData?.is_one_way && formData.destination_base_id && formData.boat_id) {
+        // Create planning activity for destination base
+        await supabase
+          .from('planning_activities')
+          .insert({
+            activity_type: 'arrival',
+            status: 'planned',
+            scheduled_start: formData.planned_end_date,
+            scheduled_end: formData.planned_end_date,
+            base_id: formData.destination_base_id,
+            boat_id: formData.boat_id
+          } as any);
+      }
     }
     setIsDialogOpen(false);
     setSelectedForm(null);
