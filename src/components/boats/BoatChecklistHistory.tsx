@@ -77,9 +77,28 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                  checklistDate <= new Date(endDate.getTime() + 24*60*60*1000);
         });
 
-        const checklist_type: 'checkin' | 'checkout' | 'maintenance' = matchingRental ? 
-          (new Date(checklist.checklist_date) <= new Date(matchingRental.start_date) ? 'checkin' : 'checkout') 
-          : 'maintenance';
+        // Déterminer le type de checklist en fonction des dates
+        let checklist_type: 'checkin' | 'checkout' | 'maintenance' = 'maintenance';
+
+        if (matchingRental) {
+          const checklistTime = new Date(checklist.checklist_date).getTime();
+          const startTime = new Date(matchingRental.start_date).getTime();
+          const endTime = new Date(matchingRental.end_date).getTime();
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          
+          // Check-in : checklist proche de la date de début (±1 jour)
+          const isNearStart = Math.abs(checklistTime - startTime) <= oneDayMs;
+          
+          // Check-out : checklist proche de la date de fin (±1 jour)
+          const isNearEnd = Math.abs(checklistTime - endTime) <= oneDayMs;
+          
+          if (isNearStart) {
+            checklist_type = 'checkin';
+          } else if (isNearEnd) {
+            checklist_type = 'checkout';
+          }
+          // Sinon reste 'maintenance' (checklist faite pendant la période de location)
+        }
 
         return {
           ...checklist,
