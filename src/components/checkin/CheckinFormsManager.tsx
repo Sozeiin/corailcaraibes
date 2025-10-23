@@ -1,11 +1,19 @@
 import React from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ClientFormsPool } from '@/components/customers/ClientFormsPool';
 import { ReadyFormsSection } from './ReadyFormsSection';
 import { AdministrativeCheckinFormNew } from '@/components/administrative/AdministrativeCheckinFormNew';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { invalidateAdministrativeQueries } from '@/lib/queryInvalidation';
 
 export function CheckinFormsManager() {
+  const queryClient = useQueryClient();
+
+  const handleFormCreated = () => {
+    invalidateAdministrativeQueries(queryClient);
+  };
+
   return (
     <div className="space-y-6">
       {/* Section 1: Pool de fiches en attente */}
@@ -31,7 +39,7 @@ export function CheckinFormsManager() {
           <CardTitle>Créer une nouvelle fiche client</CardTitle>
         </CardHeader>
         <CardContent>
-          <AdministrativeCheckinFormNew onFormCreated={() => {}} />
+          <AdministrativeCheckinFormNew onFormCreated={handleFormCreated} />
         </CardContent>
       </Card>
     </div>

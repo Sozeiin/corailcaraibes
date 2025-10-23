@@ -71,9 +71,11 @@ export const invalidatePlanningQueries = (queryClient: QueryClient) => {
 export const invalidateAdministrativeQueries = (queryClient: QueryClient, baseId?: string) => {
   queryClient.invalidateQueries({ queryKey: ['administrative-checkin-forms'] });
   queryClient.invalidateQueries({ queryKey: ['ready-checkin-forms'] });
+  queryClient.invalidateQueries({ queryKey: ['client-forms-pool'] });
   queryClient.invalidateQueries({ queryKey: ['boats-checkin-checkout'] });
   if (baseId) {
     queryClient.invalidateQueries({ queryKey: ['administrative-checkin-forms', baseId] });
+    queryClient.invalidateQueries({ queryKey: ['client-forms-pool', baseId] });
   }
 };
 
