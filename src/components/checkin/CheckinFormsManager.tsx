@@ -1,7 +1,7 @@
 import React from 'react';
 import { ClientFormsPool } from '@/components/customers/ClientFormsPool';
 import { ReadyFormsSection } from './ReadyFormsSection';
-import { CreateCheckinFormSimple } from './CreateCheckinFormSimple';
+import { AdministrativeCheckinFormNew } from '@/components/administrative/AdministrativeCheckinFormNew';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -31,7 +31,7 @@ export function CheckinFormsManager() {
           <CardTitle>Créer une nouvelle fiche client</CardTitle>
         </CardHeader>
         <CardContent>
-          <CreateCheckinFormSimple />
+          <AdministrativeCheckinFormNew onFormCreated={() => {}} />
         </CardContent>
       </Card>
     </div>
