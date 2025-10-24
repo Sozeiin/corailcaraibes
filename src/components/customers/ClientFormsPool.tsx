@@ -50,7 +50,7 @@ export function ClientFormsPool() {
           suggested_boat:boats!suggested_boat_id(id, name, model, status)
         `)
         .eq('base_id', user.baseId)
-        .eq('is_boat_assigned', false)
+        .or('is_boat_assigned.eq.false,and(is_boat_assigned.eq.true,status.eq.draft)')
         .order('planned_start_date', { ascending: true });
 
       if (error) throw error;
