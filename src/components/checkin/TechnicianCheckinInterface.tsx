@@ -69,7 +69,8 @@ export function TechnicianCheckinInterface() {
   const { data: boatsWithActiveRentals = [] } = useQuery({
     queryKey: ['boats-with-active-rentals', user?.baseId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get boats owned by this base
+      const { data: ownBoats, error: ownError } = await supabase
         .from('boats')
         .select(`
           id,
@@ -82,11 +83,36 @@ export function TechnicianCheckinInterface() {
         .eq('boat_rentals.status', 'confirmed')
         .order('name');
 
-      if (error) throw error;
+      if (ownError) throw ownError;
+
+      // Get boats shared with this base (ONE WAY boats)
+      const { data: sharedBoats, error: sharedError } = await supabase
+        .from('boat_sharing')
+        .select(`
+          boat_id,
+          boats!inner(
+            id,
+            name,
+            model,
+            status,
+            boat_rentals!inner(id)
+          )
+        `)
+        .eq('shared_with_base_id', user?.baseId)
+        .eq('status', 'active')
+        .eq('boats.boat_rentals.status', 'confirmed');
+
+      if (sharedError) throw sharedError;
+
+      // Combine both lists
+      const allBoats = [
+        ...(ownBoats || []),
+        ...(sharedBoats?.map(sb => sb.boats).filter(Boolean) || [])
+      ];
       
       // Dédupliquer les bateaux
       const uniqueBoats = Array.from(
-        new Map(data?.map(boat => [boat.id, boat])).values()
+        new Map(allBoats.map(boat => [boat.id, boat])).values()
       );
       
       return uniqueBoats || [];
