@@ -42,6 +42,7 @@ export function ReadyFormsSection() {
         .from("administrative_checkin_forms")
         .select("*")
         .eq("status", "ready")
+        .gte("planned_end_date", new Date().toISOString())
         .eq("base_id", user?.baseId)
         .order("planned_start_date", { ascending: true });
 
