@@ -209,25 +209,41 @@ export function TechnicianCheckinInterface() {
         .update({ status: 'completed' })
         .eq('id', selectedRental.id);
 
-      // Check if this is a ONE WAY checkout
+      // Find the associated administrative form by context
       const { data: formData } = await supabase
         .from('administrative_checkin_forms')
         .select('id, is_one_way, destination_base_id, boat_id, customer_id, planned_end_date')
-        .eq('id', selectedForm?.id || '')
+        .eq('boat_id', selectedRental.boat_id)
+        .eq('status', 'used')
+        .gte('planned_end_date', new Date(selectedRental.start_date).toISOString())
+        .lte('planned_start_date', new Date(selectedRental.end_date).toISOString())
+        .order('used_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (formData?.is_one_way && formData.destination_base_id && formData.boat_id) {
-        // Create planning activity for destination base
+      if (formData) {
+        // Update form status to completed
         await supabase
-          .from('planning_activities')
-          .insert({
-            activity_type: 'arrival',
-            status: 'planned',
-            scheduled_start: formData.planned_end_date,
-            scheduled_end: formData.planned_end_date,
-            base_id: formData.destination_base_id,
-            boat_id: formData.boat_id
-          } as any);
+          .from('administrative_checkin_forms')
+          .update({ 
+            status: 'completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', formData.id);
+
+        // Handle ONE WAY checkouts
+        if (formData.is_one_way && formData.destination_base_id && formData.boat_id) {
+          await supabase
+            .from('planning_activities')
+            .insert({
+              activity_type: 'arrival',
+              status: 'planned',
+              scheduled_start: formData.planned_end_date,
+              scheduled_end: formData.planned_end_date,
+              base_id: formData.destination_base_id,
+              boat_id: formData.boat_id
+            } as any);
+        }
       }
     }
     setIsDialogOpen(false);
