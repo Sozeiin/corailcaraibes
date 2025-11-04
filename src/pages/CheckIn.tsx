@@ -1,11 +1,10 @@
 import React from 'react';
 import { PermissionGate } from '@/components/auth/PermissionGate';
-import { LogIn } from 'lucide-react';
+import { LogIn, FileText, ArrowRightLeft } from 'lucide-react';
 import { CheckinFormsManager } from '@/components/checkin/CheckinFormsManager';
 import { TechnicianCheckinInterface } from '@/components/checkin/TechnicianCheckinInterface';
 import { useAuth } from '@/contexts/AuthContext';
-import { Separator } from '@/components/ui/separator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function CheckIn() {
   const { user } = useAuth();
@@ -34,27 +33,26 @@ export default function CheckIn() {
         )}
         
         {showHybridInterface && (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Gestion des fiches clients</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CheckinFormsManager />
-              </CardContent>
-            </Card>
-            
-            <Separator className="my-8" />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Check-in / Check-out rapide</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <TechnicianCheckinInterface />
-              </CardContent>
-            </Card>
-          </div>
+          <Tabs defaultValue="forms" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="forms" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Gestion des fiches
+              </TabsTrigger>
+              <TabsTrigger value="checkin" className="flex items-center gap-2">
+                <ArrowRightLeft className="h-4 w-4" />
+                Check-in / Check-out
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="forms">
+              <CheckinFormsManager />
+            </TabsContent>
+
+            <TabsContent value="checkin">
+              <TechnicianCheckinInterface />
+            </TabsContent>
+          </Tabs>
         )}
         
         {showSimplifiedInterface && (
