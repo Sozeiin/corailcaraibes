@@ -78,39 +78,18 @@ export default {
 					800: '#075985',
 					900: '#0c4a6e',
 				},
-			ocean: {
-				50: '#ecfeff',
-				100: '#cffafe',
-				200: '#a5f3fc',
-				300: '#67e8f9',
-				400: '#22d3ee',
-				500: '#06b6d4',
-				600: '#0891b2',
-				700: '#0e7490',
-				800: '#155e75',
-				900: '#164e63',
-			},
-			marevo: {
-				coral: {
-					DEFAULT: '#FF6B6B',
-					dark: '#E85A5A',
-					light: 'rgba(255, 107, 107, 0.2)',
-				},
-				marine: {
-					DEFAULT: '#0B7285',
-					light: 'rgba(11, 114, 133, 0.1)',
-				},
-				turquoise: {
-					DEFAULT: '#38BDF8',
-					light: 'rgba(56, 189, 248, 0.2)',
-				},
-				sand: {
-					DEFAULT: '#FFF8E7',
-					dark: '#F5EDD6',
-				},
-				deepBlue: '#04364A',
-				lightGray: '#E6EBEF',
-			}
+				ocean: {
+					50: '#ecfeff',
+					100: '#cffafe',
+					200: '#a5f3fc',
+					300: '#67e8f9',
+					400: '#22d3ee',
+					500: '#06b6d4',
+					600: '#0891b2',
+					700: '#0e7490',
+					800: '#155e75',
+					900: '#164e63',
+				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
