@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, User, AlertCircle, Anchor, MoreVertical, Edit, Trash2, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar, User, AlertCircle, Anchor, MoreVertical, Edit, Trash2, Check, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, isPast, isToday, isTomorrow } from 'date-fns';
@@ -30,6 +31,7 @@ import { EditFormDialog } from '@/components/checkin/EditFormDialog';
 
 export function ClientFormsPool() {
   const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
   const [loadingAssign, setLoadingAssign] = useState<string | null>(null);
   const [editingForm, setEditingForm] = useState<any>(null);
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
@@ -123,26 +125,53 @@ export function ClientFormsPool() {
     return null;
   };
 
-  if (poolForms.length === 0) {
+  const filteredForms = poolForms.filter((form: any) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const customer = form.customer;
+    const fullName = customer 
+      ? `${customer.first_name} ${customer.last_name}`.toLowerCase()
+      : form.customer_name?.toLowerCase() || '';
+    
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          Aucune fiche client en attente d'assignation
-        </CardContent>
-      </Card>
+      fullName.includes(query) ||
+      customer?.email?.toLowerCase().includes(query) ||
+      customer?.phone?.toLowerCase().includes(query) ||
+      form.suggested_boat?.name?.toLowerCase().includes(query)
     );
-  }
+  });
 
   return (
     <div className="space-y-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
-          Pool de fiches clients ({poolForms.length})
+          Pool de fiches clients ({filteredForms.length}/{poolForms.length})
         </CardTitle>
       </CardHeader>
 
-      {poolForms.map((form: any) => {
+      <div className="relative px-6">
+        <Search className="absolute left-9 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          type="text"
+          placeholder="Rechercher par nom, email, téléphone ou bateau..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-10"
+        />
+      </div>
+
+      {filteredForms.length === 0 ? (
+        <Card className="mx-6">
+          <CardContent className="p-6 text-center text-muted-foreground">
+            {poolForms.length === 0 
+              ? "Aucune fiche client en attente d'assignation"
+              : "Aucune fiche ne correspond à votre recherche"}
+          </CardContent>
+        </Card>
+      ) : (
+        filteredForms.map((form: any) => {
         const customer = form.customer;
         const suggestedBoat = form.suggested_boat;
 
@@ -262,7 +291,7 @@ export function ClientFormsPool() {
             </CardContent>
           </Card>
         );
-      })}
+      }))}
 
       <AlertDialog open={!!deletingFormId} onOpenChange={(open) => !open && setDeletingFormId(null)}>
         <AlertDialogContent>

@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Play, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Edit, Play, Trash2, Search } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
@@ -26,6 +27,7 @@ import {
 export function ReadyFormsSection() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState('');
   const [editingForm, setEditingForm] = useState<AdministrativeCheckinFormWithRelations | null>(null);
   const [deletingFormId, setDeletingFormId] = useState<string | null>(null);
 
@@ -107,21 +109,22 @@ export function ReadyFormsSection() {
 
   console.log("ReadyFormsSection - User role:", user?.role, "Can delete:", canDelete);
 
+  const filteredForms = (readyForms || []).filter((form) => {
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    const fullName = `${form.customer.first_name} ${form.customer.last_name}`.toLowerCase();
+    
+    return (
+      fullName.includes(query) ||
+      form.customer.email?.toLowerCase().includes(query) ||
+      form.customer.phone?.toLowerCase().includes(query) ||
+      form.boat?.name?.toLowerCase().includes(query)
+    );
+  });
+
   if (isLoading) {
     return <div>Chargement...</div>;
-  }
-
-  if (!readyForms || readyForms.length === 0) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Fiches prêtes pour check-in</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Aucune fiche prête pour le moment</p>
-        </CardContent>
-      </Card>
-    );
   }
 
   return (
@@ -132,7 +135,23 @@ export function ReadyFormsSection() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {readyForms.map((form) => (
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Rechercher par nom, email, téléphone ou bateau..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {!readyForms || readyForms.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Aucune fiche prête pour le moment</p>
+            ) : filteredForms.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">Aucune fiche ne correspond à votre recherche</p>
+            ) : (
+              filteredForms.map((form) => (
               <Card key={form.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">
@@ -193,7 +212,7 @@ export function ReadyFormsSection() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )))}
           </div>
         </CardContent>
       </Card>
