@@ -27,29 +27,33 @@
 
 @layer base {
   :root {
-    --background: 240 10% 98%;
-    --foreground: 217 19% 27%;
+    /* Backgrounds - Sable clair Marevo */
+    --background: 48 100% 96%;
+    --foreground: 200 84% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 217 19% 27%;
+    --card-foreground: 200 84% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 217 19% 27%;
+    --popover-foreground: 200 84% 15%;
 
-    --primary: 200 100% 28%;
-    --primary-foreground: 0 0% 98%;
+    /* Boutons principaux - Corail Soleil */
+    --primary: 0 77% 70%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 120 50% 95%;
-    --secondary-foreground: 120 50% 20%;
+    /* Boutons secondaires - Turquoise */
+    --secondary: 199 95% 61%;
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 200 20% 95%;
-    --muted-foreground: 217 13% 65%;
+    --muted: 207 24% 96%;
+    --muted-foreground: 200 84% 35%;
 
-    --accent: 45 90% 85%;
-    --accent-foreground: 45 90% 20%;
+    /* Accent - Marine Profond */
+    --accent: 189 89% 29%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Gantt schedule specific colors */
     --gantt-grid: 200 20% 90%;
@@ -57,59 +61,65 @@
     --gantt-today: 200 100% 96%;
     --gantt-hover: 200 50% 95%;
 
-    --border: 200 20% 90%;
-    --input: 200 20% 90%;
-    --ring: 200 100% 28%;
+    /* Bordures et inputs - Gris clair */
+    --border: 207 24% 92%;
+    --input: 207 24% 92%;
+    --ring: 199 95% 61%;
 
+    /* Border radius Marevo - 12px */
     --radius: 0.75rem;
 
-    --sidebar-background: 200 100% 28%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 200 100% 28%;
-    --sidebar-accent: 200 100% 32%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 200 100% 32%;
-    --sidebar-ring: 200 100% 60%;
+    /* Sidebar - Marine Profond */
+    --sidebar-background: 189 89% 29%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 77% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 199 95% 61%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 189 89% 35%;
+    --sidebar-ring: 199 95% 61%;
   }
 
   .dark {
-    --background: 217 19% 13%;
+    /* Backgrounds - Mode sombre avec Bleu profond */
+    --background: 200 84% 10%;
     --foreground: 0 0% 95%;
 
-    --card: 217 19% 16%;
+    --card: 200 84% 13%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 217 19% 16%;
+    --popover: 200 84% 13%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 200 100% 50%;
-    --primary-foreground: 217 19% 13%;
+    /* Boutons - Corail conservé en mode sombre */
+    --primary: 0 77% 70%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 120 50% 35%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 199 95% 61%;
+    --secondary-foreground: 200 84% 10%;
 
-    --muted: 217 19% 20%;
-    --muted-foreground: 217 13% 65%;
+    --muted: 200 84% 15%;
+    --muted-foreground: 0 0% 70%;
 
-    --accent: 45 90% 55%;
-    --accent-foreground: 217 19% 13%;
+    --accent: 189 89% 29%;
+    --accent-foreground: 0 0% 95%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217 19% 25%;
-    --input: 217 19% 25%;
-    --ring: 200 100% 50%;
+    --border: 200 84% 20%;
+    --input: 200 84% 20%;
+    --ring: 199 95% 61%;
 
-    --sidebar-background: 217 19% 13%;
+    /* Sidebar mode sombre */
+    --sidebar-background: 200 84% 10%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 200 100% 50%;
-    --sidebar-primary-foreground: 217 19% 13%;
-    --sidebar-accent: 217 19% 20%;
+    --sidebar-primary: 0 77% 70%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 200 84% 15%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 217 19% 25%;
-    --sidebar-ring: 200 100% 60%;
+    --sidebar-border: 200 84% 20%;
+    --sidebar-ring: 199 95% 61%;
   }
 }
 
@@ -123,7 +133,7 @@
   }
 
   .gradient-ocean {
-    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 50%, #0891b2 100%);
+    background: linear-gradient(135deg, #0B7285 0%, #38BDF8 50%, #06b6d4 100%);
   }
 
   .wave-pattern {
@@ -135,11 +145,11 @@
 
 @layer components {
   .card-hover {
-    @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02] sm:hover:scale-105;
+    @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.01] sm:hover:scale-[1.02] rounded-xl;
   }
   
   .btn-ocean {
-    @apply bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-3 py-1.5 sm:px-4 sm:py-2 lg:px-6 lg:py-2 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl text-xs sm:text-sm;
+    @apply bg-primary hover:bg-[hsl(0_73%_63%)] text-primary-foreground font-semibold px-4 py-2.5 sm:px-5 sm:py-3 lg:px-7 lg:py-3 rounded-xl transition-all duration-300 shadow-md hover:shadow-xl text-sm sm:text-base;
   }
   
   .status-badge {

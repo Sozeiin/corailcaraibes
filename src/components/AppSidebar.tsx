@@ -141,7 +141,7 @@ export function AppSidebar() {
   };
   const getNavClass = (path: string) => {
     const isActive = location.pathname === path;
-    return `flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isActive ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`;
+    return `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isActive ? 'bg-primary text-white font-semibold shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/15 hover:shadow-md'}`;
   };
   const handleSubMenuToggle = (title: string, open: boolean) => {
     setOpenSubMenus(prev => ({
@@ -155,7 +155,7 @@ export function AppSidebar() {
   }>) => {
     return subItems.some(subItem => location.pathname === subItem.url);
   };
-  return <Sidebar className={`${!isMobile ? 'hidden sm:block' : ''} w-52 sm:w-56 lg:w-64 gradient-ocean wave-pattern`}>
+  return <Sidebar className={`${!isMobile ? 'hidden sm:block' : ''} w-52 sm:w-56 lg:w-64 bg-gradient-to-br from-accent via-[#0a6070] to-secondary wave-pattern shadow-2xl`}>
       <SidebarContent className="p-2 sm:p-3 lg:p-4">
         <SidebarGroup className="my-[50px]">
           <SidebarGroupLabel className="text-white/60 text-xs uppercase tracking-wide mb-2 sm:mb-3 lg:mb-4">
@@ -165,7 +165,7 @@ export function AppSidebar() {
             <SidebarMenu className="space-y-1">
               {filteredMenuItems.map(item => <SidebarMenuItem key={item.title}>
                   {item.subItems ? <div onMouseEnter={() => handleSubMenuToggle(item.title, true)} onMouseLeave={() => handleSubMenuToggle(item.title, false)}>
-                      <SidebarMenuButton className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 ${isSubItemActive(item.subItems) ? 'bg-marine-100 text-marine-700 font-medium' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                      <SidebarMenuButton className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 ${isSubItemActive(item.subItems) ? 'bg-primary text-white font-semibold shadow-lg' : 'text-white/90 hover:text-white hover:bg-white/15 hover:shadow-md'}`}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
                         <span className="text-xs sm:text-sm lg:text-base truncate">{item.title}</span>
                         <ChevronDown className={`h-3 w-3 ml-auto transition-transform duration-200 ${openSubMenus[item.title] ? 'rotate-180' : ''}`} />
