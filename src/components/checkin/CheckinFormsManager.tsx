@@ -3,8 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ClientFormsPool } from '@/components/customers/ClientFormsPool';
 import { ReadyFormsSection } from './ReadyFormsSection';
 import { AdministrativeCheckinFormNew } from '@/components/administrative/AdministrativeCheckinFormNew';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Clock, CheckCircle, Plus } from 'lucide-react';
 import { invalidateAdministrativeQueries } from '@/lib/queryInvalidation';
 
 export function CheckinFormsManager() {
@@ -15,33 +15,33 @@ export function CheckinFormsManager() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Section 1: Pool de fiches en attente */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Fiches en attente d'assignation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ClientFormsPool />
-        </CardContent>
-      </Card>
+    <Tabs defaultValue="pending" className="w-full">
+      <TabsList className="grid w-full grid-cols-3">
+        <TabsTrigger value="pending" className="flex items-center gap-2">
+          <Clock className="h-4 w-4" />
+          En attente
+        </TabsTrigger>
+        <TabsTrigger value="ready" className="flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          Prêtes
+        </TabsTrigger>
+        <TabsTrigger value="new" className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Nouvelle fiche
+        </TabsTrigger>
+      </TabsList>
 
-      <Separator />
+      <TabsContent value="pending" className="mt-6">
+        <ClientFormsPool />
+      </TabsContent>
 
-      {/* Section 2: Fiches prêtes pour check-in */}
-      <ReadyFormsSection />
+      <TabsContent value="ready" className="mt-6">
+        <ReadyFormsSection />
+      </TabsContent>
 
-      <Separator />
-
-      {/* Section 3: Créer une nouvelle fiche */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Créer une nouvelle fiche client</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <AdministrativeCheckinFormNew onFormCreated={handleFormCreated} />
-        </CardContent>
-      </Card>
-    </div>
+      <TabsContent value="new" className="mt-6">
+        <AdministrativeCheckinFormNew onFormCreated={handleFormCreated} />
+      </TabsContent>
+    </Tabs>
   );
 }
