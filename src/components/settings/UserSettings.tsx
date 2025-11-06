@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Users, Edit, Save, X, Mail, User, Building, Trash2, Settings } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { UserPermissions } from './UserPermissions';
+import { UserCreationDialog } from './UserCreationDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +18,8 @@ export function UserSettings() {
   const queryClient = useQueryClient();
   const [editingUser, setEditingUser] = useState<any>(null);
   const [expandedPermissions, setExpandedPermissions] = useState<string | null>(null);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
@@ -30,6 +33,9 @@ export function UserSettings() {
         .select('tenant_id')
         .eq('id', user.id)
         .single();
+
+      // Store tenant_id for creation dialog
+      setCurrentTenantId(profile?.tenant_id || null);
 
       // Fetch users with same tenant_id
       const { data, error } = await supabase
@@ -252,6 +258,10 @@ export function UserSettings() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Gestion des utilisateurs</h3>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Users className="h-4 w-4 mr-2" />
+          Créer un utilisateur
+        </Button>
       </div>
 
       <div className="grid gap-4">
@@ -360,6 +370,12 @@ export function UserSettings() {
           </Card>
         ))}
       </div>
+
+      <UserCreationDialog 
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        tenantId={currentTenantId}
+      />
     </div>
   );
 }
