@@ -114,7 +114,11 @@ export function TechnicianInterventions() {
   });
 
   // Mes interventions assignées
-  const myInterventions = interventions.filter(i => i.technician_id === user?.id);
+  const myInterventions = interventions.filter(i => 
+    i.technician_id === user?.id && 
+    i.status !== 'completed' && 
+    i.status !== 'cancelled'
+  );
   
   // Interventions disponibles (non assignées dans ma base)
   const availableInterventions = interventions.filter(i => {
