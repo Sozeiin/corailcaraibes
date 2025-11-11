@@ -2,7 +2,7 @@ import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Ship } from 'lucide-react';
+import { Clock, Ship, GripVertical } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -96,8 +96,6 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
     <Card
       ref={setNodeRef}
       style={style}
-      {...listeners}
-      {...attributes}
       onClick={handleClick}
       onContextMenu={(e) => {
         console.log('DraggableTaskCard onContextMenu direct:', task.title);
@@ -106,17 +104,32 @@ export function DraggableTaskCard({ task, onClick, isDragging = false, onContext
       onMouseDown={(e) => {
         console.log('Mouse down on card:', e.button); // 0=left, 1=middle, 2=right
       }}
+      title="Cliquer pour voir les détails • Glisser l'icône ⋮⋮ pour déplacer"
       className={`
-        relative cursor-grab active:cursor-grabbing select-none transition-all duration-200
-        ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.01]'}
+        relative select-none transition-all duration-200
+        ${isBeingDragged || isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.01] cursor-pointer'}
         ${typeConfig.bg} ${typeConfig.border} border-l-4 touch-manipulation w-full
       `}
     >
       <div className="p-1.5 space-y-1">
-        {/* Header with status and icon */}
+        {/* Header with status and drag handle */}
         <div className="flex items-center justify-between">
           <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
-          <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
+          
+          <div className="flex items-center gap-1">
+            <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
+            
+            {/* Drag handle - zone dédiée au drag */}
+            <div 
+              {...listeners}
+              {...attributes}
+              className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-gray-200/50 rounded transition-colors"
+              title="Glisser pour déplacer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="h-3 w-3 text-gray-400" />
+            </div>
+          </div>
         </div>
         
         {/* Task title - compact */}
