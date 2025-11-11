@@ -64,12 +64,19 @@ export function BoatPreparationManager() {
   const { data: boats = [] } = useQuery({
     queryKey: ['boats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('boats')
-        .select('id, name, model, status')
-        .eq('status', 'available')
-        .order('name');
+        .select('id, name, model, status');
       
+      // Filter by base_id for non-direction roles
+      if (user?.role !== 'direction') {
+        query = query.eq('base_id', user?.baseId);
+      }
+      
+      // Include both 'available' and 'rented' statuses for preparation planning
+      query = query.in('status', ['available', 'rented']);
+      
+      const { data, error } = await query.order('name');
       if (error) throw error;
       return data;
     }
@@ -217,6 +224,7 @@ export function BoatPreparationManager() {
                     {boats.map((boat) => (
                       <SelectItem key={boat.id} value={boat.id}>
                         {boat.name} ({boat.model})
+                        {boat.status === 'rented' && ' 🔵 En location'}
                       </SelectItem>
                     ))}
                   </SelectContent>
