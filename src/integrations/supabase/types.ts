@@ -3616,6 +3616,60 @@ export type Database = {
           },
         ]
       }
+      shipment_notification_configs: {
+        Row: {
+          base_id: string
+          created_at: string
+          id: string
+          notify_on_delivered: boolean | null
+          notify_on_exception: boolean | null
+          notify_on_in_transit: boolean | null
+          notify_on_out_for_delivery: boolean | null
+          notify_on_pickup: boolean | null
+          recipient_emails: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          base_id: string
+          created_at?: string
+          id?: string
+          notify_on_delivered?: boolean | null
+          notify_on_exception?: boolean | null
+          notify_on_in_transit?: boolean | null
+          notify_on_out_for_delivery?: boolean | null
+          notify_on_pickup?: boolean | null
+          recipient_emails?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          base_id?: string
+          created_at?: string
+          id?: string
+          notify_on_delivered?: boolean | null
+          notify_on_exception?: boolean | null
+          notify_on_in_transit?: boolean | null
+          notify_on_out_for_delivery?: boolean | null
+          notify_on_pickup?: boolean | null
+          recipient_emails?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_notification_configs_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: true
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_notification_configs_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: true
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipment_preparations: {
         Row: {
           actual_delivery_date: string | null
@@ -3625,8 +3679,11 @@ export type Database = {
           created_at: string
           created_by: string
           destination_base_id: string
+          estimated_delivery: string | null
           expected_delivery_date: string | null
           id: string
+          last_tracking_event: string | null
+          last_tracking_update: string | null
           name: string
           notes: string | null
           received_boxes: number | null
@@ -3639,6 +3696,7 @@ export type Database = {
           total_boxes: number
           total_items: number
           tracking_number: string | null
+          tracking_status: string | null
           updated_at: string
         }
         Insert: {
@@ -3649,8 +3707,11 @@ export type Database = {
           created_at?: string
           created_by: string
           destination_base_id: string
+          estimated_delivery?: string | null
           expected_delivery_date?: string | null
           id?: string
+          last_tracking_event?: string | null
+          last_tracking_update?: string | null
           name: string
           notes?: string | null
           received_boxes?: number | null
@@ -3663,6 +3724,7 @@ export type Database = {
           total_boxes?: number
           total_items?: number
           tracking_number?: string | null
+          tracking_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -3673,8 +3735,11 @@ export type Database = {
           created_at?: string
           created_by?: string
           destination_base_id?: string
+          estimated_delivery?: string | null
           expected_delivery_date?: string | null
           id?: string
+          last_tracking_event?: string | null
+          last_tracking_update?: string | null
           name?: string
           notes?: string | null
           received_boxes?: number | null
@@ -3687,6 +3752,7 @@ export type Database = {
           total_boxes?: number
           total_items?: number
           tracking_number?: string | null
+          tracking_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3786,6 +3852,62 @@ export type Database = {
             columns: ["scanned_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_tracking_events: {
+        Row: {
+          carrier: string
+          created_at: string
+          estimated_delivery: string | null
+          event_date: string
+          event_type: string
+          id: string
+          location: string | null
+          preparation_id: string
+          raw_data: Json | null
+          status: string
+          status_description: string | null
+          tracking_number: string
+          updated_at: string
+        }
+        Insert: {
+          carrier: string
+          created_at?: string
+          estimated_delivery?: string | null
+          event_date: string
+          event_type: string
+          id?: string
+          location?: string | null
+          preparation_id: string
+          raw_data?: Json | null
+          status: string
+          status_description?: string | null
+          tracking_number: string
+          updated_at?: string
+        }
+        Update: {
+          carrier?: string
+          created_at?: string
+          estimated_delivery?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          location?: string | null
+          preparation_id?: string
+          raw_data?: Json | null
+          status?: string
+          status_description?: string | null
+          tracking_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_tracking_events_preparation_id_fkey"
+            columns: ["preparation_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_preparations"
             referencedColumns: ["id"]
           },
         ]
