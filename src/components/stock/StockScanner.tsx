@@ -24,6 +24,7 @@ import { CreateStockItemFromScanner } from './CreateStockItemFromScanner';
 import { StockItemAutocomplete } from './StockItemAutocomplete';
 import { OrderLinkDialog } from './OrderLinkDialog';
 import { StockMovementDialog } from './StockMovementDialog';
+import { ShipmentReceptionDialog } from '../shipments/ShipmentReceptionDialog';
 import { searchGlobalStockItems, createLocalStockCopy, GlobalStockItem } from '@/lib/stockUtils';
 import { safeRemoveChild, safeRemoveById, safeRemoveBySelector } from '@/lib/domUtils';
 
@@ -63,6 +64,11 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     stockItem: { id: string; name: string; quantity: number };
     removedQuantity: number;
   } | null>(null);
+  
+  // États pour la réception d'expéditions
+  const [detectedShipment, setDetectedShipment] = useState<any | null>(null);
+  const [showShipmentDialog, setShowShipmentDialog] = useState(false);
+  const [currentScannedItem, setCurrentScannedItem] = useState<{ reference: string; name: string } | null>(null);
   
   // Debug logs for dialog state
   console.log('CreateDialog state:', { isCreateDialogOpen, codeToCreate });
@@ -374,12 +380,217 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
     }
   };
 
+  // Fonction de détection d'expédition en attente
+  const detectShipmentForItem = async (code: string): Promise<any | null> => {
+    try {
+      // Rechercher dans shipment_box_items pour trouver les expéditions en attente
+      const { data, error } = await supabase
+        .from('shipment_box_items')
+        .select(`
+          item_reference,
+          item_name,
+          quantity,
+          box:shipment_boxes!inner(
+            preparation:shipment_preparations!inner(
+              id,
+              reference,
+              name,
+              status,
+              total_boxes,
+              total_items,
+              tracking_number,
+              carrier,
+              created_at,
+              source_base:bases!shipment_preparations_source_base_id_fkey(name, location)
+            )
+          )
+        `)
+        .or(`item_reference.ilike.%${code}%,item_name.ilike.%${code}%`)
+        .eq('box.preparation.status', 'shipped')
+        .eq('box.preparation.destination_base_id', user?.baseId);
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const firstMatch = data[0];
+        return {
+          id: firstMatch.box.preparation.id,
+          reference: firstMatch.box.preparation.reference,
+          name: firstMatch.box.preparation.name,
+          source_base: firstMatch.box.preparation.source_base,
+          total_boxes: firstMatch.box.preparation.total_boxes,
+          total_items: firstMatch.box.preparation.total_items,
+          status: firstMatch.box.preparation.status,
+          created_at: firstMatch.box.preparation.created_at,
+          tracking_number: firstMatch.box.preparation.tracking_number,
+          carrier: firstMatch.box.preparation.carrier,
+        };
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Erreur détection expédition:', error);
+      return null;
+    }
+  };
+
+  // Fonction de réception d'un article d'expédition
+  const receiveScannedItem = async (code: string, shipment: any) => {
+    try {
+      // 1. Trouver l'article dans shipment_box_items
+      const { data: itemData, error: itemError } = await supabase
+        .from('shipment_box_items')
+        .select(`
+          *,
+          box:shipment_boxes!inner(
+            id,
+            box_identifier,
+            preparation_id
+          )
+        `)
+        .or(`item_reference.ilike.%${code}%,item_name.ilike.%${code}%`)
+        .eq('box.preparation_id', shipment.id)
+        .single();
+
+      if (itemError) throw itemError;
+
+      // 2. Vérifier si déjà reçu
+      const { data: existingReception, error: checkError } = await supabase
+        .from('shipment_receptions')
+        .select('*')
+        .eq('preparation_id', shipment.id)
+        .eq('item_reference', itemData.item_reference)
+        .maybeSingle();
+
+      if (checkError) throw checkError;
+
+      if (existingReception) {
+        // Incrémenter la quantité reçue
+        const { error: updateError } = await supabase
+          .from('shipment_receptions')
+          .update({
+            received_quantity: existingReception.received_quantity + 1,
+            scanned_at: new Date().toISOString(),
+            scanned_by: user?.id,
+          })
+          .eq('id', existingReception.id);
+
+        if (updateError) throw updateError;
+      } else {
+        // Créer une nouvelle réception
+        const { error: insertError } = await supabase
+          .from('shipment_receptions')
+          .insert({
+            preparation_id: shipment.id,
+            box_id: itemData.box.id,
+            box_identifier: itemData.box.box_identifier,
+            item_reference: itemData.item_reference,
+            item_name: itemData.item_name,
+            expected_quantity: itemData.quantity,
+            received_quantity: 1,
+            status: 'partial',
+            scanned_by: user?.id,
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // 3. Créer ou mettre à jour l'article dans le stock
+      const stockItem = await findOrCreateStockItem(itemData, shipment);
+
+      if (stockItem) {
+        // Incrémenter la quantité
+        const { error: updateStockError } = await supabase
+          .from('stock_items')
+          .update({
+            quantity: (stockItem.quantity || 0) + 1,
+            last_updated: new Date().toISOString(),
+          })
+          .eq('id', stockItem.id);
+
+        if (updateStockError) throw updateStockError;
+
+        queryClient.invalidateQueries({ queryKey: ['stock'] });
+        queryClient.invalidateQueries({ queryKey: ['shipment_receptions'] });
+
+        toast({
+          title: 'Article reçu',
+          description: `${itemData.item_name} ajouté au stock (Expédition: ${shipment.reference})`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Erreur réception article:', error);
+      toast({
+        title: 'Erreur de réception',
+        description: error.message || 'Impossible de traiter la réception',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Fonction pour trouver ou créer un article dans le stock
+  const findOrCreateStockItem = async (itemData: any, shipment: any): Promise<any | null> => {
+    try {
+      // Rechercher l'article existant
+      let { data: existingItem, error: searchError } = await supabase
+        .from('stock_items')
+        .select('*')
+        .eq('base_id', user?.baseId)
+        .or(`reference.eq.${itemData.item_reference},name.eq.${itemData.item_name}`)
+        .maybeSingle();
+
+      if (searchError) throw searchError;
+
+      if (existingItem) {
+        return existingItem;
+      }
+
+      // Créer un nouvel article
+      const { data: newItem, error: createError } = await supabase
+        .from('stock_items')
+        .insert({
+          name: itemData.item_name,
+          reference: itemData.item_reference,
+          category: itemData.category || 'Général',
+          quantity: 0,
+          min_threshold: 1,
+          unit: itemData.unit || 'pièce',
+          location: `Reçu de ${shipment.source_base?.name || 'expédition'}`,
+          base_id: user?.baseId,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      return newItem;
+    } catch (error) {
+      console.error('Erreur création article:', error);
+      return null;
+    }
+  };
+
   const processScannedCode = async (code: string, operation: 'add' | 'remove') => {
     console.log('🔍 Processing scanned code:', code, 'Operation:', operation);
     const trimmedCode = code.trim();
     let matchType = '';
     let isImported = false;
     let sourceBase = '';
+    
+    // NOUVEAU : Détecter si l'article fait partie d'une expédition en attente (seulement pour ADD)
+    if (operation === 'add') {
+      const shipment = await detectShipmentForItem(trimmedCode);
+      if (shipment) {
+        console.log('📦 Expédition détectée:', shipment);
+        setDetectedShipment(shipment);
+        setCurrentScannedItem({
+          reference: trimmedCode,
+          name: shipment.name,
+        });
+        setShowShipmentDialog(true);
+        return; // Pause le workflow normal
+      }
+    }
     
     console.log('📦 Available stock items:', stockItems.length);
     
@@ -946,6 +1157,33 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
           removedQuantity={movementData.removedQuantity}
         />
       )}
+
+      {/* Dialog de confirmation de réception d'expédition */}
+      <ShipmentReceptionDialog
+        open={showShipmentDialog}
+        onOpenChange={setShowShipmentDialog}
+        shipment={detectedShipment}
+        scannedItem={currentScannedItem}
+        onConfirmReception={async () => {
+          if (detectedShipment && currentScannedItem) {
+            await receiveScannedItem(currentScannedItem.reference, detectedShipment);
+            setShowShipmentDialog(false);
+            setDetectedShipment(null);
+            setCurrentScannedItem(null);
+          }
+        }}
+        onCancelReception={() => {
+          // Continuer avec le workflow normal
+          if (currentScannedItem && currentOperation) {
+            setShowShipmentDialog(false);
+            setDetectedShipment(null);
+            // Traiter en mode stock normal en évitant la re-détection
+            const trimmedCode = currentScannedItem.reference.trim();
+            processScannedCode(trimmedCode, currentOperation);
+            setCurrentScannedItem(null);
+          }
+        }}
+      />
     </div>
   );
 }

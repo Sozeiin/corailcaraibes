@@ -46,6 +46,7 @@ export default function ShipmentPreparations() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showPendingReceptions, setShowPendingReceptions] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedPreparation, setSelectedPreparation] = useState<ShipmentPreparation | null>(null);
 
@@ -67,12 +68,18 @@ export default function ShipmentPreparations() {
     return acc;
   }, {});
 
+  // Compter les expéditions à recevoir
+  const pendingReceptionsCount = preparations.filter(
+    (prep) => prep.status === 'shipped' && prep.destination_base_id === user?.baseId
+  ).length;
+
   // Filtrer les préparations
   const filteredPreparations = preparations.filter((prep) => {
     const matchesSearch = prep.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          prep.reference.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || prep.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesReception = !showPendingReceptions || (prep.status === 'shipped' && prep.destination_base_id === user?.baseId);
+    return matchesSearch && matchesStatus && matchesReception;
   });
 
   const handlePreparationCreated = () => {
@@ -94,13 +101,36 @@ export default function ShipmentPreparations() {
             Gérez vos expéditions entre bases
           </p>
         </div>
-        <Button 
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="sm:w-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Nouvelle préparation
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant={showPendingReceptions ? 'default' : 'outline'}
+            onClick={() => setShowPendingReceptions(!showPendingReceptions)}
+            className="sm:w-auto relative"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            À recevoir
+            {pendingReceptionsCount > 0 && (
+              <Badge className="ml-2 px-1.5 py-0.5 text-xs" variant="destructive">
+                {pendingReceptionsCount}
+              </Badge>
+            )}
+          </Button>
+          <Button 
+            variant="secondary"
+            onClick={() => window.location.href = '/scanner?mode=reception'}
+            className="sm:w-auto"
+          >
+            <Package className="h-4 w-4 mr-2" />
+            Scanner une réception
+          </Button>
+          <Button 
+            onClick={() => setIsCreateDialogOpen(true)}
+            className="sm:w-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nouvelle préparation
+          </Button>
+        </div>
       </div>
 
       {/* Filtres */}

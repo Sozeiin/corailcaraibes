@@ -3542,56 +3542,151 @@ export type Database = {
           },
         ]
       }
+      shipment_discrepancies: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string
+          discrepancy_type: string
+          id: string
+          photo_urls: string[] | null
+          preparation_id: string
+          reception_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          discrepancy_type: string
+          id?: string
+          photo_urls?: string[] | null
+          preparation_id: string
+          reception_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          discrepancy_type?: string
+          id?: string
+          photo_urls?: string[] | null
+          preparation_id?: string
+          reception_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_discrepancies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_discrepancies_preparation_id_fkey"
+            columns: ["preparation_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_preparations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_discrepancies_reception_id_fkey"
+            columns: ["reception_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_receptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_discrepancies_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipment_preparations: {
         Row: {
+          actual_delivery_date: string | null
+          carrier: string | null
           closed_at: string | null
           completed_at: string | null
           created_at: string
           created_by: string
           destination_base_id: string
+          expected_delivery_date: string | null
           id: string
           name: string
           notes: string | null
+          received_boxes: number | null
+          received_items: number | null
+          reception_notes: string | null
           reference: string
           shipped_at: string | null
           source_base_id: string
           status: string
           total_boxes: number
           total_items: number
+          tracking_number: string | null
           updated_at: string
         }
         Insert: {
+          actual_delivery_date?: string | null
+          carrier?: string | null
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
           destination_base_id: string
+          expected_delivery_date?: string | null
           id?: string
           name: string
           notes?: string | null
+          received_boxes?: number | null
+          received_items?: number | null
+          reception_notes?: string | null
           reference: string
           shipped_at?: string | null
           source_base_id: string
           status?: string
           total_boxes?: number
           total_items?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Update: {
+          actual_delivery_date?: string | null
+          carrier?: string | null
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
           destination_base_id?: string
+          expected_delivery_date?: string | null
           id?: string
           name?: string
           notes?: string | null
+          received_boxes?: number | null
+          received_items?: number | null
+          reception_notes?: string | null
           reference?: string
           shipped_at?: string | null
           source_base_id?: string
           status?: string
           total_boxes?: number
           total_items?: number
+          tracking_number?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -3621,6 +3716,76 @@ export type Database = {
             columns: ["source_base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shipment_receptions: {
+        Row: {
+          box_id: string | null
+          box_identifier: string
+          created_at: string | null
+          expected_quantity: number | null
+          id: string
+          item_name: string
+          item_reference: string | null
+          notes: string | null
+          preparation_id: string
+          received_quantity: number
+          scanned_at: string | null
+          scanned_by: string | null
+          status: string
+        }
+        Insert: {
+          box_id?: string | null
+          box_identifier: string
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          item_name: string
+          item_reference?: string | null
+          notes?: string | null
+          preparation_id: string
+          received_quantity?: number
+          scanned_at?: string | null
+          scanned_by?: string | null
+          status?: string
+        }
+        Update: {
+          box_id?: string | null
+          box_identifier?: string
+          created_at?: string | null
+          expected_quantity?: number | null
+          id?: string
+          item_name?: string
+          item_reference?: string | null
+          notes?: string | null
+          preparation_id?: string
+          received_quantity?: number
+          scanned_at?: string | null
+          scanned_by?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shipment_receptions_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_receptions_preparation_id_fkey"
+            columns: ["preparation_id"]
+            isOneToOne: false
+            referencedRelation: "shipment_preparations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shipment_receptions_scanned_by_fkey"
+            columns: ["scanned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

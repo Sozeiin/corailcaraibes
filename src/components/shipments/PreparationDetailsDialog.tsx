@@ -3,8 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Plus, FileText, Truck } from 'lucide-react';
+import { Package, Plus, FileText, Truck, Scan } from 'lucide-react';
 import { BoxManager } from './BoxManager';
 import { PreparationPDF } from './PreparationPDF';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
@@ -24,6 +26,8 @@ interface ShipmentPreparation {
   total_boxes: number;
   total_items: number;
   notes?: string;
+  tracking_number?: string;
+  carrier?: string;
 }
 
 interface PreparationDetailsDialogProps {
@@ -51,6 +55,9 @@ export function PreparationDetailsDialog({
 }: PreparationDetailsDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [trackingNumber, setTrackingNumber] = useState(preparation.tracking_number || '');
+  const [carrier, setCarrier] = useState(preparation.carrier || '');
+  const [showTrackingForm, setShowTrackingForm] = useState(false);
 
   // Récupérer les cartons
   const { data: boxes = [], refetch: refetchBoxes } = useOfflineData<any>({
@@ -70,6 +77,8 @@ export function PreparationDetailsDialog({
         updateData.closed_at = new Date().toISOString();
       } else if (newStatus === 'shipped') {
         updateData.shipped_at = new Date().toISOString();
+        if (trackingNumber) updateData.tracking_number = trackingNumber;
+        if (carrier) updateData.carrier = carrier;
       } else if (newStatus === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
@@ -154,52 +163,112 @@ export function PreparationDetailsDialog({
           </Card>
 
           {/* Actions */}
-          {(canClose || canShip) && (
+          {(canClose || canShip || preparation.status === 'draft' || preparation.status === 'shipped') && (
             <Card className="p-4">
-              <div className="flex flex-wrap gap-2">
-                {canClose && (
-                  <Button 
-                    onClick={() => handleStatusChange('closed')}
-                    disabled={loading}
-                    className="flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" />
-                    Clôturer la préparation
-                  </Button>
-                )}
-                {!canClose && preparation.status === 'in_progress' && (
-                  <div className="text-sm text-muted-foreground">
-                    {preparationBoxes.length === 0 ? (
-                      <p>Créez au moins un carton pour pouvoir clôturer la préparation.</p>
-                    ) : (
-                      <p>Fermez tous les cartons pour pouvoir clôturer la préparation. 
-                        ({closedBoxes.length}/{preparationBoxes.length} cartons fermés)</p>
-                    )}
+              <div className="flex flex-col gap-4">
+                {/* Actions de workflow */}
+                <div className="flex flex-wrap gap-2">
+                  {preparation.status === 'draft' && (
+                    <Button 
+                      onClick={() => handleStatusChange('in_progress')}
+                      disabled={loading}
+                      className="flex items-center gap-2"
+                    >
+                      <Package className="h-4 w-4" />
+                      Démarrer la préparation
+                    </Button>
+                  )}
+                  {canClose && (
+                    <Button 
+                      onClick={() => handleStatusChange('closed')}
+                      disabled={loading}
+                      className="flex items-center gap-2"
+                    >
+                      <Package className="h-4 w-4" />
+                      Clôturer la préparation
+                    </Button>
+                  )}
+                  {!canClose && preparation.status === 'in_progress' && (
+                    <div className="text-sm text-muted-foreground">
+                      {preparationBoxes.length === 0 ? (
+                        <p>Créez au moins un carton pour pouvoir clôturer la préparation.</p>
+                      ) : (
+                        <p>Fermez tous les cartons pour pouvoir clôturer la préparation. 
+                          ({closedBoxes.length}/{preparationBoxes.length} cartons fermés)</p>
+                      )}
+                    </div>
+                  )}
+                  {canShip && (
+                    <>
+                      {!showTrackingForm && (
+                        <Button 
+                          onClick={() => setShowTrackingForm(true)}
+                          disabled={loading}
+                          className="flex items-center gap-2"
+                        >
+                          <Truck className="h-4 w-4" />
+                          Marquer comme expédiée
+                        </Button>
+                      )}
+                    </>
+                  )}
+                  {preparation.status === 'shipped' && (
+                    <Button 
+                      onClick={() => window.location.href = `/scanner?mode=reception&shipment=${preparation.id}`}
+                      variant="default"
+                      className="flex items-center gap-2"
+                    >
+                      <Scan className="h-4 w-4" />
+                      Recevoir cette expédition
+                    </Button>
+                  )}
+                  {preparation.status === 'closed' && (
+                    <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} />
+                  )}
+                </div>
+
+                {/* Formulaire de tracking */}
+                {showTrackingForm && canShip && (
+                  <div className="space-y-3 border-t pt-4">
+                    <h4 className="font-medium text-sm">Informations d'expédition</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="carrier">Transporteur</Label>
+                        <Input
+                          id="carrier"
+                          value={carrier}
+                          onChange={(e) => setCarrier(e.target.value)}
+                          placeholder="Ex: DHL, FedEx..."
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="tracking">Numéro de suivi</Label>
+                        <Input
+                          id="tracking"
+                          value={trackingNumber}
+                          onChange={(e) => setTrackingNumber(e.target.value)}
+                          placeholder="Numéro de suivi..."
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => handleStatusChange('shipped')}
+                        disabled={loading}
+                        className="flex items-center gap-2"
+                      >
+                        <Truck className="h-4 w-4" />
+                        Confirmer l'expédition
+                      </Button>
+                      <Button 
+                        onClick={() => setShowTrackingForm(false)}
+                        variant="outline"
+                        disabled={loading}
+                      >
+                        Annuler
+                      </Button>
+                    </div>
                   </div>
-                )}
-                {canShip && (
-                  <Button 
-                    onClick={() => handleStatusChange('shipped')}
-                    disabled={loading}
-                    className="flex items-center gap-2"
-                  >
-                    <Truck className="h-4 w-4" />
-                    Marquer comme expédiée
-                  </Button>
-                )}
-                {preparation.status === 'shipped' && (
-                  <Button 
-                    onClick={() => handleStatusChange('completed')}
-                    disabled={loading}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Package className="h-4 w-4" />
-                    Marquer comme terminée
-                  </Button>
-                )}
-                {preparation.status === 'closed' && (
-                  <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} />
                 )}
               </div>
             </Card>
