@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Package, Plus, FileText, Truck, Scan } from 'lucide-react';
+import { Package, Plus, FileText, Truck, Scan, Trash2 } from 'lucide-react';
 import { BoxManager } from './BoxManager';
 import { PreparationPDF } from './PreparationPDF';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useDeleteShipmentPreparation } from '@/hooks/useShipmentPreparationMutations';
 
 interface ShipmentPreparation {
   id: string;
@@ -58,6 +60,9 @@ export function PreparationDetailsDialog({
   const [trackingNumber, setTrackingNumber] = useState(preparation.tracking_number || '');
   const [carrier, setCarrier] = useState(preparation.carrier || '');
   const [showTrackingForm, setShowTrackingForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  const deletePreparation = useDeleteShipmentPreparation();
 
   // Récupérer les cartons
   const { data: boxes = [], refetch: refetchBoxes } = useOfflineData<any>({
@@ -108,26 +113,47 @@ export function PreparationDetailsDialog({
     }
   };
 
+  const handleDelete = async () => {
+    await deletePreparation.mutateAsync(preparation.id);
+    setShowDeleteDialog(false);
+    onOpenChange(false);
+    onUpdate();
+  };
+
   const canAddBoxes = preparation.status === 'draft' || preparation.status === 'in_progress';
   const closedBoxes = preparationBoxes.filter((box: any) => box.status === 'closed');
   const allBoxesClosed = preparationBoxes.length > 0 && closedBoxes.length === preparationBoxes.length;
   const canClose = preparation.status === 'in_progress' && allBoxesClosed;
   const canShip = preparation.status === 'closed';
+  const canDelete = preparation.status === 'draft' || preparation.status === 'in_progress';
+  const hasPDF = preparationBoxes.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <DialogTitle className="text-xl">{preparation.name}</DialogTitle>
               <p className="text-sm text-muted-foreground mt-1">
                 Référence: {preparation.reference}
               </p>
             </div>
-            <Badge variant="secondary">
-              {statusLabels[preparation.status]}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">
+                {statusLabels[preparation.status]}
+              </Badge>
+              {canDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </DialogHeader>
 
@@ -222,7 +248,7 @@ export function PreparationDetailsDialog({
                       Recevoir cette expédition
                     </Button>
                   )}
-                  {preparation.status === 'closed' && (
+                  {hasPDF && (
                     <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} />
                   )}
                 </div>
@@ -321,6 +347,32 @@ export function PreparationDetailsDialog({
           </Tabs>
         </div>
       </DialogContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer la préparation "{preparation.name}" ?
+              Cette action supprimera également tous les cartons et articles associés.
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePreparation.isPending}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deletePreparation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePreparation.isPending ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
