@@ -113,33 +113,30 @@ export function StockItemAutocomplete({
       </div>
 
       {isOpen && filteredItems.length > 0 && (
-        <Card className="absolute top-full left-0 right-0 z-[100] mt-1 max-h-[32rem] sm:max-h-[36rem] overflow-y-auto shadow-lg bg-background">
-          <div className="p-2">
+        <Card className="absolute top-full left-0 right-0 sm:right-auto sm:min-w-[600px] md:min-w-[700px] z-[100] mt-1 max-h-64 overflow-y-auto shadow-lg bg-background">
+          <div className="p-1">
             {filteredItems.map((item) => (
               <Button
                 key={item.id}
                 variant="ghost"
-                className="w-full justify-start p-4 sm:p-5 h-auto text-left hover:bg-accent transition-colors"
+                className="w-full justify-start p-3 h-auto text-left hover:bg-accent transition-colors"
                 onClick={() => handleSelect(item)}
               >
-                <div className="flex items-start gap-4 w-full">
-                  <Package className="h-6 w-6 sm:h-5 sm:w-5 mt-1 text-muted-foreground flex-shrink-0" />
+                <div className="flex items-start gap-3 w-full">
+                  <Package className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-base sm:text-lg line-clamp-2 sm:line-clamp-1">
+                    <div className="font-medium text-sm truncate">
                       {item.name}
                     </div>
-                    <div className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">
+                    <div className="text-xs text-muted-foreground mt-1">
                       {getDisplayInfo(item)}
                     </div>
-                    <div className="text-sm sm:text-base text-muted-foreground mt-2 flex flex-wrap gap-2">
-                      <span className={item.quantity > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <span className={item.quantity > 0 ? 'text-green-600' : 'text-red-600'}>
                         Stock: {item.quantity}
                       </span>
                       {item.location && (
-                        <span className="flex items-center">
-                          <span className="hidden sm:inline">•</span>
-                          <span className="sm:ml-2">{item.location}</span>
-                        </span>
+                        <span className="ml-2">• {item.location}</span>
                       )}
                     </div>
                   </div>
