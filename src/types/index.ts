@@ -88,6 +88,7 @@ export interface StockItem {
   quantity: number;
   minThreshold: number;
   unit: string;
+  unitPrice?: number;
   location: string;
   baseId: string;
   baseName?: string;

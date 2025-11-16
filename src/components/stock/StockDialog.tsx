@@ -47,6 +47,7 @@ interface StockFormData {
   quantity: number;
   minThreshold: number;
   unit: string;
+  unitPrice: number;
   location: string;
   baseId: string;
   photoUrl: string;
@@ -67,6 +68,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
       quantity: 0,
       minThreshold: 0,
       unit: '',
+      unitPrice: 0,
       location: '',
       baseId: '',
       photoUrl: '',
@@ -134,6 +136,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         quantity: item.quantity,
         minThreshold: item.minThreshold,
         unit: item.unit || 'pièce',
+        unitPrice: item.unitPrice || 0,
         location: item.location || '',
         baseId: item.baseId,
         photoUrl: item.photoUrl || '',
@@ -149,6 +152,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         quantity: 0,
         minThreshold: 0,
         unit: 'pièce',
+        unitPrice: 0,
         location: '',
         baseId: defaultBaseId,
         photoUrl: '',
@@ -171,6 +175,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
         quantity: data.quantity,
         min_threshold: data.minThreshold,
         unit: data.unit,
+        unit_price: data.unitPrice,
         location: data.location || null,
         base_id: data.baseId,
         photo_url: data.photoUrl || null,
@@ -416,6 +421,27 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="unitPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prix unitaire (€)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        {...field}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
