@@ -20,6 +20,7 @@ interface StockItemAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   onSelect: (item: StockItem) => void;
+  onEnterPressed?: (value: string) => void;
   placeholder?: string;
   className?: string;
 }
@@ -29,6 +30,7 @@ export function StockItemAutocomplete({
   value,
   onChange,
   onSelect,
+  onEnterPressed,
   placeholder = "Rechercher un article...",
   className
 }: StockItemAutocompleteProps) {
@@ -88,6 +90,15 @@ export function StockItemAutocomplete({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isOpen) {
+      e.preventDefault();
+      if (onEnterPressed && value.trim()) {
+        onEnterPressed(value.trim());
+      }
+    }
+  };
+
   const getDisplayInfo = (item: StockItem) => {
     const parts = [];
     if (item.reference) parts.push(`Réf: ${item.reference}`);
@@ -107,6 +118,7 @@ export function StockItemAutocomplete({
           value={value}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
+          onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={`pl-10 ${className}`}
         />
