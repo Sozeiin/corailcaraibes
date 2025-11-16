@@ -113,26 +113,26 @@ export function StockItemAutocomplete({
       </div>
 
       {isOpen && filteredItems.length > 0 && (
-        <Card className="absolute top-full left-0 right-0 z-[100] mt-1 max-h-80 sm:max-h-96 overflow-y-auto shadow-lg bg-background">
-          <div className="p-1">
+        <Card className="absolute top-full left-0 right-0 z-[100] mt-1 max-h-[32rem] sm:max-h-[36rem] overflow-y-auto shadow-lg bg-background">
+          <div className="p-2">
             {filteredItems.map((item) => (
               <Button
                 key={item.id}
                 variant="ghost"
-                className="w-full justify-start p-3 sm:p-4 h-auto text-left hover:bg-accent transition-colors"
+                className="w-full justify-start p-4 sm:p-5 h-auto text-left hover:bg-accent transition-colors"
                 onClick={() => handleSelect(item)}
               >
-                <div className="flex items-start gap-3 w-full">
-                  <Package className="h-5 w-5 sm:h-4 sm:w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                <div className="flex items-start gap-4 w-full">
+                  <Package className="h-6 w-6 sm:h-5 sm:w-5 mt-1 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm sm:text-base line-clamp-2 sm:line-clamp-1">
+                    <div className="font-semibold text-base sm:text-lg line-clamp-2 sm:line-clamp-1">
                       {item.name}
                     </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2">
+                    <div className="text-sm sm:text-base text-muted-foreground mt-2 line-clamp-2">
                       {getDisplayInfo(item)}
                     </div>
-                    <div className="text-xs sm:text-sm text-muted-foreground mt-1 flex flex-wrap gap-2">
-                      <span className={item.quantity > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                    <div className="text-sm sm:text-base text-muted-foreground mt-2 flex flex-wrap gap-2">
+                      <span className={item.quantity > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                         Stock: {item.quantity}
                       </span>
                       {item.location && (
