@@ -21,6 +21,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
   const { user } = useAuth();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [quantity, setQuantity] = useState(1);
 
   const handleScanSuccess = async (scannedCode: string) => {
     if (isProcessing) return;
@@ -59,6 +60,16 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
         return;
       }
 
+      // Vérifier le stock disponible pour la quantité demandée
+      if (stockItem.quantity < quantity) {
+        toast({
+          title: 'Stock insuffisant',
+          description: `Stock disponible: ${stockItem.quantity}`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
       // Vérifier si l'article existe déjà dans ce carton
       const { data: existingItems } = await supabase
         .from('shipment_box_items')
@@ -66,16 +77,16 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
         .eq('box_id', boxId)
         .eq('stock_item_id', stockItem.id);
 
-      let quantity = 1;
+      let totalQuantity = quantity;
       
       if (existingItems && existingItems.length > 0) {
         // Mettre à jour la quantité
         const currentItem = existingItems[0];
-        quantity = currentItem.quantity + 1;
+        totalQuantity = currentItem.quantity + quantity;
         
         const { error: updateError } = await supabase
           .from('shipment_box_items')
-          .update({ quantity })
+          .update({ quantity: totalQuantity })
           .eq('id', currentItem.id);
 
         if (updateError) throw updateError;
@@ -88,7 +99,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
             stock_item_id: stockItem.id,
             item_name: stockItem.name,
             item_reference: stockItem.reference,
-            quantity: 1,
+            quantity: quantity,
             scanned_by: user?.id
           });
 
@@ -96,7 +107,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
       }
 
       // Décrémenter le stock source
-      const newQuantity = stockItem.quantity - 1;
+      const newQuantity = stockItem.quantity - quantity;
       const { error: stockError } = await supabase
         .from('stock_items')
         .update({ 
@@ -363,6 +374,55 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
           Scannez les articles à ajouter dans ce carton. Le stock sera automatiquement décrémenté.
         </p>
       </div>
+
+      {/* Sélecteur de quantité */}
+      <Card className="p-4">
+        <label className="text-sm font-medium mb-2 block">Quantité à ajouter</label>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuantity(1)}
+            className={quantity === 1 ? 'bg-primary text-primary-foreground' : ''}
+          >
+            1
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuantity(5)}
+            className={quantity === 5 ? 'bg-primary text-primary-foreground' : ''}
+          >
+            5
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuantity(10)}
+            className={quantity === 10 ? 'bg-primary text-primary-foreground' : ''}
+          >
+            10
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setQuantity(20)}
+            className={quantity === 20 ? 'bg-primary text-primary-foreground' : ''}
+          >
+            20
+          </Button>
+          <Input
+            type="number"
+            min="1"
+            value={quantity}
+            onChange={(e) => {
+              const val = parseInt(e.target.value);
+              if (!isNaN(val) && val >= 1) setQuantity(val);
+            }}
+            className="w-24"
+          />
+        </div>
+      </Card>
 
       <Card className="p-4">
         <div className="flex flex-col gap-4">

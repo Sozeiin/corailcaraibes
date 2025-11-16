@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Package, Lock, Scan } from 'lucide-react';
+import { Plus, Package, Lock, Scan, Minus, Trash2 } from 'lucide-react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { ShipmentScanner } from './ShipmentScanner';
 
 interface BoxManagerProps {
@@ -17,6 +18,7 @@ interface BoxManagerProps {
 
 export function BoxManager({ preparationId, canAddBoxes, onUpdate }: BoxManagerProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [newBoxIdentifier, setNewBoxIdentifier] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeBox, setActiveBox] = useState<string | null>(null);
@@ -130,6 +132,159 @@ export function BoxManager({ preparationId, canAddBoxes, onUpdate }: BoxManagerP
     onUpdate();
   };
 
+  const handleUpdateQuantity = async (itemId: string, currentQuantity: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    const quantityDiff = newQuantity - currentQuantity;
+    
+    setLoading(true);
+    try {
+      // Récupérer l'article pour connaître son stock_item_id
+      const { data: boxItem } = await supabase
+        .from('shipment_box_items')
+        .select('*, stock_item_id')
+        .eq('id', itemId)
+        .single();
+      
+      if (!boxItem) throw new Error('Article non trouvé');
+      
+      // Récupérer le stock actuel
+      const { data: stockItem } = await supabase
+        .from('stock_items')
+        .select('quantity')
+        .eq('id', boxItem.stock_item_id)
+        .single();
+      
+      if (!stockItem) throw new Error('Article en stock non trouvé');
+      
+      // Vérifier le stock disponible si on augmente la quantité
+      if (quantityDiff > 0 && stockItem.quantity < quantityDiff) {
+        toast({
+          title: 'Stock insuffisant',
+          description: `Stock disponible: ${stockItem.quantity}`,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Mettre à jour la quantité dans le carton
+      const { error: updateError } = await supabase
+        .from('shipment_box_items')
+        .update({ quantity: newQuantity })
+        .eq('id', itemId);
+      
+      if (updateError) throw updateError;
+      
+      // Mettre à jour le stock (décrémenter si augmentation, incrémenter si diminution)
+      const newStockQuantity = stockItem.quantity - quantityDiff;
+      const { error: stockError } = await supabase
+        .from('stock_items')
+        .update({ 
+          quantity: newStockQuantity,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', boxItem.stock_item_id);
+      
+      if (stockError) throw stockError;
+      
+      // Créer un mouvement de stock
+      await supabase.from('stock_movements').insert({
+        sku: boxItem.item_reference || boxItem.stock_item_id,
+        movement_type: 'outbound_distribution',
+        qty: -quantityDiff,
+        actor: user?.id,
+        base_id: user?.baseId,
+        notes: `Ajustement carton - ${quantityDiff > 0 ? '+' : ''}${quantityDiff}`
+      });
+      
+      toast({
+        title: 'Quantité mise à jour',
+        description: `Nouvelle quantité: ${newQuantity}`
+      });
+      
+      refetchBoxItems();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Erreur mise à jour quantité:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de modifier la quantité',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleRemoveItem = async (itemId: string) => {
+    setLoading(true);
+    try {
+      // Récupérer l'article
+      const { data: boxItem } = await supabase
+        .from('shipment_box_items')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+      
+      if (!boxItem) throw new Error('Article non trouvé');
+      
+      // Récupérer le stock actuel
+      const { data: stockItem } = await supabase
+        .from('stock_items')
+        .select('quantity')
+        .eq('id', boxItem.stock_item_id)
+        .single();
+      
+      if (!stockItem) throw new Error('Article en stock non trouvé');
+      
+      // Restaurer le stock
+      const { error: stockError } = await supabase
+        .from('stock_items')
+        .update({ 
+          quantity: stockItem.quantity + boxItem.quantity,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', boxItem.stock_item_id);
+      
+      if (stockError) throw stockError;
+      
+      // Créer un mouvement de stock
+      await supabase.from('stock_movements').insert({
+        sku: boxItem.item_reference || boxItem.stock_item_id,
+        movement_type: 'inbound_purchase',
+        qty: boxItem.quantity,
+        actor: user?.id,
+        base_id: user?.baseId,
+        notes: 'Retrait du carton'
+      });
+      
+      // Supprimer l'article du carton
+      const { error: deleteError } = await supabase
+        .from('shipment_box_items')
+        .delete()
+        .eq('id', itemId);
+      
+      if (deleteError) throw deleteError;
+      
+      toast({
+        title: 'Article retiré',
+        description: 'L\'article a été retiré du carton et remis en stock'
+      });
+      
+      refetchBoxItems();
+      onUpdate();
+    } catch (error: any) {
+      console.error('Erreur suppression article:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de retirer l\'article',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getBoxItems = (boxId: string) => {
     return boxItems.filter((item: any) => item.box_id === boxId);
   };
@@ -217,8 +372,8 @@ export function BoxManager({ preparationId, canAddBoxes, onUpdate }: BoxManagerP
                     <h4 className="text-sm font-medium text-muted-foreground">Articles scannés:</h4>
                     <div className="grid gap-2">
                       {items.map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between p-2 bg-muted rounded">
-                          <div>
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                          <div className="flex-1">
                             <span className="font-medium">{item.item_name}</span>
                             {item.item_reference && (
                               <span className="text-sm text-muted-foreground ml-2">
@@ -226,7 +381,48 @@ export function BoxManager({ preparationId, canAddBoxes, onUpdate }: BoxManagerP
                               </span>
                             )}
                           </div>
-                          <span className="text-sm">Qté: {item.quantity}</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity, item.quantity - 1)}
+                              disabled={loading || item.quantity <= 1}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                if (!isNaN(val) && val >= 1) {
+                                  handleUpdateQuantity(item.id, item.quantity, val);
+                                }
+                              }}
+                              disabled={loading}
+                              className="h-8 w-16 text-center"
+                            />
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleUpdateQuantity(item.id, item.quantity, item.quantity + 1)}
+                              disabled={loading}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleRemoveItem(item.id)}
+                              disabled={loading}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
