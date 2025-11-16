@@ -249,7 +249,10 @@ export function PreparationDetailsDialog({
                     </Button>
                   )}
                   {hasPDF && (
-                    <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} />
+                    <>
+                      <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} hidePrices={false} />
+                      <PreparationPDF preparation={preparation} boxes={preparationBoxes} bases={bases} hidePrices={true} />
+                    </>
                   )}
                 </div>
 
