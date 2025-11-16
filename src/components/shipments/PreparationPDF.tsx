@@ -186,12 +186,15 @@ export function PreparationPDF({ preparation, boxes, bases, hidePrices = false }
       pdf.text(`${preparation.total_items}`, 80, yPosition);
       yPosition += 6;
 
-      pdf.setFont('helvetica', 'bold');
-      pdf.text(`Valorisation totale:`, 20, yPosition);
-      pdf.setFontSize(12);
-      pdf.text(`${totalValue.toFixed(2)} €`, 80, yPosition);
-      pdf.setFontSize(10);
-      yPosition += 15;
+      if (!hidePrices) {
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`Valorisation totale:`, 20, yPosition);
+        pdf.setFontSize(12);
+        pdf.text(`${totalValue.toFixed(2)} €`, 80, yPosition);
+        pdf.setFontSize(10);
+        yPosition += 10;
+      }
+      yPosition += 5;
 
       // Tableau récapitulatif
       pdf.setFont('helvetica', 'bold');
