@@ -153,9 +153,7 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
     }
   };
 
-  const [manualCode, setManualCode] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [showSearchMode, setShowSearchMode] = useState(false);
   const [searchValue, setSearchValue] = useState('');
 
   // Récupérer les articles de stock pour l'autocomplete
@@ -348,20 +346,106 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
     }
   }, [enhanceImageForScanning]);
 
-  const handleManualSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (manualCode.trim()) {
-      handleScanSuccess(manualCode.trim());
-      setManualCode('');
+  const processSelectedItem = async (item: any) => {
+    if (isProcessing) return;
+    
+    setIsProcessing(true);
+    try {
+      // Vérifier le stock disponible
+      if (item.quantity < quantity) {
+        toast({
+          title: 'Stock insuffisant',
+          description: `Stock disponible: ${item.quantity}`,
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Vérifier si l'article existe déjà dans ce carton
+      const { data: existingItems } = await supabase
+        .from('shipment_box_items')
+        .select('*')
+        .eq('box_id', boxId)
+        .eq('stock_item_id', item.id);
+
+      let totalQuantity = quantity;
+      
+      if (existingItems && existingItems.length > 0) {
+        const currentItem = existingItems[0];
+        totalQuantity = currentItem.quantity + quantity;
+        
+        const { error: updateError } = await supabase
+          .from('shipment_box_items')
+          .update({ quantity: totalQuantity })
+          .eq('id', currentItem.id);
+
+        if (updateError) throw updateError;
+      } else {
+        const { error: insertError } = await supabase
+          .from('shipment_box_items')
+          .insert({
+            box_id: boxId,
+            stock_item_id: item.id,
+            item_name: item.name,
+            item_reference: item.reference,
+            quantity: quantity,
+            scanned_by: user?.id
+          });
+
+        if (insertError) throw insertError;
+      }
+
+      // Décrémenter le stock source
+      const newQuantity = item.quantity - quantity;
+      const { error: stockError } = await supabase
+        .from('stock_items')
+        .update({ 
+          quantity: newQuantity,
+          last_updated: new Date().toISOString()
+        })
+        .eq('id', item.id);
+
+      if (stockError) throw stockError;
+
+      toast({
+        title: 'Article ajouté',
+        description: `${quantity}x ${item.name}`,
+      });
+      
+      setQuantity(1);
+      setSearchValue('');
+      onItemScanned();
+    } catch (error: any) {
+      console.error('Erreur:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible d\'ajouter l\'article',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleStockItemSelect = (item: any) => {
-    setShowSearchMode(false);
+    processSelectedItem(item);
+  };
+
+  const handleDirectCode = async (code: string) => {
+    // Chercher d'abord dans le stock local
+    const localItem = stockItems.find(
+      item => item.reference?.toLowerCase() === code.toLowerCase() || 
+              item.name.toLowerCase() === code.toLowerCase()
+    );
+    
+    if (localItem) {
+      await processSelectedItem(localItem);
+    } else {
+      // Sinon, chercher globalement (code-barres)
+      await handleScanSuccess(code);
+    }
+    
     setSearchValue('');
-    // Utiliser la référence ou le nom comme code de scan
-    const code = item.reference || item.name;
-    handleScanSuccess(code);
   };
 
   return (
@@ -438,50 +522,22 @@ export function ShipmentScanner({ boxId, onItemScanned }: ShipmentScannerProps) 
           <div className="space-y-3">
             <div className="text-center text-sm text-muted-foreground">ou</div>
             
-            {/* Recherche d'article */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowSearchMode(!showSearchMode)}
-                className="flex items-center gap-2"
-                disabled={isProcessing}
-              >
-                <Search className="h-4 w-4" />
-                Rechercher article
-              </Button>
-            </div>
-
-            {showSearchMode && (
-              <div className="p-3 border rounded-lg bg-muted/50">
-                <StockItemAutocomplete
-                  stockItems={stockItems}
-                  value={searchValue}
-                  onChange={setSearchValue}
-                  onSelect={handleStockItemSelect}
-                  placeholder="Rechercher par nom ou référence..."
-                  className="w-full"
-                />
-              </div>
-            )}
-            
-            {/* Saisie manuelle */}
-            <form onSubmit={handleManualSubmit} className="space-y-2">
-              <Input
-                placeholder="Code article, référence, ou nom..."
-                value={manualCode}
-                onChange={(e) => setManualCode(e.target.value)}
-                disabled={isProcessing}
-              />
-              <Button 
-                type="submit" 
-                variant="outline"
-                disabled={isProcessing || !manualCode.trim()}
+            {/* Recherche d'article unifiée */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Rechercher ou scanner un article</label>
+              <StockItemAutocomplete
+                stockItems={stockItems}
+                value={searchValue}
+                onChange={setSearchValue}
+                onSelect={handleStockItemSelect}
+                onEnterPressed={handleDirectCode}
+                placeholder="Code, référence ou nom d'article..."
                 className="w-full"
-              >
-                <Scan className="h-4 w-4 mr-2" />
-                Ajouter cet article
-              </Button>
-            </form>
+              />
+              <p className="text-xs text-muted-foreground">
+                Tapez pour rechercher ou collez un code-barres scanné
+              </p>
+            </div>
           </div>
         </div>
       </Card>
