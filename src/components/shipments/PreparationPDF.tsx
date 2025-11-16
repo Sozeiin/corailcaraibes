@@ -11,9 +11,10 @@ interface PreparationPDFProps {
   preparation: any;
   boxes: any[];
   bases: any;
+  hidePrices?: boolean;
 }
 
-export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProps) {
+export function PreparationPDF({ preparation, boxes, bases, hidePrices = false }: PreparationPDFProps) {
   const { toast } = useToast();
   const [generating, setGenerating] = useState(false);
 
@@ -204,7 +205,9 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
       pdf.setFontSize(9);
       pdf.text('Carton', 25, yPosition);
       pdf.text('Articles', 70, yPosition);
-      pdf.text('Valorisation', 150, yPosition);
+      if (!hidePrices) {
+        pdf.text('Valorisation', 150, yPosition);
+      }
       yPosition += 8;
 
       // Lignes du tableau
@@ -223,7 +226,9 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
 
         pdf.text(box.box_identifier, 25, yPosition);
         pdf.text(`${box.total_items}`, 70, yPosition);
-        pdf.text(`${boxValue.toFixed(2)} €`, 150, yPosition);
+        if (!hidePrices) {
+          pdf.text(`${boxValue.toFixed(2)} €`, 150, yPosition);
+        }
         yPosition += 6;
       }
 
@@ -299,9 +304,12 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
 
         const boxItems = itemsWithPrices.filter((item: any) => item.box_id === box.id);
         const boxValue = boxItems.reduce((sum: number, item: any) => sum + item.total_price, 0);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`Valorisation du carton: ${boxValue.toFixed(2)} €`, 20, yPosition);
-        yPosition += 15;
+        if (!hidePrices) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(`Valorisation du carton: ${boxValue.toFixed(2)} €`, 20, yPosition);
+          yPosition += 10;
+        }
+        yPosition += 5;
 
         // Tableau détaillé des articles
         pdf.setFont('helvetica', 'bold');
@@ -315,9 +323,11 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
         pdf.setFontSize(8);
         pdf.text('Article', 18, yPosition);
         pdf.text('Réf.', 80, yPosition);
-        pdf.text('Qté', 120, yPosition);
-        pdf.text('P.U.', 140, yPosition);
-        pdf.text('Total', 165, yPosition);
+        pdf.text('Qté', hidePrices ? 150 : 120, yPosition);
+        if (!hidePrices) {
+          pdf.text('P.U.', 140, yPosition);
+          pdf.text('Total', 165, yPosition);
+        }
         yPosition += 10;
 
         // Lignes du tableau
@@ -345,11 +355,13 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
           
           pdf.text(itemName, 18, yPosition);
           pdf.text(item.item_reference || '-', 80, yPosition);
-          pdf.text(`${item.quantity}`, 120, yPosition);
-          pdf.text(`${item.unit_price.toFixed(2)} €`, 140, yPosition);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`${item.total_price.toFixed(2)} €`, 165, yPosition);
-          pdf.setFont('helvetica', 'normal');
+          pdf.text(`${item.quantity}`, hidePrices ? 150 : 120, yPosition);
+          if (!hidePrices) {
+            pdf.text(`${item.unit_price.toFixed(2)} €`, 140, yPosition);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`${item.total_price.toFixed(2)} €`, 165, yPosition);
+            pdf.setFont('helvetica', 'normal');
+          }
           
           yPosition += 7;
 
@@ -365,15 +377,17 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
         }
 
         // Total du carton
-        yPosition += 5;
-        pdf.setDrawColor(44, 62, 80);
-        pdf.line(15, yPosition, 195, yPosition);
-        yPosition += 8;
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.text('TOTAL CARTON:', 120, yPosition);
-        pdf.setFontSize(12);
-        pdf.text(`${boxValue.toFixed(2)} €`, 165, yPosition);
+        if (!hidePrices) {
+          yPosition += 5;
+          pdf.setDrawColor(44, 62, 80);
+          pdf.line(15, yPosition, 195, yPosition);
+          yPosition += 8;
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(11);
+          pdf.text('TOTAL CARTON:', 120, yPosition);
+          pdf.setFontSize(12);
+          pdf.text(`${boxValue.toFixed(2)} €`, 165, yPosition);
+        }
       }
 
       // Pied de page sur toutes les pages
@@ -393,11 +407,12 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
       }
 
       // Télécharger le PDF
-      const fileName = `douane_expedition_${preparation.reference}_${new Date().toISOString().split('T')[0]}.pdf`;
+      const pdfType = hidePrices ? 'douanes' : 'complet';
+      const fileName = `${pdfType}_expedition_${preparation.reference}_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
 
       toast({
-        title: 'PDF douanier généré',
+        title: hidePrices ? 'PDF douanes généré' : 'PDF complet généré',
         description: 'Le document d\'expédition pour les douanes a été téléchargé avec succès.'
       });
 
@@ -416,12 +431,12 @@ export function PreparationPDF({ preparation, boxes, bases }: PreparationPDFProp
   return (
     <Button 
       onClick={generatePDF}
-      disabled={generating}
+      disabled={generating || boxes.length === 0}
       variant="outline"
       className="flex items-center gap-2"
     >
       <FileText className="h-4 w-4" />
-      {generating ? 'Génération...' : 'PDF Douanes (valorisé)'}
+      {generating ? 'Génération...' : (hidePrices ? 'PDF Douanes (sans prix)' : 'PDF Complet (avec prix)')}
     </Button>
   );
 }
