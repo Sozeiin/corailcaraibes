@@ -375,6 +375,7 @@ export type Database = {
           signature_date: string | null
           signature_url: string | null
           technician_id: string | null
+          technician_name: string | null
           technician_signature: string | null
         }
         Insert: {
@@ -392,6 +393,7 @@ export type Database = {
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
+          technician_name?: string | null
           technician_signature?: string | null
         }
         Update: {
@@ -409,6 +411,7 @@ export type Database = {
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
+          technician_name?: string | null
           technician_signature?: string | null
         }
         Relationships: [
@@ -514,6 +517,7 @@ export type Database = {
           updated_at: string | null
           uploaded_at: string | null
           uploaded_by: string | null
+          uploaded_by_name: string | null
         }
         Insert: {
           boat_id: string
@@ -529,6 +533,7 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          uploaded_by_name?: string | null
         }
         Update: {
           boat_id?: string
@@ -544,6 +549,7 @@ export type Database = {
           updated_at?: string | null
           uploaded_at?: string | null
           uploaded_by?: string | null
+          uploaded_by_name?: string | null
         }
         Relationships: [
           {
@@ -566,6 +572,7 @@ export type Database = {
           planning_activity_id: string | null
           status: string | null
           technician_id: string | null
+          technician_name: string | null
           template_id: string | null
           updated_at: string | null
         }
@@ -579,6 +586,7 @@ export type Database = {
           planning_activity_id?: string | null
           status?: string | null
           technician_id?: string | null
+          technician_name?: string | null
           template_id?: string | null
           updated_at?: string | null
         }
@@ -592,6 +600,7 @@ export type Database = {
           planning_activity_id?: string | null
           status?: string | null
           technician_id?: string | null
+          technician_name?: string | null
           template_id?: string | null
           updated_at?: string | null
         }
@@ -769,9 +778,11 @@ export type Database = {
           next_control_date: string | null
           notes: string | null
           performed_by: string | null
+          performed_by_name: string | null
           status: string
           updated_at: string
           validated_by: string | null
+          validated_by_name: string | null
         }
         Insert: {
           boat_id: string
@@ -783,9 +794,11 @@ export type Database = {
           next_control_date?: string | null
           notes?: string | null
           performed_by?: string | null
+          performed_by_name?: string | null
           status?: string
           updated_at?: string
           validated_by?: string | null
+          validated_by_name?: string | null
         }
         Update: {
           boat_id?: string
@@ -797,9 +810,11 @@ export type Database = {
           next_control_date?: string | null
           notes?: string | null
           performed_by?: string | null
+          performed_by_name?: string | null
           status?: string
           updated_at?: string
           validated_by?: string | null
+          validated_by_name?: string | null
         }
         Relationships: [
           {
@@ -1894,6 +1909,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           created_by: string | null
+          created_by_name: string | null
           customer_type: string | null
           email: string | null
           first_name: string
@@ -1919,6 +1935,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           customer_type?: string | null
           email?: string | null
           first_name: string
@@ -1944,6 +1961,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           customer_type?: string | null
           email?: string | null
           first_name?: string
@@ -2095,6 +2113,7 @@ export type Database = {
           component_id: string | null
           created_at: string | null
           created_by: string | null
+          created_by_name: string | null
           description: string | null
           engine_hours_end: number | null
           engine_hours_end_port: number | null
@@ -2111,6 +2130,7 @@ export type Database = {
           scheduled_time: string | null
           status: Database["public"]["Enums"]["intervention_status"] | null
           technician_id: string | null
+          technician_name: string | null
           title: string
         }
         Insert: {
@@ -2121,6 +2141,7 @@ export type Database = {
           component_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           description?: string | null
           engine_hours_end?: number | null
           engine_hours_end_port?: number | null
@@ -2137,6 +2158,7 @@ export type Database = {
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null
+          technician_name?: string | null
           title: string
         }
         Update: {
@@ -2147,6 +2169,7 @@ export type Database = {
           component_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          created_by_name?: string | null
           description?: string | null
           engine_hours_end?: number | null
           engine_hours_end_port?: number | null
@@ -2163,6 +2186,7 @@ export type Database = {
           scheduled_time?: string | null
           status?: Database["public"]["Enums"]["intervention_status"] | null
           technician_id?: string | null
+          technician_name?: string | null
           title?: string
         }
         Relationships: [
@@ -2548,6 +2572,7 @@ export type Database = {
           rejection_reason: string | null
           request_notes: string | null
           requested_by: string | null
+          requested_by_name: string | null
           status: string | null
           stock_added: boolean | null
           supplier_id: string | null
@@ -2578,6 +2603,7 @@ export type Database = {
           rejection_reason?: string | null
           request_notes?: string | null
           requested_by?: string | null
+          requested_by_name?: string | null
           status?: string | null
           stock_added?: boolean | null
           supplier_id?: string | null
@@ -2608,6 +2634,7 @@ export type Database = {
           rejection_reason?: string | null
           request_notes?: string | null
           requested_by?: string | null
+          requested_by_name?: string | null
           status?: string | null
           stock_added?: boolean | null
           supplier_id?: string | null
@@ -2688,6 +2715,7 @@ export type Database = {
           scheduled_start: string
           status: Database["public"]["Enums"]["activity_status"]
           technician_id: string | null
+          technician_name: string | null
           title: string
           updated_at: string
         }
@@ -2717,6 +2745,7 @@ export type Database = {
           scheduled_start: string
           status?: Database["public"]["Enums"]["activity_status"]
           technician_id?: string | null
+          technician_name?: string | null
           title: string
           updated_at?: string
         }
@@ -2746,6 +2775,7 @@ export type Database = {
           scheduled_start?: string
           status?: Database["public"]["Enums"]["activity_status"]
           technician_id?: string | null
+          technician_name?: string | null
           title?: string
           updated_at?: string
         }

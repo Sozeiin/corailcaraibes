@@ -51,6 +51,7 @@ export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) 
           completion_date,
           anomalies_count,
           technician_id,
+          technician_name,
           planning_activity_id,
           template_id
         `)
@@ -167,10 +168,10 @@ export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) 
                             {new Date(preparation.created_at).toLocaleDateString()}
                           </span>
                         </div>
-                        {preparation.technician && (
+                        {(preparation.technician || (preparation as any).technician_name) && (
                           <div className="flex items-center space-x-1">
                             <User className="h-4 w-4" />
-                            <span>{preparation.technician.name}</span>
+                            <span>{preparation.technician?.name || (preparation as any).technician_name}</span>
                           </div>
                         )}
                         {preparation.template && (
