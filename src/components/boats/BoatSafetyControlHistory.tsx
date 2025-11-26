@@ -31,7 +31,9 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
           safety_control_categories(*),
           performed_by_profile:profiles!boat_safety_controls_performed_by_fkey(*),
           validated_by_profile:profiles!boat_safety_controls_validated_by_fkey(*),
-          boat_safety_control_items(*)
+          boat_safety_control_items(*),
+          performed_by_name,
+          validated_by_name
         `)
         .eq('boat_id', boatId)
         .eq('control_year', selectedYear)
@@ -193,7 +195,7 @@ export const BoatSafetyControlHistory = ({ boatId }: BoatSafetyControlHistoryPro
                       {getStatusBadge(control)}
                     </TableCell>
                     <TableCell>
-                      {control.performed_by_profile?.name || 'Non spécifié'}
+                      {control.performed_by_profile?.name || (control as any).performed_by_name || 'Non spécifié'}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-xs truncate" title={control.notes}>

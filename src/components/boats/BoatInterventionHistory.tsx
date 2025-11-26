@@ -118,10 +118,10 @@ export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps
                           }
                         </span>
                       </div>
-                      {intervention.technician && (
+                      {(intervention.technician || (intervention as any).technician_name) && (
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
-                          <span>{intervention.technician.name}</span>
+                          <span>{intervention.technician?.name || (intervention as any).technician_name}</span>
                         </div>
                       )}
                       <div className="flex items-center space-x-1">

@@ -50,6 +50,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           overall_status,
           general_notes,
           signature_date,
+          technician_name,
           technician:profiles!boat_checklists_technician_id_fkey(name)
         `)
         .eq('boat_id', boatId)
@@ -252,10 +253,10 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                           {new Date(checklist.checklist_date).toLocaleDateString()}
                         </span>
                       </div>
-                      {checklist.technician && (
+                      {(checklist.technician || (checklist as any).technician_name) && (
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
-                          <span>{checklist.technician.name}</span>
+                          <span>{checklist.technician?.name || (checklist as any).technician_name}</span>
                         </div>
                       )}
                       {checklist.rental && (

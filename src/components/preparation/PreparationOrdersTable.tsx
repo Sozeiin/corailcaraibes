@@ -156,10 +156,10 @@ export function PreparationOrdersTable({
                   {getStatusBadge(order.status, order.anomalies_count)}
                 </TableCell>
                 <TableCell>
-                  {order.technician ? (
+                  {(order.technician || (order as any).technician_name) ? (
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      {order.technician.name}
+                      {order.technician?.name || (order as any).technician_name}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-muted-foreground">

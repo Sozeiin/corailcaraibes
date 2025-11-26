@@ -111,7 +111,7 @@ export function InterventionTable({
               <TableCell>
                 <div className="flex items-center gap-1 text-sm">
                   <User className="h-3 w-3" />
-                  {intervention.technician?.name || 'Non assigné'}
+                  {intervention.technician?.name || (intervention as any).technician_name || 'Non assigné'}
                 </div>
               </TableCell>
               <TableCell>
