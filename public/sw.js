@@ -114,7 +114,22 @@ self.addEventListener('notificationclick', (event) => {
 
 // Fetch event - basic pass-through, could add caching strategy later
 self.addEventListener('fetch', (event) => {
-  // Just pass through for now
+  const url = new URL(event.request.url);
+  
+  // Don't intercept requests to manifest.json or other static files
+  // that might be redirected to auth-bridge
+  if (url.pathname === '/manifest.json' || 
+      url.pathname.startsWith('/assets/') ||
+      url.pathname.match(/\.(png|jpg|jpeg|svg|ico|json|webp)$/)) {
+    return; // Let the browser handle it
+  }
+  
+  // Don't intercept cross-origin requests
+  if (url.origin !== self.location.origin) {
+    return; // Let the browser handle it
+  }
+  
+  // Pass through same-origin requests
   event.respondWith(fetch(event.request));
 });
 
