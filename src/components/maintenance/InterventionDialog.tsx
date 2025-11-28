@@ -76,11 +76,27 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
   });
 
   // Persistance des données du formulaire
-  const { loadSavedData, clearSavedData } = useFormPersistence(
+  const { clearSavedData } = useFormPersistence(
     `intervention_${intervention?.id || 'new'}`,
     {
       ...form.getValues(),
       parts: interventionParts
+    },
+    (savedData) => {
+      if (savedData) {
+        Object.keys(savedData).forEach(key => {
+          if (key !== 'parts') {
+            form.setValue(key as any, savedData[key]);
+          }
+        });
+        if (savedData.parts) {
+          setInterventionParts(savedData.parts);
+        }
+        toast({
+          title: "Brouillon restauré",
+          description: "Vos données ont été restaurées.",
+        });
+      }
     },
     isOpen
   );
@@ -189,43 +205,18 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       });
       setInterventionParts(existingParts);
     } else {
-      // Essayer de charger le brouillon sauvegardé
-      const savedData = loadSavedData();
-      
-      if (savedData && typeof savedData === 'object') {
-        const formData = savedData as any;
-        form.reset({
-          title: formData.title || '',
-          description: formData.description || '',
-          boatId: formData.boatId || '',
-          technicianId: formData.technicianId || '',
-          status: formData.status || 'scheduled',
-          scheduledDate: formData.scheduledDate || new Date().toISOString().split('T')[0],
-          baseId: formData.baseId || user?.baseId || '',
-          interventionType: formData.interventionType || 'maintenance'
-        });
-        
-        if (formData.parts && Array.isArray(formData.parts)) {
-          setInterventionParts(formData.parts);
-        }
-        
-        toast({
-          title: 'Brouillon restauré',
-          description: 'Vos données ont été récupérées.',
-        });
-      } else {
-        form.reset({
-          title: '',
-          description: '',
-          boatId: '',
-          technicianId: '',
-          status: 'scheduled',
-          scheduledDate: new Date().toISOString().split('T')[0],
-          baseId: user?.baseId || '',
-          interventionType: 'maintenance'
-        });
-        setInterventionParts([]);
-      }
+      // Initialisation avec les valeurs par défaut (la restauration est gérée automatiquement par useFormPersistence)
+      form.reset({
+        title: '',
+        description: '',
+        boatId: '',
+        technicianId: '',
+        status: 'scheduled',
+        scheduledDate: new Date().toISOString().split('T')[0],
+        baseId: user?.baseId || '',
+        interventionType: 'maintenance'
+      });
+      setInterventionParts([]);
     }
   }, [intervention, form, user, isOpen]);
 
