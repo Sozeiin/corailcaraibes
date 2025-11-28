@@ -1,6 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { Clock } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
   SelectContent,
@@ -57,15 +58,18 @@ export function UnassignedTasksDropZone({
   onTaskClick,
   getTaskTypeConfig,
 }: UnassignedTasksDropZoneProps) {
+  const isMobile = useIsMobile();
+  
   const { setNodeRef, isOver } = useDroppable({
-    id: 'unassigned-zone'
+    id: 'unassigned-zone',
+    disabled: isMobile, // Disable drop on mobile
   });
 
   return (
     <div 
-      ref={setNodeRef}
+      ref={isMobile ? undefined : setNodeRef}
       className={`flex-none border-b bg-gray-50 max-h-64 rounded-t-2xl m-4 mb-0 shadow-md transition-all ${
-        isOver 
+        !isMobile && isOver 
           ? 'bg-blue-100 border-4 border-blue-500 border-dashed shadow-lg scale-[1.02]' 
           : ''
       }`}
@@ -75,7 +79,7 @@ export function UnassignedTasksDropZone({
           <h3 className="font-semibold text-gray-800 flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-blue-600" />
             Tâches non assignées ({filteredTasks.length})
-            {isOver && <span className="text-blue-600 animate-pulse ml-2">← Déposer ici</span>}
+            {!isMobile && isOver && <span className="text-blue-600 animate-pulse ml-2">← Déposer ici</span>}
           </h3>
           
           <div className="flex gap-2 flex-wrap">

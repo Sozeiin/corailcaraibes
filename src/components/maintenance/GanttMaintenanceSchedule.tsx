@@ -1,5 +1,15 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { DndContext, DragEndEvent, DragStartEvent, DragOverlay, useDroppable } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  DragEndEvent, 
+  DragStartEvent, 
+  DragOverlay, 
+  useDroppable,
+  MouseSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -131,6 +141,7 @@ const TASK_TYPE_COLORS = {
   }
 };
 export function GanttMaintenanceSchedule() {
+  const isMobile = useIsMobile();
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [draggedTask, setDraggedTask] = useState<Intervention | null>(null);
   const [selectedTask, setSelectedTask] = useState<Intervention | null>(null);
@@ -157,6 +168,15 @@ export function GanttMaintenanceSchedule() {
   } = useToast();
   const queryClient = useQueryClient();
   const [weatherEvaluations, setWeatherEvaluations] = useState<Record<string, WeatherEvaluation>>({});
+
+  // Configure drag sensors for desktop only
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 8, // Must move 8px before activating drag
+    },
+  });
+
+  const sensors = useSensors(mouseSensor);
 
   // Generate time slots (6 AM to 7 PM)
   const timeSlots = useMemo(() => {
@@ -1011,7 +1031,8 @@ export function GanttMaintenanceSchedule() {
         
       </div>
 
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      {isMobile ? (
+        // Mobile: No drag and drop
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Panel tâches non assignées - compact et efficace */}
           {showUnassignedPanel && (
@@ -1151,12 +1172,159 @@ export function GanttMaintenanceSchedule() {
             </ScrollArea>
           </div>
         </div>
+      ) : (
+        // Desktop: Full drag and drop
+        <DndContext 
+          sensors={sensors}
+          onDragStart={handleDragStart} 
+          onDragEnd={handleDragEnd}
+        >
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Panel tâches non assignées - compact et efficace */}
+            {showUnassignedPanel && (
+              <UnassignedTasksDropZone
+                filteredTasks={filteredUnassignedTasks}
+                selectedBoatId={selectedBoatId}
+                setSelectedBoatId={setSelectedBoatId}
+                selectedActivityType={selectedActivityType}
+                setSelectedActivityType={setSelectedActivityType}
+                boatOptions={boatOptions}
+                onTaskClick={(task) => setSelectedTask(task as Intervention)}
+                getTaskTypeConfig={getTaskTypeConfig}
+              />
+            )}
 
-        {/* Drag overlay */}
-        <DragOverlay>
-          {draggedTask && <SimpleDraggableTask task={draggedTask} getTaskTypeConfig={getTaskTypeConfig} />}
-        </DragOverlay>
-      </DndContext>
+            {/* Main table */}
+            <div className="flex-1 flex flex-col overflow-hidden">
+              {/* Header tableau moderne */}
+              <div className="flex-none border-b bg-gradient-to-r from-gray-100 to-blue-100 shadow-md m-4 rounded-2xl overflow-hidden">
+                <div className="flex overflow-x-auto md:overflow-x-visible">
+                  {/* Colonne technicien */}
+                  <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 bg-white p-4 font-semibold text-gray-700 flex items-center gap-2">
+                    <User className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm">Technicien</span>
+                  </div>
+                  {/* Colonne heure */}
+                  <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 bg-white p-4 font-semibold text-gray-700 flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm hidden sm:inline">Heure</span>
+                    <span className="text-sm sm:hidden">H</span>
+                  </div>
+                  {/* Colonnes jours */}
+                  {weekDays.map(day => <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 bg-gray-50">
+                      <div className={`text-center p-4 font-medium transition-colors ${day.isToday ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}`}>
+                        <div className="text-xs text-gray-500 uppercase tracking-wider">{day.dayName}</div>
+                        <div className={`text-base sm:text-lg ${day.isToday ? 'text-blue-700 font-bold' : 'text-gray-800'}`}>
+                          {day.dayNumber}
+                        </div>
+                      </div>
+                    </div>)}
+                </div>
+              </div>
+
+              {/* Contenu tableau moderne et responsive */}
+              <ScrollArea className="flex-1">
+                <div className="min-h-full bg-white m-4 rounded-2xl shadow-md overflow-hidden">
+                  {technicians.map(technician => {
+                  const isCollapsed = collapsedTechnicians.has(technician.id);
+                  const taskCount = getTechnicianTaskCount(technician.id);
+                  return <div key={technician.id} className="border-b border-gray-200 last:border-b-0">
+                        {isCollapsed ?
+                    // Vue réduite - responsive
+                    <div className="flex overflow-x-auto hover:bg-gray-50 transition-colors bg-gray-50/50">
+                            <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 p-4 flex items-center gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-blue-100 rounded-xl">
+                                <ChevronDown className="h-3 w-3 text-blue-600" />
+                              </Button>
+                              <div className="p-1 bg-blue-100 rounded-xl">
+                                <User className="h-3 w-3 text-blue-600" />
+                              </div>
+                              <span className="text-sm font-medium truncate">{technician.name}</span>
+                              {taskCount > 0 && <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-2xl">
+                                  {taskCount}
+                                </Badge>}
+                            </div>
+                            
+                            <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
+                              <span className="text-xs text-gray-500">Réduit</span>
+                            </div>
+                            
+                            {/* Cellules jours - mode réduit */}
+                            {weekDays.map(day => <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 p-4 flex items-center justify-center">
+                                <span className="text-xs text-gray-400">···</span>
+                              </div>)}
+                          </div> :
+                    // Vue étendue - créneaux horaires
+                    timeSlots.map(slot => <div key={`${technician.id}-${slot.hour}`} className="flex overflow-x-auto md:overflow-x-visible border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+                              {/* Nom technicien - affiché seulement à la première heure */}
+                              <div className="w-40 md:min-w-[120px] flex-none border-r border-gray-200 p-4 flex items-center gap-2">
+                                {slot.hour === timeSlots[0].hour && <>
+                                    <Button variant="ghost" size="sm" onClick={() => toggleTechnicianCollapse(technician.id)} className="h-6 w-6 p-0 hover:bg-blue-100 rounded-xl">
+                                      <ChevronUp className="h-3 w-3 text-blue-600" />
+                                    </Button>
+                                    <div className="p-1 bg-blue-100 rounded-xl">
+                                      <User className="h-3 w-3 text-blue-600" />
+                                    </div>
+                                    <span className="text-sm font-medium truncate">{technician.name}</span>
+                                    {taskCount > 0 && <Badge variant="secondary" className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-2xl">
+                                        {taskCount}
+                                      </Badge>}
+                                  </>}
+                              </div>
+                              
+                              {/* Heure */}
+                              <div className="w-20 md:min-w-[80px] flex-none border-r border-gray-200 p-4 flex items-center justify-center">
+                                <span className="text-sm font-mono text-gray-600">{slot.label}</span>
+                              </div>
+                              
+                               {/* Cellules jours avec tâches */}
+                               {weekDays.map((day, dayIndex) => {
+                        const slotId = `${technician.id}|${day.dateString}|${slot.hour}`;
+                        const tasks = tasksBySlot[slotId] || [];
+
+                        // Debug logging for slot mapping verification
+                        if (slotId.includes('2c8edd4e-41c8-4911-8e00-da85e4cfe7c4') || tasks.length > 0) {
+                          console.log('🎯 SLOT MAPPING VERIFICATION:', {
+                            slotId,
+                            visualHour: slot.hour,
+                            visualLabel: slot.label,
+                            dateString: day.dateString,
+                            tasksCount: tasks.length,
+                            taskIds: tasks.map(t => t.id),
+                            taskTitles: tasks.map(t => t.title),
+                            taskCurrentTimes: tasks.map(t => t.scheduled_time)
+                          });
+                        }
+                        return <div key={day.dateString} className="w-48 md:min-w-[120px] flex-none border-r border-gray-200 last:border-r-0 hover:bg-gray-100 transition-colors">
+                                        <SimpleDroppableSlot 
+                                          id={slotId} 
+                                          tasks={tasks} 
+                                          onTaskClick={task => setSelectedTask(task as Intervention)}
+                                          getTaskTypeConfig={getTaskTypeConfig}
+                                          technicians={technicians}
+                                          onViewDetails={(task) => handleViewDetails(task as Intervention)}
+                                          onEdit={(task) => handleEditIntervention(task as Intervention)}
+                                          onStatusChange={(task, status) => handleStatusChange(task as Intervention, status)}
+                                          onReassign={(task, technicianId) => handleReassign(task as Intervention, technicianId)}
+                                          onDelete={(task) => handleDeleteIntervention(task as Intervention)}
+                                          onWeatherEvaluation={(task) => handleWeatherEvaluation(task as Intervention)}
+                                        />
+                                    </div>;
+                      })}
+                             </div>)}
+                      </div>;
+                })}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+
+          {/* Drag overlay */}
+          <DragOverlay>
+            {draggedTask && <SimpleDraggableTask task={draggedTask} getTaskTypeConfig={getTaskTypeConfig} />}
+          </DragOverlay>
+        </DndContext>
+      )}
 
       {/* Alertes météo modernes */}
       {Object.entries(weatherEvaluations).some(([_, evaluation]) => !evaluation.suitable) && <div className="m-4 bg-orange-50 border border-orange-200 rounded-2xl p-4 shadow-md">
