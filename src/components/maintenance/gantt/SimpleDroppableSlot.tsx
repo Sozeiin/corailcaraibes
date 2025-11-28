@@ -2,6 +2,7 @@ import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SimpleDraggableTask } from './SimpleDraggableTask';
 import { InterventionContextMenu } from './InterventionContextMenu';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Task {
   id: string;
@@ -57,16 +58,19 @@ export function SimpleDroppableSlot({
   onDelete,
   onWeatherEvaluation
 }: SimpleDroppableSlotProps) {
+  const isMobile = useIsMobile();
+  
   const { isOver, setNodeRef } = useDroppable({
     id,
+    disabled: isMobile, // Disable drop on mobile
   });
 
   return (
     <div
-      ref={setNodeRef}
+      ref={isMobile ? undefined : setNodeRef}
       className={`
         min-h-[50px] p-2 transition-all duration-200 rounded-md
-        ${isOver ? 'bg-primary/5 ring-2 ring-primary' : 'hover:bg-gray-50'}
+        ${!isMobile && isOver ? 'bg-primary/5 ring-2 ring-primary' : 'hover:bg-gray-50'}
       `}
     >
       <div className="space-y-2">
@@ -91,7 +95,7 @@ export function SimpleDroppableSlot({
         ))}
       </div>
       
-      {isOver && tasks.length === 0 && (
+      {!isMobile && isOver && tasks.length === 0 && (
         <div className="border-2 border-dashed border-primary/50 rounded p-4 text-center text-sm text-muted-foreground">
           Déposer la tâche ici
         </div>

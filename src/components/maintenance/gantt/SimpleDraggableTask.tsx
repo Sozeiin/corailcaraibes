@@ -1,7 +1,8 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Card } from '@/components/ui/card';
-import { Ship, GripVertical } from 'lucide-react';
+import { Ship, GripVertical, Eye } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Task {
   id: string;
@@ -35,6 +36,8 @@ export function SimpleDraggableTask({
   onTaskClick, 
   getTaskTypeConfig 
 }: SimpleDraggableTaskProps) {
+  const isMobile = useIsMobile();
+  
   const {
     attributes,
     listeners,
@@ -43,6 +46,7 @@ export function SimpleDraggableTask({
     isDragging,
   } = useDraggable({
     id: task.id,
+    disabled: isMobile, // Disable on mobile
   });
 
   const taskType = task.activity_type || task.intervention_type || 'default';
@@ -73,62 +77,66 @@ export function SimpleDraggableTask({
     }
   };
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (!isDragging) {
-      e.stopPropagation();
-      onTaskClick?.(task);
-    }
-  };
+  // Apply listeners to entire card if desktop
+  const cardListeners = isMobile ? {} : listeners;
+  const cardAttributes = isMobile ? {} : attributes;
 
   return (
     <Card
       ref={setNodeRef}
       style={style}
-      onClick={handleClick}
-      title="Cliquer pour voir les détails • Glisser l'icône ⋮⋮ pour déplacer"
+      {...cardListeners}
+      {...cardAttributes}
       className={`
         relative select-none transition-all duration-200
-        ${isDragging ? 'opacity-50 scale-105 shadow-lg z-50' : 'hover:shadow-md hover:scale-[1.01] cursor-pointer'}
+        ${isDragging ? 'opacity-50 scale-105 shadow-lg z-50 ring-2 ring-primary' : ''}
+        ${!isMobile ? 'cursor-grab active:cursor-grabbing hover:shadow-md hover:scale-[1.01]' : 'cursor-pointer'}
         ${typeConfig.bg} ${typeConfig.border} border-l-4 w-full
       `}
     >
-      <div className="p-1.5 space-y-1">
-        {/* Header with status and drag handle */}
+      <div className="p-2 space-y-1">
+        {/* Header with status and actions */}
         <div className="flex items-center justify-between">
-          <div className={`w-1.5 h-1.5 rounded-full ${getStatusColor()}`} />
+          <div className={`w-2 h-2 rounded-full ${getStatusColor()}`} />
           
           <div className="flex items-center gap-1">
-            <IconComponent className={`h-2.5 w-2.5 ${typeConfig.text}`} />
+            <IconComponent className={`h-3 w-3 ${typeConfig.text}`} />
             
-            {/* Drag handle - zone dédiée au drag */}
-            <div 
-              {...listeners}
-              {...attributes}
-              className="cursor-grab active:cursor-grabbing p-0.5 hover:bg-gray-200/50 rounded transition-colors"
-              title="Glisser pour déplacer"
-              onClick={(e) => e.stopPropagation()}
+            {/* Details button (stop propagation for click) */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onTaskClick?.(task);
+              }}
+              className="p-1 hover:bg-gray-200/50 rounded transition-colors z-10"
+              title="Voir les détails"
             >
+              <Eye className="h-3 w-3 text-gray-500" />
+            </button>
+            
+            {/* Drag indicator (desktop only) */}
+            {!isMobile && (
               <GripVertical className="h-3 w-3 text-gray-400" />
-            </div>
+            )}
           </div>
         </div>
         
         {/* Task title */}
-        <div className={`text-[10px] font-semibold line-clamp-2 ${typeConfig.text} leading-tight`}>
+        <div className={`text-xs font-semibold line-clamp-2 ${typeConfig.text} leading-tight`}>
           {task.title}
         </div>
         
         {/* Boat name */}
         {task.boats && (
-          <div className="flex items-center gap-0.5 text-[9px] text-gray-600">
-            <Ship className="h-2 w-2" />
+          <div className="flex items-center gap-0.5 text-[10px] text-gray-600">
+            <Ship className="h-2.5 w-2.5" />
             <span className="truncate">{task.boats.name}</span>
           </div>
         )}
         
         {/* Time */}
         {task.scheduled_time && (
-          <div className="text-[9px] font-mono text-gray-600">
+          <div className="text-[10px] font-mono text-gray-600">
             {task.scheduled_time.split(':').slice(0, 2).join(':')}
           </div>
         )}
