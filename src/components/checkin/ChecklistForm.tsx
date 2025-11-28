@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Save, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +16,8 @@ import {
   ChecklistData 
 } from '@/hooks/useChecklistData';
 import { useSignatureUpload } from '@/hooks/useSignatureUpload';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
+import { useSignaturePersistence } from '@/hooks/useSignaturePersistence';
 import { supabase } from '@/integrations/supabase/client';
 import { ChecklistSteps } from './ChecklistSteps';
 import { ChecklistInspection } from './ChecklistInspection';
@@ -55,6 +58,39 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const updateRentalStatusMutation = useUpdateRentalStatus();
   const uploadSignatureMutation = useSignatureUpload();
   const createInterventionMutation = useCreateIntervention();
+
+  // Persistance des données du formulaire
+  const { clearSavedData: clearFormDraft, hasSavedDraft } = useFormPersistence(
+    `checklist_${boat.id}_${type}`,
+    {
+      checklistItems,
+      generalNotes,
+      currentStep,
+      customerEmail,
+      sendEmailReport,
+    },
+    (savedData) => {
+      if (savedData.checklistItems) setChecklistItems(savedData.checklistItems);
+      if (savedData.generalNotes) setGeneralNotes(savedData.generalNotes);
+      if (savedData.currentStep) setCurrentStep(savedData.currentStep);
+      if (savedData.customerEmail) setCustomerEmail(savedData.customerEmail);
+      if (savedData.sendEmailReport !== undefined) setSendEmailReport(savedData.sendEmailReport);
+      
+      toast({
+        title: "Brouillon restauré",
+        description: "Vos données ont été restaurées après la mise en veille.",
+      });
+    },
+    true, // isOpen = true car le composant est monté
+    { excludeFields: [] }
+  );
+
+  // Persistance séparée pour les signatures (volumineuses)
+  const { clearSignatures } = useSignaturePersistence(
+    `checklist_${boat.id}_${type}`,
+    { technicianSignature, customerSignature },
+    true
+  );
 
   // Initialize checklist items
   useEffect(() => {
@@ -461,14 +497,16 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
         console.log('⚠️ [DEBUG] Email non envoyé car:', { sendEmailReport, customerEmail });
       }
 
-      console.log('✅ [DEBUG] Finalisation réussie');
-      
+      // Nettoyer les données après soumission
+      clearFormDraft();
+      clearSignatures();
+
       toast({
-        title: 'Succès',
-        description: `${type === 'checkin' ? 'Check-in' : 'Check-out'} finalisé avec succès`,
+        title: 'Checklist complète',
+        description: `Le ${type === 'checkin' ? 'check-in' : 'check-out'} a été enregistré avec succès.`,
       });
 
-      onComplete({ checklist, rental, boat });
+      onComplete(checklist);
 
     } catch (error: any) {
       console.error('❌ [DEBUG] Erreur lors de la finalisation:', error);
@@ -540,8 +578,16 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
               {type === 'checkin' ? 'Check-in' : 'Check-out'} - {boat.name}
             </span>
           </div>
-          <div className="text-sm text-muted-foreground">
-            {boat.model} • {boat.hin}
+          <div className="flex items-center gap-2">
+            {hasSavedDraft && (
+              <Badge variant="secondary" className="text-xs">
+                <Save className="h-3 w-3 mr-1" />
+                Brouillon sauvegardé
+              </Badge>
+            )}
+            <div className="text-sm text-muted-foreground">
+              {boat.model} • {boat.hin}
+            </div>
           </div>
         </CardTitle>
       </CardHeader>

@@ -10,11 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Save } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { StockItemAutocomplete } from '@/components/stock/StockItemAutocomplete';
 import { PhotoCapture } from './PhotoCapture';
 import { useNavigate } from 'react-router-dom';
+import { useFormPersistence } from '@/hooks/useFormPersistence';
 
 interface FormData {
   boat_id: string;
@@ -50,6 +51,34 @@ export function SupplyRequestDialog({ isOpen, onClose, onSuccess }: SupplyReques
       photo_url: '',
     },
   });
+
+  // Persistance du formulaire
+  const { clearSavedData, hasSavedDraft } = useFormPersistence(
+    'supply_request',
+    {
+      ...form.watch(),
+      searchValue,
+      selectedStockItemId: selectedStockItem?.id,
+      photoUrl,
+    },
+    (savedData) => {
+      if (savedData.boat_id) form.setValue('boat_id', savedData.boat_id);
+      if (savedData.item_name) form.setValue('item_name', savedData.item_name);
+      if (savedData.item_reference) form.setValue('item_reference', savedData.item_reference);
+      if (savedData.description) form.setValue('description', savedData.description);
+      if (savedData.quantity_needed) form.setValue('quantity_needed', savedData.quantity_needed);
+      if (savedData.urgency_level) form.setValue('urgency_level', savedData.urgency_level);
+      if (savedData.photo_url) form.setValue('photo_url', savedData.photo_url);
+      if (savedData.searchValue) setSearchValue(savedData.searchValue);
+      if (savedData.photoUrl) setPhotoUrl(savedData.photoUrl);
+      
+      toast({
+        title: "Brouillon restauré",
+        description: "Vos données ont été restaurées.",
+      });
+    },
+    isOpen
+  );
 
   // Fetch boats for selection
   const { data: boats = [] } = useQuery({
@@ -114,6 +143,7 @@ export function SupplyRequestDialog({ isOpen, onClose, onSuccess }: SupplyReques
       return result;
     },
     onSuccess: () => {
+      clearSavedData();
       toast({
         title: "Demande créée",
         description: "Votre demande d'approvisionnement a été créée avec succès.",
@@ -165,7 +195,15 @@ export function SupplyRequestDialog({ isOpen, onClose, onSuccess }: SupplyReques
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nouvelle demande d'approvisionnement</DialogTitle>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Nouvelle demande d'approvisionnement</span>
+              {hasSavedDraft && (
+                <Badge variant="secondary" className="text-xs">
+                  <Save className="h-3 w-3 mr-1" />
+                  Brouillon sauvegardé
+                </Badge>
+              )}
+            </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
