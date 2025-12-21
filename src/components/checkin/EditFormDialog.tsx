@@ -64,13 +64,16 @@ export function EditFormDialog({ form, open, onOpenChange, onSuccess }: EditForm
         .update({
           customer_id: selectedCustomer.id,
           boat_id: selectedBoatId || null,
+          suggested_boat_id: selectedBoatId || null,
           planned_start_date: startDate.toISOString(),
           planned_end_date: endDate.toISOString(),
           rental_notes: rentalNotes,
           special_instructions: specialInstructions,
           is_boat_assigned: !!selectedBoatId,
+          updated_at: new Date().toISOString(),
         })
-        .eq('id', form.id);
+        .eq('id', form.id)
+        .neq('status', 'used');
 
       if (error) throw error;
 
