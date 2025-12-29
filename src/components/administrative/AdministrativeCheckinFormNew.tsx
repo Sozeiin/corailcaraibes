@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { CustomerAutocomplete } from '@/components/customers/CustomerAutocomplete';
 import { CustomerDialog } from '@/components/customers/CustomerDialog';
 import { Customer } from '@/types/customer';
+import { parseLocalDateToUTC } from '@/lib/dateUtils';
 
 interface AdministrativeCheckinFormNewProps {
   onFormCreated: () => void;
@@ -96,8 +97,8 @@ export function AdministrativeCheckinFormNew({ onFormCreated }: AdministrativeCh
           boat_id: canAssignNow ? actualBoatId : null,
           suggested_boat_id: actualBoatId,
           is_boat_assigned: canAssignNow,
-          planned_start_date: new Date(startDate).toISOString(),
-          planned_end_date: new Date(endDate).toISOString(),
+          planned_start_date: parseLocalDateToUTC(startDate).toISOString(),
+          planned_end_date: parseLocalDateToUTC(endDate).toISOString(),
           rental_notes: notes || null,
           special_instructions: specialInstructions || null,
           created_by: user.id,
