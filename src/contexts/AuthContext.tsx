@@ -47,12 +47,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(newSession);
         
         if (newSession?.user) {
-          // Defer profile fetching to avoid blocking auth state updates
-          setTimeout(() => {
-            if (isSubscribed) {
-              fetchUserProfile(newSession);
-            }
-          }, 0);
+          // Fetch profile immédiatement pour éviter les race conditions
+          // où les composants tentent d'accéder à user.baseId avant qu'il soit défini
+          fetchUserProfile(newSession).catch(err => {
+            console.error('Error fetching profile on auth change:', err);
+          });
         } else {
           setUser(null);
         }
@@ -82,11 +81,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // If we have a session but haven't been initialized by the listener yet
         if (initialSession && !isInitialized) {
           setSession(initialSession);
-          setTimeout(() => {
-            if (isSubscribed) {
-              fetchUserProfile(initialSession);
-            }
-          }, 0);
+          // Fetch profile immédiatement
+          try {
+            await fetchUserProfile(initialSession);
+          } catch (err) {
+            console.error('Error fetching profile on init:', err);
+          }
         }
         
         // Ensure loading is false after initialization

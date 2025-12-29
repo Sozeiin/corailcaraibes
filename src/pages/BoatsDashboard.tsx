@@ -10,15 +10,18 @@ import { InterventionDialog } from '@/components/maintenance/InterventionDialog'
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, Search, Filter } from 'lucide-react';
+import { ArrowLeft, Search, Filter, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { calculateOilChangeStatus, getWorstOilChangeStatus } from '@/utils/engineMaintenanceUtils';
 import { countExpiredControls } from '@/utils/safetyControlUtils';
+import { useToast } from '@/hooks/use-toast';
 
 export const BoatsDashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   // Debug user context
   console.log('👤 [Dashboard] Current user context:', {
@@ -37,38 +40,66 @@ export const BoatsDashboard = () => {
   } | null>(null);
 
   // Fetch boats data
-  const { data: boats = [], loading: boatsLoading, error: boatsError } = useOfflineData<any>({
+  const { data: boats = [], loading: boatsLoading, error: boatsError, refetch: refetchBoats } = useOfflineData<any>({
     table: 'boats',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch safety controls
-  const { data: safetyControls = [], loading: safetyLoading, error: safetyError } = useOfflineData<any>({
+  const { data: safetyControls = [], loading: safetyLoading, error: safetyError, refetch: refetchSafety } = useOfflineData<any>({
     table: 'boat_safety_controls',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch interventions
-  const { data: interventions = [], loading: interventionsLoading, error: interventionsError } = useOfflineData<any>({
+  const { data: interventions = [], loading: interventionsLoading, error: interventionsError, refetch: refetchInterventions } = useOfflineData<any>({
     table: 'interventions',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch alerts
-  const { data: alerts = [], loading: alertsLoading, error: alertsError } = useOfflineData<any>({
+  const { data: alerts = [], loading: alertsLoading, error: alertsError, refetch: refetchAlerts } = useOfflineData<any>({
     table: 'alerts',
     baseId: user?.role !== 'direction' ? user?.baseId : undefined,
     dependencies: [user?.id, user?.role]
   });
 
   // Fetch boat components for engine data
-  const { data: boatComponents = [], loading: componentsLoading, error: componentsError } = useOfflineData<any>({
+  const { data: boatComponents = [], loading: componentsLoading, error: componentsError, refetch: refetchComponents } = useOfflineData<any>({
     table: 'boat_components',
     dependencies: [user?.id, user?.role, user?.baseId]
   });
+  
+  // Fonction de rafraîchissement manuel
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    console.log('🔄 [Dashboard] Manual refresh triggered');
+    try {
+      await Promise.all([
+        refetchBoats(),
+        refetchSafety(),
+        refetchInterventions(),
+        refetchAlerts(),
+        refetchComponents()
+      ]);
+      toast({
+        title: "Données actualisées",
+        description: `${boats.length} bateau(x) chargé(s)`,
+      });
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+      toast({
+        title: "Erreur de rafraîchissement",
+        description: "Impossible d'actualiser les données. Veuillez réessayer.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   // Debug data loading states
   console.log('📡 [Dashboard] Data loading states:', {
@@ -256,6 +287,14 @@ export const BoatsDashboard = () => {
             Vue d'ensemble de la maintenance et des alertes
           </p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={handleManualRefresh}
+          disabled={isRefreshing || boatsLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Actualisation...' : 'Rafraîchir'}
+        </Button>
       </div>
 
       {/* KPIs Grid */}
