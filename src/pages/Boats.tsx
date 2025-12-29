@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash2, Plus, Search, History, Shield, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Plus, Search, History, Shield, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -124,6 +124,7 @@ export const Boats = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedBoat, setSelectedBoat] = useState<Boat | null>(null);
   const [boatToDelete, setBoatToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -135,6 +136,28 @@ export const Boats = () => {
     loading: isLoading,
     refetch: refetchBoats
   } = useOfflineData<any>({ table: 'boats', baseId, dependencies: [user?.role, user?.baseId] });
+  
+  // Fonction de rafraîchissement manuel
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    console.log('🔄 [Boats] Manual refresh triggered');
+    try {
+      await refetchBoats();
+      toast({
+        title: "Données actualisées",
+        description: `${rawBoats.length} bateau(x) chargé(s)`,
+      });
+    } catch (error) {
+      console.error('Error during manual refresh:', error);
+      toast({
+        title: "Erreur de rafraîchissement",
+        description: "Impossible d'actualiser les données. Veuillez réessayer.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   const { data: bases = [] } = useOfflineData<any>({ table: 'bases' });
 
@@ -244,10 +267,20 @@ export const Boats = () => {
           <h1 className="text-3xl font-bold">Bateaux</h1>
           <p className="text-muted-foreground">{boats?.length || 0} bateau(x) au total</p>
         </div>
-        {canManageBoats && <Button onClick={() => setIsDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Nouveau bateau
-          </Button>}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleManualRefresh}
+            disabled={isRefreshing || isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Actualisation...' : 'Rafraîchir'}
+          </Button>
+          {canManageBoats && <Button onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau bateau
+            </Button>}
+        </div>
       </div>
 
       <div className="flex gap-4">

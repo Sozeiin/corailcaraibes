@@ -50,22 +50,35 @@ export function GlobalRealtimeProvider({ children }: GlobalRealtimeProviderProps
   // Synchronisation des notifications push côté application
   useNotificationSync();
 
-  // Système de heartbeat pour vérifier la connexion
+  // Système de heartbeat pour vérifier la connexion (moins destructif)
   useEffect(() => {
+    let consecutiveFailures = 0;
+    
     const heartbeatInterval = setInterval(async () => {
       try {
         // Ping Supabase pour vérifier la connexion
         const { error } = await supabase.from('boats').select('id').limit(1);
         if (error) {
-          console.warn('⚠️ Heartbeat failed, reconnecting...', error);
-          // Force reconnect des channels
-          supabase.removeAllChannels();
-          queryClient.invalidateQueries();
+          consecutiveFailures++;
+          console.warn(`⚠️ Heartbeat failed (${consecutiveFailures}/3):`, error.message);
+          
+          // Seulement reconnecter après 3 échecs consécutifs
+          if (consecutiveFailures >= 3) {
+            console.warn('🔄 Multiple heartbeat failures, attempting reconnection...');
+            // Force reconnect des channels uniquement, pas d'invalidation
+            supabase.removeAllChannels();
+            consecutiveFailures = 0;
+          }
+          // NE PAS invalider les queries pour éviter de vider les données
         } else {
-          console.log('💚 Heartbeat OK - Connection active');
+          if (consecutiveFailures > 0) {
+            console.log('💚 Heartbeat recovered after failures');
+          }
+          consecutiveFailures = 0;
         }
       } catch (error) {
-        console.error('❌ Heartbeat error:', error);
+        consecutiveFailures++;
+        console.error(`❌ Heartbeat error (${consecutiveFailures}/3):`, error);
       }
     }, 60000); // Vérifier toutes les minutes
 

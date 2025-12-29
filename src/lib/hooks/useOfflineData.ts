@@ -29,6 +29,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasValidData, setHasValidData] = useState(false);
   const { syncStatus } = useOfflineSync();
 
   const getIsOnline = useCallback(async () => {
@@ -55,15 +56,24 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
 
   const fetchData = useCallback(async () => {
     const isOnline = await getIsOnline();
-    console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}`);
+    console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}, baseId: ${baseId}`);
+    
+    // Protection: Ne pas fetch si baseId est requis mais non défini
+    if (baseId === undefined && table !== 'bases') {
+      console.warn(`[useOfflineData] ⚠️ baseId is undefined for ${table}, waiting for user profile...`);
+      // Ne pas vider les données existantes, juste attendre
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     setError(null);
 
     try {
       let fetchedData: T[] = [];
 
-        if (isOnline) {
-          console.log(`[useOfflineData] Fetching from Supabase for table: ${table}`);
+      if (isOnline) {
+        console.log(`[useOfflineData] Fetching from Supabase for table: ${table}`);
         // En ligne : récupérer de Supabase et synchroniser avec SQLite
         const queryBuilder = (supabase as any).from(table).select('*');
         
@@ -84,7 +94,7 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
         }
         
         fetchedData = (onlineData as any) || [];
-        console.log(`[useOfflineData] Fetched ${fetchedData.length} records from Supabase for ${table}`);
+        console.log(`[useOfflineData] ✅ Fetched ${fetchedData.length} records from Supabase for ${table}`);
         
         // Synchroniser avec SQLite en arrière-plan (non bloquant)
         Promise.resolve().then(async () => {
@@ -118,20 +128,36 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
         console.log(`[useOfflineData] Fetched ${fetchedData.length} records from SQLite for ${table}`);
       }
       
-      setData(fetchedData);
-      console.log(`[useOfflineData] Data set successfully for ${table}`);
+      // Protection: Ne pas remplacer des données valides par un tableau vide
+      if (fetchedData.length === 0 && hasValidData && data.length > 0) {
+        console.warn(`[useOfflineData] ⚠️ Refusing to clear ${data.length} ${table} records with empty response`);
+        // Garder les données existantes
+      } else {
+        setData(fetchedData);
+        if (fetchedData.length > 0) {
+          setHasValidData(true);
+        }
+      }
+      console.log(`[useOfflineData] ✅ Data set successfully for ${table}: ${fetchedData.length} records`);
     } catch (err) {
-      console.error(`[useOfflineData] Error fetching ${table}:`, err);
+      console.error(`[useOfflineData] ❌ Error fetching ${table}:`, err);
       
-      // En cas d'erreur en ligne, essayer de récupérer depuis SQLite
-        if (isOnline) {
-          console.log(`[useOfflineData] Trying fallback to SQLite for ${table}`);
+      // En cas d'erreur, ne PAS vider les données existantes
+      if (hasValidData && data.length > 0) {
+        console.warn(`[useOfflineData] Keeping ${data.length} cached ${table} records after error`);
+        setError('Données affichées depuis le cache (erreur de connexion)');
+      } else if (isOnline) {
+        // Essayer de récupérer depuis SQLite
+        console.log(`[useOfflineData] Trying fallback to SQLite for ${table}`);
         try {
           await sqliteService.initialize();
           const localData = await sqliteService.findAll(table, baseId);
           setData(localData as T[]);
+          if (localData.length > 0) {
+            setHasValidData(true);
+          }
           setError('Données récupérées depuis le cache local');
-          console.log(`[useOfflineData] Fallback successful for ${table}`);
+          console.log(`[useOfflineData] Fallback successful for ${table}: ${localData.length} records`);
         } catch (localErr) {
           console.error(`[useOfflineData] Fallback failed for ${table}:`, localErr);
           setError(err instanceof Error ? err.message : 'Erreur lors du chargement des données');
