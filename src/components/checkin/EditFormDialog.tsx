@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { CustomerAutocomplete } from '@/components/customers/CustomerAutocomplete';
 import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
 import { Customer } from '@/types/customer';
+import { parseUTCToLocalDate, normalizeToMiddayUTC } from '@/lib/dateUtils';
 
 interface EditFormDialogProps {
   form: AdministrativeCheckinFormWithRelations;
@@ -30,8 +31,8 @@ export function EditFormDialog({ form, open, onOpenChange, onSuccess }: EditForm
   const [loading, setLoading] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(form.customer);
   const [selectedBoatId, setSelectedBoatId] = useState(form.boat_id || '');
-  const [startDate, setStartDate] = useState<Date>(new Date(form.planned_start_date));
-  const [endDate, setEndDate] = useState<Date>(new Date(form.planned_end_date));
+  const [startDate, setStartDate] = useState<Date>(() => parseUTCToLocalDate(form.planned_start_date));
+  const [endDate, setEndDate] = useState<Date>(() => parseUTCToLocalDate(form.planned_end_date));
   const [rentalNotes, setRentalNotes] = useState(form.rental_notes || '');
   const [specialInstructions, setSpecialInstructions] = useState(form.special_instructions || '');
 
@@ -65,8 +66,8 @@ export function EditFormDialog({ form, open, onOpenChange, onSuccess }: EditForm
           customer_id: selectedCustomer.id,
           boat_id: selectedBoatId || null,
           suggested_boat_id: selectedBoatId || null,
-          planned_start_date: startDate.toISOString(),
-          planned_end_date: endDate.toISOString(),
+          planned_start_date: normalizeToMiddayUTC(startDate).toISOString(),
+          planned_end_date: normalizeToMiddayUTC(endDate).toISOString(),
           rental_notes: rentalNotes,
           special_instructions: specialInstructions,
           is_boat_assigned: !!selectedBoatId,
