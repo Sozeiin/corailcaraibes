@@ -41,7 +41,7 @@ export function UserCreationDialog({ open, onOpenChange, tenantId }: UserCreatio
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      // Create user with auth
+      // Create user with auth - pass all data in metadata for trigger
       const redirectUrl = `${window.location.origin}/`;
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
@@ -52,24 +52,15 @@ export function UserCreationDialog({ open, onOpenChange, tenantId }: UserCreatio
             name: data.name,
             role: data.role,
             tenant_id: tenantId,
+            base_id: data.base_id || null, // Pass base_id to trigger
           }
         }
       });
 
       if (authError) throw authError;
-
-      // Update profile with tenant_id and base_id
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            tenant_id: tenantId,
-            base_id: data.base_id || null,
-          })
-          .eq('id', authData.user.id);
-
-        if (profileError) throw profileError;
-      }
+      
+      // The trigger handle_new_user now handles all profile creation
+      // No need for a separate update call
     },
     onSuccess: () => {
       toast({
