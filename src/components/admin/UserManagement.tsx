@@ -65,14 +65,17 @@ export function UserManagement() {
     },
     onError: (error: any) => {
       let description = "Impossible de supprimer l'utilisateur.";
+      const errorCode = error.code || '';
       
-      if (error.message?.includes('policy')) {
+      if (errorCode === '42501' || error.message?.includes('Permissions insuffisantes')) {
         description = "Vous n'avez pas les permissions nécessaires pour supprimer cet utilisateur.";
-      } else if (error.message?.includes('foreign key')) {
+      } else if (errorCode === '23503' || error.message?.includes('foreign key')) {
         description = "Impossible de supprimer cet utilisateur car il a des données associées.";
       } else if (error.message) {
         description = error.message;
       }
+      
+      console.error('Delete user error:', { code: errorCode, message: error.message, details: error.details });
       
       toast({
         variant: "destructive",
