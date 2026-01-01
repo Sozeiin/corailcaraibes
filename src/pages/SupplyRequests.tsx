@@ -40,6 +40,12 @@ export interface SupplyRequest {
   created_at: string;
   updated_at: string;
   requester?: { name: string };
+  stockItem?: {
+    photo_url?: string;
+    supplier_reference?: string;
+    brand?: string;
+    supplier_name?: string;
+  };
 }
 
 export default function SupplyRequests() {
@@ -161,11 +167,62 @@ export default function SupplyRequests() {
           }
         }
 
-        // Map requests with profile data and add urgency alias
+        // Récupérer les informations des articles de stock liés
+        const stockItemIds = requests
+          .map((r: any) => r.stock_item_id)
+          .filter(Boolean);
+
+        let stockItemsMap: Record<string, any> = {};
+        if (stockItemIds.length > 0) {
+          try {
+            const { data: stockItems, error: stockError } = await supabase
+              .from('stock_items')
+              .select('id, photo_url, supplier_reference, brand, last_supplier_id')
+              .in('id', stockItemIds);
+
+            if (!stockError && stockItems) {
+              // Récupérer les noms des fournisseurs
+              const supplierIds = stockItems
+                .map((s: any) => s.last_supplier_id)
+                .filter(Boolean);
+
+              let suppliersMap: Record<string, string> = {};
+              if (supplierIds.length > 0) {
+                const { data: suppliers } = await supabase
+                  .from('suppliers')
+                  .select('id, name')
+                  .in('id', supplierIds);
+
+                if (suppliers) {
+                  suppliersMap = Object.fromEntries(
+                    suppliers.map((s: any) => [s.id, s.name])
+                  );
+                }
+              }
+
+              stockItemsMap = Object.fromEntries(
+                stockItems.map((s: any) => [
+                  s.id,
+                  {
+                    photo_url: s.photo_url,
+                    supplier_reference: s.supplier_reference,
+                    brand: s.brand,
+                    supplier_name: suppliersMap[s.last_supplier_id] || null,
+                  },
+                ])
+              );
+            }
+          } catch (stockError) {
+            console.warn('Failed to fetch stock items:', stockError);
+          }
+        }
+
+        // Map requests with profile data, stock item data and add urgency alias
         const enrichedRequests = requests.map((r: any) => ({
           ...r,
           urgency: r.urgency_level, // Add alias for dialog compatibility
           requester: { name: requesterMap[r.requested_by] || 'Utilisateur inconnu' },
+          stockItem: r.stock_item_id ? stockItemsMap[r.stock_item_id] : null,
         }));
 
         console.log('Final enriched requests:', enrichedRequests.length);

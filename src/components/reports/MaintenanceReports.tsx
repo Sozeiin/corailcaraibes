@@ -33,7 +33,7 @@ export function MaintenanceReports({ data, dateRange, isDirection, isChefBase }:
         .select(`
           *,
           boats(name, base_id),
-          profiles(name)
+          profiles!technician_id(name)
         `)
         .gte('created_at', from)
         .lte('created_at', to);
@@ -52,7 +52,7 @@ export function MaintenanceReports({ data, dateRange, isDirection, isChefBase }:
           status,
           scheduled_date,
           completed_at,
-          profiles(name)
+          profiles!technician_id(name)
         `)
         .gte('created_at', from)
         .lte('created_at', to);

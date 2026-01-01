@@ -71,7 +71,7 @@ export function BoatPreventiveMaintenanceDialog({ isOpen, onClose, boat }: BoatP
         .from('interventions')
         .select(`
           *,
-          profiles(name)
+          profiles!technician_id(name)
         `)
         .eq('boat_id', boat?.id)
         .in('status', ['scheduled', 'in_progress'])

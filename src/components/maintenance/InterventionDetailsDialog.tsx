@@ -32,7 +32,7 @@ export const InterventionDetailsDialog = ({
         .select(`
           *,
           boats (name, model),
-          profiles (name)
+          profiles!technician_id (name)
         `)
         .eq('id', interventionId)
         .single();
