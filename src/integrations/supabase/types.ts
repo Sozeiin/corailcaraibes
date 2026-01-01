@@ -4737,6 +4737,44 @@ export type Database = {
           },
         ]
       }
+      supply_request_comments: {
+        Row: {
+          author_id: string | null
+          author_name: string
+          comment: string
+          created_at: string
+          id: string
+          status_at_comment: string | null
+          supply_request_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          author_name: string
+          comment: string
+          created_at?: string
+          id?: string
+          status_at_comment?: string | null
+          supply_request_id: string
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string
+          comment?: string
+          created_at?: string
+          id?: string
+          status_at_comment?: string | null
+          supply_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_request_comments_supply_request_id_fkey"
+            columns: ["supply_request_id"]
+            isOneToOne: false
+            referencedRelation: "supply_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supply_requests: {
         Row: {
           base_id: string

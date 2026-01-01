@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Package, Truck } from 'lucide-react';
+import { CheckCircle, XCircle, Package, Truck, MessageSquare } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { SupplyRequest } from '@/pages/SupplyRequests';
 import { SupplierAutocomplete } from '@/components/suppliers/SupplierAutocomplete';
+import { useAddSupplyRequestComment } from '@/hooks/useSupplyRequestComments';
 
 interface FormData {
   status: string;
@@ -20,6 +21,7 @@ interface FormData {
   supplier_name: string;
   tracking_number: string;
   carrier: string;
+  workflow_comment: string;
 }
 
 interface SupplyManagementDialogProps {
@@ -32,6 +34,7 @@ interface SupplyManagementDialogProps {
 export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: SupplyManagementDialogProps) {
   const queryClient = useQueryClient();
   const [action, setAction] = useState<'approve' | 'reject' | 'order' | 'ship' | null>(null);
+  const addComment = useAddSupplyRequestComment();
 
   // Function to create purchase history entry
   const createPurchaseHistoryEntry = async (supplyRequest: SupplyRequest, purchasePrice: number, supplierName: string) => {
@@ -147,6 +150,7 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
       supplier_name: '',
       tracking_number: '',
       carrier: '',
+      workflow_comment: '',
     },
   });
 
@@ -203,8 +207,18 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
     },
   });
 
-  const handleApprove = () => {
+  const handleApprove = (comment?: string) => {
     if (!request) return;
+    
+    // Add comment if provided
+    if (comment?.trim()) {
+      addComment.mutate({
+        requestId: request.id,
+        comment: comment.trim(),
+        statusAtComment: 'approved',
+      });
+    }
+    
     updateMutation.mutate({
       id: request.id,
       status: 'approved',
@@ -213,6 +227,16 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
 
   const handleReject = (data: FormData) => {
     if (!request) return;
+    
+    // Add comment if provided
+    if (data.workflow_comment?.trim()) {
+      addComment.mutate({
+        requestId: request.id,
+        comment: data.workflow_comment.trim(),
+        statusAtComment: 'rejected',
+      });
+    }
+    
     updateMutation.mutate({
       id: request.id,
       status: 'rejected',
@@ -222,6 +246,16 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
 
   const handleOrder = (data: FormData) => {
     if (!request) return;
+    
+    // Add comment if provided
+    if (data.workflow_comment?.trim()) {
+      addComment.mutate({
+        requestId: request.id,
+        comment: data.workflow_comment.trim(),
+        statusAtComment: 'ordered',
+      });
+    }
+    
     updateMutation.mutate({
       id: request.id,
       status: 'ordered',
@@ -232,6 +266,15 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
 
   const handleShip = (data: FormData) => {
     if (!request) return;
+    
+    // Add comment if provided
+    if (data.workflow_comment?.trim()) {
+      addComment.mutate({
+        requestId: request.id,
+        comment: data.workflow_comment.trim(),
+        statusAtComment: 'shipped',
+      });
+    }
     updateMutation.mutate({
       id: request.id,
       status: 'shipped',
@@ -242,6 +285,9 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
 
   const onSubmit = (data: FormData) => {
     switch (action) {
+      case 'approve':
+        handleApprove(data.workflow_comment);
+        break;
       case 'reject':
         handleReject(data);
         break;
@@ -335,29 +381,27 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
 
           {/* Actions */}
           {availableActions.length > 0 && !action && (
-            <div className="space-y-2">
-              <Label>Actions disponibles</Label>
-              <div className="flex flex-wrap gap-2">
-                {availableActions.map((actionItem) => {
-                  const Icon = actionItem.icon;
-                  return (
-                    <Button
-                      key={actionItem.key}
-                      variant={actionItem.variant}
-                      onClick={() => {
-                        if (actionItem.key === 'approve') {
-                          handleApprove();
-                        } else {
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Actions disponibles</Label>
+                <div className="flex flex-wrap gap-2">
+                  {availableActions.map((actionItem) => {
+                    const Icon = actionItem.icon;
+                    return (
+                      <Button
+                        key={actionItem.key}
+                        variant={actionItem.variant}
+                        onClick={() => {
                           setAction(actionItem.key as any);
-                        }
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Icon className="h-4 w-4" />
-                      {actionItem.label}
-                    </Button>
-                  );
-                })}
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        <Icon className="h-4 w-4" />
+                        {actionItem.label}
+                      </Button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           )}
@@ -365,15 +409,44 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
           {/* Action Forms */}
           {action && (
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {action === 'reject' && (
+              {action === 'approve' && (
                 <div className="space-y-2">
-                  <Label htmlFor="rejection_reason">Raison du rejet *</Label>
+                  <Label htmlFor="workflow_comment" className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    Commentaire (optionnel)
+                  </Label>
                   <Textarea
-                    id="rejection_reason"
-                    {...form.register('rejection_reason', { required: true })}
-                    placeholder="Expliquez pourquoi cette demande est rejetée..."
+                    id="workflow_comment"
+                    {...form.register('workflow_comment')}
+                    placeholder="Ex: Fournisseur n'aura pas l'article avant mars..."
                     rows={3}
                   />
+                </div>
+              )}
+
+              {action === 'reject' && (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rejection_reason">Raison du rejet *</Label>
+                    <Textarea
+                      id="rejection_reason"
+                      {...form.register('rejection_reason', { required: true })}
+                      placeholder="Expliquez pourquoi cette demande est rejetée..."
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workflow_comment" className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Commentaire additionnel (optionnel)
+                    </Label>
+                    <Textarea
+                      id="workflow_comment"
+                      {...form.register('workflow_comment')}
+                      placeholder="Informations supplémentaires..."
+                      rows={2}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -406,6 +479,18 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
                       />
                     </div>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workflow_comment" className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Commentaire (optionnel)
+                    </Label>
+                    <Textarea
+                      id="workflow_comment"
+                      {...form.register('workflow_comment')}
+                      placeholder="Ex: Délai de livraison prévu : 2 semaines..."
+                      rows={2}
+                    />
+                  </div>
                 </div>
               )}
 
@@ -428,6 +513,18 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
                         placeholder="Nom du transporteur"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workflow_comment" className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Commentaire (optionnel)
+                    </Label>
+                    <Textarea
+                      id="workflow_comment"
+                      {...form.register('workflow_comment')}
+                      placeholder="Ex: Livraison prévue lundi..."
+                      rows={2}
+                    />
                   </div>
                 </div>
               )}
