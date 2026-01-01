@@ -61,16 +61,42 @@ export const BoatPartsHistory = ({ boatId }: BoatPartsHistoryProps) => {
             title,
             scheduled_date,
             boat_id,
-            technician_id,
-            profiles:technician_id (
-              name
-            )
+            technician_id
           )
         `)
         .eq('interventions.boat_id', boatId)
         .order('used_at', { ascending: false });
       
       if (error) throw error;
+      
+      // Fetch technician names separately
+      if (data && data.length > 0) {
+        const technicianIds = data
+          .map((part: any) => part.interventions?.technician_id)
+          .filter(Boolean);
+        
+        if (technicianIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', technicianIds);
+          
+          const profileMap = Object.fromEntries(
+            (profiles || []).map((p: any) => [p.id, p.name])
+          );
+          
+          return data.map((part: any) => ({
+            ...part,
+            interventions: {
+              ...part.interventions,
+              profiles: {
+                name: profileMap[part.interventions?.technician_id] || null
+              }
+            }
+          }));
+        }
+      }
+      
       return data || [];
     }
   });

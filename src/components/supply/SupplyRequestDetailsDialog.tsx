@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Package, Clock, CheckCircle, XCircle, Truck, Eye, Calendar, User, AlertTriangle } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, Eye, Calendar, User, AlertTriangle, Store, Image } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SupplyRequest } from '@/pages/SupplyRequests';
@@ -141,18 +141,56 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
                 </div>
               )}
 
-              {request.photo_url && (
+              {/* Photo de l'article - priorité à la photo de demande, sinon celle du stock */}
+              {(request.photo_url || request.stockItem?.photo_url) && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Photo</label>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Image className="h-4 w-4" />
+                    Photo de l'article
+                  </label>
                   <img
-                    src={request.photo_url}
+                    src={request.photo_url || request.stockItem?.photo_url}
                     alt="Photo de l'article"
-                    className="w-32 h-32 object-cover rounded border mt-2"
+                    className="w-48 h-48 object-cover rounded border mt-2"
                   />
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Informations fournisseur (depuis l'article de stock lié) */}
+          {request.stockItem && (request.stockItem.supplier_reference || request.stockItem.brand || request.stockItem.supplier_name) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Store className="h-4 w-4" />
+                  Informations fournisseur
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  {request.stockItem.supplier_reference && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Référence fournisseur</label>
+                      <p className="font-medium">{request.stockItem.supplier_reference}</p>
+                    </div>
+                  )}
+                  {request.stockItem.brand && (
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Marque</label>
+                      <p className="font-medium">{request.stockItem.brand}</p>
+                    </div>
+                  )}
+                </div>
+                {request.stockItem.supplier_name && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Dernier fournisseur</label>
+                    <p className="font-medium">{request.stockItem.supplier_name}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Request Information */}
           <Card>

@@ -21,7 +21,7 @@ export function MaintenanceHistory() {
         .select(`
           *,
           boats(name, model),
-          profiles(name)
+          profiles!technician_id(name)
         `)
         .order('completed_date', { ascending: false });
 
