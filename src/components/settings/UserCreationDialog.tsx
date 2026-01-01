@@ -11,10 +11,9 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 interface UserCreationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tenantId: string | null;
 }
 
-export function UserCreationDialog({ open, onOpenChange, tenantId }: UserCreationDialogProps) {
+export function UserCreationDialog({ open, onOpenChange }: UserCreationDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
@@ -43,7 +42,7 @@ export function UserCreationDialog({ open, onOpenChange, tenantId }: UserCreatio
     mutationFn: async (data: typeof formData) => {
       // Create user with auth - pass all data in metadata for trigger
       const redirectUrl = `${window.location.origin}/`;
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -51,16 +50,12 @@ export function UserCreationDialog({ open, onOpenChange, tenantId }: UserCreatio
           data: {
             name: data.name,
             role: data.role,
-            tenant_id: tenantId,
-            base_id: data.base_id || null, // Pass base_id to trigger
+            base_id: data.base_id || null,
           }
         }
       });
 
       if (authError) throw authError;
-      
-      // The trigger handle_new_user now handles all profile creation
-      // No need for a separate update call
     },
     onSuccess: () => {
       toast({

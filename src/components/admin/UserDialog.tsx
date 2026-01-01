@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface UserDialogProps {
   open: boolean;
@@ -16,12 +16,10 @@ interface UserDialogProps {
     name: string;
     email: string;
     role: string;
-    tenant_id: string | null;
   } | null;
-  isSuperAdmin?: boolean;
 }
 
-export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: UserDialogProps) {
+export function UserDialog({ open, onOpenChange, user }: UserDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState({
@@ -29,22 +27,6 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
     email: "",
     password: "",
     role: "technicien" as "direction" | "chef_base" | "technicien" | "administratif",
-    tenant_id: null as string | null,
-  });
-
-  // Fetch tenants for super admin
-  const { data: tenants } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('is_active', true)
-        .order('company_name');
-      if (error) throw error;
-      return data;
-    },
-    enabled: isSuperAdmin && open,
   });
 
   useEffect(() => {
@@ -54,7 +36,6 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
         email: user.email || "",
         password: "",
         role: (user.role || "technicien") as "direction" | "chef_base" | "technicien" | "administratif",
-        tenant_id: user.tenant_id || null,
       });
     } else {
       setFormData({
@@ -62,7 +43,6 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
         email: "",
         password: "",
         role: "technicien",
-        tenant_id: null,
       });
     }
   }, [user, open]);
@@ -76,38 +56,24 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
           .update({
             name: data.name,
             role: data.role,
-            tenant_id: data.tenant_id || null,
           })
           .eq('id', user.id);
 
         if (profileError) throw profileError;
       } else {
         // Create new user
-        const { data: authData, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email: data.email,
           password: data.password,
           options: {
             data: {
               name: data.name,
               role: data.role,
-              tenant_id: data.tenant_id || null,
             }
           }
         });
 
         if (authError) throw authError;
-
-        // Update profile with tenant_id
-        if (authData.user) {
-          const { error: profileError } = await supabase
-            .from('profiles')
-            .update({
-              tenant_id: data.tenant_id || null,
-            })
-            .eq('id', authData.user.id);
-
-          if (profileError) throw profileError;
-        }
       }
     },
     onSuccess: () => {
@@ -178,30 +144,6 @@ export function UserDialog({ open, onOpenChange, user, isSuperAdmin = false }: U
                 required
                 minLength={6}
               />
-            </div>
-          )}
-
-          {isSuperAdmin && (
-            <div className="space-y-2">
-              <Label htmlFor="tenant">Société</Label>
-              <Select
-                value={formData.tenant_id ?? "none"}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, tenant_id: value === "none" ? null : value })
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une société" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Aucune (Super Admin)</SelectItem>
-                  {tenants?.map((tenant) => (
-                    <SelectItem key={tenant.id} value={tenant.id}>
-                      {tenant.company_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           )}
 

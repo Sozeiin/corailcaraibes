@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Edit, Save, X, Mail, User, Building, Trash2, Settings } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -19,32 +19,16 @@ export function UserSettings() {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [expandedPermissions, setExpandedPermissions] = useState<string | null>(null);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [currentTenantId, setCurrentTenantId] = useState<string | null>(null);
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ['users'],
     queryFn: async () => {
-      // Get current user's tenant_id
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single();
-
-      // Store tenant_id for creation dialog
-      setCurrentTenantId(profile?.tenant_id || null);
-
-      // Fetch users with same tenant_id
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
           bases(name)
         `)
-        .eq('tenant_id', profile?.tenant_id)
         .order('name');
       
       if (error) throw error;
@@ -82,7 +66,7 @@ export function UserSettings() {
         description: "Les informations de l'utilisateur ont été mises à jour."
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Erreur",
         description: "Impossible de modifier l'utilisateur.",
@@ -374,7 +358,6 @@ export function UserSettings() {
       <UserCreationDialog 
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
-        tenantId={currentTenantId}
       />
     </div>
   );
