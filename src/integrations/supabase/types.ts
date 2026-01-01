@@ -19,7 +19,7 @@ export type Database = {
           base_id: string
           boat_id: string | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           customer_id: string
           destination_base_id: string | null
           id: string
@@ -39,7 +39,7 @@ export type Database = {
           base_id: string
           boat_id?: string | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           customer_id: string
           destination_base_id?: string | null
           id?: string
@@ -59,7 +59,7 @@ export type Database = {
           base_id?: string
           boat_id?: string | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           customer_id?: string
           destination_base_id?: string | null
           id?: string
@@ -95,6 +95,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "administrative_checkin_forms_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -620,6 +627,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "boat_preparation_checklists_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "boat_preparation_checklists_template_id_fkey"
             columns: ["template_id"]
             isOneToOne: false
@@ -1079,7 +1093,7 @@ export type Database = {
         Row: {
           campaign_year: number
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           end_date: string | null
           id: string
@@ -1093,7 +1107,7 @@ export type Database = {
         Insert: {
           campaign_year?: number
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -1107,7 +1121,7 @@ export type Database = {
         Update: {
           campaign_year?: number
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           end_date?: string | null
           id?: string
@@ -1118,7 +1132,15 @@ export type Database = {
           total_items?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "bulk_purchase_campaigns_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       bulk_purchase_distributions: {
         Row: {
@@ -1506,7 +1528,7 @@ export type Database = {
           boat_id: string
           completed_checklist_id: string | null
           created_at: string | null
-          created_by: string
+          created_by: string | null
           id: string
           notes: string | null
           order_type: string
@@ -1522,7 +1544,7 @@ export type Database = {
           boat_id: string
           completed_checklist_id?: string | null
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           order_type: string
@@ -1538,7 +1560,7 @@ export type Database = {
           boat_id?: string
           completed_checklist_id?: string | null
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           id?: string
           notes?: string | null
           order_type?: string
@@ -1994,6 +2016,13 @@ export type Database = {
             referencedRelation: "bases_public"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "customers_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dashboard_preferences: {
@@ -2018,7 +2047,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       intervention_parts: {
         Row: {
@@ -2219,6 +2256,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "interventions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "interventions_technician_id_fkey"
             columns: ["technician_id"]
             isOneToOne: false
@@ -2406,7 +2450,7 @@ export type Database = {
       messages: {
         Row: {
           attachments: Json | null
-          author_id: string
+          author_id: string | null
           content: string
           created_at: string
           edited: boolean | null
@@ -2417,7 +2461,7 @@ export type Database = {
         }
         Insert: {
           attachments?: Json | null
-          author_id: string
+          author_id?: string | null
           content: string
           created_at?: string
           edited?: boolean | null
@@ -2428,7 +2472,7 @@ export type Database = {
         }
         Update: {
           attachments?: Json | null
-          author_id?: string
+          author_id?: string | null
           content?: string
           created_at?: string
           edited?: boolean | null
@@ -2808,6 +2852,13 @@ export type Database = {
             referencedRelation: "interventions"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "planning_activities_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       planning_conflicts: {
@@ -2920,6 +2971,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "planning_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3043,6 +3101,13 @@ export type Database = {
             referencedRelation: "boats"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "preparation_checklist_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profile_audit_log: {
@@ -3124,7 +3189,7 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           id: string
           is_active: boolean
@@ -3135,7 +3200,7 @@ export type Database = {
         Insert: {
           category?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -3146,7 +3211,7 @@ export type Database = {
         Update: {
           category?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -3238,6 +3303,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3342,6 +3414,13 @@ export type Database = {
             columns: ["base_id"]
             isOneToOne: false
             referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "response_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3694,7 +3773,7 @@ export type Database = {
           closed_at: string | null
           completed_at: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           destination_base_id: string
           estimated_delivery: string | null
           expected_delivery_date: string | null
@@ -3722,7 +3801,7 @@ export type Database = {
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           destination_base_id: string
           estimated_delivery?: string | null
           expected_delivery_date?: string | null
@@ -3750,7 +3829,7 @@ export type Database = {
           closed_at?: string | null
           completed_at?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           destination_base_id?: string
           estimated_delivery?: string | null
           expected_delivery_date?: string | null
@@ -3773,6 +3852,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shipment_preparations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shipment_preparations_destination_base_id_fkey"
             columns: ["destination_base_id"]
@@ -4037,7 +4123,15 @@ export type Database = {
           validity_date?: string | null
           warranty_months?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "stock_item_quotes_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_items: {
         Row: {
@@ -4323,7 +4417,7 @@ export type Database = {
           contract_number: string
           contract_type: string
           created_at: string | null
-          created_by: string
+          created_by: string | null
           end_date: string | null
           id: string
           minimum_order_amount: number | null
@@ -4337,7 +4431,7 @@ export type Database = {
           contract_number: string
           contract_type: string
           created_at?: string | null
-          created_by: string
+          created_by?: string | null
           end_date?: string | null
           id?: string
           minimum_order_amount?: number | null
@@ -4351,7 +4445,7 @@ export type Database = {
           contract_number?: string
           contract_type?: string
           created_at?: string | null
-          created_by?: string
+          created_by?: string | null
           end_date?: string | null
           id?: string
           minimum_order_amount?: number | null
@@ -4362,6 +4456,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "supplier_contracts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "supplier_contracts_supplier_id_fkey"
             columns: ["supplier_id"]
@@ -4510,6 +4611,13 @@ export type Database = {
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "supplier_interactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       supplier_quotes: {
@@ -4645,7 +4753,7 @@ export type Database = {
           quantity_needed: number
           rejection_reason: string | null
           request_number: string
-          requested_by: string
+          requested_by: string | null
           shipped_at: string | null
           status: string
           stock_item_id: string | null
@@ -4671,7 +4779,7 @@ export type Database = {
           quantity_needed?: number
           rejection_reason?: string | null
           request_number: string
-          requested_by: string
+          requested_by?: string | null
           shipped_at?: string | null
           status?: string
           stock_item_id?: string | null
@@ -4697,7 +4805,7 @@ export type Database = {
           quantity_needed?: number
           rejection_reason?: string | null
           request_number?: string
-          requested_by?: string
+          requested_by?: string | null
           shipped_at?: string | null
           status?: string
           stock_item_id?: string | null
@@ -4708,7 +4816,22 @@ export type Database = {
           validated_at?: string | null
           validated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "supply_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "supply_requests_validated_by_fkey"
+            columns: ["validated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       thread_assignments: {
         Row: {
@@ -4750,6 +4873,13 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thread_assignments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4870,7 +5000,7 @@ export type Database = {
           closed_at: string | null
           closed_by: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           description: string | null
           due_date: string | null
           id: string
@@ -4888,7 +5018,7 @@ export type Database = {
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -4906,7 +5036,7 @@ export type Database = {
           closed_at?: string | null
           closed_by?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           description?: string | null
           due_date?: string | null
           id?: string
@@ -4999,7 +5129,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
