@@ -6,6 +6,7 @@ import { Package, Clock, CheckCircle, XCircle, Truck, Eye, Calendar, User, Alert
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SupplyRequest } from '@/pages/SupplyRequests';
+import { SupplyRequestCommentsSection } from './SupplyRequestCommentsSection';
 
 interface SupplyRequestDetailsDialogProps {
   isOpen: boolean;
@@ -332,6 +333,12 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
               </CardContent>
             </Card>
           )}
+
+          {/* Comments Section */}
+          <SupplyRequestCommentsSection 
+            requestId={request.id} 
+            currentStatus={request.status}
+          />
         </div>
       </DialogContent>
     </Dialog>
