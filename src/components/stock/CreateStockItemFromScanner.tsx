@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -227,9 +228,9 @@ export function CreateStockItemFromScanner({
       <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Créer un nouvel article</DialogTitle>
-          <p className="text-sm text-muted-foreground">
+          <DialogDescription>
             Code scanné : <span className="font-mono bg-muted px-2 py-1 rounded">{scannedCode}</span>
-          </p>
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
