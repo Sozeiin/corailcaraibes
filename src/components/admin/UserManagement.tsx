@@ -4,16 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { UserPlus, Pencil, Trash2, Building2, Users } from "lucide-react";
+import { UserPlus, Pencil, Trash2, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { UserDialog } from "./UserDialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,66 +23,27 @@ interface User {
   name: string;
   email: string;
   role: string;
-  tenant_id: string | null;
-  company_name?: string;
 }
 
 export function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedTenantFilter, setSelectedTenantFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
-  // Fetch all users with their tenant info
+  // Fetch all users
   const { data: users, isLoading } = useQuery({
-    queryKey: ['all-users', selectedTenantFilter],
+    queryKey: ['all-users'],
     queryFn: async () => {
-      let query = supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select('id, name, email, role, tenant_id')
+        .select('id, name, email, role')
         .order('name');
-
-      if (selectedTenantFilter !== 'all') {
-        if (selectedTenantFilter === 'none') {
-          query = query.is('tenant_id', null);
-        } else {
-          query = query.eq('tenant_id', selectedTenantFilter);
-        }
-      }
-
-      const { data: profiles, error } = await query;
+      
       if (error) throw error;
-
-      // Fetch tenant names separately
-      const tenantIds = [...new Set(profiles?.filter(p => p.tenant_id).map(p => p.tenant_id))];
-      const { data: tenantData } = await supabase
-        .from('tenants')
-        .select('id, company_name')
-        .in('id', tenantIds);
-
-      const tenantMap = new Map(tenantData?.map(t => [t.id, t.company_name]) || []);
-
-      return profiles?.map(user => ({
-        ...user,
-        company_name: user.tenant_id ? tenantMap.get(user.tenant_id) : undefined,
-      })) as User[];
-    },
-  });
-
-  // Fetch tenants for filter
-  const { data: tenants } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('is_active', true)
-        .order('company_name');
-      if (error) throw error;
-      return data;
+      return profiles as User[];
     },
   });
 
@@ -182,7 +136,7 @@ export function UserManagement() {
           <div>
             <h2 className="text-2xl font-bold">Gestion des utilisateurs</h2>
             <p className="text-muted-foreground">
-              Gérer tous les utilisateurs de toutes les sociétés
+              Gérer tous les utilisateurs du système
             </p>
           </div>
         </div>
@@ -190,24 +144,6 @@ export function UserManagement() {
           <UserPlus className="h-4 w-4 mr-2" />
           Créer un utilisateur
         </Button>
-      </div>
-
-      <div className="flex gap-2 items-center">
-        <label className="text-sm font-medium">Filtrer par société:</label>
-        <Select value={selectedTenantFilter} onValueChange={setSelectedTenantFilter}>
-          <SelectTrigger className="w-[250px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les sociétés</SelectItem>
-            <SelectItem value="none">Super Admins (Sans société)</SelectItem>
-            {tenants?.map((tenant) => (
-              <SelectItem key={tenant.id} value={tenant.id}>
-                {tenant.company_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       <Card>
@@ -232,10 +168,6 @@ export function UserManagement() {
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">{user.email}</p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Building2 className="h-3 w-3" />
-                    <span>{user.company_name || "Aucune société (Super Admin)"}</span>
-                  </div>
                 </div>
 
                 <div className="flex gap-2">
@@ -270,7 +202,6 @@ export function UserManagement() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         user={selectedUser}
-        isSuperAdmin={true}
       />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
