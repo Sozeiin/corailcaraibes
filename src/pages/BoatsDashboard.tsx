@@ -17,7 +17,7 @@ import { countExpiredControls } from '@/utils/safetyControlUtils';
 import { useToast } from '@/hooks/use-toast';
 
 export const BoatsDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -28,8 +28,22 @@ export const BoatsDashboard = () => {
     userId: user?.id,
     role: user?.role,
     baseId: user?.baseId,
-    name: user?.name
+    name: user?.name,
+    authLoading
   });
+  
+  // Attendre que le profil soit chargé avant de rendre le contenu
+  // Cela évite d'afficher "Aucun bateau" pendant le chargement initial
+  const isProfileLoading = authLoading || (!user?.baseId && user?.role !== 'direction');
+  
+  if (isProfileLoading && user?.id) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 animate-fade-in">
+        <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Chargement du profil utilisateur...</p>
+      </div>
+    );
+  }
   
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');

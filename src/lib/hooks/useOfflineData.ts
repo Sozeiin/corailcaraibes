@@ -58,11 +58,12 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
     const isOnline = await getIsOnline();
     console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}, baseId: ${baseId}`);
     
-    // Protection: Ne pas fetch si baseId est requis mais non défini
+    // Protection: Si baseId est requis mais non défini, garder loading = true et attendre
+    // Cela évite d'afficher "Aucun bateau" pendant le chargement du profil
     if (baseId === undefined && table !== 'bases') {
-      console.warn(`[useOfflineData] ⚠️ baseId is undefined for ${table}, waiting for user profile...`);
-      // Ne pas vider les données existantes, juste attendre
-      setLoading(false);
+      console.warn(`[useOfflineData] ⚠️ baseId is undefined for ${table}, keeping loading state active...`);
+      // Garder loading = true pour que l'UI affiche un loader
+      // Le useEffect surveillera le changement de baseId et relancera le fetch
       return;
     }
     
@@ -346,9 +347,19 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
       }
     }, [table, getIsOnline]);
 
+  // Effet principal pour charger les données
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+  
+  // Effet séparé pour surveiller le changement de baseId
+  // Cela garantit un refetch quand le profil utilisateur devient disponible
+  useEffect(() => {
+    if (baseId !== undefined && table !== 'bases') {
+      console.log(`[useOfflineData] 🔄 baseId now available (${baseId}), triggering refetch for ${table}`);
+      fetchData();
+    }
+  }, [baseId, table]); // Ne pas inclure fetchData pour éviter les boucles
 
   return { data, loading, error, refetch: fetchData, create, update, remove };
 }
