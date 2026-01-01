@@ -8,6 +8,7 @@ import { Preferences } from '@capacitor/preferences';
 interface UseOfflineDataOptions {
   table: string;
   baseId?: string;
+  requireBaseId?: boolean; // Si true, attend que baseId soit défini avant de fetch
   dependencies?: any[];
 }
 
@@ -24,6 +25,7 @@ interface OfflineDataState<T> {
 export function useOfflineData<T extends { id: string; base_id?: string }>({
   table,
   baseId,
+  requireBaseId = false,
   dependencies = []
 }: UseOfflineDataOptions): OfflineDataState<T> {
   const [data, setData] = useState<T[]>([]);
@@ -58,12 +60,10 @@ export function useOfflineData<T extends { id: string; base_id?: string }>({
     const isOnline = await getIsOnline();
     console.log(`[useOfflineData] Starting fetch for table: ${table}, online: ${isOnline}, baseId: ${baseId}`);
     
-    // Protection: Si baseId est requis mais non défini, garder loading = true et attendre
-    // Cela évite d'afficher "Aucun bateau" pendant le chargement du profil
-    if (baseId === undefined && table !== 'bases') {
-      console.warn(`[useOfflineData] ⚠️ baseId is undefined for ${table}, keeping loading state active...`);
-      // Garder loading = true pour que l'UI affiche un loader
-      // Le useEffect surveillera le changement de baseId et relancera le fetch
+    // Protection: Ne bloquer que si baseId est explicitement requis mais pas encore disponible
+    // Si requireBaseId=false (défaut), on procède au fetch sans filtre baseId
+    if (requireBaseId && baseId === undefined && table !== 'bases') {
+      console.warn(`[useOfflineData] ⚠️ baseId required but undefined for ${table}, waiting...`);
       return;
     }
     
