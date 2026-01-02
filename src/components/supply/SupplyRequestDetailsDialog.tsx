@@ -2,11 +2,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Package, Clock, CheckCircle, XCircle, Truck, Eye, Calendar, User, AlertTriangle, Store, Image } from 'lucide-react';
+import { Package, Clock, CheckCircle, XCircle, Truck, Eye, Calendar, User, AlertTriangle, Store, Image, Anchor } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SupplyRequest } from '@/pages/SupplyRequests';
 import { SupplyRequestCommentsSection } from './SupplyRequestCommentsSection';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SupplyRequestDetailsDialogProps {
   isOpen: boolean;
@@ -15,6 +17,22 @@ interface SupplyRequestDetailsDialogProps {
 }
 
 export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyRequestDetailsDialogProps) {
+  // Récupérer le nom du bateau si boat_id est présent
+  const { data: boat } = useQuery({
+    queryKey: ['boat', request?.boat_id],
+    queryFn: async () => {
+      if (!request?.boat_id) return null;
+      const { data, error } = await supabase
+        .from('boats')
+        .select('id, name')
+        .eq('id', request.boat_id)
+        .single();
+      if (error) return null;
+      return data;
+    },
+    enabled: !!request?.boat_id,
+  });
+
   if (!request) return null;
 
   const getStatusBadgeVariant = (status: string) => {
@@ -137,8 +155,11 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
 
               {request.boat_id && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">Bateau concerné</label>
-                  <p className="font-medium">ID: {request.boat_id}</p>
+                  <label className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                    <Anchor className="h-4 w-4" />
+                    Bateau concerné
+                  </label>
+                  <p className="font-medium">{boat?.name || 'Chargement...'}</p>
                 </div>
               )}
 
