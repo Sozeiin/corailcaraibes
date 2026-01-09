@@ -66,9 +66,28 @@ export function CheckinDialog({
     onClose();
   }, [onComplete, onClose, toast]);
 
+  // Sauvegarder AVANT que Radix ne ferme le dialog (plus robuste que onOpenChange)
+  const handlePointerDownOutside = useCallback(() => {
+    console.log('👆 [CheckinDialog] Clic hors modal détecté, sauvegarde immédiate');
+    if (formRef.current) {
+      formRef.current.saveFormNow();
+    }
+  }, []);
+
+  const handleEscapeKeyDown = useCallback(() => {
+    console.log('⎋ [CheckinDialog] Touche Escape détectée, sauvegarde immédiate');
+    if (formRef.current) {
+      formRef.current.saveFormNow();
+    }
+  }, []);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
-      <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] h-[98vh] overflow-hidden p-0 gap-0">
+      <DialogContent 
+        className="max-w-[98vw] w-[98vw] max-h-[98vh] h-[98vh] overflow-hidden p-0 gap-0"
+        onPointerDownOutside={handlePointerDownOutside}
+        onEscapeKeyDown={handleEscapeKeyDown}
+      >
         <div className="h-full overflow-y-auto p-6">
           <ChecklistForm
             ref={formRef}

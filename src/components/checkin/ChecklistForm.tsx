@@ -104,8 +104,21 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
 
   // Callback pour la restauration des données du formulaire
   // IMPORTANT: Met à jour les refs ET les states pour que les deux soient synchronisés
+  // CORRECTION: Valide que checklistItems est bien un tableau avant restauration
   const handleFormRestore = useCallback((restoredData: any) => {
     console.log('📂 [ChecklistForm] Restauration des données du formulaire', restoredData);
+    
+    // VALIDATION: Vérifier que checklistItems est bien un tableau
+    if (restoredData.checklistItems && !Array.isArray(restoredData.checklistItems)) {
+      console.warn('⚠️ [ChecklistForm] Brouillon corrompu (checklistItems n\'est pas un tableau), ignoré');
+      toast({
+        title: "Brouillon invalide",
+        description: "Le brouillon précédent était corrompu et a été supprimé.",
+        variant: "destructive",
+      });
+      return; // Ne pas restaurer les données corrompues
+    }
+    
     hasRestoredDataRef.current = true;
     
     if (restoredData.checklistItems && restoredData.checklistItems.length > 0) {
@@ -132,7 +145,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
     
     toast({
       title: "Brouillon restauré",
-      description: "Vos données ont été restaurées après la mise en veille.",
+      description: "Vos données ont été restaurées.",
     });
   }, [toast]);
 
