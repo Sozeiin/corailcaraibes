@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
 } from '@/components/ui/dialog';
-import { ChecklistForm } from '@/components/checkin/ChecklistForm';
+import { ChecklistForm, ChecklistFormRef } from '@/components/checkin/ChecklistForm';
 import { useFormState } from '@/contexts/FormStateContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface CheckinDialogProps {
   isOpen: boolean;
@@ -24,6 +25,8 @@ export function CheckinDialog({
   type = 'checkin'
 }: CheckinDialogProps) {
   const { registerForm, unregisterForm } = useFormState();
+  const { toast } = useToast();
+  const formRef = useRef<ChecklistFormRef>(null);
 
   // Enregistrer/désenregistrer le formulaire pour suspendre le refresh
   useEffect(() => {
@@ -47,16 +50,28 @@ export function CheckinDialog({
     }
   };
 
-  const handleCancel = () => {
+  // Sauvegarder le brouillon et fermer le dialog
+  const handleCancel = useCallback(() => {
+    // Sauvegarder le formulaire avant de fermer
+    if (formRef.current) {
+      formRef.current.saveFormNow();
+      console.log('💾 [CheckinDialog] Brouillon sauvegardé avant fermeture');
+      toast({
+        title: "Brouillon sauvegardé",
+        description: "Votre progression a été sauvegardée automatiquement.",
+      });
+    }
+    
     onComplete(null);
     onClose();
-  };
+  }, [onComplete, onClose, toast]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleCancel()}>
       <DialogContent className="max-w-[98vw] w-[98vw] max-h-[98vh] h-[98vh] overflow-hidden p-0 gap-0">
         <div className="h-full overflow-y-auto p-6">
           <ChecklistForm
+            ref={formRef}
             boat={boat}
             rentalData={rentalData}
             type={type}

@@ -131,9 +131,15 @@ export function useSignaturePersistence(
     }
   }, [signatures.technicianSignature, signatures.customerSignature, isOpen, saveSignatures]);
 
+  // Fonction pour sauvegarder immédiatement (exposée au parent)
+  const saveNow = useCallback(() => {
+    saveSignatures();
+  }, [saveSignatures]);
+
   return {
     loadSignatures,
     clearSignatures,
+    saveNow,
     isRestored,
   };
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,7 +36,13 @@ interface ChecklistFormProps {
   onComplete: (data: any) => void;
 }
 
-export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistFormProps) {
+// Interface pour les méthodes exposées au parent
+export interface ChecklistFormRef {
+  saveFormNow: () => void;
+}
+
+export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
+  function ChecklistFormInner({ boat, rentalData, type, onComplete }, ref) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { registerForm, unregisterForm } = useFormState();
@@ -99,7 +105,7 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   }, [toast]);
 
   // Persistance des données du formulaire
-  const { clearSavedData: clearFormDraft, hasSavedDraft, lastSaveTime } = useFormPersistence(
+  const { clearSavedData: clearFormDraft, hasSavedDraft, lastSaveTime, saveNow } = useFormPersistence(
     `checklist_${boat.id}_${type}`,
     {
       checklistItems,
@@ -128,12 +134,21 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   }, []);
 
   // Persistance séparée pour les signatures (volumineuses)
-  const { clearSignatures } = useSignaturePersistence(
+  const { clearSignatures, saveNow: saveSignaturesNow } = useSignaturePersistence(
     `checklist_${boat.id}_${type}`,
     { technicianSignature, customerSignature },
     true,
     handleSignatureRestore
   );
+
+  // Exposer la fonction de sauvegarde au parent via ref
+  useImperativeHandle(ref, () => ({
+    saveFormNow: () => {
+      console.log('💾 [ChecklistForm] Sauvegarde forcée via ref');
+      saveNow();
+      saveSignaturesNow();
+    }
+  }), [saveNow, saveSignaturesNow]);
 
   // Initialize checklist items - NE PAS ÉCRASER SI DES DONNÉES ONT ÉTÉ RESTAURÉES
   useEffect(() => {
@@ -757,4 +772,4 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       </CardContent>
     </Card>
   );
-}
+});
