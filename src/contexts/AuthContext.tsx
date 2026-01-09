@@ -3,6 +3,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useIdleTimer } from '@/hooks/useIdleTimer';
 import { IdleWarningModal } from '@/components/auth/IdleWarningModal';
+import { useFormState } from '@/contexts/FormStateContext';
 
 const DEFAULT_BASE_ID = '550e8400-e29b-41d4-a716-446655440001';
 
@@ -31,6 +32,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [showIdleWarning, setShowIdleWarning] = useState(false);
+  
+  // Récupérer l'état des formulaires ouverts pour désactiver le timer d'inactivité
+  const { hasOpenForms } = useFormState();
 
   useEffect(() => {
     let isSubscribed = true;
@@ -243,9 +247,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Idle timer for automatic logout (2 hours - augmenté pour techniciens)
+  // NOUVEAU: Le timer est en pause quand un formulaire est ouvert (check-in/check-out)
   const { isWarning, remainingTime, resetTimer } = useIdleTimer({
     timeout: 2 * 60 * 60 * 1000, // 2 heures (au lieu de 30 minutes)
     warningTime: 5 * 60 * 1000, // 5 minutes warning (au lieu de 1 minute)
+    paused: hasOpenForms, // PAUSE le timer quand un formulaire est ouvert
     onIdle: () => {
       setShowIdleWarning(false);
       logout();
@@ -256,6 +262,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     },
   });
+
+  // Log quand le timer est mis en pause/repris
+  useEffect(() => {
+    if (hasOpenForms) {
+      console.log('🛡️ [AuthContext] Timer d\'inactivité PAUSÉ - formulaire actif');
+    } else {
+      console.log('🛡️ [AuthContext] Timer d\'inactivité ACTIF');
+    }
+  }, [hasOpenForms]);
 
   // Handle staying logged in
   const handleStayLoggedIn = () => {

@@ -6,6 +6,7 @@ interface UseIdleTimerOptions {
   warningTime?: number; // warning time before logout (in milliseconds)
   onWarning?: () => void;
   events?: string[];
+  paused?: boolean; // NEW: permet de mettre en pause le timer (ex: pendant un check-in)
 }
 
 export const useIdleTimer = ({
@@ -13,7 +14,8 @@ export const useIdleTimer = ({
   onIdle,
   warningTime = 60000, // 1 minute warning by default
   onWarning,
-  events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click']
+  events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'],
+  paused = false
 }: UseIdleTimerOptions) => {
   const [isIdle, setIsIdle] = useState(false);
   const [isWarning, setIsWarning] = useState(false);
@@ -24,6 +26,12 @@ export const useIdleTimer = ({
   const intervalRef = useRef<NodeJS.Timeout>();
   const lastActiveRef = useRef<number>(Date.now());
 
+  const clearAllTimers = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+  }, []);
+
   const resetTimer = useCallback(() => {
     lastActiveRef.current = Date.now();
     setIsIdle(false);
@@ -31,9 +39,13 @@ export const useIdleTimer = ({
     setRemainingTime(0);
 
     // Clear existing timeouts
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
+    clearAllTimers();
+
+    // Si en pause, ne pas démarrer de nouveaux timers
+    if (paused) {
+      console.log('⏸️ [IdleTimer] Timer en pause (formulaire actif)');
+      return;
+    }
 
     // Set warning timeout
     const warningTimeout = timeout - warningTime;
@@ -63,11 +75,24 @@ export const useIdleTimer = ({
       setIsWarning(false);
       onIdle();
     }, timeout);
-  }, [timeout, warningTime, onIdle, onWarning]);
+  }, [timeout, warningTime, onIdle, onWarning, paused, clearAllTimers]);
 
   const handleActivity = useCallback(() => {
     resetTimer();
   }, [resetTimer]);
+
+  // Réinitialiser le timer quand paused change
+  useEffect(() => {
+    if (paused) {
+      console.log('⏸️ [IdleTimer] Mise en pause du timer');
+      clearAllTimers();
+      setIsWarning(false);
+      setRemainingTime(0);
+    } else {
+      console.log('▶️ [IdleTimer] Reprise du timer');
+      resetTimer();
+    }
+  }, [paused, clearAllTimers, resetTimer]);
 
   useEffect(() => {
     // Add event listeners
@@ -75,8 +100,10 @@ export const useIdleTimer = ({
       document.addEventListener(event, handleActivity, true);
     });
 
-    // Start the timer
-    resetTimer();
+    // Start the timer (si pas en pause)
+    if (!paused) {
+      resetTimer();
+    }
 
     return () => {
       // Clean up event listeners
@@ -85,11 +112,9 @@ export const useIdleTimer = ({
       });
 
       // Clear timeouts
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      clearAllTimers();
     };
-  }, [events, handleActivity, resetTimer]);
+  }, [events, handleActivity, resetTimer, paused, clearAllTimers]);
 
   return {
     isIdle,
