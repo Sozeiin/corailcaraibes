@@ -6,9 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChecklistCategory } from './ChecklistCategory';
+import { EngineHoursInputSection } from './EngineHoursInputSection';
 import type { ChecklistItem } from '@/hooks/useChecklistData';
 import { useCategoriesOrder } from '@/hooks/useCategoriesOrder';
 import { MessageSquare, AlertTriangle, CheckCircle, Clock, TestTube, ChevronDown } from 'lucide-react';
+
 interface ChecklistInspectionProps {
   checklistItems: ChecklistItem[];
   onItemStatusChange: (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => void;
@@ -19,7 +21,11 @@ interface ChecklistInspectionProps {
   overallStatus: 'ok' | 'needs_attention' | 'major_issues';
   isComplete: boolean;
   checklistId?: string;
+  boatId?: string;
+  engineHours?: Record<string, number | undefined>;
+  onEngineHoursChange?: (componentId: string, hours: number | undefined) => void;
 }
+
 export function ChecklistInspection({
   checklistItems,
   onItemStatusChange,
@@ -29,7 +35,10 @@ export function ChecklistInspection({
   onGeneralNotesChange,
   overallStatus,
   isComplete,
-  checklistId
+  checklistId,
+  boatId,
+  engineHours = {},
+  onEngineHoursChange,
 }: ChecklistInspectionProps) {
   const {
     sortCategories
@@ -165,6 +174,15 @@ export function ChecklistInspection({
           </div>
         </CardContent>
       </Card>
+
+      {/* Engine Hours Input Section */}
+      {boatId && onEngineHoursChange && (
+        <EngineHoursInputSection
+          boatId={boatId}
+          engineHours={engineHours}
+          onEngineHoursChange={onEngineHoursChange}
+        />
+      )}
 
       {/* Checklist Items by Category */}
       {orderedCategories.map(category => {
