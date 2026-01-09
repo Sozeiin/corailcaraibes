@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Save, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, AlertTriangle, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFormState } from '@/contexts/FormStateContext';
 import { useToast } from '@/hooks/use-toast';
 import { 
   useChecklistItems, 
@@ -25,6 +26,8 @@ import { ChecklistReviewStep } from './ChecklistReviewStep';
 import { SignatureStep } from './SignatureStep';
 import { EmailStep } from './EmailStep';
 import { useCreateIntervention } from '@/hooks/useCreateIntervention';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface ChecklistFormProps {
   boat: any;
@@ -36,6 +39,7 @@ interface ChecklistFormProps {
 export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistFormProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { registerForm, unregisterForm } = useFormState();
 
   // State management
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
@@ -49,6 +53,10 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const [isProcessing, setIsProcessing] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [tempChecklistId] = useState(`temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Flag pour éviter l'écrasement des données restaurées
+  const [isItemsInitialized, setIsItemsInitialized] = useState(false);
+  const hasRestoredDataRef = useRef(false);
 
   // Queries and mutations
   const { data: fetchedItems, isLoading: itemsLoading, error: itemsError } = useChecklistItems();
@@ -59,8 +67,39 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
   const uploadSignatureMutation = useSignatureUpload();
   const createInterventionMutation = useCreateIntervention();
 
+  // Enregistrer le formulaire comme actif (pour désactiver le timer d'inactivité)
+  useEffect(() => {
+    registerForm();
+    console.log('📝 [ChecklistForm] Formulaire enregistré comme actif');
+    
+    return () => {
+      unregisterForm();
+      console.log('📝 [ChecklistForm] Formulaire désenregistré');
+    };
+  }, [registerForm, unregisterForm]);
+
+  // Callback pour la restauration des données du formulaire
+  const handleFormRestore = useCallback((restoredData: any) => {
+    console.log('📂 [ChecklistForm] Restauration des données du formulaire', restoredData);
+    hasRestoredDataRef.current = true;
+    
+    if (restoredData.checklistItems && restoredData.checklistItems.length > 0) {
+      setChecklistItems(restoredData.checklistItems);
+      setIsItemsInitialized(true);
+    }
+    if (restoredData.generalNotes) setGeneralNotes(restoredData.generalNotes);
+    if (restoredData.currentStep) setCurrentStep(restoredData.currentStep);
+    if (restoredData.customerEmail) setCustomerEmail(restoredData.customerEmail);
+    if (restoredData.sendEmailReport !== undefined) setSendEmailReport(restoredData.sendEmailReport);
+    
+    toast({
+      title: "Brouillon restauré",
+      description: "Vos données ont été restaurées après la mise en veille.",
+    });
+  }, [toast]);
+
   // Persistance des données du formulaire
-  const { clearSavedData: clearFormDraft, hasSavedDraft } = useFormPersistence(
+  const { clearSavedData: clearFormDraft, hasSavedDraft, lastSaveTime } = useFormPersistence(
     `checklist_${boat.id}_${type}`,
     {
       checklistItems,
@@ -69,33 +108,45 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
       customerEmail,
       sendEmailReport,
     },
-    (savedData) => {
-      if (savedData.checklistItems) setChecklistItems(savedData.checklistItems);
-      if (savedData.generalNotes) setGeneralNotes(savedData.generalNotes);
-      if (savedData.currentStep) setCurrentStep(savedData.currentStep);
-      if (savedData.customerEmail) setCustomerEmail(savedData.customerEmail);
-      if (savedData.sendEmailReport !== undefined) setSendEmailReport(savedData.sendEmailReport);
-      
-      toast({
-        title: "Brouillon restauré",
-        description: "Vos données ont été restaurées après la mise en veille.",
-      });
-    },
+    setChecklistItems as any, // Pas utilisé directement, on utilise onRestore
     true, // isOpen = true car le composant est monté
-    { excludeFields: [] }
+    { 
+      excludeFields: [],
+      onRestore: handleFormRestore,
+    }
   );
+
+  // Callback pour la restauration des signatures
+  const handleSignatureRestore = useCallback((restoredSignatures: { technicianSignature?: string; customerSignature?: string }) => {
+    console.log('📂 [ChecklistForm] Restauration des signatures');
+    if (restoredSignatures.technicianSignature) {
+      setTechnicianSignature(restoredSignatures.technicianSignature);
+    }
+    if (restoredSignatures.customerSignature) {
+      setCustomerSignature(restoredSignatures.customerSignature);
+    }
+  }, []);
 
   // Persistance séparée pour les signatures (volumineuses)
   const { clearSignatures } = useSignaturePersistence(
     `checklist_${boat.id}_${type}`,
     { technicianSignature, customerSignature },
-    true
+    true,
+    handleSignatureRestore
   );
 
-  // Initialize checklist items
+  // Initialize checklist items - NE PAS ÉCRASER SI DES DONNÉES ONT ÉTÉ RESTAURÉES
   useEffect(() => {
-    if (fetchedItems) {
-      console.log('📋 [DEBUG] Items récupérés:', fetchedItems);
+    if (fetchedItems && !isItemsInitialized) {
+      console.log('📋 [DEBUG] Items récupérés, initialisation:', fetchedItems.length, 'items');
+      
+      // Si des données ont été restaurées, ne pas réinitialiser
+      if (hasRestoredDataRef.current && checklistItems.length > 0) {
+        console.log('📋 [DEBUG] Données restaurées détectées, pas de réinitialisation');
+        setIsItemsInitialized(true);
+        return;
+      }
+      
       setChecklistItems(
         fetchedItems.map((item: any) => ({
           id: item.id,
@@ -107,8 +158,9 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           photos: [],
         }))
       );
+      setIsItemsInitialized(true);
     }
-  }, [fetchedItems]);
+  }, [fetchedItems, isItemsInitialized, checklistItems.length]);
 
   // Calculate overall status based on item statuses
   useEffect(() => {
@@ -580,9 +632,15 @@ export function ChecklistForm({ boat, rentalData, type, onComplete }: ChecklistF
           </div>
           <div className="flex items-center gap-2">
             {hasSavedDraft && (
-              <Badge variant="secondary" className="text-xs">
-                <Save className="h-3 w-3 mr-1" />
+              <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                <Save className="h-3 w-3" />
                 Brouillon sauvegardé
+                {lastSaveTime && (
+                  <span className="flex items-center gap-1 ml-1 text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {format(lastSaveTime, 'HH:mm', { locale: fr })}
+                  </span>
+                )}
               </Badge>
             )}
             <div className="text-sm text-muted-foreground">

@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 /**
  * Hook amélioré pour persister automatiquement les données d'un formulaire dans localStorage
  * Gère la mise en veille de la tablette via l'événement visibilitychange
+ * 
+ * CORRECTION v2: 
+ * - Sauvegarde dès le premier changement (pas besoin d'avoir restauré d'abord)
+ * - Restauration automatique au montage
+ * - Pas d'écrasement des données restaurées
  */
 export function useFormPersistence<T extends Record<string, any>>(
   formKey: string,
@@ -11,16 +16,18 @@ export function useFormPersistence<T extends Record<string, any>>(
   isOpen: boolean,
   options?: {
     excludeFields?: string[];
-    onRestore?: () => void;
+    onRestore?: (restoredData: T) => void;
   }
 ) {
   const storageKey = `form_draft_${formKey}`;
-  const hasLoadedRef = useRef(false);
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
+  const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const lastSaveTimeRef = useRef<number>(0);
+  const isRestoredRef = useRef(false);
+  const hasTriedRestoreRef = useRef(false);
 
   // Fonction pour filtrer les champs exclus
-  const filterData = (data: T): Partial<T> => {
+  const filterData = useCallback((data: T): Partial<T> => {
     if (!options?.excludeFields) return data;
     
     const filtered = { ...data };
@@ -28,24 +35,25 @@ export function useFormPersistence<T extends Record<string, any>>(
       delete filtered[field];
     });
     return filtered;
-  };
+  }, [options?.excludeFields]);
 
-  // Sauvegarder les données (immédiatement, pas de debounce)
-  const saveData = (data: T) => {
+  // Sauvegarder les données (immédiatement, avec throttle de 1 seconde)
+  const saveData = useCallback((data: T, force: boolean = false) => {
     try {
       const now = Date.now();
-      // Éviter les sauvegardes trop fréquentes (max 1 par seconde)
-      if (now - lastSaveTimeRef.current < 1000) return;
+      // Éviter les sauvegardes trop fréquentes (max 1 par seconde) sauf si forcé
+      if (!force && now - lastSaveTimeRef.current < 1000) return;
       
       const dataToSave = filterData(data);
       const serialized = JSON.stringify({
         data: dataToSave,
         timestamp: now,
-        version: 1,
+        version: 2,
       });
       localStorage.setItem(storageKey, serialized);
       lastSaveTimeRef.current = now;
       setHasSavedDraft(true);
+      setLastSaveTime(new Date(now));
       
       console.log(`💾 [FormPersistence] Données sauvegardées: ${formKey}`);
     } catch (error) {
@@ -55,12 +63,10 @@ export function useFormPersistence<T extends Record<string, any>>(
         cleanupOldDrafts();
       }
     }
-  };
+  }, [formKey, storageKey, filterData]);
 
   // Charger les données sauvegardées
-  const loadSavedData = (): T | null => {
-    if (hasLoadedRef.current) return null;
-    
+  const loadSavedData = useCallback((): T | null => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (!saved) return null;
@@ -76,29 +82,30 @@ export function useFormPersistence<T extends Record<string, any>>(
         return null;
       }
 
-      hasLoadedRef.current = true;
-      console.log(`📂 [FormPersistence] Données restaurées: ${formKey}`);
+      console.log(`📂 [FormPersistence] Données chargées: ${formKey}`);
       return savedData;
     } catch (error) {
       console.error('❌ [FormPersistence] Erreur chargement:', error);
       return null;
     }
-  };
+  }, [formKey, storageKey]);
 
   // Nettoyer les données après soumission
-  const clearSavedData = () => {
+  const clearSavedData = useCallback(() => {
     try {
       localStorage.removeItem(storageKey);
-      hasLoadedRef.current = false;
+      isRestoredRef.current = false;
+      hasTriedRestoreRef.current = false;
       setHasSavedDraft(false);
+      setLastSaveTime(null);
       console.log(`🗑️ [FormPersistence] Brouillon supprimé: ${formKey}`);
     } catch (error) {
       console.error('❌ [FormPersistence] Erreur suppression:', error);
     }
-  };
+  }, [formKey, storageKey]);
 
   // Nettoyer les anciens brouillons pour libérer de l'espace
-  const cleanupOldDrafts = () => {
+  const cleanupOldDrafts = useCallback(() => {
     try {
       const keys = Object.keys(localStorage);
       const draftKeys = keys.filter(key => key.startsWith('form_draft_'));
@@ -122,42 +129,65 @@ export function useFormPersistence<T extends Record<string, any>>(
     } catch (error) {
       console.error('❌ [FormPersistence] Erreur nettoyage:', error);
     }
-  };
+  }, []);
 
-  // Restaurer automatiquement à l'ouverture
+  // Sauvegarder immédiatement (utile pour forcer une sauvegarde)
+  const saveNow = useCallback(() => {
+    if (formData) {
+      saveData(formData, true);
+    }
+  }, [formData, saveData]);
+
+  // Restaurer automatiquement à l'ouverture (une seule fois)
   useEffect(() => {
-    if (isOpen && !hasLoadedRef.current) {
+    if (isOpen && !hasTriedRestoreRef.current) {
+      hasTriedRestoreRef.current = true;
+      
       const savedData = loadSavedData();
       if (savedData) {
+        console.log('📂 [FormPersistence] Restauration automatique des données');
+        isRestoredRef.current = true;
+        setHasSavedDraft(true);
+        
         // Fusionner avec les données actuelles (privilégier les données sauvegardées)
         setFormData({ ...formData, ...savedData });
-        setHasSavedDraft(true);
-        options?.onRestore?.();
+        options?.onRestore?.(savedData as T);
       }
     }
-  }, [isOpen]);
+  }, [isOpen]); // Volontairement pas de dépendances sur formData/setFormData pour éviter les boucles
 
-  // Sauvegarder à chaque modification
+  // Sauvegarder à chaque modification (SANS condition hasLoadedRef)
   useEffect(() => {
-    if (isOpen && hasLoadedRef.current && formData) {
+    if (isOpen && formData && hasTriedRestoreRef.current) {
+      // Sauvegarder les données actuelles
       saveData(formData);
     }
-  }, [formData, isOpen]);
+  }, [formData, isOpen, saveData]);
 
-  // Sauvegarder lors de la mise en veille de l'appareil
+  // Sauvegarder lors de la mise en veille de l'appareil (CRITIQUE pour tablettes)
   useEffect(() => {
     if (!isOpen) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden && formData) {
         console.log('💤 [FormPersistence] Appareil en veille, sauvegarde forcée');
-        saveData(formData);
+        saveData(formData, true); // Forcer la sauvegarde immédiate
+      } else if (!document.hidden && !isRestoredRef.current) {
+        // Au retour de veille, vérifier s'il faut restaurer
+        console.log('☀️ [FormPersistence] Retour de veille, vérification restauration');
+        const savedData = loadSavedData();
+        if (savedData) {
+          console.log('📂 [FormPersistence] Restauration après veille');
+          isRestoredRef.current = true;
+          setFormData({ ...formData, ...savedData });
+          options?.onRestore?.(savedData as T);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isOpen, formData]);
+  }, [isOpen, formData, saveData, loadSavedData, setFormData, options]);
 
   // Sauvegarder avant fermeture de page
   useEffect(() => {
@@ -165,18 +195,20 @@ export function useFormPersistence<T extends Record<string, any>>(
 
     const handleBeforeUnload = () => {
       if (formData) {
-        saveData(formData);
+        saveData(formData, true);
       }
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isOpen, formData]);
+  }, [isOpen, formData, saveData]);
 
   return { 
     loadSavedData, 
     clearSavedData, 
     hasSavedDraft,
-    saveNow: () => saveData(formData),
+    lastSaveTime,
+    saveNow,
+    isRestored: isRestoredRef.current,
   };
 }

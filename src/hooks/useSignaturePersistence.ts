@@ -1,8 +1,13 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 
 /**
  * Hook spécialisé pour la persistance des signatures (données volumineuses base64)
  * Sauvegarde séparée pour éviter de surcharger le localStorage principal
+ * 
+ * CORRECTION v2:
+ * - Restauration automatique au montage
+ * - Sauvegarde sans condition hasLoadedRef
+ * - Callback pour restaurer les signatures dans le composant parent
  */
 export function useSignaturePersistence(
   formKey: string,
@@ -10,13 +15,15 @@ export function useSignaturePersistence(
     technicianSignature?: string;
     customerSignature?: string;
   },
-  isOpen: boolean
+  isOpen: boolean,
+  onRestoreSignatures?: (signatures: { technicianSignature?: string; customerSignature?: string }) => void
 ) {
   const storageKey = `signatures_${formKey}`;
-  const hasLoadedRef = useRef(false);
+  const hasTriedRestoreRef = useRef(false);
+  const [isRestored, setIsRestored] = useState(false);
 
   // Sauvegarder les signatures
-  const saveSignatures = () => {
+  const saveSignatures = useCallback(() => {
     try {
       // Ne sauvegarder que si au moins une signature existe
       if (!signatures.technicianSignature && !signatures.customerSignature) {
@@ -38,12 +45,10 @@ export function useSignaturePersistence(
         console.warn('⚠️ [SignaturePersistence] Quota dépassé, signatures non sauvegardées');
       }
     }
-  };
+  }, [signatures.technicianSignature, signatures.customerSignature, storageKey, formKey]);
 
   // Charger les signatures sauvegardées
-  const loadSignatures = (): typeof signatures | null => {
-    if (hasLoadedRef.current) return null;
-
+  const loadSignatures = useCallback((): { technicianSignature?: string; customerSignature?: string } | null => {
     try {
       const saved = localStorage.getItem(storageKey);
       if (!saved) return null;
@@ -58,8 +63,7 @@ export function useSignaturePersistence(
         return null;
       }
 
-      hasLoadedRef.current = true;
-      console.log(`📂 [SignaturePersistence] Signatures restaurées: ${formKey}`);
+      console.log(`📂 [SignaturePersistence] Signatures chargées: ${formKey}`);
       
       return {
         technicianSignature: parsed.technicianSignature,
@@ -69,20 +73,35 @@ export function useSignaturePersistence(
       console.error('❌ [SignaturePersistence] Erreur chargement:', error);
       return null;
     }
-  };
+  }, [storageKey, formKey]);
 
   // Nettoyer les signatures
-  const clearSignatures = () => {
+  const clearSignatures = useCallback(() => {
     try {
       localStorage.removeItem(storageKey);
-      hasLoadedRef.current = false;
+      hasTriedRestoreRef.current = false;
+      setIsRestored(false);
       console.log(`🗑️ [SignaturePersistence] Signatures supprimées: ${formKey}`);
     } catch (error) {
       console.error('❌ [SignaturePersistence] Erreur suppression:', error);
     }
-  };
+  }, [storageKey, formKey]);
 
-  // Sauvegarder lors de la mise en veille
+  // Restaurer automatiquement à l'ouverture (une seule fois)
+  useEffect(() => {
+    if (isOpen && !hasTriedRestoreRef.current) {
+      hasTriedRestoreRef.current = true;
+      
+      const savedSignatures = loadSignatures();
+      if (savedSignatures && (savedSignatures.technicianSignature || savedSignatures.customerSignature)) {
+        console.log('📂 [SignaturePersistence] Restauration automatique des signatures');
+        setIsRestored(true);
+        onRestoreSignatures?.(savedSignatures);
+      }
+    }
+  }, [isOpen, loadSignatures, onRestoreSignatures]);
+
+  // Sauvegarder lors de la mise en veille (CRITIQUE pour tablettes)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -90,22 +109,31 @@ export function useSignaturePersistence(
       if (document.hidden) {
         console.log('💤 [SignaturePersistence] Sauvegarde signatures avant veille');
         saveSignatures();
+      } else if (!document.hidden && !isRestored) {
+        // Au retour de veille, vérifier s'il faut restaurer
+        const savedSignatures = loadSignatures();
+        if (savedSignatures && (savedSignatures.technicianSignature || savedSignatures.customerSignature)) {
+          console.log('📂 [SignaturePersistence] Restauration signatures après veille');
+          setIsRestored(true);
+          onRestoreSignatures?.(savedSignatures);
+        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isOpen, signatures]);
+  }, [isOpen, saveSignatures, loadSignatures, onRestoreSignatures, isRestored]);
 
-  // Sauvegarder à chaque modification de signature
+  // Sauvegarder à chaque modification de signature (SANS condition hasLoadedRef)
   useEffect(() => {
-    if (isOpen && hasLoadedRef.current) {
+    if (isOpen && hasTriedRestoreRef.current) {
       saveSignatures();
     }
-  }, [signatures.technicianSignature, signatures.customerSignature, isOpen]);
+  }, [signatures.technicianSignature, signatures.customerSignature, isOpen, saveSignatures]);
 
   return {
     loadSignatures,
     clearSignatures,
+    isRestored,
   };
 }
