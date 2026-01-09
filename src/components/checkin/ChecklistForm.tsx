@@ -64,6 +64,24 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   const [isItemsInitialized, setIsItemsInitialized] = useState(false);
   const hasRestoredDataRef = useRef(false);
 
+  // ===== REFS POUR CAPTURER L'ÉTAT IMMÉDIATEMENT (évite les closures périmées) =====
+  const checklistItemsRef = useRef<ChecklistItem[]>([]);
+  const generalNotesRef = useRef('');
+  const currentStepRef = useRef<'checklist' | 'review' | 'signatures' | 'email'>('checklist');
+  const customerEmailRef = useRef('');
+  const sendEmailReportRef = useRef(false);
+  const technicianSignatureRef = useRef('');
+  const customerSignatureRef = useRef('');
+
+  // Synchroniser les refs avec les states (pour que les refs soient toujours à jour)
+  useEffect(() => { checklistItemsRef.current = checklistItems; }, [checklistItems]);
+  useEffect(() => { generalNotesRef.current = generalNotes; }, [generalNotes]);
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+  useEffect(() => { customerEmailRef.current = customerEmail; }, [customerEmail]);
+  useEffect(() => { sendEmailReportRef.current = sendEmailReport; }, [sendEmailReport]);
+  useEffect(() => { technicianSignatureRef.current = technicianSignature; }, [technicianSignature]);
+  useEffect(() => { customerSignatureRef.current = customerSignature; }, [customerSignature]);
+
   // Queries and mutations
   const { data: fetchedItems, isLoading: itemsLoading, error: itemsError } = useChecklistItems();
   const createChecklistMutation = useCreateChecklist();
@@ -85,18 +103,32 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   }, [registerForm, unregisterForm]);
 
   // Callback pour la restauration des données du formulaire
+  // IMPORTANT: Met à jour les refs ET les states pour que les deux soient synchronisés
   const handleFormRestore = useCallback((restoredData: any) => {
     console.log('📂 [ChecklistForm] Restauration des données du formulaire', restoredData);
     hasRestoredDataRef.current = true;
     
     if (restoredData.checklistItems && restoredData.checklistItems.length > 0) {
+      checklistItemsRef.current = restoredData.checklistItems;
       setChecklistItems(restoredData.checklistItems);
       setIsItemsInitialized(true);
     }
-    if (restoredData.generalNotes) setGeneralNotes(restoredData.generalNotes);
-    if (restoredData.currentStep) setCurrentStep(restoredData.currentStep);
-    if (restoredData.customerEmail) setCustomerEmail(restoredData.customerEmail);
-    if (restoredData.sendEmailReport !== undefined) setSendEmailReport(restoredData.sendEmailReport);
+    if (restoredData.generalNotes) {
+      generalNotesRef.current = restoredData.generalNotes;
+      setGeneralNotes(restoredData.generalNotes);
+    }
+    if (restoredData.currentStep) {
+      currentStepRef.current = restoredData.currentStep;
+      setCurrentStep(restoredData.currentStep);
+    }
+    if (restoredData.customerEmail) {
+      customerEmailRef.current = restoredData.customerEmail;
+      setCustomerEmail(restoredData.customerEmail);
+    }
+    if (restoredData.sendEmailReport !== undefined) {
+      sendEmailReportRef.current = restoredData.sendEmailReport;
+      setSendEmailReport(restoredData.sendEmailReport);
+    }
     
     toast({
       title: "Brouillon restauré",
@@ -123,12 +155,15 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   );
 
   // Callback pour la restauration des signatures
+  // IMPORTANT: Met à jour les refs ET les states pour que les deux soient synchronisés
   const handleSignatureRestore = useCallback((restoredSignatures: { technicianSignature?: string; customerSignature?: string }) => {
     console.log('📂 [ChecklistForm] Restauration des signatures');
     if (restoredSignatures.technicianSignature) {
+      technicianSignatureRef.current = restoredSignatures.technicianSignature;
       setTechnicianSignature(restoredSignatures.technicianSignature);
     }
     if (restoredSignatures.customerSignature) {
+      customerSignatureRef.current = restoredSignatures.customerSignature;
       setCustomerSignature(restoredSignatures.customerSignature);
     }
   }, []);
@@ -142,11 +177,36 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   );
 
   // Exposer la fonction de sauvegarde au parent via ref
+  // UTILISE LES REFS pour capturer l'état le plus récent (évite les closures périmées)
   useImperativeHandle(ref, () => ({
     saveFormNow: () => {
-      console.log('💾 [ChecklistForm] Sauvegarde forcée via ref');
-      saveNow();
-      saveSignaturesNow();
+      console.log('💾 [ChecklistForm] Sauvegarde forcée via ref avec état actuel des refs');
+      
+      // Récupérer les données les plus récentes depuis les refs
+      const currentFormData = {
+        checklistItems: checklistItemsRef.current,
+        generalNotes: generalNotesRef.current,
+        currentStep: currentStepRef.current,
+        customerEmail: customerEmailRef.current,
+        sendEmailReport: sendEmailReportRef.current,
+      };
+      
+      const currentSignatures = {
+        technicianSignature: technicianSignatureRef.current,
+        customerSignature: customerSignatureRef.current,
+      };
+      
+      console.log('💾 [ChecklistForm] Données à sauvegarder:', {
+        itemsCount: currentFormData.checklistItems.length,
+        hasNotes: !!currentFormData.generalNotes,
+        step: currentFormData.currentStep,
+        hasTechSig: !!currentSignatures.technicianSignature,
+        hasCustSig: !!currentSignatures.customerSignature,
+      });
+      
+      // Sauvegarder avec les données des refs (override)
+      saveNow(currentFormData as any);
+      saveSignaturesNow(currentSignatures);
     }
   }), [saveNow, saveSignaturesNow]);
 
@@ -162,17 +222,19 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         return;
       }
       
-      setChecklistItems(
-        fetchedItems.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          isRequired: item.is_required,
-          status: 'not_checked' as const,
-          notes: '',
-          photos: [],
-        }))
-      );
+      const initialItems = fetchedItems.map((item: any) => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        isRequired: item.is_required,
+        status: 'not_checked' as const,
+        notes: '',
+        photos: [],
+      }));
+      
+      // Synchroniser ref ET state
+      checklistItemsRef.current = initialItems;
+      setChecklistItems(initialItems);
       setIsItemsInitialized(true);
     }
   }, [fetchedItems, isItemsInitialized, checklistItems.length]);
@@ -195,32 +257,38 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
     }
   }, [checklistItems]);
 
-  // Event handlers
+  // Event handlers - MISE À JOUR DES REFS AVANT setState pour capturer l'état immédiatement
   const handleItemStatusChange = (itemId: string, status: 'ok' | 'needs_repair' | 'not_checked', notes?: string) => {
     console.log('🔄 [DEBUG] Changement statut item:', itemId, status, notes);
-    setChecklistItems(prev => {
-      const updated = prev.map(item => 
-        item.id === itemId 
-          ? { ...item, status, notes: notes || item.notes }
-          : item
-      );
-      console.log('🔄 [DEBUG] Items mis à jour:', updated.filter(item => item.id === itemId));
-      return updated;
-    });
+    // Calculer la nouvelle valeur AVANT setState
+    const updated = checklistItemsRef.current.map(item => 
+      item.id === itemId 
+        ? { ...item, status, notes: notes || item.notes }
+        : item
+    );
+    // Mettre à jour la ref IMMÉDIATEMENT (synchrone)
+    checklistItemsRef.current = updated;
+    console.log('🔄 [DEBUG] Ref mise à jour immédiatement:', updated.filter(item => item.id === itemId));
+    // Puis mettre à jour le state (asynchrone)
+    setChecklistItems(updated);
   };
 
   const handleItemNotesChange = (itemId: string, notes: string) => {
     console.log('📝 [DEBUG] Changement notes item:', itemId, notes);
-    setChecklistItems(prev => prev.map(item => 
+    const updated = checklistItemsRef.current.map(item => 
       item.id === itemId ? { ...item, notes } : item
-    ));
+    );
+    checklistItemsRef.current = updated;
+    setChecklistItems(updated);
   };
 
   const handleItemPhotoChange = (itemId: string, photos: Array<{ id?: string; url: string; displayOrder: number }>) => {
     console.log('📷 [DEBUG] Changement photos item:', itemId, photos);
-    setChecklistItems(prev => prev.map(item => 
+    const updated = checklistItemsRef.current.map(item => 
       item.id === itemId ? { ...item, photos } : item
-    ));
+    );
+    checklistItemsRef.current = updated;
+    setChecklistItems(updated);
   };
 
   // Navigation
