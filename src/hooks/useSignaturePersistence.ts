@@ -133,6 +133,7 @@ export function useSignaturePersistence(
 
   // Fonction pour sauvegarder immédiatement (exposée au parent)
   // Accepte un override pour éviter les problèmes de state périmé lors de fermetures rapides
+  // CORRECTION: Utilise la même clé et le même format que saveSignatures
   const saveNow = useCallback((overrideSignatures?: { technicianSignature?: string; customerSignature?: string }) => {
     if (overrideSignatures) {
       console.log('💾 [SignaturePersistence] saveNow avec override');
@@ -142,12 +143,14 @@ export function useSignaturePersistence(
       };
       if (sigs.technicianSignature || sigs.customerSignature) {
         try {
-          const serialized = JSON.stringify({
-            signatures: sigs,
+          // CORRECTION: Même clé et même format que saveSignatures pour cohérence
+          const dataToSave = {
+            technicianSignature: sigs.technicianSignature,
+            customerSignature: sigs.customerSignature,
             timestamp: Date.now(),
-          });
-          localStorage.setItem(`signature_draft_${formKey}`, serialized);
-          console.log('💾 [SignaturePersistence] Signatures sauvegardées via override');
+          };
+          localStorage.setItem(storageKey, JSON.stringify(dataToSave));
+          console.log('💾 [SignaturePersistence] Signatures sauvegardées via override dans', storageKey);
         } catch (error) {
           console.error('❌ [SignaturePersistence] Erreur sauvegarde override:', error);
         }
@@ -155,7 +158,7 @@ export function useSignaturePersistence(
     } else {
       saveSignatures();
     }
-  }, [formKey, saveSignatures]);
+  }, [storageKey, saveSignatures]);
 
   return {
     loadSignatures,

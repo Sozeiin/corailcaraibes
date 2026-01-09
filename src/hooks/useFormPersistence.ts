@@ -82,10 +82,24 @@ export function useFormPersistence<T extends Record<string, any>>(
         return null;
       }
 
+      // VALIDATION: Vérifier que checklistItems est bien un tableau (si présent)
+      if (savedData && 'checklistItems' in savedData) {
+        const items = (savedData as any).checklistItems;
+        if (items !== undefined && !Array.isArray(items)) {
+          console.warn('⚠️ [FormPersistence] Brouillon corrompu (checklistItems invalide), suppression');
+          localStorage.removeItem(storageKey);
+          return null;
+        }
+      }
+
       console.log(`📂 [FormPersistence] Données chargées: ${formKey}`);
       return savedData;
     } catch (error) {
       console.error('❌ [FormPersistence] Erreur chargement:', error);
+      // En cas d'erreur de parsing, supprimer le brouillon corrompu
+      try {
+        localStorage.removeItem(storageKey);
+      } catch (e) {}
       return null;
     }
   }, [formKey, storageKey]);
@@ -152,9 +166,13 @@ export function useFormPersistence<T extends Record<string, any>>(
         isRestoredRef.current = true;
         setHasSavedDraft(true);
         
-        // Fusionner avec les données actuelles (privilégier les données sauvegardées)
-        setFormData({ ...formData, ...savedData });
-        options?.onRestore?.(savedData as T);
+        // CORRECTION: Si onRestore est fourni, l'utiliser exclusivement (plus robuste)
+        // Sinon, fusionner via setFormData (fallback)
+        if (options?.onRestore) {
+          options.onRestore(savedData as T);
+        } else {
+          setFormData({ ...formData, ...savedData });
+        }
       }
     }
   }, [isOpen]); // Volontairement pas de dépendances sur formData/setFormData pour éviter les boucles
