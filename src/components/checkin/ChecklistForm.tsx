@@ -29,6 +29,9 @@ import { useCreateIntervention } from '@/hooks/useCreateIntervention';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+// Type pour les heures moteur
+export type EngineHoursState = Record<string, number | undefined>;
+
 interface ChecklistFormProps {
   boat: any;
   rentalData: any;
@@ -60,6 +63,9 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [tempChecklistId] = useState(`temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
   
+  // State pour les heures moteur
+  const [engineHours, setEngineHours] = useState<EngineHoursState>({});
+  
   // Flag pour éviter l'écrasement des données restaurées
   const [isItemsInitialized, setIsItemsInitialized] = useState(false);
   const hasRestoredDataRef = useRef(false);
@@ -72,6 +78,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   const sendEmailReportRef = useRef(false);
   const technicianSignatureRef = useRef('');
   const customerSignatureRef = useRef('');
+  const engineHoursRef = useRef<EngineHoursState>({});
 
   // Synchroniser les refs avec les states (pour que les refs soient toujours à jour)
   useEffect(() => { checklistItemsRef.current = checklistItems; }, [checklistItems]);
@@ -81,6 +88,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   useEffect(() => { sendEmailReportRef.current = sendEmailReport; }, [sendEmailReport]);
   useEffect(() => { technicianSignatureRef.current = technicianSignature; }, [technicianSignature]);
   useEffect(() => { customerSignatureRef.current = customerSignature; }, [customerSignature]);
+  useEffect(() => { engineHoursRef.current = engineHours; }, [engineHours]);
 
   // Queries and mutations
   const { data: fetchedItems, isLoading: itemsLoading, error: itemsError } = useChecklistItems();
@@ -142,6 +150,10 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
       sendEmailReportRef.current = restoredData.sendEmailReport;
       setSendEmailReport(restoredData.sendEmailReport);
     }
+    if (restoredData.engineHours) {
+      engineHoursRef.current = restoredData.engineHours;
+      setEngineHours(restoredData.engineHours);
+    }
     
     toast({
       title: "Brouillon restauré",
@@ -158,6 +170,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
       currentStep,
       customerEmail,
       sendEmailReport,
+      engineHours,
     },
     setChecklistItems as any, // Pas utilisé directement, on utilise onRestore
     true, // isOpen = true car le composant est monté
@@ -202,6 +215,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         currentStep: currentStepRef.current,
         customerEmail: customerEmailRef.current,
         sendEmailReport: sendEmailReportRef.current,
+        engineHours: engineHoursRef.current,
       };
       
       const currentSignatures = {
@@ -215,6 +229,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         step: currentFormData.currentStep,
         hasTechSig: !!currentSignatures.technicianSignature,
         hasCustSig: !!currentSignatures.customerSignature,
+        engineHoursCount: Object.keys(currentFormData.engineHours).length,
       });
       
       // Sauvegarder avec les données des refs (override)
@@ -222,6 +237,15 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
       saveSignaturesNow(currentSignatures);
     }
   }), [saveNow, saveSignaturesNow]);
+
+  // Handler pour les heures moteur
+  const handleEngineHoursChange = useCallback((componentId: string, hours: number | undefined) => {
+    setEngineHours(prev => {
+      const updated = { ...prev, [componentId]: hours };
+      engineHoursRef.current = updated;
+      return updated;
+    });
+  }, []);
 
   // Initialize checklist items - NE PAS ÉCRASER SI DES DONNÉES ONT ÉTÉ RESTAURÉES
   useEffect(() => {
@@ -487,6 +511,30 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
       console.log('✅ [CHECKLIST] Checklist créée:', checklist.id);
+
+      // Update engine hours in boat_components
+      const engineHoursEntries = Object.entries(engineHours).filter(([_, hours]) => hours !== undefined && hours > 0);
+      if (engineHoursEntries.length > 0) {
+        console.log('⚙️ [CHECKLIST] Mise à jour heures moteur:', engineHoursEntries);
+        for (const [componentId, hours] of engineHoursEntries) {
+          try {
+            await supabase
+              .from('boat_components')
+              .update({ 
+                current_engine_hours: hours, 
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', componentId);
+            console.log(`✅ [CHECKLIST] Heures moteur mises à jour pour ${componentId}: ${hours}h`);
+          } catch (engineError) {
+            console.error(`❌ [CHECKLIST] Erreur mise à jour heures moteur ${componentId}:`, engineError);
+          }
+        }
+        toast({
+          title: 'Heures moteur mises à jour',
+          description: `${engineHoursEntries.length} moteur(s) mis à jour automatiquement.`,
+        });
+      }
 
       // NOW update boat status AFTER checklist is created successfully
       const newBoatStatus = type === 'checkin' ? 'rented' : 'available';
@@ -776,6 +824,9 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
             overallStatus={overallStatus}
             isComplete={isStepComplete('checklist')}
             checklistId={tempChecklistId}
+            boatId={boat.id}
+            engineHours={engineHours}
+            onEngineHoursChange={handleEngineHoursChange}
           />
         )}
 
