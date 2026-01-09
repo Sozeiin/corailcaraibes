@@ -132,9 +132,12 @@ export function useFormPersistence<T extends Record<string, any>>(
   }, []);
 
   // Sauvegarder immédiatement (utile pour forcer une sauvegarde)
-  const saveNow = useCallback(() => {
-    if (formData) {
-      saveData(formData, true);
+  // Accepte un override pour éviter les problèmes de state périmé lors de fermetures rapides
+  const saveNow = useCallback((overrideData?: T) => {
+    const dataToSave = overrideData ?? formData;
+    if (dataToSave) {
+      console.log('💾 [FormPersistence] saveNow avec override:', !!overrideData);
+      saveData(dataToSave, true);
     }
   }, [formData, saveData]);
 
