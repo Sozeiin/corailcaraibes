@@ -54,10 +54,14 @@ export const BoatDashboard = ({ boatId, boatName }: BoatDashboardProps) => {
       ) || [];
 
       // Get engine components for display
-      const engineComponents = components?.filter(c => 
-        c.component_type?.toLowerCase().includes('moteur') || 
-        c.component_type?.toLowerCase().includes('engine')
-      ) || [];
+    const engineComponents = components?.filter(c => {
+      const type = c.component_type?.toLowerCase() || '';
+      return type.includes('moteur') || 
+             type.includes('engine') ||
+             type.includes('génératrice') ||
+             type.includes('générateur') ||
+             type.includes('generator');
+    }) || [];
 
       return {
         totalInterventions: interventions?.length || 0,
