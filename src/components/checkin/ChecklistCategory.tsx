@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import { ModernChecklistItem } from './ModernChecklistItem';
+import { EngineHoursChecklistItem } from './EngineHoursChecklistItem';
 
 interface ChecklistItem {
   id: string;
@@ -21,6 +22,9 @@ interface ChecklistCategoryProps {
   onItemNotesChange: (itemId: string, notes: string) => void;
   onItemPhotoChange: (itemId: string, photos: Array<{ id?: string; url: string; displayOrder: number }>) => void;
   checklistId?: string;
+  boatId?: string;
+  engineHours?: Record<string, number | undefined>;
+  onEngineHoursChange?: (componentId: string, hours: number | undefined) => void;
 }
 
 export function ChecklistCategory({ 
@@ -29,7 +33,10 @@ export function ChecklistCategory({
   onItemStatusChange, 
   onItemNotesChange,
   onItemPhotoChange,
-  checklistId
+  checklistId,
+  boatId,
+  engineHours,
+  onEngineHoursChange
 }: ChecklistCategoryProps) {
   const [isOpen, setIsOpen] = useState(true);
 
@@ -73,16 +80,39 @@ export function ChecklistCategory({
         
         <CollapsibleContent>
           <CardContent className="space-y-3 pt-2">
-            {items.map((item) => (
-              <ModernChecklistItem
-                key={item.id}
-                item={item}
-                onStatusChange={onItemStatusChange}
-                onNotesChange={onItemNotesChange}
-                onPhotoChange={onItemPhotoChange}
-                checklistId={checklistId}
-              />
-            ))}
+            {items.map((item) => {
+              // Detect engine hours item
+              const isEngineHoursItem = 
+                item.name.toLowerCase().includes('heures moteur') ||
+                item.name.toLowerCase().includes('engine hours');
+              
+              if (isEngineHoursItem && boatId && onEngineHoursChange) {
+                return (
+                  <EngineHoursChecklistItem
+                    key={item.id}
+                    item={item}
+                    onStatusChange={onItemStatusChange}
+                    onNotesChange={onItemNotesChange}
+                    onPhotoChange={onItemPhotoChange}
+                    checklistId={checklistId}
+                    boatId={boatId}
+                    engineHours={engineHours || {}}
+                    onEngineHoursChange={onEngineHoursChange}
+                  />
+                );
+              }
+              
+              return (
+                <ModernChecklistItem
+                  key={item.id}
+                  item={item}
+                  onStatusChange={onItemStatusChange}
+                  onNotesChange={onItemNotesChange}
+                  onPhotoChange={onItemPhotoChange}
+                  checklistId={checklistId}
+                />
+              );
+            })}
           </CardContent>
         </CollapsibleContent>
       </Collapsible>
