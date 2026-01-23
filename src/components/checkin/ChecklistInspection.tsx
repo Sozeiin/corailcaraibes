@@ -6,7 +6,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ChecklistCategory } from './ChecklistCategory';
-import { EngineHoursInputSection } from './EngineHoursInputSection';
 import type { ChecklistItem } from '@/hooks/useChecklistData';
 import { useCategoriesOrder } from '@/hooks/useCategoriesOrder';
 import { MessageSquare, AlertTriangle, CheckCircle, Clock, TestTube, ChevronDown } from 'lucide-react';
@@ -175,20 +174,24 @@ export function ChecklistInspection({
         </CardContent>
       </Card>
 
-      {/* Engine Hours Input Section */}
-      {boatId && onEngineHoursChange && (
-        <EngineHoursInputSection
-          boatId={boatId}
-          engineHours={engineHours}
-          onEngineHoursChange={onEngineHoursChange}
-        />
-      )}
-
       {/* Checklist Items by Category */}
       {orderedCategories.map(category => {
-      const items = categorizedItems[category] || [];
-      return <ChecklistCategory key={category} category={category} items={items} onItemStatusChange={onItemStatusChange} onItemNotesChange={onItemNotesChange} onItemPhotoChange={onItemPhotoChange} checklistId={checklistId} />;
-    })}
+        const items = categorizedItems[category] || [];
+        return (
+          <ChecklistCategory 
+            key={category} 
+            category={category} 
+            items={items} 
+            onItemStatusChange={onItemStatusChange} 
+            onItemNotesChange={onItemNotesChange} 
+            onItemPhotoChange={onItemPhotoChange} 
+            checklistId={checklistId}
+            boatId={boatId}
+            engineHours={engineHours}
+            onEngineHoursChange={onEngineHoursChange}
+          />
+        );
+      })}
 
       {/* General Notes */}
       <Card>
