@@ -77,17 +77,23 @@ export function EngineHoursChecklistItem({
   };
 
   const getEngineName = (engine: typeof engines[0]) => {
-    const name = engine.component_name.toLowerCase();
-    if (name.includes('bâbord') || name.includes('babord') || name.includes('port')) {
-      return 'Moteur Bâbord';
+    // Utiliser component_type au lieu de component_name pour la détection
+    const type = engine.component_type.toLowerCase();
+    
+    if (type.includes('bâbord') || type.includes('babord') || type.includes('port')) {
+      return 'Moteur BB';
     }
-    if (name.includes('tribord') || name.includes('starboard')) {
-      return 'Moteur Tribord';
+    if (type.includes('tribord') || type.includes('starboard')) {
+      return 'Moteur TB';
     }
-    if (name.includes('génératrice') || name.includes('generatrice') || name.includes('generator')) {
+    if (type.includes('génératrice') || type.includes('generatrice') || 
+        type.includes('générateur') || type.includes('generateur') || 
+        type.includes('generator')) {
       return 'Génératrice';
     }
-    return engine.component_name;
+    
+    // Fallback: utiliser le nom du composant ou le type
+    return engine.component_name || engine.component_type;
   };
 
   return (
