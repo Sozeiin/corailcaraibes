@@ -22,10 +22,9 @@ export function MaintenanceInterventions() {
   const [editingIntervention, setEditingIntervention] = useState<Intervention | null>(null);
 
   const { data: interventions = [], isLoading } = useQuery({
-    queryKey: ['interventions', user?.role, user?.baseId],
+    queryKey: ['interventions', user?.role, user?.baseId, user?.id],
     queryFn: async () => {
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('interventions')
         .select(`
           *,
@@ -33,6 +32,13 @@ export function MaintenanceInterventions() {
           profiles(name)
         `)
         .order('created_at', { ascending: false });
+
+      // Filtrer par base pour les non-direction
+      if (user?.role !== 'direction' && user?.baseId) {
+        query = query.eq('base_id', user.baseId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching interventions:', error);
@@ -57,17 +63,23 @@ export function MaintenanceInterventions() {
         } : undefined
       })) as Intervention[];
     },
-    enabled: !!user
+    enabled: !!user?.id && !!user?.baseId
   });
 
   const { data: boats = [] } = useQuery({
-    queryKey: ['boats', user?.role, user?.baseId],
+    queryKey: ['boats', user?.role, user?.baseId, user?.id],
     queryFn: async () => {
-      
-      const { data, error } = await supabase
+      let query = supabase
         .from('boats')
         .select('id, name, model')
         .order('name');
+
+      // Filtrer par base pour les non-direction
+      if (user?.role !== 'direction' && user?.baseId) {
+        query = query.eq('base_id', user.baseId);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching boats:', error);
@@ -76,7 +88,7 @@ export function MaintenanceInterventions() {
       
       return data;
     },
-    enabled: !!user
+    enabled: !!user?.id && !!user?.baseId
   });
 
   // Filter interventions
