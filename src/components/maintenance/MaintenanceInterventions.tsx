@@ -21,6 +21,8 @@ export function MaintenanceInterventions() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIntervention, setEditingIntervention] = useState<Intervention | null>(null);
 
+  const isReadyForQueries = !!user?.id && (user?.role === 'direction' || !!user?.baseId);
+
   const { data: interventions = [], isLoading } = useQuery({
     queryKey: ['interventions', user?.role, user?.baseId, user?.id],
     queryFn: async () => {
@@ -29,7 +31,7 @@ export function MaintenanceInterventions() {
         .select(`
           *,
           boats(name, model),
-          profiles(name)
+          technician:profiles!interventions_technician_id_fkey(name)
         `)
         .order('created_at', { ascending: false });
 
@@ -60,10 +62,13 @@ export function MaintenanceInterventions() {
         boat: intervention.boats ? {
           name: intervention.boats.name,
           model: intervention.boats.model
+        } : undefined,
+        technician: intervention.technician ? {
+          name: intervention.technician.name
         } : undefined
       })) as Intervention[];
     },
-    enabled: !!user?.id && !!user?.baseId
+    enabled: isReadyForQueries
   });
 
   const { data: boats = [] } = useQuery({
@@ -88,7 +93,7 @@ export function MaintenanceInterventions() {
       
       return data;
     },
-    enabled: !!user?.id && !!user?.baseId
+    enabled: isReadyForQueries
   });
 
   // Filter interventions
