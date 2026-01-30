@@ -38,6 +38,10 @@ export interface ChecklistData {
   technicianSignature?: string;
   customerSignature?: string;
   sendEmailReport: boolean;
+  // New fields for explicit type/customer storage
+  checklistType?: 'checkin' | 'checkout' | 'maintenance';
+  customerName?: string;
+  rentalId?: string;
 }
 
 export function useChecklistItems() {
@@ -75,7 +79,7 @@ export function useCreateChecklist() {
         throw new Error('Au moins un élément de checklist requis');
       }
 
-      // Create the main checklist
+      // Create the main checklist with type, customer name, and rental reference
       const { data: checklist, error: checklistError } = await supabase
         .from('boat_checklists')
         .insert([
@@ -87,6 +91,10 @@ export function useCreateChecklist() {
             general_notes: checklistData.generalNotes,
             technician_signature: checklistData.technicianSignature,
             customer_signature: checklistData.customerSignature,
+            // New fields for explicit storage
+            checklist_type: checklistData.checklistType || null,
+            customer_name: checklistData.customerName || null,
+            rental_id: checklistData.rentalId || null,
           },
         ])
         .select()

@@ -370,7 +370,9 @@ export type Database = {
         Row: {
           boat_id: string | null
           checklist_date: string | null
+          checklist_type: string | null
           created_at: string | null
+          customer_name: string | null
           customer_signature: string | null
           customer_signature_date: string | null
           customer_signature_url: string | null
@@ -379,6 +381,7 @@ export type Database = {
           overall_status:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          rental_id: string | null
           signature_date: string | null
           signature_url: string | null
           technician_id: string | null
@@ -388,7 +391,9 @@ export type Database = {
         Insert: {
           boat_id?: string | null
           checklist_date?: string | null
+          checklist_type?: string | null
           created_at?: string | null
+          customer_name?: string | null
           customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
@@ -397,6 +402,7 @@ export type Database = {
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          rental_id?: string | null
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
@@ -406,7 +412,9 @@ export type Database = {
         Update: {
           boat_id?: string | null
           checklist_date?: string | null
+          checklist_type?: string | null
           created_at?: string | null
+          customer_name?: string | null
           customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
@@ -415,6 +423,7 @@ export type Database = {
           overall_status?:
             | Database["public"]["Enums"]["checklist_overall_status"]
             | null
+          rental_id?: string | null
           signature_date?: string | null
           signature_url?: string | null
           technician_id?: string | null
@@ -427,6 +436,13 @@ export type Database = {
             columns: ["boat_id"]
             isOneToOne: false
             referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boat_checklists_rental_id_fkey"
+            columns: ["rental_id"]
+            isOneToOne: false
+            referencedRelation: "boat_rentals"
             referencedColumns: ["id"]
           },
           {

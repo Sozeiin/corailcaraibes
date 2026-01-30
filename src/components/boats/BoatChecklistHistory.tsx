@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,19 +30,32 @@ interface ChecklistHistoryItem {
   general_notes?: string;
   signature_date?: string;
   technician: { name: string } | null;
-  rental: { customer_name: string; start_date: string; end_date: string } | null;
-  checklist_type: 'checkin' | 'checkout' | 'maintenance';
+  technician_name?: string;
+  // Stored values (preferred)
+  checklist_type: 'checkin' | 'checkout' | 'maintenance' | null;
+  customer_name: string | null;
+  rental_id: string | null;
+  // Inferred values (fallback for old data)
+  rental?: { customer_name: string; start_date: string; end_date: string } | null;
+  display_type: 'checkin' | 'checkout' | 'maintenance';
+  display_customer_name: string | null;
 }
 
 export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
+  const { user } = useAuth();
   const [selectedChecklist, setSelectedChecklist] = useState<string | null>(null);
   const [downloadingPdf, setDownloadingPdf] = useState<string | null>(null);
   const { toast } = useToast();
 
+  // Wait for auth context to be fully loaded
+  const isReadyForQuery = !!user?.id && (user?.role === 'direction' || !!user?.baseId);
+
   const { data: checklists, isLoading } = useQuery({
-    queryKey: ['boat-checklist-history', boatId],
+    queryKey: ['boat-checklist-history', boatId, user?.baseId, user?.id],
     queryFn: async () => {
-      // First get all checklists for this boat
+      console.log('[BoatChecklistHistory] Fetching checklists for boat:', boatId);
+      
+      // Fetch checklists with new stored columns
       const { data: checklistsData, error: checklistsError } = await supabase
         .from('boat_checklists')
         .select(`
@@ -51,63 +65,80 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           general_notes,
           signature_date,
           technician_name,
+          checklist_type,
+          customer_name,
+          rental_id,
           technician:profiles!boat_checklists_technician_id_fkey(name)
         `)
         .eq('boat_id', boatId)
         .order('checklist_date', { ascending: false });
 
-      if (checklistsError) throw checklistsError;
+      if (checklistsError) {
+        console.error('[BoatChecklistHistory] Error:', checklistsError);
+        throw checklistsError;
+      }
 
-      // Then get rental data to determine checklist type
-      const { data: rentalsData, error: rentalsError } = await supabase
-        .from('boat_rentals')
-        .select('id, customer_name, start_date, end_date')
-        .eq('boat_id', boatId);
+      console.log('[BoatChecklistHistory] Fetched', checklistsData?.length, 'checklists');
 
-      if (rentalsError) throw rentalsError;
+      // Only fetch rentals if we need them for fallback (old data without stored type)
+      const needsRentalFallback = checklistsData?.some(c => !c.checklist_type);
+      let rentalsData: any[] = [];
+      
+      if (needsRentalFallback) {
+        const { data, error: rentalsError } = await supabase
+          .from('boat_rentals')
+          .select('id, customer_name, start_date, end_date')
+          .eq('boat_id', boatId);
 
-      // Map checklists with rental information
+        if (!rentalsError) {
+          rentalsData = data || [];
+        }
+      }
+
+      // Map checklists with proper type and customer name
       return (checklistsData || []).map(checklist => {
-        // Find matching rental based on checklist date
+        // If we have stored values, use them directly
+        if (checklist.checklist_type && checklist.customer_name) {
+          return {
+            ...checklist,
+            display_type: checklist.checklist_type,
+            display_customer_name: checklist.customer_name,
+            rental: null, // Not needed when we have stored values
+          } as ChecklistHistoryItem;
+        }
+
+        // Fallback: infer from rental dates (for old checklists)
         const matchingRental = rentalsData?.find(rental => {
           const checklistDate = new Date(checklist.checklist_date);
           const startDate = new Date(rental.start_date);
           const endDate = new Date(rental.end_date);
-          // Check if checklist date is within rental period (±1 day buffer)
           return checklistDate >= new Date(startDate.getTime() - 24*60*60*1000) && 
                  checklistDate <= new Date(endDate.getTime() + 24*60*60*1000);
         });
 
-        // Déterminer le type de checklist en fonction des dates
-        let checklist_type: 'checkin' | 'checkout' | 'maintenance' = 'maintenance';
-
+        let inferred_type: 'checkin' | 'checkout' | 'maintenance' = 'maintenance';
         if (matchingRental) {
           const checklistTime = new Date(checklist.checklist_date).getTime();
           const startTime = new Date(matchingRental.start_date).getTime();
           const endTime = new Date(matchingRental.end_date).getTime();
           const oneDayMs = 24 * 60 * 60 * 1000;
           
-          // Check-in : checklist proche de la date de début (±1 jour)
-          const isNearStart = Math.abs(checklistTime - startTime) <= oneDayMs;
-          
-          // Check-out : checklist proche de la date de fin (±1 jour)
-          const isNearEnd = Math.abs(checklistTime - endTime) <= oneDayMs;
-          
-          if (isNearStart) {
-            checklist_type = 'checkin';
-          } else if (isNearEnd) {
-            checklist_type = 'checkout';
+          if (Math.abs(checklistTime - startTime) <= oneDayMs) {
+            inferred_type = 'checkin';
+          } else if (Math.abs(checklistTime - endTime) <= oneDayMs) {
+            inferred_type = 'checkout';
           }
-          // Sinon reste 'maintenance' (checklist faite pendant la période de location)
         }
 
         return {
           ...checklist,
+          display_type: checklist.checklist_type || inferred_type,
+          display_customer_name: checklist.customer_name || matchingRental?.customer_name || null,
           rental: matchingRental || null,
-          checklist_type
-        };
-      }) as ChecklistHistoryItem[];
-    }
+        } as ChecklistHistoryItem;
+      });
+    },
+    enabled: !!boatId && isReadyForQuery,
   });
 
   const getStatusIcon = (status: string) => {
@@ -244,7 +275,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                   {getStatusIcon(checklist.overall_status)}
                   <div>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      Checklist {getTypeBadge(checklist.checklist_type)}
+                      Checklist {getTypeBadge(checklist.display_type)}
                     </CardTitle>
                     <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
                       <div className="flex items-center space-x-1">
@@ -253,16 +284,16 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                           {new Date(checklist.checklist_date).toLocaleDateString()}
                         </span>
                       </div>
-                      {(checklist.technician || (checklist as any).technician_name) && (
+                      {(checklist.technician || checklist.technician_name) && (
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
-                          <span>{checklist.technician?.name || (checklist as any).technician_name}</span>
+                          <span>{checklist.technician?.name || checklist.technician_name}</span>
                         </div>
                       )}
-                      {checklist.rental && (
+                      {checklist.display_customer_name && (
                         <div className="flex items-center space-x-1">
                           <User className="h-4 w-4" />
-                          <span>Client: {checklist.rental.customer_name}</span>
+                          <span>Client: {checklist.display_customer_name}</span>
                         </div>
                       )}
                     </div>
@@ -307,8 +338,8 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                     size="sm"
                     onClick={() => handleDownloadPdf(
                       checklist.id, 
-                      checklist.rental?.customer_name || 'Client',
-                      checklist.checklist_type
+                      checklist.display_customer_name || 'Client',
+                      checklist.display_type
                     )}
                     disabled={downloadingPdf === checklist.id}
                   >
