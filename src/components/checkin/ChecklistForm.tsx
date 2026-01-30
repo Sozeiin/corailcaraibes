@@ -496,7 +496,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         console.log('✅ [CHECKLIST] Statut rental mis à jour');
       }
 
-      // Create checklist
+      // Create checklist with explicit type and customer information
       const checklistData: ChecklistData = {
         boatId: boat.id,
         checklistDate: new Date().toISOString().split('T')[0],
@@ -507,6 +507,10 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         technicianSignature: technicianSignatureUrl,
         customerSignature: customerSignatureUrl,
         sendEmailReport,
+        // Store explicit type and customer info to avoid inference issues
+        checklistType: type,
+        customerName: rentalData?.customerName || rental?.customer_name || null,
+        rentalId: rental?.id || rentalData?.id || null,
       };
 
       const checklist = await createChecklistMutation.mutateAsync(checklistData);
