@@ -1,94 +1,77 @@
 
-# Plan de correction : Interventions invisibles pour le Chef de Base
+# Correction : Stockage du type de checklist et du client
 
 ## Problème identifié
 
-L'utilisateur `corail.mart@wanadoo.fr` (rôle `chef_base`, base Martinique) ne voit aucune intervention malgré 484 interventions existantes pour sa base.
+Le système actuel **n'enregistre pas** le type de checklist (checkin/checkout) ni le nom du client dans la table `boat_checklists`. Ces informations sont **inférées** à l'affichage en comparant les dates avec les locations, ce qui échoue quand plusieurs locations se chevauchent.
 
-### Causes identifiées
-
-1. **Race condition potentielle** : La requête peut s'exécuter avant que `user.baseId` soit complètement chargé dans le contexte Auth
-2. **Incohérence de filtrage** : La page Maintenance s'appuie uniquement sur RLS, alors que d'autres pages (Dashboard) utilisent un filtre client explicite
-3. **Cache React Query** : Le `queryKey` inclut `user?.role` et `user?.baseId` qui peuvent être `undefined` lors du premier rendu, créant un cache vide qui n'est pas invalidé ensuite
-
-### Données vérifiées
-- ✅ Profil correct : `chef_base` avec `base_id = Martinique`
-- ✅ 484 interventions existent pour la base Martinique
-- ✅ Politiques RLS correctement définies
-- ✅ Fonctions `get_user_role()` et `get_user_base_id()` correctement configurées
+### Cas concret observé
+- Location "Bill" : 30/01 → 31/01 (le check-in devrait être pour Bill)
+- Location "test test" : 23/01 → 30/01 (le check-out devrait être pour test test)
+- Le système confond les deux car les dates se chevauchent le 30/01
 
 ---
 
 ## Solution proposée
 
-### 1. Améliorer la condition `enabled` de la requête
+### 1. Migration base de données
 
-**Fichier** : `src/components/maintenance/MaintenanceInterventions.tsx`
+Ajouter les colonnes manquantes à `boat_checklists` :
 
-```typescript
-// AVANT
-enabled: !!user
-
-// APRÈS
-enabled: !!user?.id && !!user?.baseId
+```sql
+ALTER TABLE boat_checklists 
+ADD COLUMN IF NOT EXISTS checklist_type TEXT CHECK (checklist_type IN ('checkin', 'checkout', 'maintenance')),
+ADD COLUMN IF NOT EXISTS customer_name TEXT,
+ADD COLUMN IF NOT EXISTS rental_id UUID REFERENCES boat_rentals(id);
 ```
 
-Cela garantit que la requête ne s'exécute qu'une fois le profil entièrement chargé.
+### 2. Modifier le hook de création de checklist
 
----
+**Fichier** : `src/hooks/useChecklistData.ts`
 
-### 2. Ajouter un filtre explicite pour les non-direction (cohérence)
-
-Pour plus de robustesse et cohérence avec le reste de l'application, ajouter un filtre `base_id` côté client (en plus de RLS) :
-
+Mettre à jour l'interface `ChecklistData` pour inclure :
 ```typescript
-// AVANT
-const { data, error } = await supabase
-  .from('interventions')
-  .select(`*,boats(name, model),profiles(name)`)
-  .order('created_at', { ascending: false });
-
-// APRÈS
-let query = supabase
-  .from('interventions')
-  .select(`*,boats(name, model),profiles(name)`)
-  .order('created_at', { ascending: false });
-
-// Filtrer par base pour les non-direction
-if (user?.role !== 'direction') {
-  query = query.eq('base_id', user.baseId);
+export interface ChecklistData {
+  // ... existing fields
+  checklistType: 'checkin' | 'checkout' | 'maintenance';
+  customerName?: string;
+  rentalId?: string;
 }
-
-const { data, error } = await query;
 ```
 
----
+Modifier la mutation pour enregistrer ces nouvelles données lors de l'insertion.
 
-### 3. Améliorer le queryKey pour éviter les problèmes de cache
+### 3. Modifier le formulaire de checklist
 
+**Fichier** : `src/components/checkin/ChecklistForm.tsx`
+
+Passer les données `type`, `customerName` et `rentalId` à la mutation :
 ```typescript
-// AVANT
-queryKey: ['interventions', user?.role, user?.baseId]
-
-// APRÈS
-queryKey: ['interventions', user?.role, user?.baseId, user?.id]
+const checklistData: ChecklistData = {
+  // ... existing
+  checklistType: type, // 'checkin' ou 'checkout'
+  customerName: rentalData?.customerName,
+  rentalId: rental?.id,
+};
 ```
 
-Ajouter `user?.id` garantit que le cache est invalidé lors d'un changement d'utilisateur.
+### 4. Simplifier l'affichage de l'historique
 
----
+**Fichier** : `src/components/boats/BoatChecklistHistory.tsx`
 
-### 4. Appliquer les mêmes corrections à la requête des bateaux
-
-Même pattern pour la requête des bateaux utilisés dans le filtre :
-
+Utiliser directement les colonnes stockées au lieu de l'inférence complexe :
 ```typescript
-enabled: !!user?.id && !!user?.baseId
-
-// Ajouter filtre pour non-direction
-if (user?.role !== 'direction') {
-  query = query.eq('base_id', user.baseId);
-}
+const { data: checklistsData } = await supabase
+  .from('boat_checklists')
+  .select(`
+    id,
+    checklist_date,
+    overall_status,
+    checklist_type,    // Utiliser la valeur stockée
+    customer_name,     // Utiliser la valeur stockée
+    technician:profiles!...(name)
+  `)
+  .eq('boat_id', boatId);
 ```
 
 ---
@@ -97,28 +80,33 @@ if (user?.role !== 'direction') {
 
 | Fichier | Modifications |
 |---------|---------------|
-| `src/components/maintenance/MaintenanceInterventions.tsx` | Améliorer `enabled`, ajouter filtre `base_id`, corriger `queryKey` |
+| Migration SQL | Ajouter `checklist_type`, `customer_name`, `rental_id` |
+| `src/hooks/useChecklistData.ts` | Étendre interface, insérer nouvelles colonnes |
+| `src/components/checkin/ChecklistForm.tsx` | Passer type et client à la mutation |
+| `src/components/boats/BoatChecklistHistory.tsx` | Lire les colonnes directement au lieu d'inférer |
 
 ---
 
 ## Résultat attendu
 
 Après ces modifications :
-- ✅ Le chef de base verra les 484 interventions de sa base Martinique
-- ✅ Pas de race condition possible au chargement
-- ✅ Cache React Query correctement géré entre sessions utilisateur
-- ✅ Double protection : filtre client + RLS côté serveur
+- Check-in de Bill → affiche "Check-in" avec client "Bill"
+- Check-out de test test → affiche "Check-out" avec client "test test"
+- Pas de confusion possible entre les locations qui se chevauchent
 
 ---
 
 ## Section technique
 
-### Pourquoi RLS seul ne suffit pas ici
+### Pourquoi stocker plutôt qu'inférer ?
 
-Bien que RLS soit correctement configuré, le problème survient quand :
-1. La requête React Query s'exécute avec `user = { id: "...", role: undefined, baseId: undefined }`
-2. Le token JWT est envoyé à Supabase, mais la session Supabase peut prendre un instant pour synchroniser les métadonnées
-3. `get_user_base_id()` retourne `null` car le profil n'est pas encore accessible via `auth.uid()`
-4. La politique RLS filtre toutes les interventions (aucune ne correspond à `base_id = null`)
+L'inférence actuelle échoue quand :
+1. Plusieurs locations ont des dates qui se chevauchent (cas observé)
+2. Une location est modifiée après le check-in/out
+3. Une checklist est faite sans location associée
 
-En ajoutant un filtre explicite côté client ET en attendant que `user.baseId` soit défini, on élimine complètement ce problème de timing.
+En stockant les données au moment de la création, on capture l'**intention réelle** du technicien, indépendamment des données de location qui peuvent évoluer.
+
+### Migration des données existantes (optionnel)
+
+Pour les checklists existantes sans `checklist_type`, l'ancien algorithme d'inférence sera conservé comme fallback dans l'affichage.
