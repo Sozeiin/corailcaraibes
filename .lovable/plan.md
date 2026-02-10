@@ -1,29 +1,29 @@
-# ✅ IMPLÉMENTÉ : Stockage du type de checklist et du client
 
-## Changements effectués
+# Transfert du check-in du bateau PYRITE vers NICKEL
 
-### 1. Migration base de données ✅
-Colonnes ajoutées à `boat_checklists` :
-- `checklist_type` : TEXT ('checkin', 'checkout', 'maintenance')
-- `customer_name` : TEXT
-- `rental_id` : UUID (référence vers boat_rentals)
+## Ce qui va etre fait
 
-### 2. Hook useChecklistData.ts ✅
-- Interface `ChecklistData` étendue avec les nouveaux champs
-- Mutation d'insertion mise à jour pour enregistrer les nouvelles colonnes
+Une simple mise a jour en base de donnees pour deplacer le check-in du 30/01/2026 (technicien Hugo Drouet, client Erik Lebreton) du bateau **PYRITE** vers le bateau **NICKEL**.
 
-### 3. ChecklistForm.tsx ✅
-- Les données `type`, `customerName` et `rentalId` sont maintenant passées lors de la création
+### Donnees identifiees
+- Checklist concernee : `2157f9e6-75ae-40dc-b230-18edbf8dd11c`
+- Bateau actuel : PYRITE (`b92546e4-20a2-42d1-8bfa-ab15bf1e0e3f`)
+- Bateau cible : NICKEL (`bbe811ab-8937-455e-8f61-a9bb5dea2b86`)
+- 52 items de checklist associes (ils restent lies automatiquement via `checklist_id`)
 
-### 4. BoatChecklistHistory.tsx ✅
-- Lecture des colonnes stockées en priorité
-- Fallback vers l'ancien algorithme d'inférence pour les données existantes
-- Ajout du contexte auth pour éviter les problèmes de timing RLS
+### Modification
 
-## Résultat
+```sql
+UPDATE boat_checklists 
+SET boat_id = 'bbe811ab-8937-455e-8f61-a9bb5dea2b86'
+WHERE id = '2157f9e6-75ae-40dc-b230-18edbf8dd11c';
+```
 
-Les nouveaux check-in/check-out seront correctement affichés avec :
-- Le bon type (Check-in ou Check-out)
-- Le bon nom de client
+### Resultat attendu
+- Le check-in apparaitra dans l'historique du bateau NICKEL au lieu de PYRITE
+- Tous les 52 items et photos du check-in restent intacts
+- Aucun autre check-in n'est impacte
 
-Les anciennes données utiliseront toujours l'inférence comme fallback.
+## Section technique
+
+Un seul UPDATE SQL sur la table `boat_checklists` pour changer la reference `boat_id`. Les `boat_checklist_items` sont lies par `checklist_id` et non par `boat_id`, donc aucune modification supplementaire n'est necessaire.
