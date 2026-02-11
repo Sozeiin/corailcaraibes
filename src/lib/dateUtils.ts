@@ -41,3 +41,33 @@ export function parseUTCToLocalDate(isoString: string): Date {
   // pour éviter les décalages de timezone
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
+
+/**
+ * Formater une date string de manière safe, sans décalage de timezone.
+ * Pour les dates "YYYY-MM-DD", parse directement sans passer par new Date()
+ * qui interprète en UTC et cause un décalage d'un jour en timezone négative.
+ */
+export function formatDateSafe(dateString: string, locale: string = 'fr-FR'): string {
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    const [, year, month, day] = match;
+    const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
+    return date.toLocaleDateString(locale);
+  }
+  // Fallback pour les dates ISO complètes
+  const d = new Date(dateString);
+  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0)
+    .toLocaleDateString(locale);
+}
+
+/**
+ * Obtenir la date locale actuelle en format "YYYY-MM-DD"
+ * Utilise les composants locaux (pas UTC) pour éviter le décalage
+ */
+export function getLocalDateString(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}

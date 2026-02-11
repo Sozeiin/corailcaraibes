@@ -18,6 +18,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { safeRemoveChild, safeAppendChild } from '@/lib/domUtils';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface BoatChecklistHistoryProps {
   boatId: string;
@@ -281,7 +282,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                       <div className="flex items-center space-x-1">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {new Date(checklist.checklist_date).toLocaleDateString()}
+                          {formatDateSafe(checklist.checklist_date)}
                         </span>
                       </div>
                       {(checklist.technician || checklist.technician_name) && (
@@ -318,7 +319,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
                 <div className="text-xs text-muted-foreground">
                   {checklist.signature_date && (
                     <span>
-                      Signée le {new Date(checklist.signature_date).toLocaleDateString()}
+                      Signée le {formatDateSafe(checklist.signature_date)}
                     </span>
                   )}
                 </div>
