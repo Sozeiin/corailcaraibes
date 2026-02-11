@@ -4,6 +4,7 @@ import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Calendar, Clock, Wrench } from 'lucide-react';
+import { formatDateSafe } from '@/lib/dateUtils';
 import { useMemo } from 'react';
 
 export const MaintenanceWidget = ({ config }: WidgetProps) => {
@@ -90,7 +91,7 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
                 <div className="flex items-center space-x-2 mt-1">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
-                    {new Date(maintenance.scheduled_date).toLocaleDateString('fr-FR')}
+                    {formatDateSafe(maintenance.scheduled_date)}
                   </span>
                   {maintenance.scheduled_time && (
                     <>

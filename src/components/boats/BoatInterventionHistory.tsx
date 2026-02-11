@@ -17,6 +17,7 @@ import {
   Eye
 } from 'lucide-react';
 import { InterventionDetailsDialog } from '@/components/maintenance/InterventionDetailsDialog';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface BoatInterventionHistoryProps {
   boatId: string;
@@ -113,7 +114,7 @@ export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps
                         <Calendar className="h-4 w-4" />
                         <span>
                           {intervention.scheduled_date 
-                            ? new Date(intervention.scheduled_date).toLocaleDateString()
+                            ? formatDateSafe(intervention.scheduled_date)
                             : 'Date non définie'
                           }
                         </span>
@@ -194,11 +195,11 @@ export const BoatInterventionHistory = ({ boatId }: BoatInterventionHistoryProps
 
               <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
                 <span>
-                  Créée le {new Date(intervention.created_at).toLocaleDateString()}
+                  Créée le {formatDateSafe(intervention.created_at)}
                 </span>
                 {intervention.completed_date && (
                   <span>
-                    Terminée le {new Date(intervention.completed_date).toLocaleDateString()}
+                    Terminée le {formatDateSafe(intervention.completed_date)}
                   </span>
                 )}
               </div>

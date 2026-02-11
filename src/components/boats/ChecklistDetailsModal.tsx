@@ -19,6 +19,7 @@ import {
   Calendar,
   FileText
 } from 'lucide-react';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface ChecklistDetailsModalProps {
   checklistId: string;
@@ -150,7 +151,7 @@ export const ChecklistDetailsModal = ({
                       <span className="text-sm font-medium">Date</span>
                     </div>
                     <p className="text-sm">
-                      {new Date(checklist.checklist_date).toLocaleDateString()}
+                      {formatDateSafe(checklist.checklist_date)}
                     </p>
                   </div>
 
@@ -265,7 +266,7 @@ export const ChecklistDetailsModal = ({
                   </div>
                   {checklist.signature_date && (
                     <p className="text-xs text-muted-foreground mt-2">
-                      Signé le {new Date(checklist.signature_date).toLocaleDateString()}
+                      Signé le {formatDateSafe(checklist.signature_date)}
                     </p>
                   )}
                 </CardContent>

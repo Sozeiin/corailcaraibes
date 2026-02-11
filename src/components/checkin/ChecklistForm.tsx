@@ -28,6 +28,7 @@ import { EmailStep } from './EmailStep';
 import { useCreateIntervention } from '@/hooks/useCreateIntervention';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getLocalDateString } from '@/lib/dateUtils';
 
 // Type pour les heures moteur
 export type EngineHoursState = Record<string, number | undefined>;
@@ -499,7 +500,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
       // Create checklist with explicit type and customer information
       const checklistData: ChecklistData = {
         boatId: boat.id,
-        checklistDate: new Date().toISOString().split('T')[0],
+        checklistDate: getLocalDateString(),
         technicianId: user.id,
         items: checklistItems,
         overallStatus,
@@ -589,7 +590,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
             description: interventionDescription,
             boat_id: boat.id,
             status: 'scheduled' as const,
-            scheduled_date: new Date().toISOString().split('T')[0],
+            scheduled_date: getLocalDateString(),
             base_id: boat.base_id || user.baseId,
             intervention_type: 'corrective'
           });

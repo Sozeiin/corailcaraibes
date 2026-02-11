@@ -11,6 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Intervention } from '@/types';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface InterventionTableProps {
   interventions: Intervention[];
@@ -123,7 +124,7 @@ export function InterventionTable({
                 <div className="flex items-center gap-1 text-sm">
                   <Calendar className="h-3 w-3" />
                   {intervention.scheduledDate 
-                    ? new Date(intervention.scheduledDate).toLocaleDateString('fr-FR')
+                    ? formatDateSafe(intervention.scheduledDate)
                     : '-'
                   }
                 </div>
@@ -131,7 +132,7 @@ export function InterventionTable({
               {showHistory && (
                 <TableCell>
                   {intervention.completedDate 
-                    ? new Date(intervention.completedDate).toLocaleDateString('fr-FR')
+                    ? formatDateSafe(intervention.completedDate)
                     : '-'
                   }
                 </TableCell>
