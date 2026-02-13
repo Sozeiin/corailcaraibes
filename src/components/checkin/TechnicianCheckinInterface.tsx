@@ -65,12 +65,12 @@ export function TechnicianCheckinInterface() {
     enabled: !!user?.baseId && mode === 'checkin',
   });
 
-  // Fetch boats with active rentals (Check-out mode)
+  // Fetch boats with active rentals OR rented status (Check-out mode)
   const { data: boatsWithActiveRentals = [] } = useQuery({
     queryKey: ['boats-with-active-rentals', user?.baseId],
     queryFn: async () => {
-      // Get boats owned by this base
-      const { data: ownBoats, error: ownError } = await supabase
+      // Get boats owned by this base with confirmed rentals
+      const { data: ownBoatsWithRentals, error: ownError } = await supabase
         .from('boats')
         .select(`
           id,
@@ -84,6 +84,16 @@ export function TechnicianCheckinInterface() {
         .order('name');
 
       if (ownError) throw ownError;
+
+      // Also get boats with "rented" status but no confirmed rental (stuck boats)
+      const { data: ownRentedBoats, error: rentedError } = await supabase
+        .from('boats')
+        .select('id, name, model, status')
+        .eq('base_id', user?.baseId)
+        .eq('status', 'rented')
+        .order('name');
+
+      if (rentedError) throw rentedError;
 
       // Get boats shared with this base (ONE WAY boats)
       const { data: sharedBoats, error: sharedError } = await supabase
@@ -104,9 +114,10 @@ export function TechnicianCheckinInterface() {
 
       if (sharedError) throw sharedError;
 
-      // Combine both lists
+      // Combine all lists
       const allBoats = [
-        ...(ownBoats || []),
+        ...(ownBoatsWithRentals || []),
+        ...(ownRentedBoats || []),
         ...(sharedBoats?.map(sb => sb.boats).filter(Boolean) || [])
       ];
       
@@ -203,46 +214,54 @@ export function TechnicianCheckinInterface() {
         })
         .eq('id', selectedForm.id);
     } else if (mode === 'checkout' && data && selectedRental) {
-      // Update rental status to completed
-      await supabase
-        .from('boat_rentals')
-        .update({ status: 'completed' })
-        .eq('id', selectedRental.id);
-
-      // Find the associated administrative form by context
-      const { data: formData } = await supabase
-        .from('administrative_checkin_forms')
-        .select('id, is_one_way, destination_base_id, boat_id, customer_id, planned_end_date')
-        .eq('boat_id', selectedRental.boat_id)
-        .eq('status', 'used')
-        .gte('planned_end_date', new Date(selectedRental.start_date).toISOString())
-        .lte('planned_start_date', new Date(selectedRental.end_date).toISOString())
-        .order('used_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (formData) {
-        // Update form status to completed
+      if (selectedRental.id === 'force-checkout') {
+        // Force checkout: just update boat status to available
         await supabase
-          .from('administrative_checkin_forms')
-          .update({ 
-            status: 'completed',
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', formData.id);
+          .from('boats')
+          .update({ status: 'available', updated_at: new Date().toISOString() })
+          .eq('id', selectedRental.boat_id);
+      } else {
+        // Update rental status to completed
+        await supabase
+          .from('boat_rentals')
+          .update({ status: 'completed' })
+          .eq('id', selectedRental.id);
 
-        // Handle ONE WAY checkouts
-        if (formData.is_one_way && formData.destination_base_id && formData.boat_id) {
+        // Find the associated administrative form by context
+        const { data: formData } = await supabase
+          .from('administrative_checkin_forms')
+          .select('id, is_one_way, destination_base_id, boat_id, customer_id, planned_end_date')
+          .eq('boat_id', selectedRental.boat_id)
+          .eq('status', 'used')
+          .gte('planned_end_date', new Date(selectedRental.start_date).toISOString())
+          .lte('planned_start_date', new Date(selectedRental.end_date).toISOString())
+          .order('used_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (formData) {
+          // Update form status to completed
           await supabase
-            .from('planning_activities')
-            .insert({
-              activity_type: 'arrival',
-              status: 'planned',
-              scheduled_start: formData.planned_end_date,
-              scheduled_end: formData.planned_end_date,
-              base_id: formData.destination_base_id,
-              boat_id: formData.boat_id
-            } as any);
+            .from('administrative_checkin_forms')
+            .update({ 
+              status: 'completed',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', formData.id);
+
+          // Handle ONE WAY checkouts
+          if (formData.is_one_way && formData.destination_base_id && formData.boat_id) {
+            await supabase
+              .from('planning_activities')
+              .insert({
+                activity_type: 'arrival',
+                status: 'planned',
+                scheduled_start: formData.planned_end_date,
+                scheduled_end: formData.planned_end_date,
+                base_id: formData.destination_base_id,
+                boat_id: formData.boat_id
+              } as any);
+          }
         }
       }
     }
@@ -315,12 +334,59 @@ export function TechnicianCheckinInterface() {
                 <p className="text-muted-foreground">Chargement...</p>
               )}
 
-              {!isLoading && items.length === 0 && (
+              {!isLoading && items.length === 0 && mode === 'checkin' && (
                 <p className="text-muted-foreground">
-                  {mode === 'checkin' 
-                    ? 'Aucune fiche disponible pour ce bateau' 
-                    : 'Aucune location active pour ce bateau'}
+                  Aucune fiche disponible pour ce bateau
                 </p>
+              )}
+
+              {!isLoading && items.length === 0 && mode === 'checkout' && (
+                <div className="space-y-4">
+                  <p className="text-muted-foreground">
+                    Aucune location active pour ce bateau
+                  </p>
+                  {boats.find(b => b.id === selectedBoatId)?.status === 'rented' && (
+                    <Card className="border-l-4 border-l-amber-500">
+                      <CardContent className="pt-6">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2 flex-1">
+                            <h3 className="font-semibold text-lg">
+                              Check-out sans location active
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              Ce bateau est marqué "en location" mais n'a pas de location confirmée associée. 
+                              Vous pouvez procéder au check-out pour le remettre en disponible.
+                            </p>
+                          </div>
+                          <Button
+                            onClick={() => {
+                              const boat = boats.find(b => b.id === selectedBoatId);
+                              if (boat) {
+                                handleStartCheckout({
+                                  id: 'force-checkout',
+                                  boat_id: boat.id,
+                                  boat: boat,
+                                  customer_name: 'Client précédent',
+                                  customer_email: null,
+                                  customer_phone: null,
+                                  start_date: new Date().toISOString(),
+                                  end_date: new Date().toISOString(),
+                                  notes: 'Check-out forcé - remise en disponibilité',
+                                  status: 'confirmed',
+                                });
+                              }
+                            }}
+                            variant="destructive"
+                            className="ml-4"
+                          >
+                            <Play className="h-4 w-4 mr-2" />
+                            Démarrer check-out
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               )}
 
               {!isLoading && items.length > 0 && mode === 'checkin' && (
