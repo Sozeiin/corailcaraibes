@@ -536,6 +536,27 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
             console.error(`❌ [CHECKLIST] Erreur mise à jour heures moteur ${componentId}:`, engineError);
           }
         }
+
+        // Save engine hours snapshot to the checklist
+        const snapshot = engineHoursEntries.map(([componentId, hours]) => {
+          const engine = engines?.find(e => e.id === componentId);
+          return {
+            component_id: componentId,
+            component_name: engine?.component_name || 'Moteur',
+            component_type: engine?.component_type || '',
+            hours: hours,
+          };
+        });
+        try {
+          await supabase
+            .from('boat_checklists')
+            .update({ engine_hours_snapshot: snapshot } as any)
+            .eq('id', checklist.id);
+          console.log('✅ [CHECKLIST] Engine hours snapshot saved:', snapshot);
+        } catch (snapshotError) {
+          console.error('❌ [CHECKLIST] Error saving engine hours snapshot:', snapshotError);
+        }
+
         toast({
           title: 'Heures moteur mises à jour',
           description: `${engineHoursEntries.length} moteur(s) mis à jour automatiquement.`,
