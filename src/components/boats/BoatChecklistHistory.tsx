@@ -145,7 +145,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           display_type: checklist.checklist_type || inferred_type,
           display_customer_name: checklist.customer_name || matchingRental?.customer_name || null,
           rental: matchingRental || null,
-        } as ChecklistHistoryItem;
+        } as unknown as ChecklistHistoryItem;
       });
     },
     enabled: !!boatId && isReadyForQuery,
