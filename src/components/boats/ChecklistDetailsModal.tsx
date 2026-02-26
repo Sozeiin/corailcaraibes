@@ -17,7 +17,8 @@ import {
   Clock,
   User,
   Calendar,
-  FileText
+  FileText,
+  Gauge
 } from 'lucide-react';
 import { formatDateSafe } from '@/lib/dateUtils';
 
