@@ -26,6 +26,7 @@ import { ChecklistReviewStep } from './ChecklistReviewStep';
 import { SignatureStep } from './SignatureStep';
 import { EmailStep } from './EmailStep';
 import { useCreateIntervention } from '@/hooks/useCreateIntervention';
+import { useBoatEngines } from '@/hooks/useBoatEngines';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { getLocalDateString } from '@/lib/dateUtils';
