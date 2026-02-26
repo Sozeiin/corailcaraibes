@@ -100,6 +100,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   const updateRentalStatusMutation = useUpdateRentalStatus();
   const uploadSignatureMutation = useSignatureUpload();
   const createInterventionMutation = useCreateIntervention();
+  const { data: engines } = useBoatEngines(boat?.id);
 
   // Enregistrer le formulaire comme actif (pour désactiver le timer d'inactivité)
   useEffect(() => {
