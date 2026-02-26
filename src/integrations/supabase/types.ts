@@ -376,6 +376,7 @@ export type Database = {
           customer_signature: string | null
           customer_signature_date: string | null
           customer_signature_url: string | null
+          engine_hours_snapshot: Json | null
           general_notes: string | null
           id: string
           overall_status:
@@ -397,6 +398,7 @@ export type Database = {
           customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
+          engine_hours_snapshot?: Json | null
           general_notes?: string | null
           id?: string
           overall_status?:
@@ -418,6 +420,7 @@ export type Database = {
           customer_signature?: string | null
           customer_signature_date?: string | null
           customer_signature_url?: string | null
+          engine_hours_snapshot?: Json | null
           general_notes?: string | null
           id?: string
           overall_status?:

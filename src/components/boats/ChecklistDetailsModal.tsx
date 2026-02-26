@@ -17,7 +17,8 @@ import {
   Clock,
   User,
   Calendar,
-  FileText
+  FileText,
+  Gauge
 } from 'lucide-react';
 import { formatDateSafe } from '@/lib/dateUtils';
 
@@ -200,6 +201,28 @@ export const ChecklistDetailsModal = ({
                 )}
               </CardContent>
             </Card>
+
+            {/* Heures moteur */}
+            {checklist.engine_hours_snapshot && Array.isArray(checklist.engine_hours_snapshot) && (checklist.engine_hours_snapshot as any[]).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Gauge className="h-4 w-4" />
+                    Heures moteur
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {(checklist.engine_hours_snapshot as any[]).map((engine: any) => (
+                      <div key={engine.component_id} className="flex flex-col items-center p-3 rounded-lg border">
+                        <span className="text-xs text-muted-foreground">{engine.component_name}</span>
+                        <span className="text-lg font-bold">{engine.hours}h</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Détail par catégorie */}
             <div className="space-y-4">

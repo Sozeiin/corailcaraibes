@@ -1,0 +1,1 @@
+ALTER TABLE public.boat_checklists ADD COLUMN engine_hours_snapshot jsonb DEFAULT NULL;

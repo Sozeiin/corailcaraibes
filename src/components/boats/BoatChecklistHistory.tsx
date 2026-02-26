@@ -24,6 +24,13 @@ interface BoatChecklistHistoryProps {
   boatId: string;
 }
 
+interface EngineHoursSnapshot {
+  component_id: string;
+  component_name: string;
+  component_type: string;
+  hours: number;
+}
+
 interface ChecklistHistoryItem {
   id: string;
   checklist_date: string;
@@ -32,6 +39,7 @@ interface ChecklistHistoryItem {
   signature_date?: string;
   technician: { name: string } | null;
   technician_name?: string;
+  engine_hours_snapshot?: EngineHoursSnapshot[] | null;
   // Stored values (preferred)
   checklist_type: 'checkin' | 'checkout' | 'maintenance' | null;
   customer_name: string | null;
@@ -69,6 +77,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           checklist_type,
           customer_name,
           rental_id,
+          engine_hours_snapshot,
           technician:profiles!boat_checklists_technician_id_fkey(name)
         `)
         .eq('boat_id', boatId)
@@ -105,7 +114,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
             display_type: checklist.checklist_type,
             display_customer_name: checklist.customer_name,
             rental: null, // Not needed when we have stored values
-          } as ChecklistHistoryItem;
+          } as unknown as ChecklistHistoryItem;
         }
 
         // Fallback: infer from rental dates (for old checklists)
@@ -136,7 +145,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           display_type: checklist.checklist_type || inferred_type,
           display_customer_name: checklist.customer_name || matchingRental?.customer_name || null,
           rental: matchingRental || null,
-        } as ChecklistHistoryItem;
+        } as unknown as ChecklistHistoryItem;
       });
     },
     enabled: !!boatId && isReadyForQuery,
@@ -307,6 +316,17 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
             </CardHeader>
             
             <CardContent>
+              {checklist.engine_hours_snapshot && Array.isArray(checklist.engine_hours_snapshot) && checklist.engine_hours_snapshot.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <span className="text-xs font-medium text-muted-foreground mr-1">Moteurs:</span>
+                  {(checklist.engine_hours_snapshot as EngineHoursSnapshot[]).map((engine) => (
+                    <Badge key={engine.component_id} variant="outline" className="text-xs">
+                      {engine.component_name}: {engine.hours}h
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               {checklist.general_notes && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
