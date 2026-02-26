@@ -24,6 +24,13 @@ interface BoatChecklistHistoryProps {
   boatId: string;
 }
 
+interface EngineHoursSnapshot {
+  component_id: string;
+  component_name: string;
+  component_type: string;
+  hours: number;
+}
+
 interface ChecklistHistoryItem {
   id: string;
   checklist_date: string;
@@ -32,6 +39,7 @@ interface ChecklistHistoryItem {
   signature_date?: string;
   technician: { name: string } | null;
   technician_name?: string;
+  engine_hours_snapshot?: EngineHoursSnapshot[] | null;
   // Stored values (preferred)
   checklist_type: 'checkin' | 'checkout' | 'maintenance' | null;
   customer_name: string | null;
