@@ -1,91 +1,78 @@
 
+# Afficher les heures moteur dans l'historique des check-in/check-out
 
-# Correction du decalage de date (11 fevrier affiche comme 10 fevrier)
+## Probleme
 
-## Probleme identifie
-
-L'application est utilisee dans les Caraibes (fuseau horaire UTC-4). Quand une date comme `"2026-02-11"` est stockee en base, le code utilise `new Date("2026-02-11")` pour l'afficher, ce qui cree un objet Date a **minuit UTC** (soit le 10 fevrier a 20h en heure locale). Ensuite, `toLocaleDateString()` affiche la date en heure locale, donc **10 fevrier au lieu du 11**.
-
-Ce probleme touche deux aspects :
-1. **L'affichage** : `new Date(dateString).toLocaleDateString()` est utilise dans environ 25 fichiers
-2. **L'enregistrement** : `new Date().toISOString().split('T')[0]` peut aussi decaler la date dans certains cas
+Lors d'un check-in ou check-out, les heures moteur (babord, tribord, generatrice) sont correctement enregistrees dans la table `boat_components`, mais elles ne sont **pas stockees dans la checklist elle-meme**. L'historique n'a donc aucune donnee a afficher dans la colonne "Moteurs / Engines".
 
 ## Solution
 
-### 1. Ajouter une fonction utilitaire d'affichage dans `src/lib/dateUtils.ts`
+Stocker les heures moteur dans la checklist au moment de l'enregistrement, puis les afficher dans l'historique.
 
-Creer une fonction `formatDateSafe(dateString)` qui parse la date sans decalage de fuseau horaire, en extrayant directement les composants annee/mois/jour de la chaine.
+### 1. Ajouter une colonne `engine_hours_snapshot` a la table `boat_checklists`
+
+Nouvelle colonne de type `jsonb` qui stockera un instantane des heures moteur au moment du check-in/out :
 
 ```text
-Exemple :
-"2026-02-11" -> affiche "11/02/2026" quel que soit le fuseau horaire
+Format: [{"component_id": "xxx", "component_name": "Moteur BB", "hours": 1250}, ...]
 ```
 
-### 2. Corriger l'enregistrement des dates dans `ChecklistForm.tsx`
+### 2. Sauvegarder les heures moteur dans la checklist (ChecklistForm.tsx)
 
-Remplacer :
-```text
-checklistDate: new Date().toISOString().split('T')[0]
-```
-par un calcul qui utilise la date locale (annee, mois, jour locaux) pour eviter le decalage.
+Apres la creation de la checklist et la mise a jour des `boat_components`, enregistrer egalement les heures dans le champ `engine_hours_snapshot` de la checklist.
 
-Meme correction pour `scheduled_date` des interventions automatiques creees lors du check-in.
+### 3. Afficher les heures moteur dans l'historique (BoatChecklistHistory.tsx)
 
-### 3. Corriger l'affichage dans les fichiers concernes
+Ajouter une section "Heures moteur" dans chaque carte de l'historique, affichant les valeurs enregistrees (ex: "BB: 1250h | TB: 1230h | Gen: 450h").
 
-Remplacer les occurrences de `new Date(date).toLocaleDateString()` par la nouvelle fonction `formatDateSafe()` dans les fichiers principaux lies au check-in et aux interventions :
+### 4. Afficher les heures dans le detail de la checklist (ChecklistDetailsModal.tsx)
 
-- `src/components/boats/BoatChecklistHistory.tsx` (2 occurrences)
-- `src/components/boats/BoatInterventionHistory.tsx` (2 occurrences)
-- `src/components/boats/ChecklistDetailsModal.tsx` (1 occurrence)
-- `src/components/maintenance/InterventionTable.tsx` (2 occurrences)
-- `src/components/dashboard/widgets/MaintenanceWidget.tsx` (1 occurrence)
-- `src/hooks/useCreateIntervention.ts` (1 occurrence)
-- Autres fichiers utilisant le meme pattern pour les dates de type "YYYY-MM-DD"
+Ajouter une carte "Heures moteur" dans la modale de details.
 
 ## Section technique
 
-### Fonction `formatDateSafe`
+### Migration SQL
 
-```typescript
-export function formatDateSafe(dateString: string, locale: string = 'fr-FR'): string {
-  // Pour les dates "YYYY-MM-DD", parser directement sans passer par new Date()
-  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) {
-    const [, year, month, day] = match;
-    // Creer la date a midi pour eviter tout decalage
-    const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
-    return date.toLocaleDateString(locale);
-  }
-  // Fallback pour les dates ISO completes
-  const d = new Date(dateString);
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0)
-    .toLocaleDateString(locale);
-}
-```
-
-### Fonction `getLocalDateString`
-
-```typescript
-export function getLocalDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+```sql
+ALTER TABLE boat_checklists
+ADD COLUMN engine_hours_snapshot jsonb DEFAULT NULL;
 ```
 
 ### Fichiers modifies
 
 | Fichier | Modification |
 |---------|-------------|
-| `src/lib/dateUtils.ts` | Ajout de `formatDateSafe` et `getLocalDateString` |
-| `src/components/checkin/ChecklistForm.tsx` | Utiliser `getLocalDateString()` pour `checklistDate` et `scheduled_date` |
-| `src/components/boats/BoatChecklistHistory.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/boats/BoatInterventionHistory.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/boats/ChecklistDetailsModal.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/maintenance/InterventionTable.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/dashboard/widgets/MaintenanceWidget.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/hooks/useCreateIntervention.ts` | Utiliser `formatDateSafe()` pour le message de notification |
+| Migration SQL | Ajout colonne `engine_hours_snapshot` (jsonb) |
+| `src/components/checkin/ChecklistForm.tsx` | Apres la mise a jour des `boat_components`, construire le snapshot et faire un UPDATE sur la checklist |
+| `src/hooks/useChecklistData.ts` | Ajouter `engineHoursSnapshot` a `ChecklistData` et l'inclure dans l'INSERT |
+| `src/components/boats/BoatChecklistHistory.tsx` | Requeter `engine_hours_snapshot` et afficher les heures dans chaque carte |
+| `src/components/boats/ChecklistDetailsModal.tsx` | Afficher la section "Heures moteur" dans la modale de details |
 
+### Detail des modifications
+
+**ChecklistForm.tsx** : Apres la boucle de mise a jour des `boat_components` (lignes 521-542), construire un tableau snapshot avec le nom et les heures de chaque moteur, puis mettre a jour la checklist :
+
+```typescript
+// Construire le snapshot
+const snapshot = engineHoursEntries.map(([componentId, hours]) => {
+  const engine = engines.find(e => e.id === componentId);
+  return {
+    component_id: componentId,
+    component_name: engine?.component_name || 'Moteur',
+    component_type: engine?.component_type || '',
+    hours: hours
+  };
+});
+
+// Sauvegarder dans la checklist
+await supabase
+  .from('boat_checklists')
+  .update({ engine_hours_snapshot: snapshot })
+  .eq('id', checklist.id);
+```
+
+Pour acceder aux engines dans ChecklistForm, il faut utiliser le hook `useBoatEngines` deja existant.
+
+**BoatChecklistHistory.tsx** : Ajouter `engine_hours_snapshot` au SELECT, puis afficher les heures sous forme de badges compacts dans chaque carte.
+
+**ChecklistDetailsModal.tsx** : Ajouter une carte dediee "Heures moteur" avec les valeurs du snapshot.
