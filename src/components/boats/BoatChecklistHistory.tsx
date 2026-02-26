@@ -77,6 +77,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           checklist_type,
           customer_name,
           rental_id,
+          engine_hours_snapshot,
           technician:profiles!boat_checklists_technician_id_fkey(name)
         `)
         .eq('boat_id', boatId)
