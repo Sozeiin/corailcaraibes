@@ -316,6 +316,17 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
             </CardHeader>
             
             <CardContent>
+              {checklist.engine_hours_snapshot && Array.isArray(checklist.engine_hours_snapshot) && checklist.engine_hours_snapshot.length > 0 && (
+                <div className="mb-4 flex flex-wrap gap-2">
+                  <span className="text-xs font-medium text-muted-foreground mr-1">Moteurs:</span>
+                  {(checklist.engine_hours_snapshot as EngineHoursSnapshot[]).map((engine) => (
+                    <Badge key={engine.component_id} variant="outline" className="text-xs">
+                      {engine.component_name}: {engine.hours}h
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
               {checklist.general_notes && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
