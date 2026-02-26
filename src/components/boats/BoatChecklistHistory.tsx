@@ -114,7 +114,7 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
             display_type: checklist.checklist_type,
             display_customer_name: checklist.customer_name,
             rental: null, // Not needed when we have stored values
-          } as ChecklistHistoryItem;
+          } as unknown as ChecklistHistoryItem;
         }
 
         // Fallback: infer from rental dates (for old checklists)
