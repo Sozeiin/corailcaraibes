@@ -81,7 +81,8 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
           technician:profiles!boat_checklists_technician_id_fkey(name)
         `)
         .eq('boat_id', boatId)
-        .order('checklist_date', { ascending: false });
+        .order('checklist_date', { ascending: false })
+        .order('created_at', { ascending: false });
 
       if (checklistsError) {
         console.error('[BoatChecklistHistory] Error:', checklistsError);
