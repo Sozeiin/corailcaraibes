@@ -62,9 +62,38 @@ export const ChecklistDetailsModal = ({
         .lte('start_date', new Date(checklistData.checklist_date).toISOString().split('T')[0])
         .maybeSingle();
 
+      // If this is a checkout, find the matching checkin for delta calculation
+      let checkinSnapshot: any[] | null = null;
+      if (checklistData.checklist_type === 'checkout' && checklistData.engine_hours_snapshot) {
+        let matchQuery = supabase
+          .from('boat_checklists')
+          .select('engine_hours_snapshot')
+          .eq('boat_id', checklistData.boat_id)
+          .eq('checklist_type', 'checkin')
+          .not('engine_hours_snapshot', 'is', null);
+
+        if (checklistData.rental_id) {
+          matchQuery = matchQuery.eq('rental_id', checklistData.rental_id);
+        } else if (checklistData.customer_name) {
+          matchQuery = matchQuery
+            .eq('customer_name', checklistData.customer_name)
+            .lte('checklist_date', checklistData.checklist_date);
+        }
+
+        const { data: checkinData } = await matchQuery
+          .order('checklist_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (checkinData?.engine_hours_snapshot) {
+          checkinSnapshot = checkinData.engine_hours_snapshot as any[];
+        }
+      }
+
       return {
         ...checklistData,
-        rental: rentalData
+        rental: rentalData,
+        checkinSnapshot,
       };
     },
     enabled: isOpen && !!checklistId
@@ -213,12 +242,21 @@ export const ChecklistDetailsModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {(checklist.engine_hours_snapshot as any[]).map((engine: any) => (
-                      <div key={engine.component_id} className="flex flex-col items-center p-3 rounded-lg border">
-                        <span className="text-xs text-muted-foreground">{engine.component_name}</span>
-                        <span className="text-lg font-bold">{engine.hours}h</span>
-                      </div>
-                    ))}
+                    {(checklist.engine_hours_snapshot as any[]).map((engine: any) => {
+                      const checkinEng = checklist.checkinSnapshot?.find(
+                        (e: any) => e.component_id === engine.component_id
+                      );
+                      const delta = checkinEng ? engine.hours - checkinEng.hours : null;
+                      return (
+                        <div key={engine.component_id} className="flex flex-col items-center p-3 rounded-lg border">
+                          <span className="text-xs text-muted-foreground">{engine.component_name}</span>
+                          <span className="text-lg font-bold">{engine.hours}h</span>
+                          {delta != null && delta > 0 && (
+                            <span className="text-sm font-bold text-green-600">(+{delta}h)</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
