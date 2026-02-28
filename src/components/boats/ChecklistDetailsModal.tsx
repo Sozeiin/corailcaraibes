@@ -242,12 +242,21 @@ export const ChecklistDetailsModal = ({
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {(checklist.engine_hours_snapshot as any[]).map((engine: any) => (
-                      <div key={engine.component_id} className="flex flex-col items-center p-3 rounded-lg border">
-                        <span className="text-xs text-muted-foreground">{engine.component_name}</span>
-                        <span className="text-lg font-bold">{engine.hours}h</span>
-                      </div>
-                    ))}
+                    {(checklist.engine_hours_snapshot as any[]).map((engine: any) => {
+                      const checkinEng = checklist.checkinSnapshot?.find(
+                        (e: any) => e.component_id === engine.component_id
+                      );
+                      const delta = checkinEng ? engine.hours - checkinEng.hours : null;
+                      return (
+                        <div key={engine.component_id} className="flex flex-col items-center p-3 rounded-lg border">
+                          <span className="text-xs text-muted-foreground">{engine.component_name}</span>
+                          <span className="text-lg font-bold">{engine.hours}h</span>
+                          {delta != null && delta > 0 && (
+                            <span className="text-sm font-bold text-green-600">(+{delta}h)</span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

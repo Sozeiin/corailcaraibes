@@ -413,7 +413,8 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
               </div>
             </CardContent>
           </Card>
-        ))}
+        );
+        })}
       </div>
 
       {selectedChecklist && (
