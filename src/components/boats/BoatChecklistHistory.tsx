@@ -270,6 +270,42 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
     );
   }
 
+  // Calculate engine hours delta for a checkout by finding the matching checkin
+  const getEngineHoursWithDelta = (checklist: ChecklistHistoryItem) => {
+    if (!checklist.engine_hours_snapshot || !Array.isArray(checklist.engine_hours_snapshot)) return null;
+    const engines = checklist.engine_hours_snapshot as EngineHoursSnapshot[];
+    if (engines.length === 0) return null;
+
+    if (checklist.display_type !== 'checkout' || !checklists) {
+      return engines.map(eng => ({ ...eng, delta: null as number | null }));
+    }
+
+    // Find the matching checkin
+    const matchingCheckin = checklists.find(c => {
+      if (c.display_type !== 'checkin' || !c.engine_hours_snapshot) return false;
+      // Match by rental_id first
+      if (checklist.rental_id && c.rental_id && c.rental_id === checklist.rental_id) return true;
+      // Fallback: same customer_name, most recent checkin before this checkout
+      if (checklist.display_customer_name && c.display_customer_name === checklist.display_customer_name) {
+        return new Date(c.checklist_date) <= new Date(checklist.checklist_date);
+      }
+      return false;
+    });
+
+    if (!matchingCheckin?.engine_hours_snapshot) {
+      return engines.map(eng => ({ ...eng, delta: null as number | null }));
+    }
+
+    const checkinEngines = matchingCheckin.engine_hours_snapshot as EngineHoursSnapshot[];
+    return engines.map(eng => {
+      const checkinEng = checkinEngines.find(e => e.component_id === eng.component_id);
+      return {
+        ...eng,
+        delta: checkinEng ? eng.hours - checkinEng.hours : null,
+      };
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -278,7 +314,9 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
       </div>
 
       <div className="space-y-4">
-        {checklists.map((checklist) => (
+        {checklists.map((checklist) => {
+          const enginesWithDelta = getEngineHoursWithDelta(checklist);
+          return (
           <Card key={checklist.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -317,12 +355,15 @@ export const BoatChecklistHistory = ({ boatId }: BoatChecklistHistoryProps) => {
             </CardHeader>
             
             <CardContent>
-              {checklist.engine_hours_snapshot && Array.isArray(checklist.engine_hours_snapshot) && checklist.engine_hours_snapshot.length > 0 && (
+              {enginesWithDelta && enginesWithDelta.length > 0 && (
                 <div className="mb-4 flex flex-wrap gap-2">
                   <span className="text-xs font-medium text-muted-foreground mr-1">Moteurs:</span>
-                  {(checklist.engine_hours_snapshot as EngineHoursSnapshot[]).map((engine) => (
+                  {enginesWithDelta.map((engine) => (
                     <Badge key={engine.component_id} variant="outline" className="text-xs">
                       {engine.component_name}: {engine.hours}h
+                      {engine.delta != null && engine.delta > 0 && (
+                        <span className="ml-1 font-bold text-green-600">(+{engine.delta}h)</span>
+                      )}
                     </Badge>
                   ))}
                 </div>
