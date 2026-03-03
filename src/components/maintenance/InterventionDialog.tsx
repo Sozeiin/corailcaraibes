@@ -62,6 +62,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
   const { registerForm, unregisterForm } = useFormState();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interventionParts, setInterventionParts] = useState<InterventionPart[]>([]);
+  const isEditMode = Boolean(intervention?.id && intervention.id.trim() !== '');
 
   const form = useForm<InterventionFormData>({
     defaultValues: {
@@ -193,7 +194,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
   });
 
   useEffect(() => {
-    if (intervention) {
+    if (isEditMode && intervention) {
       form.reset({
         title: intervention.title,
         description: intervention.description,
@@ -218,14 +219,14 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       });
       setInterventionParts([]);
     }
-  }, [intervention, form, user, isOpen, defaultBoatId]);
+  }, [intervention, form, user, isOpen, defaultBoatId, isEditMode]);
 
   // Separate effect for handling existing parts to avoid infinite loop
   useEffect(() => {
-    if (intervention && existingParts.length > 0) {
+    if (isEditMode && intervention && existingParts.length > 0) {
       setInterventionParts(existingParts);
     }
-  }, [intervention, existingParts]);
+  }, [intervention, existingParts, isEditMode]);
 
   const onSubmit = async (data: InterventionFormData) => {
     setIsSubmitting(true);
@@ -327,7 +328,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       }
 
       // Envoyer une notification au technicien si assigné
-      if (data.technicianId && (!intervention || intervention.technicianId !== data.technicianId)) {
+      if (data.technicianId && (!isEditMode || intervention?.technicianId !== data.technicianId)) {
         try {
           const selectedBoat = boats.find(b => b.id === data.boatId);
           const boatName = selectedBoat ? `${selectedBoat.name} - ${selectedBoat.model}` : 'Bateau non spécifié';
@@ -354,8 +355,8 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       clearSavedData();
 
       toast({
-        title: intervention ? "Intervention modifiée" : "Intervention créée",
-        description: intervention 
+        title: isEditMode ? "Intervention modifiée" : "Intervention créée",
+        description: isEditMode
           ? "L'intervention a été mise à jour avec succès."
           : "La nouvelle intervention a été programmée."
       });
@@ -393,10 +394,10 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto" aria-describedby="intervention-dialog-description">
         <DialogHeader>
           <DialogTitle>
-            {intervention ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
+            {isEditMode ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
           </DialogTitle>
           <p id="intervention-dialog-description" className="text-sm text-muted-foreground">
-            {intervention ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
+            {isEditMode ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
           </p>
         </DialogHeader>
 
@@ -575,7 +576,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
                 disabled={isSubmitting}
                 className="bg-marine-600 hover:bg-marine-700"
               >
-                {isSubmitting ? 'Sauvegarde...' : (intervention ? 'Modifier' : 'Créer')}
+                {isSubmitting ? 'Sauvegarde...' : (isEditMode ? 'Modifier' : 'Créer')}
               </Button>
             </div>
           </form>
