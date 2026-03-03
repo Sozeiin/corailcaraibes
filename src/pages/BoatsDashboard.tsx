@@ -375,17 +375,8 @@ export const BoatsDashboard = () => {
       <InterventionDialog
         isOpen={isInterventionDialogOpen}
         onClose={handleCloseInterventionDialog}
-        intervention={selectedBoatForIntervention ? {
-          id: '',
-          title: `Maintenance ${selectedBoatForIntervention.name}`,
-          description: '',
-          boatId: selectedBoatForIntervention.id,
-          technicianId: '',
-          status: 'scheduled',
-          scheduledDate: new Date().toISOString().split('T')[0],
-          baseId: user?.baseId || '',
-          interventionType: 'maintenance'
-        } as any : null}
+        intervention={null}
+        defaultBoatId={selectedBoatForIntervention?.id}
       />
     </div>
   );

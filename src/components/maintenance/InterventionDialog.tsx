@@ -41,6 +41,7 @@ interface InterventionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   intervention?: Intervention | null;
+  defaultBoatId?: string;
 }
 
 interface InterventionFormData {
