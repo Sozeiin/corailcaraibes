@@ -394,10 +394,10 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto" aria-describedby="intervention-dialog-description">
         <DialogHeader>
           <DialogTitle>
-            {intervention ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
+            {isEditMode ? 'Modifier l\'intervention' : 'Nouvelle intervention'}
           </DialogTitle>
           <p id="intervention-dialog-description" className="text-sm text-muted-foreground">
-            {intervention ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
+            {isEditMode ? 'Modifier les détails de l\'intervention existante' : 'Créer une nouvelle intervention de maintenance'}
           </p>
         </DialogHeader>
 
@@ -576,7 +576,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
                 disabled={isSubmitting}
                 className="bg-marine-600 hover:bg-marine-700"
               >
-                {isSubmitting ? 'Sauvegarde...' : (intervention ? 'Modifier' : 'Créer')}
+                {isSubmitting ? 'Sauvegarde...' : (isEditMode ? 'Modifier' : 'Créer')}
               </Button>
             </div>
           </form>
