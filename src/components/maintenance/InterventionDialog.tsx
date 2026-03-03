@@ -41,6 +41,7 @@ interface InterventionDialogProps {
   isOpen: boolean;
   onClose: () => void;
   intervention?: Intervention | null;
+  defaultBoatId?: string;
 }
 
 interface InterventionFormData {
@@ -54,7 +55,7 @@ interface InterventionFormData {
   interventionType: string;
 }
 
-export function InterventionDialog({ isOpen, onClose, intervention }: InterventionDialogProps) {
+export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatId }: InterventionDialogProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const { createNotification } = useNotifications();
@@ -205,11 +206,10 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       });
       setInterventionParts(existingParts);
     } else {
-      // Initialisation avec les valeurs par défaut (la restauration est gérée automatiquement par useFormPersistence)
       form.reset({
         title: '',
         description: '',
-        boatId: '',
+        boatId: defaultBoatId || '',
         technicianId: '',
         status: 'scheduled',
         scheduledDate: new Date().toISOString().split('T')[0],
@@ -218,7 +218,7 @@ export function InterventionDialog({ isOpen, onClose, intervention }: Interventi
       });
       setInterventionParts([]);
     }
-  }, [intervention, form, user, isOpen]);
+  }, [intervention, form, user, isOpen, defaultBoatId]);
 
   // Separate effect for handling existing parts to avoid infinite loop
   useEffect(() => {
