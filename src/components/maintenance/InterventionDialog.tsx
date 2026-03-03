@@ -62,6 +62,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
   const { registerForm, unregisterForm } = useFormState();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [interventionParts, setInterventionParts] = useState<InterventionPart[]>([]);
+  const isEditMode = Boolean(intervention?.id && intervention.id.trim() !== '');
 
   const form = useForm<InterventionFormData>({
     defaultValues: {
@@ -193,7 +194,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
   });
 
   useEffect(() => {
-    if (intervention) {
+    if (isEditMode && intervention) {
       form.reset({
         title: intervention.title,
         description: intervention.description,
