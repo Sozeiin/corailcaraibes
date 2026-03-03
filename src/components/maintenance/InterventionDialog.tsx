@@ -218,7 +218,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       });
       setInterventionParts([]);
     }
-  }, [intervention, form, user, isOpen]);
+  }, [intervention, form, user, isOpen, defaultBoatId]);
 
   // Separate effect for handling existing parts to avoid infinite loop
   useEffect(() => {
