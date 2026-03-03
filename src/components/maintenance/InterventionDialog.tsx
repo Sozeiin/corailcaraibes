@@ -328,7 +328,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       }
 
       // Envoyer une notification au technicien si assigné
-      if (data.technicianId && (!intervention || intervention.technicianId !== data.technicianId)) {
+      if (data.technicianId && (!isEditMode || intervention?.technicianId !== data.technicianId)) {
         try {
           const selectedBoat = boats.find(b => b.id === data.boatId);
           const boatName = selectedBoat ? `${selectedBoat.name} - ${selectedBoat.model}` : 'Bateau non spécifié';
@@ -355,8 +355,8 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
       clearSavedData();
 
       toast({
-        title: intervention ? "Intervention modifiée" : "Intervention créée",
-        description: intervention 
+        title: isEditMode ? "Intervention modifiée" : "Intervention créée",
+        description: isEditMode
           ? "L'intervention a été mise à jour avec succès."
           : "La nouvelle intervention a été programmée."
       });
