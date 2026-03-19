@@ -1,91 +1,45 @@
 
 
-# Correction du decalage de date (11 fevrier affiche comme 10 fevrier)
+# Fix: Bateau ONE WAY reste en "location" et ne change pas de base après check-out
 
-## Probleme identifie
+## Problème identifié
 
-L'application est utilisee dans les Caraibes (fuseau horaire UTC-4). Quand une date comme `"2026-02-11"` est stockee en base, le code utilise `new Date("2026-02-11")` pour l'afficher, ce qui cree un objet Date a **minuit UTC** (soit le 10 fevrier a 20h en heure locale). Ensuite, `toLocaleDateString()` affiche la date en heure locale, donc **10 fevrier au lieu du 11**.
+Deux bugs dans la logique de check-out ONE WAY dans `TechnicianCheckinInterface.tsx` :
 
-Ce probleme touche deux aspects :
-1. **L'affichage** : `new Date(dateString).toLocaleDateString()` est utilise dans environ 25 fichiers
-2. **L'enregistrement** : `new Date().toISOString().split('T')[0]` peut aussi decaler la date dans certains cas
+1. **Le bateau ne passe pas en "disponible"** : après un check-out normal (non force), le code met à jour le `boat_rentals` et le `administrative_checkin_forms`, mais ne met **jamais** à jour le statut du bateau à `available`. Le `ChecklistForm.tsx` le fait (ligne 568), mais si cette mise à jour échoue ou si le flux passe par un autre chemin, le bateau reste en "rented".
 
-## Solution
+2. **Le bateau ne change pas de base** : pour un ONE WAY, le code crée seulement une entrée `planning_activities` mais ne met **jamais** à jour le `base_id` du bateau vers la `destination_base_id`.
 
-### 1. Ajouter une fonction utilitaire d'affichage dans `src/lib/dateUtils.ts`
+## Correction
 
-Creer une fonction `formatDateSafe(dateString)` qui parse la date sans decalage de fuseau horaire, en extrayant directement les composants annee/mois/jour de la chaine.
+### Fichier : `src/components/checkin/TechnicianCheckinInterface.tsx`
 
-```text
-Exemple :
-"2026-02-11" -> affiche "11/02/2026" quel que soit le fuseau horaire
+Dans la fonction `handleComplete`, après avoir détecté un check-out ONE WAY (lignes 252-264) :
+
+- **Mettre à jour le `base_id` du bateau** vers `formData.destination_base_id` en plus de la création de l'activité planning.
+- **S'assurer que le statut du bateau est bien `available`** après tout check-out normal (pas seulement force-checkout). Ajouter une mise à jour du statut bateau à `available` dans le bloc checkout normal, comme filet de sécurité.
+
+Le code ajoutera après le bloc ONE WAY existant :
+```
+// Mettre à jour la base du bateau pour ONE WAY
+await supabase
+  .from('boats')
+  .update({ 
+    base_id: formData.destination_base_id,
+    status: 'available',
+    updated_at: new Date().toISOString()
+  })
+  .eq('id', formData.boat_id);
 ```
 
-### 2. Corriger l'enregistrement des dates dans `ChecklistForm.tsx`
-
-Remplacer :
-```text
-checklistDate: new Date().toISOString().split('T')[0]
+Et pour les check-outs non ONE WAY, ajouter une mise à jour de sécurité :
 ```
-par un calcul qui utilise la date locale (annee, mois, jour locaux) pour eviter le decalage.
-
-Meme correction pour `scheduled_date` des interventions automatiques creees lors du check-in.
-
-### 3. Corriger l'affichage dans les fichiers concernes
-
-Remplacer les occurrences de `new Date(date).toLocaleDateString()` par la nouvelle fonction `formatDateSafe()` dans les fichiers principaux lies au check-in et aux interventions :
-
-- `src/components/boats/BoatChecklistHistory.tsx` (2 occurrences)
-- `src/components/boats/BoatInterventionHistory.tsx` (2 occurrences)
-- `src/components/boats/ChecklistDetailsModal.tsx` (1 occurrence)
-- `src/components/maintenance/InterventionTable.tsx` (2 occurrences)
-- `src/components/dashboard/widgets/MaintenanceWidget.tsx` (1 occurrence)
-- `src/hooks/useCreateIntervention.ts` (1 occurrence)
-- Autres fichiers utilisant le meme pattern pour les dates de type "YYYY-MM-DD"
-
-## Section technique
-
-### Fonction `formatDateSafe`
-
-```typescript
-export function formatDateSafe(dateString: string, locale: string = 'fr-FR'): string {
-  // Pour les dates "YYYY-MM-DD", parser directement sans passer par new Date()
-  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) {
-    const [, year, month, day] = match;
-    // Creer la date a midi pour eviter tout decalage
-    const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
-    return date.toLocaleDateString(locale);
-  }
-  // Fallback pour les dates ISO completes
-  const d = new Date(dateString);
-  return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0)
-    .toLocaleDateString(locale);
-}
+// S'assurer que le bateau est bien disponible
+await supabase
+  .from('boats')
+  .update({ status: 'available', updated_at: new Date().toISOString() })
+  .eq('id', selectedRental.boat_id);
 ```
 
-### Fonction `getLocalDateString`
-
-```typescript
-export function getLocalDateString(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-```
-
-### Fichiers modifies
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/lib/dateUtils.ts` | Ajout de `formatDateSafe` et `getLocalDateString` |
-| `src/components/checkin/ChecklistForm.tsx` | Utiliser `getLocalDateString()` pour `checklistDate` et `scheduled_date` |
-| `src/components/boats/BoatChecklistHistory.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/boats/BoatInterventionHistory.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/boats/ChecklistDetailsModal.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/maintenance/InterventionTable.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/components/dashboard/widgets/MaintenanceWidget.tsx` | Utiliser `formatDateSafe()` pour l'affichage |
-| `src/hooks/useCreateIntervention.ts` | Utiliser `formatDateSafe()` pour le message de notification |
+Cela garantit que dans tous les cas, le bateau finit en statut "disponible" et, pour les ONE WAY, change de base.
 
