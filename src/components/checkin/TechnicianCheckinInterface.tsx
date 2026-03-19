@@ -261,6 +261,25 @@ export function TechnicianCheckinInterface() {
                 base_id: formData.destination_base_id,
                 boat_id: formData.boat_id
               } as any);
+
+            // Mettre à jour la base et le statut du bateau pour ONE WAY
+            await supabase
+              .from('boats')
+              .update({ 
+                base_id: formData.destination_base_id,
+                status: 'available' as any,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', formData.boat_id);
+          } else {
+            // S'assurer que le bateau est bien disponible après check-out standard
+            await supabase
+              .from('boats')
+              .update({ 
+                status: 'available' as any, 
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', selectedRental.boat_id);
           }
         }
       }
