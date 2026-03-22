@@ -1,65 +1,51 @@
 
-Objectif validé: corriger définitivement le flux ONE WAY pour que le bateau change de base dès la fin du check-in (et ne bloque plus le check-out de l’équipe destination).
+Objectif corrigé (comme vous l’avez demandé) :
 
-Constat confirmé (d’après le code + données):
-- `TechnicianCheckinInterface.tsx` ne déplace le bateau vers `destination_base_id` qu’au check-out.
-- En check-out, plusieurs updates critiques (formulaire + bateau) n’ont pas de gestion d’erreur stricte, donc elles peuvent échouer silencieusement.
-- Résultat vu sur DORMELLE: formulaire ONE WAY en `used`, mais bateau resté `rented` sur base Martinique.
+- Après un **check-in ONE WAY** : le bateau doit être **transféré sur la base de destination** mais rester **en location (`rented`)**.
+- Il ne doit passer en **disponible (`available`) qu’après le check-out** réalisé par l’équipe qui reçoit le bateau.
+
+Constat sur le code actuel :
+
+1. Une migration manuelle a mis DORMELLE en `available` (c’est contraire à votre règle).
+2. Le transfert ONE WAY est fait côté client avec `update boats`, mais pour un technicien il peut échouer selon les règles RLS (changement de `base_id` inter-base), donc transfert non fiable.
+3. Le check-out met bien `available`, mais on doit garantir que ce soit le **seul** moment où ça arrive.
 
 Plan de correction
 
-1) Déplacer le transfert de base ONE WAY au moment du check-in (pas au check-out)
-- Fichier: `src/components/checkin/TechnicianCheckinInterface.tsx`
-- Dans `handleComplete`, branche `mode === 'checkin'`:
-  - Après passage du formulaire en `used`, si `selectedForm.is_one_way === true` et `selectedForm.destination_base_id`:
-    - `boats.base_id = destination_base_id`
-    - `boats.status = 'rented'` (la location est en cours)
-    - `updated_at = now`
-  - Ajouter gestion d’erreur explicite (si update bateau échoue: toast + log + stop du flux de clôture silencieuse).
+1) Corriger immédiatement l’état de DORMELLE (data fix ciblé)
+- Nouvelle migration SQL ciblée :
+  - DORMELLE -> `base_id = Guadeloupe`
+  - DORMELLE -> `status = 'rented'`
+- Aucun autre bateau modifié.
 
-2) Rendre le check-out robuste même si le formulaire ONE WAY n’est pas retrouvé
-- Fichier: `src/components/checkin/TechnicianCheckinInterface.tsx`
-- Dans branche `mode === 'checkout'`:
-  - Conserver la logique actuelle de fin de rental (`boat_rentals.status='completed'`).
-  - Ne plus dépendre de `formData` pour remettre le bateau dispo:
-    - Toujours appliquer un fallback final `boats.status='available'` (et base inchangée si non ONE WAY).
-  - Si `formData` ONE WAY est trouvé, garder la mise à jour `base_id = destination_base_id` (idempotente).
-  - Vérifier chaque requête Supabase (`error`) et remonter proprement.
+2) Fiabiliser le transfert ONE WAY au check-in via fonction SQL sécurisée (SECURITY DEFINER)
+- Ajouter une fonction SQL (migration) qui exécute côté DB :
+  - validation du formulaire ONE WAY
+  - transfert `boats.base_id = destination_base_id`
+  - `boats.status = 'rented'`
+  - insertion `boat_base_transfers`
+- Cette fonction contourne proprement les blocages RLS côté client et rend le transfert fiable pour les techniciens.
 
-3) Aligner aussi le flux alternatif `/checkin-process` pour comportement identique
-- Fichiers:
-  - `src/components/checkin/ReadyFormsSection.tsx`
-  - `src/pages/CheckInProcess.tsx`
-- Aujourd’hui, ce flux ne transporte pas les métadonnées ONE WAY nécessaires.
-- Ajouter dans le `navigate(... state ...)`:
-  - `formId`, `isOneWay`, `destinationBaseId`, `boatId`
-- À la fin du check-in dans `CheckInProcess`:
-  - marquer la fiche `used`
-  - appliquer le même transfert ONE WAY du bateau vers base destination.
-- Ainsi, quel que soit l’écran utilisé pour faire le check-in, le comportement est identique.
+3) Mettre à jour le front pour utiliser cette fonction (au lieu des updates directs)
+- `src/components/checkin/TechnicianCheckinInterface.tsx`
+  - dans `handleComplete` (branche check-in), remplacer `update boats + insert boat_base_transfers` par appel RPC de la fonction SQL.
+  - en cas d’erreur RPC : toast bloquant + ne pas fermer silencieusement.
+- `src/pages/CheckInProcess.tsx`
+  - même changement pour garder le comportement identique sur ce flux.
 
-4) Corriger les données déjà bloquées (dont DORMELLE)
-- Exécuter un correctif data (opération ciblée, sans changement de schéma):
-  - Recaler `boats.base_id` sur la destination du dernier formulaire ONE WAY `used` quand le bateau est resté sur l’ancienne base.
-  - Recaler le statut selon la réalité:
-    - `rented` si rental `confirmed` existe
-    - sinon `available`
-- Appliquer immédiatement à DORMELLE.
-- (Option recommandé) clôturer les partages ONE WAY expirés (`boat_sharing.status='ended'`) pour éviter les incohérences d’affichage.
+4) Verrouiller la règle métier “disponible uniquement au check-out”
+- Conserver la mise à `available` uniquement dans la branche check-out.
+- Vérifier qu’aucune branche check-in ONE WAY ne remet `available`.
 
-5) Validation fonctionnelle (obligatoire)
-- Test E2E ONE WAY complet:
-  1. Créer fiche ONE WAY Martinique -> Guadeloupe.
-  2. Faire check-in côté Martinique.
-  3. Vérifier immédiatement: bateau visible en base Guadeloupe, statut `rented`.
-  4. Côté Guadeloupe, vérifier qu’il est sélectionnable pour check-out.
-  5. Faire check-out et vérifier: statut `available`, base Guadeloupe conservée.
-- Vérifier aussi l’historique check-in/check-out et la liste bateaux (pas de duplication incohérente).
+5) Validation E2E obligatoire
+Scénario cible :
+1. Créer fiche ONE WAY Martinique -> Guadeloupe  
+2. Faire check-in en Martinique  
+   - attendu : bateau visible en Guadeloupe, statut `rented`  
+3. Équipe Guadeloupe fait check-out  
+   - attendu : le bateau passe ensuite en `available` (et reste en base Guadeloupe)
 
-Section technique (résumé)
-- Pas de migration de schéma nécessaire.
-- Corrections principalement front + un correctif data ponctuel.
-- Points clés de robustesse:
-  - transfert ONE WAY déplacé au check-in
-  - suppression des dépendances fragiles au formulaire dans le check-out
-  - gestion d’erreur stricte sur toutes les updates critiques.
+Fichiers / couches concernées
+- `supabase/migrations/*` (data fix DORMELLE + fonction SQL SECURITY DEFINER)
+- `src/components/checkin/TechnicianCheckinInterface.tsx`
+- `src/pages/CheckInProcess.tsx`
