@@ -53,36 +53,21 @@ export default function CheckInProcess() {
         toast.error('Erreur lors de la mise à jour du formulaire');
       }
 
-      // ONE WAY: transfer boat to destination base immediately
-      if (state.isOneWay && state.destinationBaseId && state.boatId) {
-        const { error: transferError } = await supabase
-          .from('boats')
-          .update({
-            base_id: state.destinationBaseId,
-            status: 'rented' as any,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', state.boatId);
+      // ONE WAY: transfer boat to destination base immediately (via SECURITY DEFINER RPC)
+      if (state.isOneWay && state.destinationBaseId && state.boatId && state.baseId) {
+        const { error: transferError } = await supabase.rpc('handle_one_way_checkin_transfer', {
+          p_boat_id: state.boatId,
+          p_from_base_id: state.baseId,
+          p_to_base_id: state.destinationBaseId,
+          p_transferred_by: user?.id || null,
+        });
 
         if (transferError) {
           console.error('Error transferring boat for ONE WAY:', transferError);
           toast.error('Erreur lors du transfert ONE WAY du bateau');
         } else {
           console.log('ONE WAY: boat transferred to destination base at check-in (CheckInProcess)');
-          toast.success('Bateau transféré vers la base de destination (ONE WAY)');
-        }
-
-        // Create boat_base_transfer record
-        if (state.baseId) {
-          await supabase
-            .from('boat_base_transfers')
-            .insert({
-              boat_id: state.boatId,
-              from_base_id: state.baseId,
-              to_base_id: state.destinationBaseId,
-              reason: 'Location ONE WAY - transfert automatique au check-in',
-              transferred_by: user?.id,
-            });
+          toast.success('Bateau transféré vers la base de destination (ONE WAY) - en attente du check-out');
         }
       }
     }
