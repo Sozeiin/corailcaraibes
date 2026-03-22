@@ -205,7 +205,7 @@ export function TechnicianCheckinInterface() {
   const handleComplete = async (data: any) => {
     if (mode === 'checkin' && data && selectedForm) {
       // Mark form as used
-      await supabase
+      const { error: formError } = await supabase
         .from('administrative_checkin_forms')
         .update({
           status: 'used',
@@ -213,19 +213,54 @@ export function TechnicianCheckinInterface() {
           used_at: new Date().toISOString(),
         })
         .eq('id', selectedForm.id);
+
+      if (formError) {
+        console.error('Error updating form status:', formError);
+      }
+
+      // ONE WAY: transfer boat to destination base immediately at check-in
+      if (selectedForm.is_one_way && selectedForm.destination_base_id && selectedForm.boat_id) {
+        const { error: transferError } = await supabase
+          .from('boats')
+          .update({
+            base_id: selectedForm.destination_base_id,
+            status: 'rented' as any,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', selectedForm.boat_id);
+
+        if (transferError) {
+          console.error('Error transferring boat for ONE WAY:', transferError);
+        } else {
+          console.log('ONE WAY: boat transferred to destination base at check-in');
+        }
+
+        // Create boat_base_transfer record
+        await supabase
+          .from('boat_base_transfers')
+          .insert({
+            boat_id: selectedForm.boat_id,
+            from_base_id: selectedForm.base_id,
+            to_base_id: selectedForm.destination_base_id,
+            reason: 'Location ONE WAY - transfert automatique au check-in',
+            transferred_by: user?.id,
+          });
+      }
     } else if (mode === 'checkout' && data && selectedRental) {
       if (selectedRental.id === 'force-checkout') {
         // Force checkout: just update boat status to available
-        await supabase
+        const { error } = await supabase
           .from('boats')
           .update({ status: 'available', updated_at: new Date().toISOString() })
           .eq('id', selectedRental.boat_id);
+        if (error) console.error('Error force-checkout boat:', error);
       } else {
         // Update rental status to completed
-        await supabase
+        const { error: rentalError } = await supabase
           .from('boat_rentals')
           .update({ status: 'completed' })
           .eq('id', selectedRental.id);
+        if (rentalError) console.error('Error completing rental:', rentalError);
 
         // Find the associated administrative form by context
         const { data: formData } = await supabase
@@ -241,47 +276,25 @@ export function TechnicianCheckinInterface() {
 
         if (formData) {
           // Update form status to completed
-          await supabase
+          const { error: formUpdateError } = await supabase
             .from('administrative_checkin_forms')
             .update({ 
               status: 'completed',
               updated_at: new Date().toISOString()
             })
             .eq('id', formData.id);
-
-          // Handle ONE WAY checkouts
-          if (formData.is_one_way && formData.destination_base_id && formData.boat_id) {
-            await supabase
-              .from('planning_activities')
-              .insert({
-                activity_type: 'arrival',
-                status: 'planned',
-                scheduled_start: formData.planned_end_date,
-                scheduled_end: formData.planned_end_date,
-                base_id: formData.destination_base_id,
-                boat_id: formData.boat_id
-              } as any);
-
-            // Mettre à jour la base et le statut du bateau pour ONE WAY
-            await supabase
-              .from('boats')
-              .update({ 
-                base_id: formData.destination_base_id,
-                status: 'available' as any,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', formData.boat_id);
-          } else {
-            // S'assurer que le bateau est bien disponible après check-out standard
-            await supabase
-              .from('boats')
-              .update({ 
-                status: 'available' as any, 
-                updated_at: new Date().toISOString() 
-              })
-              .eq('id', selectedRental.boat_id);
-          }
+          if (formUpdateError) console.error('Error completing form:', formUpdateError);
         }
+
+        // Always set boat to available after checkout (base already transferred at check-in for ONE WAY)
+        const { error: boatError } = await supabase
+          .from('boats')
+          .update({ 
+            status: 'available' as any, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', selectedRental.boat_id);
+        if (boatError) console.error('Error setting boat available:', boatError);
       }
     }
     setIsDialogOpen(false);

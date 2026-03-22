@@ -87,6 +87,11 @@ export function ReadyFormsSection() {
           endDate: form.planned_end_date,
           notes: form.rental_notes,
         },
+        formId: form.id,
+        isOneWay: form.is_one_way,
+        destinationBaseId: form.destination_base_id,
+        baseId: form.base_id,
+        boatId: form.boat_id,
       },
     });
   };
