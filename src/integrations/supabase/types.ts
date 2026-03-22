@@ -5498,6 +5498,15 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      handle_one_way_checkin_transfer: {
+        Args: {
+          p_boat_id: string
+          p_from_base_id: string
+          p_to_base_id: string
+          p_transferred_by?: string
+        }
+        Returns: undefined
+      }
       handle_shipment_item_reception: {
         Args: {
           destination_base_id: string

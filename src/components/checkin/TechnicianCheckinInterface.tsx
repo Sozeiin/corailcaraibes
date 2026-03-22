@@ -218,33 +218,22 @@ export function TechnicianCheckinInterface() {
         console.error('Error updating form status:', formError);
       }
 
-      // ONE WAY: transfer boat to destination base immediately at check-in
+      // ONE WAY: transfer boat to destination base immediately at check-in (via SECURITY DEFINER RPC)
       if (selectedForm.is_one_way && selectedForm.destination_base_id && selectedForm.boat_id) {
-        const { error: transferError } = await supabase
-          .from('boats')
-          .update({
-            base_id: selectedForm.destination_base_id,
-            status: 'rented' as any,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', selectedForm.boat_id);
+        const { error: transferError } = await supabase.rpc('handle_one_way_checkin_transfer', {
+          p_boat_id: selectedForm.boat_id,
+          p_from_base_id: selectedForm.base_id,
+          p_to_base_id: selectedForm.destination_base_id,
+          p_transferred_by: user?.id || null,
+        });
 
         if (transferError) {
           console.error('Error transferring boat for ONE WAY:', transferError);
+          toast.error('Erreur lors du transfert ONE WAY du bateau vers la base de destination');
         } else {
           console.log('ONE WAY: boat transferred to destination base at check-in');
+          toast.success('Bateau transféré vers la base de destination (ONE WAY) - en attente du check-out');
         }
-
-        // Create boat_base_transfer record
-        await supabase
-          .from('boat_base_transfers')
-          .insert({
-            boat_id: selectedForm.boat_id,
-            from_base_id: selectedForm.base_id,
-            to_base_id: selectedForm.destination_base_id,
-            reason: 'Location ONE WAY - transfert automatique au check-in',
-            transferred_by: user?.id,
-          });
       }
     } else if (mode === 'checkout' && data && selectedRental) {
       if (selectedRental.id === 'force-checkout') {
