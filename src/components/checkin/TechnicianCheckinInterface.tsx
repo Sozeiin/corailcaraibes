@@ -17,11 +17,47 @@ import { useNavigate } from 'react-router-dom';
 
 export function TechnicianCheckinInterface() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'checkin' | 'checkout'>('checkin');
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   const [selectedForm, setSelectedForm] = useState<AdministrativeCheckinFormWithRelations | null>(null);
   const [selectedRental, setSelectedRental] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Fetch existing drafts from Supabase
+  const { data: drafts = [], refetch: refetchDrafts } = useQuery({
+    queryKey: ['checkin-drafts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('checkin_drafts')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const handleDeleteDraft = async (formKey: string) => {
+    await supabase.from('checkin_drafts').delete().eq('form_key', formKey);
+    refetchDrafts();
+    toast.success('Brouillon supprimé');
+  };
+
+  const handleResumeDraft = (draft: any) => {
+    // Navigate to the checkin process page - the form persistence will auto-restore from Supabase
+    const boatData = { id: draft.boat_id, name: draft.boat_name || 'Bateau' };
+    const rentalData = { customerName: draft.customer_name || 'Client' };
+    const checklistType = draft.checklist_type || 'checkin';
+    
+    navigate('/checkin-process', {
+      state: {
+        boat: boatData,
+        rentalData,
+        type: checklistType,
+      }
+    });
+  };
 
   // Fetch boats with ready forms (Check-in mode)
   const { data: boatsWithReadyForms = [] } = useQuery({
