@@ -164,7 +164,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
     });
   }, [toast]);
 
-  // Persistance des données du formulaire
+  // Persistance des données du formulaire dans Supabase
   const { clearSavedData: clearFormDraft, hasSavedDraft, lastSaveTime, saveNow } = useFormPersistence(
     `checklist_${boat.id}_${type}`,
     {
@@ -180,6 +180,10 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
     { 
       excludeFields: [],
       onRestore: handleFormRestore,
+      boatId: boat.id,
+      boatName: boat.name,
+      checklistType: type,
+      customerName: rentalData?.customerName || '',
     }
   );
 

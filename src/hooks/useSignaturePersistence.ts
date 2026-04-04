@@ -1,13 +1,9 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Hook spécialisé pour la persistance des signatures (données volumineuses base64)
- * Sauvegarde séparée pour éviter de surcharger le localStorage principal
- * 
- * CORRECTION v2:
- * - Restauration automatique au montage
- * - Sauvegarde sans condition hasLoadedRef
- * - Callback pour restaurer les signatures dans le composant parent
+ * Hook pour la persistance des signatures dans Supabase (via checkin_drafts.signature_data)
+ * Stocke les signatures base64 séparément des données du formulaire
  */
 export function useSignaturePersistence(
   formKey: string,
@@ -18,147 +14,149 @@ export function useSignaturePersistence(
   isOpen: boolean,
   onRestoreSignatures?: (signatures: { technicianSignature?: string; customerSignature?: string }) => void
 ) {
-  const storageKey = `signatures_${formKey}`;
+  const dbFormKey = `checklist_${formKey.replace('checklist_', '')}`;
   const hasTriedRestoreRef = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
+  const isSavingRef = useRef(false);
+  const lastSaveTimeRef = useRef<number>(0);
 
-  // Sauvegarder les signatures
-  const saveSignatures = useCallback(() => {
+  // Sauvegarder les signatures dans le champ signature_data de checkin_drafts
+  const saveSignatures = useCallback(async () => {
+    if (isSavingRef.current) return;
+    if (!signatures.technicianSignature && !signatures.customerSignature) return;
+    
+    const now = Date.now();
+    if (now - lastSaveTimeRef.current < 2000) return;
+
+    isSavingRef.current = true;
     try {
-      // Ne sauvegarder que si au moins une signature existe
-      if (!signatures.technicianSignature && !signatures.customerSignature) {
-        return;
-      }
-
-      const dataToSave = {
+      const sigData = {
         technicianSignature: signatures.technicianSignature || '',
         customerSignature: signatures.customerSignature || '',
-        timestamp: Date.now(),
       };
 
-      localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-      console.log(`💾 [SignaturePersistence] Signatures sauvegardées: ${formKey}`);
+      // Update existing draft with signature data
+      const { error } = await supabase
+        .from('checkin_drafts')
+        .update({ 
+          signature_data: sigData as any,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('form_key', dbFormKey);
+
+      if (error) {
+        console.error('❌ [SignaturePersistence] Erreur sauvegarde:', error);
+      } else {
+        lastSaveTimeRef.current = now;
+        console.log(`💾 [SignaturePersistence] Signatures sauvegardées: ${formKey}`);
+      }
     } catch (error) {
       console.error('❌ [SignaturePersistence] Erreur sauvegarde:', error);
-      // Si quota dépassé, ne rien faire (les signatures sont optionnelles dans le brouillon)
-      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
-        console.warn('⚠️ [SignaturePersistence] Quota dépassé, signatures non sauvegardées');
-      }
+    } finally {
+      isSavingRef.current = false;
     }
-  }, [signatures.technicianSignature, signatures.customerSignature, storageKey, formKey]);
+  }, [signatures.technicianSignature, signatures.customerSignature, dbFormKey, formKey]);
 
   // Charger les signatures sauvegardées
-  const loadSignatures = useCallback((): { technicianSignature?: string; customerSignature?: string } | null => {
+  const loadSignatures = useCallback(async (): Promise<{ technicianSignature?: string; customerSignature?: string } | null> => {
     try {
-      const saved = localStorage.getItem(storageKey);
-      if (!saved) return null;
+      const { data, error } = await supabase
+        .from('checkin_drafts')
+        .select('signature_data')
+        .eq('form_key', dbFormKey)
+        .maybeSingle();
 
-      const parsed = JSON.parse(saved);
-      
-      // Vérifier que les données ne sont pas trop anciennes (1 jour max pour les signatures)
-      const age = Date.now() - parsed.timestamp;
-      if (age > 24 * 60 * 60 * 1000) {
-        console.log('🗑️ [SignaturePersistence] Signatures trop anciennes, suppression');
-        localStorage.removeItem(storageKey);
-        return null;
-      }
+      if (error || !data?.signature_data) return null;
 
-      console.log(`📂 [SignaturePersistence] Signatures chargées: ${formKey}`);
-      
+      const sigData = data.signature_data as any;
       return {
-        technicianSignature: parsed.technicianSignature,
-        customerSignature: parsed.customerSignature,
+        technicianSignature: sigData.technicianSignature,
+        customerSignature: sigData.customerSignature,
       };
     } catch (error) {
       console.error('❌ [SignaturePersistence] Erreur chargement:', error);
       return null;
     }
-  }, [storageKey, formKey]);
+  }, [dbFormKey]);
 
   // Nettoyer les signatures
-  const clearSignatures = useCallback(() => {
+  const clearSignatures = useCallback(async () => {
     try {
-      localStorage.removeItem(storageKey);
+      await supabase
+        .from('checkin_drafts')
+        .update({ signature_data: null, updated_at: new Date().toISOString() })
+        .eq('form_key', dbFormKey);
       hasTriedRestoreRef.current = false;
       setIsRestored(false);
       console.log(`🗑️ [SignaturePersistence] Signatures supprimées: ${formKey}`);
     } catch (error) {
       console.error('❌ [SignaturePersistence] Erreur suppression:', error);
     }
-  }, [storageKey, formKey]);
+  }, [dbFormKey, formKey]);
 
   // Restaurer automatiquement à l'ouverture (une seule fois)
   useEffect(() => {
     if (isOpen && !hasTriedRestoreRef.current) {
       hasTriedRestoreRef.current = true;
       
-      const savedSignatures = loadSignatures();
-      if (savedSignatures && (savedSignatures.technicianSignature || savedSignatures.customerSignature)) {
-        console.log('📂 [SignaturePersistence] Restauration automatique des signatures');
-        setIsRestored(true);
-        onRestoreSignatures?.(savedSignatures);
-      }
+      loadSignatures().then(savedSignatures => {
+        if (savedSignatures && (savedSignatures.technicianSignature || savedSignatures.customerSignature)) {
+          console.log('📂 [SignaturePersistence] Restauration automatique des signatures');
+          setIsRestored(true);
+          onRestoreSignatures?.(savedSignatures);
+        }
+      });
     }
   }, [isOpen, loadSignatures, onRestoreSignatures]);
 
-  // Sauvegarder lors de la mise en veille (CRITIQUE pour tablettes)
+  // Sauvegarder lors de la mise en veille
   useEffect(() => {
     if (!isOpen) return;
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        console.log('💤 [SignaturePersistence] Sauvegarde signatures avant veille');
         saveSignatures();
-      } else if (!document.hidden && !isRestored) {
-        // Au retour de veille, vérifier s'il faut restaurer
-        const savedSignatures = loadSignatures();
-        if (savedSignatures && (savedSignatures.technicianSignature || savedSignatures.customerSignature)) {
-          console.log('📂 [SignaturePersistence] Restauration signatures après veille');
-          setIsRestored(true);
-          onRestoreSignatures?.(savedSignatures);
-        }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isOpen, saveSignatures, loadSignatures, onRestoreSignatures, isRestored]);
+  }, [isOpen, saveSignatures]);
 
-  // Sauvegarder à chaque modification de signature (SANS condition hasLoadedRef)
+  // Sauvegarder à chaque modification de signature
   useEffect(() => {
     if (isOpen && hasTriedRestoreRef.current) {
       saveSignatures();
     }
   }, [signatures.technicianSignature, signatures.customerSignature, isOpen, saveSignatures]);
 
-  // Fonction pour sauvegarder immédiatement (exposée au parent)
-  // Accepte un override pour éviter les problèmes de state périmé lors de fermetures rapides
-  // CORRECTION: Utilise la même clé et le même format que saveSignatures
-  const saveNow = useCallback((overrideSignatures?: { technicianSignature?: string; customerSignature?: string }) => {
-    if (overrideSignatures) {
-      console.log('💾 [SignaturePersistence] saveNow avec override');
-      const sigs = {
-        technicianSignature: overrideSignatures.technicianSignature || '',
-        customerSignature: overrideSignatures.customerSignature || '',
-      };
-      if (sigs.technicianSignature || sigs.customerSignature) {
-        try {
-          // CORRECTION: Même clé et même format que saveSignatures pour cohérence
-          const dataToSave = {
-            technicianSignature: sigs.technicianSignature,
-            customerSignature: sigs.customerSignature,
-            timestamp: Date.now(),
-          };
-          localStorage.setItem(storageKey, JSON.stringify(dataToSave));
-          console.log('💾 [SignaturePersistence] Signatures sauvegardées via override dans', storageKey);
-        } catch (error) {
-          console.error('❌ [SignaturePersistence] Erreur sauvegarde override:', error);
-        }
+  // Sauvegarder immédiatement
+  const saveNow = useCallback(async (overrideSignatures?: { technicianSignature?: string; customerSignature?: string }) => {
+    const sigs = overrideSignatures || signatures;
+    if (sigs.technicianSignature || sigs.customerSignature) {
+      isSavingRef.current = false; // Force allow
+      lastSaveTimeRef.current = 0;
+      
+      try {
+        const sigData = {
+          technicianSignature: sigs.technicianSignature || '',
+          customerSignature: sigs.customerSignature || '',
+        };
+        
+        await supabase
+          .from('checkin_drafts')
+          .update({ 
+            signature_data: sigData as any,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('form_key', dbFormKey);
+          
+        console.log('💾 [SignaturePersistence] Signatures sauvegardées via saveNow');
+      } catch (error) {
+        console.error('❌ [SignaturePersistence] Erreur saveNow:', error);
       }
-    } else {
-      saveSignatures();
     }
-  }, [storageKey, saveSignatures]);
+  }, [signatures, dbFormKey]);
 
   return {
     loadSignatures,

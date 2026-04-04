@@ -8,19 +8,56 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, User, Anchor, Play, LogIn, LogOut } from 'lucide-react';
+import { Calendar, User, Anchor, Play, LogIn, LogOut, FileEdit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CheckinDialog } from './CheckinDialog';
 import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
+import { useNavigate } from 'react-router-dom';
 
 export function TechnicianCheckinInterface() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [mode, setMode] = useState<'checkin' | 'checkout'>('checkin');
   const [selectedBoatId, setSelectedBoatId] = useState<string>('');
   const [selectedForm, setSelectedForm] = useState<AdministrativeCheckinFormWithRelations | null>(null);
   const [selectedRental, setSelectedRental] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Fetch existing drafts from Supabase
+  const { data: drafts = [], refetch: refetchDrafts } = useQuery({
+    queryKey: ['checkin-drafts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('checkin_drafts')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const handleDeleteDraft = async (formKey: string) => {
+    await supabase.from('checkin_drafts').delete().eq('form_key', formKey);
+    refetchDrafts();
+    toast.success('Brouillon supprimé');
+  };
+
+  const handleResumeDraft = (draft: any) => {
+    // Navigate to the checkin process page - the form persistence will auto-restore from Supabase
+    const boatData = { id: draft.boat_id, name: draft.boat_name || 'Bateau' };
+    const rentalData = { customerName: draft.customer_name || 'Client' };
+    const checklistType = draft.checklist_type || 'checkin';
+    
+    navigate('/checkin-process', {
+      state: {
+        boat: boatData,
+        rentalData,
+        type: checklistType,
+      }
+    });
+  };
 
   // Fetch boats with ready forms (Check-in mode)
   const { data: boatsWithReadyForms = [] } = useQuery({
@@ -297,6 +334,47 @@ export function TechnicianCheckinInterface() {
 
   return (
     <div className="space-y-6">
+      {/* Brouillons en cours */}
+      {drafts.length > 0 && (
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileEdit className="h-5 w-5" />
+              Brouillons en cours ({drafts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {drafts.map((draft) => (
+                <div key={draft.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{draft.boat_name || 'Bateau inconnu'}</span>
+                      <Badge variant={draft.checklist_type === 'checkin' ? 'default' : 'secondary'}>
+                        {draft.checklist_type === 'checkin' ? 'Check-in' : 'Check-out'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {draft.customer_name || 'Client non renseigné'} • 
+                      Modifié {draft.updated_at ? format(new Date(draft.updated_at), " d MMM à HH:mm", { locale: fr }) : ''}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <Button size="sm" onClick={() => handleResumeDraft(draft)}>
+                      <Play className="h-4 w-4 mr-1" />
+                      Reprendre
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteDraft(draft.form_key)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs value={mode} onValueChange={(value) => {
         setMode(value as 'checkin' | 'checkout');
         setSelectedBoatId(''); // Réinitialiser la sélection lors du changement de mode

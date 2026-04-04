@@ -1635,6 +1635,59 @@ export type Database = {
           },
         ]
       }
+      checkin_drafts: {
+        Row: {
+          boat_id: string | null
+          boat_name: string | null
+          checklist_type: string | null
+          created_at: string | null
+          created_by: string | null
+          customer_name: string | null
+          form_data: Json
+          form_key: string
+          id: string
+          signature_data: Json | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          boat_id?: string | null
+          boat_name?: string | null
+          checklist_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_name?: string | null
+          form_data?: Json
+          form_key: string
+          id?: string
+          signature_data?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          boat_id?: string | null
+          boat_name?: string | null
+          checklist_type?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          customer_name?: string | null
+          form_data?: Json
+          form_key?: string
+          id?: string
+          signature_data?: Json | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checkin_drafts_boat_id_fkey"
+            columns: ["boat_id"]
+            isOneToOne: false
+            referencedRelation: "boats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_item_photos: {
         Row: {
           checklist_id: string
