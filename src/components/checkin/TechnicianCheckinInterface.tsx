@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, User, Anchor, Play, LogIn, LogOut } from 'lucide-react';
+import { Calendar, User, Anchor, Play, LogIn, LogOut, FileEdit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CheckinDialog } from './CheckinDialog';
 import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
+import { useNavigate } from 'react-router-dom';
 
 export function TechnicianCheckinInterface() {
   const { user } = useAuth();
