@@ -334,6 +334,47 @@ export function TechnicianCheckinInterface() {
 
   return (
     <div className="space-y-6">
+      {/* Brouillons en cours */}
+      {drafts.length > 0 && (
+        <Card className="border-l-4 border-l-amber-500">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileEdit className="h-5 w-5" />
+              Brouillons en cours ({drafts.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3">
+              {drafts.map((draft) => (
+                <div key={draft.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{draft.boat_name || 'Bateau inconnu'}</span>
+                      <Badge variant={draft.checklist_type === 'checkin' ? 'default' : 'secondary'}>
+                        {draft.checklist_type === 'checkin' ? 'Check-in' : 'Check-out'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {draft.customer_name || 'Client non renseigné'} • 
+                      Modifié {draft.updated_at ? format(new Date(draft.updated_at), " d MMM à HH:mm", { locale: fr }) : ''}
+                    </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <Button size="sm" onClick={() => handleResumeDraft(draft)}>
+                      <Play className="h-4 w-4 mr-1" />
+                      Reprendre
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => handleDeleteDraft(draft.form_key)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Tabs value={mode} onValueChange={(value) => {
         setMode(value as 'checkin' | 'checkout');
         setSelectedBoatId(''); // Réinitialiser la sélection lors du changement de mode
