@@ -4,6 +4,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { PlanningActivityCard } from './PlanningActivityCard';
+import { useAuth } from '@/contexts/AuthContext';
+import { getBaseTimezone } from '@/lib/dateUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface TimeSlot {
   hour: number;

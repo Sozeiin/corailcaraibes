@@ -1,8 +1,8 @@
 import React from 'react';
 import { useDraggable } from '@dnd-kit/core';
 import { Clock, User, AlertTriangle, CheckCircle2, Play, Pause, Ship, Calendar, LogIn, LogOut, Car, Coffee } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatWithTz } from '@/lib/dateUtils';
 
 interface PlanningActivity {
   id: string;
@@ -39,6 +39,8 @@ interface PlanningActivityCardProps {
 }
 
 export function PlanningActivityCard({ activity, isDragging = false, onClick }: PlanningActivityCardProps) {
+  const { user } = useAuth();
+  const tz = user?.timezone;
   const {
     attributes,
     listeners,
@@ -98,7 +100,7 @@ export function PlanningActivityCard({ activity, isDragging = false, onClick }: 
         <div className="text-xs text-muted-foreground space-y-1">
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3" />
-            <span>{format(new Date(activity.scheduled_start), 'HH:mm')} - {format(new Date(activity.scheduled_end), 'HH:mm')}</span>
+            <span>{formatWithTz(activity.scheduled_start, tz, 'HH:mm')} - {formatWithTz(activity.scheduled_end, tz, 'HH:mm')}</span>
           </div>
           
           {activity.boat && (

@@ -7,6 +7,8 @@ import { User, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { PlanningActivityCard } from './PlanningActivityCard';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatWithTz, getBaseTimezone } from '@/lib/dateUtils';
 
 interface PlanningActivity {
   id: string;
@@ -46,6 +48,9 @@ interface ResourceViewProps {
 }
 
 export function ResourceView({ technicians, activities, onActivityClick }: ResourceViewProps) {
+  const { user } = useAuth();
+  const tz = getBaseTimezone(user?.timezone);
+
   const getTechnicianActivities = (technicianId: string) => {
     return activities.filter(activity => activity.technician_id === technicianId);
   };
@@ -205,8 +210,8 @@ export function ResourceView({ technicians, activities, onActivityClick }: Resou
                             <div className="space-y-1 text-xs text-muted-foreground">
                               <div className="flex items-center gap-2">
                                 <Clock className="w-3 h-3" />
-                                {format(new Date(activity.scheduled_start), 'HH:mm', { locale: fr })} - 
-                                {format(new Date(activity.scheduled_end), 'HH:mm', { locale: fr })}
+                                {formatWithTz(activity.scheduled_start, tz, 'HH:mm')} - 
+                                {formatWithTz(activity.scheduled_end, tz, 'HH:mm')}
                                 ({activity.estimated_duration} min)
                               </div>
                               

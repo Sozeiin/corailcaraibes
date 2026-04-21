@@ -6,6 +6,9 @@ import { Separator } from '@/components/ui/separator';
 import { Clock, User, Ship, Calendar } from 'lucide-react';
 import { format, isToday, isTomorrow, isYesterday, startOfDay, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatWithTz, getBaseTimezone } from '@/lib/dateUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface PlanningActivity {
   id: string;
@@ -38,11 +41,13 @@ interface ChronologicalViewProps {
 }
 
 export function ChronologicalView({ activities, onActivityClick }: ChronologicalViewProps) {
-  // Group activities by date
+  const { user } = useAuth();
+  const tz = getBaseTimezone(user?.timezone);
+
+  // Group activities by date in the base timezone
   const groupedActivities = activities.reduce((groups, activity) => {
-    const date = startOfDay(new Date(activity.scheduled_start));
-    const dateKey = date.toISOString();
-    
+    const dateKey = formatInTimeZone(new Date(activity.scheduled_start), tz, 'yyyy-MM-dd');
+
     if (!groups[dateKey]) {
       groups[dateKey] = [];
     }
@@ -51,16 +56,16 @@ export function ChronologicalView({ activities, onActivityClick }: Chronological
   }, {} as Record<string, PlanningActivity[]>);
 
   // Sort dates
-  const sortedDates = Object.keys(groupedActivities).sort((a, b) => 
-    new Date(a).getTime() - new Date(b).getTime()
-  );
+  const sortedDates = Object.keys(groupedActivities).sort();
 
   const getDateLabel = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (isToday(date)) return 'Aujourd\'hui';
-    if (isTomorrow(date)) return 'Demain';
-    if (isYesterday(date)) return 'Hier';
-    return format(date, 'EEEE dd MMMM yyyy', { locale: fr });
+    // dateStr is "yyyy-MM-dd" in base tz
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const localDate = new Date(y, m - 1, d);
+    if (isToday(localDate)) return 'Aujourd\'hui';
+    if (isTomorrow(localDate)) return 'Demain';
+    if (isYesterday(localDate)) return 'Hier';
+    return format(localDate, 'EEEE dd MMMM yyyy', { locale: fr });
   };
 
   const getActivityTypeLabel = (type: string) => {
@@ -121,7 +126,6 @@ export function ChronologicalView({ activities, onActivityClick }: Chronological
     <ScrollArea className="h-[calc(100vh-12rem)]">
       <div className="space-y-6 p-4">
         {sortedDates.map((dateKey) => {
-          const date = new Date(dateKey);
           const dayActivities = groupedActivities[dateKey].sort((a, b) => 
             new Date(a.scheduled_start).getTime() - new Date(b.scheduled_start).getTime()
           );
@@ -152,8 +156,8 @@ export function ChronologicalView({ activities, onActivityClick }: Chronological
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Clock className="w-4 h-4" />
-                              {format(new Date(activity.scheduled_start), 'HH:mm', { locale: fr })} - 
-                              {format(new Date(activity.scheduled_end), 'HH:mm', { locale: fr })}
+                              {formatWithTz(activity.scheduled_start, tz, 'HH:mm')} - 
+                              {formatWithTz(activity.scheduled_end, tz, 'HH:mm')}
                             </div>
                             <div className="flex items-center gap-1">
                               <span>{activity.estimated_duration} min</span>
