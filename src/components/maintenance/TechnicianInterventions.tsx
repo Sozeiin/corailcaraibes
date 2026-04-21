@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/table';
 import { Intervention } from '@/types';
 import { InterventionCompletionDialog } from './InterventionCompletionDialog';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 // Type pour les données de l'intervention depuis Supabase
 interface InterventionWithBoats {
