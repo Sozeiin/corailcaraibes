@@ -243,7 +243,7 @@ export function TechnicianInterventions() {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">
                         {intervention.scheduled_date ? 
-                          new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                          formatDateSafe(intervention.scheduled_date, user?.timezone) : 
                           'Non planifiée'
                         }
                       </span>
@@ -312,7 +312,7 @@ export function TechnicianInterventions() {
                         </TableCell>
                         <TableCell className="text-sm">
                           {intervention.scheduled_date ? 
-                            new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                            formatDateSafe(intervention.scheduled_date, user?.timezone) : 
                             'N/A'
                           }
                         </TableCell>
@@ -384,7 +384,7 @@ export function TechnicianInterventions() {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-gray-500">
                         {intervention.scheduled_date ? 
-                          new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                          formatDateSafe(intervention.scheduled_date, user?.timezone) : 
                           'Non planifiée'
                         }
                       </span>
@@ -436,7 +436,7 @@ export function TechnicianInterventions() {
                         </TableCell>
                         <TableCell className="text-sm">
                           {intervention.scheduled_date ? 
-                            new Date(intervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                            formatDateSafe(intervention.scheduled_date, user?.timezone) : 
                             'N/A'
                           }
                         </TableCell>
@@ -487,7 +487,7 @@ export function TechnicianInterventions() {
                   <label className="text-sm font-medium text-gray-700">Date programmée</label>
                   <p className="text-sm text-gray-900 mt-1">
                     {selectedIntervention.scheduled_date ? 
-                      new Date(selectedIntervention.scheduled_date).toLocaleDateString('fr-FR') : 
+                      formatDateSafe(selectedIntervention.scheduled_date, user?.timezone) : 
                       'Non planifiée'
                     }
                   </p>
@@ -498,7 +498,7 @@ export function TechnicianInterventions() {
                 <div>
                   <label className="text-sm font-medium text-gray-700">Date de fin</label>
                   <p className="text-sm text-gray-900 mt-1">
-                    {new Date(selectedIntervention.completed_date).toLocaleDateString('fr-FR')}
+                    {formatDateSafe(selectedIntervention.completed_date, user?.timezone)}
                   </p>
                 </div>
               )}
