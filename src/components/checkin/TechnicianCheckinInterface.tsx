@@ -44,19 +44,80 @@ export function TechnicianCheckinInterface() {
     toast.success('Brouillon supprimé');
   };
 
-  const handleResumeDraft = (draft: any) => {
-    // Navigate to the checkin process page - the form persistence will auto-restore from Supabase
-    const boatData = { id: draft.boat_id, name: draft.boat_name || 'Bateau' };
-    const rentalData = { customerName: draft.customer_name || 'Client' };
-    const checklistType = draft.checklist_type || 'checkin';
-    
-    navigate('/checkin-process', {
-      state: {
-        boat: boatData,
-        rentalData,
-        type: checklistType,
+  const handleResumeDraft = async (draft: any) => {
+    const checklistType: 'checkin' | 'checkout' = draft.checklist_type === 'checkout' ? 'checkout' : 'checkin';
+
+    try {
+      // Fetch the full boat record so the checklist form has all required fields
+      let boatData: any = { id: draft.boat_id, name: draft.boat_name || 'Bateau' };
+      if (draft.boat_id) {
+        const { data: boat } = await supabase
+          .from('boats')
+          .select('*')
+          .eq('id', draft.boat_id)
+          .maybeSingle();
+        if (boat) boatData = boat;
       }
-    });
+
+      // Build rental data: for check-out load the active rental, for check-in load the admin form
+      let rentalData: any = { customerName: draft.customer_name || 'Client' };
+
+      if (checklistType === 'checkout' && draft.boat_id) {
+        const { data: rental } = await supabase
+          .from('boat_rentals')
+          .select('*, customer:customers(*)')
+          .eq('boat_id', draft.boat_id)
+          .eq('status', 'confirmed')
+          .order('start_date', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (rental) {
+          rentalData = {
+            id: rental.id,
+            boatId: rental.boat_id,
+            customerName: rental.customer_name || draft.customer_name || 'Client',
+            customerEmail: rental.customer_email || '',
+            customerPhone: rental.customer_phone || '',
+            startDate: rental.start_date,
+            endDate: rental.end_date,
+            totalAmount: rental.total_amount || 0,
+            notes: rental.notes,
+          };
+        }
+      } else if (checklistType === 'checkin' && draft.boat_id) {
+        const { data: form } = await supabase
+          .from('administrative_checkin_forms')
+          .select('*, customer:customers(*)')
+          .eq('boat_id', draft.boat_id)
+          .eq('status', 'ready')
+          .order('planned_start_date', { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (form) {
+          const customer: any = (form as any).customer;
+          rentalData = {
+            boatId: form.boat_id,
+            customerName: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : draft.customer_name || 'Client',
+            customerEmail: customer?.email || '',
+            customerPhone: customer?.phone || '',
+            startDate: form.planned_start_date,
+            endDate: form.planned_end_date,
+            notes: form.rental_notes || form.special_instructions,
+          };
+        }
+      }
+
+      navigate('/checkin-process', {
+        state: {
+          boat: boatData,
+          rentalData,
+          type: checklistType,
+        },
+      });
+    } catch (e) {
+      console.error('Error resuming draft:', e);
+      toast.error('Impossible de reprendre le brouillon');
+    }
   };
 
   // Fetch boats with ready forms (Check-in mode)
