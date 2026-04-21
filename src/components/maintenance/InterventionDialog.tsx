@@ -36,6 +36,7 @@ import { Intervention, Boat, Base } from '@/types';
 import { InterventionPartsManager, InterventionPart } from './InterventionPartsManager';
 import { useNotifications } from '@/hooks/useNotifications';
 import { Gauge, Wrench } from 'lucide-react';
+import { getLocalDateString, formatDateSafe } from '@/lib/dateUtils';
 
 interface InterventionDialogProps {
   isOpen: boolean;
@@ -213,7 +214,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
         boatId: defaultBoatId || '',
         technicianId: '',
         status: 'scheduled',
-        scheduledDate: new Date().toISOString().split('T')[0],
+        scheduledDate: getLocalDateString(user?.timezone),
         baseId: user?.baseId || '',
         interventionType: 'maintenance'
       });
@@ -262,7 +263,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
         technician_id: data.technicianId || null,
         status: data.status as 'scheduled' | 'in_progress' | 'completed' | 'cancelled',
         scheduled_date: data.scheduledDate,
-        completed_date: data.status === 'completed' ? new Date().toISOString().split('T')[0] : null,
+        completed_date: data.status === 'completed' ? getLocalDateString(user?.timezone) : null,
         base_id: data.baseId || null,
         intervention_type: data.interventionType
       };
@@ -337,7 +338,7 @@ export function InterventionDialog({ isOpen, onClose, intervention, defaultBoatI
             user_id: data.technicianId,
             type: 'intervention_assigned',
             title: 'Nouvelle intervention assignée',
-            message: `Une intervention "${data.title}" vous a été assignée pour le ${boatName}. Date prévue: ${new Date(data.scheduledDate).toLocaleDateString('fr-FR')}`,
+            message: `Une intervention "${data.title}" vous a été assignée pour le ${boatName}. Date prévue: ${formatDateSafe(data.scheduledDate, user?.timezone)}`,
             data: {
               intervention_id: interventionId,
               boat_id: data.boatId,

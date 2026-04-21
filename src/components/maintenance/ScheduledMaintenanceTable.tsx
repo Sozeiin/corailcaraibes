@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDateSafe } from '@/lib/dateUtils';
 
 interface ScheduledMaintenance {
   id: string;
@@ -47,6 +49,8 @@ const statusLabels = {
 
 export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, onInterventionCreated }: ScheduledMaintenanceTableProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
+  const tz = user?.timezone;
 
   const createInterventionFromSchedule = async (maintenance: ScheduledMaintenance) => {
     try {
@@ -184,7 +188,7 @@ export function ScheduledMaintenanceTable({ maintenances, isLoading, canManage, 
                 )}
               </TableCell>
               <TableCell>
-                {new Date(maintenance.scheduledDate).toLocaleDateString('fr-FR')}
+                {formatDateSafe(maintenance.scheduledDate, tz)}
               </TableCell>
               {canManage && (
                 <TableCell className="text-right">

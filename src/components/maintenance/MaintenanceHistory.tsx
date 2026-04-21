@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { InterventionTable } from '@/components/maintenance/InterventionTable';
 import { DatePickerWithRange, type DateRange } from '@/components/ui/date-range-picker';
+import { format } from 'date-fns';
 
 export function MaintenanceHistory() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,13 +29,13 @@ export function MaintenanceHistory() {
       if (dateRange?.from) {
         query = query.gte(
           'completed_date',
-          dateRange.from.toISOString().split('T')[0]
+          format(dateRange.from, 'yyyy-MM-dd')
         );
       }
       if (dateRange?.to) {
         query = query.lte(
           'completed_date',
-          dateRange.to.toISOString().split('T')[0]
+          format(dateRange.to, 'yyyy-MM-dd')
         );
       }
 

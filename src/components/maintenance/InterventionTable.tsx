@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Intervention } from '@/types';
 import { formatDateSafe } from '@/lib/dateUtils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface InterventionTableProps {
   interventions: Intervention[];
@@ -49,6 +50,8 @@ export function InterventionTable({
   canManage, 
   showHistory = false 
 }: InterventionTableProps) {
+  const { user } = useAuth();
+  const tz = user?.timezone;
   if (isLoading) {
     return (
       <div className="p-8">
@@ -124,7 +127,7 @@ export function InterventionTable({
                 <div className="flex items-center gap-1 text-sm">
                   <Calendar className="h-3 w-3" />
                   {intervention.scheduledDate 
-                    ? formatDateSafe(intervention.scheduledDate)
+                    ? formatDateSafe(intervention.scheduledDate, tz)
                     : '-'
                   }
                 </div>
@@ -132,7 +135,7 @@ export function InterventionTable({
               {showHistory && (
                 <TableCell>
                   {intervention.completedDate 
-                    ? formatDateSafe(intervention.completedDate)
+                    ? formatDateSafe(intervention.completedDate, tz)
                     : '-'
                   }
                 </TableCell>

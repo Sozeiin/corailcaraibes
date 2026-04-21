@@ -18,6 +18,9 @@ import {
   subMonths
 } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatWithTz, getBaseTimezone } from '@/lib/dateUtils';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface PlanningActivity {
   id: string;
@@ -51,6 +54,8 @@ interface MonthlyViewProps {
 
 export function MonthlyView({ activities, onActivityClick }: MonthlyViewProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { user } = useAuth();
+  const tz = getBaseTimezone(user?.timezone);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
@@ -63,8 +68,9 @@ export function MonthlyView({ activities, onActivityClick }: MonthlyViewProps) {
   });
 
   const getActivitiesForDay = (day: Date) => {
+    const dayStr = format(day, 'yyyy-MM-dd');
     return activities.filter(activity =>
-      isSameDay(new Date(activity.scheduled_start), day)
+      formatInTimeZone(new Date(activity.scheduled_start), tz, 'yyyy-MM-dd') === dayStr
     );
   };
 
@@ -145,12 +151,12 @@ export function MonthlyView({ activities, onActivityClick }: MonthlyViewProps) {
                           className="text-xs p-1 rounded cursor-pointer hover:opacity-80 transition-opacity truncate"
                           style={{ backgroundColor: `${activity.color_code}20`, borderLeft: `3px solid ${activity.color_code}` }}
                           onClick={() => onActivityClick(activity)}
-                          title={`${activity.title} - ${format(new Date(activity.scheduled_start), 'HH:mm', { locale: fr })}`}
+                          title={`${activity.title} - ${formatWithTz(activity.scheduled_start, tz, 'HH:mm')}`}
                         >
                           <div className="font-medium truncate">{activity.title}</div>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="w-2 h-2" />
-                            {format(new Date(activity.scheduled_start), 'HH:mm', { locale: fr })}
+                            {formatWithTz(activity.scheduled_start, tz, 'HH:mm')}
                           </div>
                         </div>
                       ))}

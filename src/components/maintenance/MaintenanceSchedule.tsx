@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getLocalDateString } from '@/lib/dateUtils';
 
 export function MaintenanceSchedule() {
   const { user } = useAuth();
@@ -17,8 +18,6 @@ export function MaintenanceSchedule() {
       const startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
       const endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
 
-      
-
       const { data, error } = await supabase
         .from('interventions')
         .select(`
@@ -26,8 +25,8 @@ export function MaintenanceSchedule() {
           boats(name, model),
           profiles(name)
         `)
-        .gte('scheduled_date', startDate.toISOString().split('T')[0])
-        .lte('scheduled_date', endDate.toISOString().split('T')[0])
+        .gte('scheduled_date', format(startDate, 'yyyy-MM-dd'))
+        .lte('scheduled_date', format(endDate, 'yyyy-MM-dd'))
         .order('scheduled_date');
 
       if (error) {
@@ -113,7 +112,7 @@ export function MaintenanceSchedule() {
     const date = addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), i);
     return {
       date,
-      dateString: date.toISOString().split('T')[0],
+      dateString: format(date, 'yyyy-MM-dd'),
       dayName: format(date, 'EEEE', { locale: fr }),
       dayNumber: format(date, 'd', { locale: fr })
     };
