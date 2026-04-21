@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { EditFormDialog } from "./EditFormDialog";
 import { AdministrativeCheckinFormWithRelations } from "@/types/checkin";
 import { toast } from "sonner";
+import { formatDateInTimezone } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
