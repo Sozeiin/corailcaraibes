@@ -4,7 +4,7 @@ import { PermissionGate } from '@/components/auth/PermissionGate';
 import { ChecklistForm } from '@/components/checkin/ChecklistForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { LogIn, ArrowLeft } from 'lucide-react';
+import { LogIn, LogOut, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ interface CheckInProcessState {
   destinationBaseId?: string;
   baseId?: string;
   boatId?: string;
+  type?: 'checkin' | 'checkout';
 }
 
 export default function CheckInProcess() {
@@ -24,6 +25,10 @@ export default function CheckInProcess() {
   const location = useLocation();
   const { user } = useAuth();
   const state = (location.state || {}) as CheckInProcessState;
+
+  // Use the type from state, defaulting to 'checkin' if not provided
+  const checklistType: 'checkin' | 'checkout' = state.type === 'checkout' ? 'checkout' : 'checkin';
+  const isCheckin = checklistType === 'checkin';
 
   React.useEffect(() => {
     if (!state?.boat || !state?.rentalData) {
@@ -37,8 +42,8 @@ export default function CheckInProcess() {
       return;
     }
 
-    // Mark the administrative form as used
-    if (state.formId) {
+    // Mark the administrative form as used (only on check-in)
+    if (isCheckin && state.formId) {
       const { error: formError } = await supabase
         .from('administrative_checkin_forms')
         .update({
@@ -53,7 +58,7 @@ export default function CheckInProcess() {
         toast.error('Erreur lors de la mise à jour du formulaire');
       }
 
-      // ONE WAY: transfer boat to destination base immediately (via SECURITY DEFINER RPC)
+      // ONE WAY: transfer boat to destination base immediately (only on check-in)
       if (state.isOneWay && state.destinationBaseId && state.boatId && state.baseId) {
         const { error: transferError } = await supabase.rpc('handle_one_way_checkin_transfer', {
           p_boat_id: state.boatId,
@@ -84,6 +89,9 @@ export default function CheckInProcess() {
     return null;
   }
 
+  const Icon = isCheckin ? LogIn : LogOut;
+  const title = isCheckin ? 'Check-in du bateau' : 'Check-out du bateau';
+
   return (
     <PermissionGate page="dashboard">
       <div className="container mx-auto p-6 space-y-6">
@@ -99,8 +107,8 @@ export default function CheckInProcess() {
             </Button>
             <div>
               <div className="flex items-center gap-2">
-                <LogIn className="h-6 w-6" />
-                <h1 className="text-2xl font-bold">Check-in du bateau</h1>
+                <Icon className="h-6 w-6" />
+                <h1 className="text-2xl font-bold">{title}</h1>
               </div>
               <p className="text-sm text-muted-foreground">
                 {state.boat?.name} • {state.rentalData?.customerName || 'Client non renseigné'}
@@ -114,7 +122,7 @@ export default function CheckInProcess() {
             <ChecklistForm
               boat={state.boat}
               rentalData={state.rentalData}
-              type="checkin"
+              type={checklistType}
               onComplete={handleChecklistComplete}
             />
           </CardContent>

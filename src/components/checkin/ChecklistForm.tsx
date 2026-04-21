@@ -725,9 +725,15 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         console.log('⚠️ [DEBUG] Email non envoyé car:', { sendEmailReport, customerEmail });
       }
 
-      // Nettoyer les données après soumission
-      clearFormDraft();
-      clearSignatures();
+      // Nettoyer les données SEULEMENT après que la checklist a été créée avec succès en DB
+      // (on est ici uniquement si createChecklistMutation.mutateAsync a réussi plus haut)
+      try {
+        await clearFormDraft();
+        await clearSignatures();
+        console.log('🗑️ [CHECKLIST] Brouillon supprimé après finalisation réussie');
+      } catch (clearError) {
+        console.error('⚠️ [CHECKLIST] Erreur suppression brouillon (non bloquant):', clearError);
+      }
 
       toast({
         title: 'Checklist complète',

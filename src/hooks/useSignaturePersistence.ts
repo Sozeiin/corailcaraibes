@@ -14,7 +14,8 @@ export function useSignaturePersistence(
   isOpen: boolean,
   onRestoreSignatures?: (signatures: { technicianSignature?: string; customerSignature?: string }) => void
 ) {
-  const dbFormKey = `checklist_${formKey.replace('checklist_', '')}`;
+  // Use formKey directly — it already includes _checkin or _checkout suffix
+  const dbFormKey = formKey;
   const hasTriedRestoreRef = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
   const isSavingRef = useRef(false);
