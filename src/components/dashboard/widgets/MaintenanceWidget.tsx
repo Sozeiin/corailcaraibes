@@ -67,11 +67,11 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base font-medium flex items-center justify-between">
-          <span className="flex items-center gap-2">
+        <CardTitle className="text-base font-medium flex items-center justify-between gap-2 flex-wrap">
+          <span className="flex items-center gap-2 flex-wrap">
             {config.title}
-            <Badge variant="outline" className="text-[10px] font-normal">
-              heure {timezoneLabel(tz)}
+            <Badge variant="secondary" className="text-xs font-normal bg-primary/10 text-primary border-primary/20">
+              🕐 heure {timezoneLabel(tz)}
             </Badge>
           </span>
           <Badge variant="secondary" className="text-xs">

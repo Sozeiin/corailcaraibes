@@ -238,11 +238,11 @@ export const BoatFlowWidget = ({ config }: WidgetProps) => {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base font-medium flex items-center gap-2">
+        <CardTitle className="text-base font-medium flex items-center gap-2 flex-wrap">
           <Ship className="h-4 w-4" />
           {config.title}
-          <Badge variant="outline" className="text-[10px] font-normal ml-auto">
-            heure {timezoneLabel(user?.timezone)}
+          <Badge variant="secondary" className="text-xs font-normal bg-primary/10 text-primary border-primary/20 ml-auto">
+            🕐 heure {timezoneLabel(user?.timezone)}
           </Badge>
         </CardTitle>
       </CardHeader>
