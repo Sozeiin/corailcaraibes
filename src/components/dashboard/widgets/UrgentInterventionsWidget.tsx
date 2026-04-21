@@ -112,11 +112,11 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
   return (
     <Card className="h-full">
       <CardHeader>
-        <CardTitle className="text-base font-medium flex items-center gap-2">
+        <CardTitle className="text-base font-medium flex items-center gap-2 flex-wrap">
           <Zap className="h-4 w-4" />
           {config.title}
-          <Badge variant="outline" className="text-[10px] font-normal">
-            heure {timezoneLabel(user?.timezone)}
+          <Badge variant="secondary" className="text-xs font-normal bg-primary/10 text-primary border-primary/20">
+            🕐 heure {timezoneLabel(user?.timezone)}
           </Badge>
           <Badge variant="outline" className="ml-auto">
             {urgentInterventions.length}
