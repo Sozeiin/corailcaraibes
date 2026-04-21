@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { getLocalDateString, formatDateInTimezone } from '@/lib/dateUtils';
 
 export const BoatFlowWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
@@ -28,15 +29,17 @@ export const BoatFlowWidget = ({ config }: WidgetProps) => {
     if (dashboardData.loading) return null;
 
     const { boats } = dashboardData;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const tz = user?.timezone;
+    const todayYmd = getLocalDateString(tz);
 
     // Simulate returning boats and preparation orders based on boat status
     const returningBoats = boats.filter(b => b.status === 'rented').length;
     const preparationsInProgress = boats.filter(b => b.status === 'maintenance').length;
     const readyBoats = boats.filter(b => b.status === 'available').length;
-    const overduePreparations = boats.filter(b => 
-      b.status === 'maintenance' && b.next_maintenance && new Date(b.next_maintenance) < today
+    const overduePreparations = boats.filter(b =>
+      b.status === 'maintenance' &&
+      b.next_maintenance &&
+      formatDateInTimezone(b.next_maintenance, tz, 'yyyy-MM-dd') < todayYmd
     ).length;
 
     return {

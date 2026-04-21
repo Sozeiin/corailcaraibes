@@ -11,8 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { PreparationOrder } from '@/hooks/usePreparationOrders';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatWithTz } from '@/lib/dateUtils';
 
 interface PreparationOrdersTableProps {
   orders: PreparationOrder[];
@@ -177,10 +176,10 @@ export function PreparationOrdersTable({
                 <TableCell>
                   {order.planning_activity?.scheduled_start ? (
                     <div className="text-sm">
-                      <div>{format(new Date(order.planning_activity.scheduled_start), 'dd/MM/yyyy', { locale: fr })}</div>
+                      <div>{formatWithTz(order.planning_activity.scheduled_start, user?.timezone, 'dd/MM/yyyy')}</div>
                       <div className="text-muted-foreground">
-                        {format(new Date(order.planning_activity.scheduled_start), 'HH:mm', { locale: fr })} - 
-                        {order.planning_activity.scheduled_end && format(new Date(order.planning_activity.scheduled_end), 'HH:mm', { locale: fr })}
+                        {formatWithTz(order.planning_activity.scheduled_start, user?.timezone, 'HH:mm')} - 
+                        {order.planning_activity.scheduled_end && formatWithTz(order.planning_activity.scheduled_end, user?.timezone, 'HH:mm')}
                       </div>
                     </div>
                   ) : (
@@ -193,7 +192,7 @@ export function PreparationOrdersTable({
                   </span>
                 </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {format(new Date(order.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                  {formatWithTz(order.created_at, user?.timezone, 'dd/MM/yyyy HH:mm')}
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>

@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { Wrench, Ship, Scan, Eye, Anchor } from 'lucide-react';
 import { TechnicianPlanningView } from './TechnicianPlanningView';
+import { formatWithTz } from '@/lib/dateUtils';
+import { fr } from 'date-fns/locale';
 export function TechnicianDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -27,9 +27,7 @@ export function TechnicianDashboard() {
             </Button>
             <div className="text-center">
               <p className="text-base text-marine-200">
-                {format(new Date(), 'EEEE dd MMMM yyyy', {
-                locale: fr
-              })}
+                {formatWithTz(new Date(), user?.timezone, "EEEE dd MMMM yyyy")}
               </p>
             </div>
           </div>

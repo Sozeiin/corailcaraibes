@@ -6,9 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { format, addDays, subDays, isSameDay, isToday } from 'date-fns';
+import { addDays, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Clock, Ship, Wrench, AlertTriangle, CheckCircle2, Calendar, Eye } from 'lucide-react';
+import { formatWithTz, getLocalDateString } from '@/lib/dateUtils';
 import { InterventionCompletionDialog } from '@/components/maintenance/InterventionCompletionDialog';
 import { PreparationChecklistDialog } from '@/components/preparation/PreparationChecklistDialog';
 import { toast } from 'sonner';
@@ -39,12 +40,13 @@ interface TaskDetailsModalProps {
   onCompleteIntervention: (task: TechnicianTask) => void;
   onOpenChecklist: (task: TechnicianTask) => void;
 }
-const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
+const TaskDetailsModal: React.FC<TaskDetailsModalProps & { tz?: string }> = ({
   isOpen,
   onClose,
   task,
   onCompleteIntervention,
-  onOpenChecklist
+  onOpenChecklist,
+  tz
 }) => {
   if (!isOpen || !task) return null;
   const isIntervention = task.type === 'intervention';
@@ -63,7 +65,7 @@ const TaskDetailsModal: React.FC<TaskDetailsModalProps> = ({
           <div className="space-y-2">
             <p><strong>Type:</strong> {isIntervention ? 'Intervention' : 'Préparation'}</p>
             <p><strong>Bateau:</strong> {task.boat?.name} {task.boat?.model}</p>
-            <p><strong>Horaire:</strong> {format(new Date(task.scheduled_start), 'HH:mm')} - {format(new Date(task.scheduled_end), 'HH:mm')}</p>
+            <p><strong>Horaire:</strong> {formatWithTz(task.scheduled_start, tz, 'HH:mm')} - {formatWithTz(task.scheduled_end, tz, 'HH:mm')}</p>
             <p><strong>Statut:</strong> 
               <Badge variant="outline" className="ml-2">
                 {task.status === 'planned' ? 'Planifié' : task.status === 'in_progress' ? 'En cours' : task.status === 'completed' ? 'Terminé' : task.status}
@@ -112,10 +114,11 @@ export function TechnicianPlanningView() {
     queryKey: ['technician-planning', user?.id, currentDay],
     queryFn: async () => {
       if (!user?.id) return [];
-      const dayStart = new Date(currentDay);
-      dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(currentDay);
-      dayEnd.setHours(23, 59, 59, 999);
+      // Day boundaries en fuseau de la base de l'utilisateur
+      const tz = user.timezone;
+      const dayYmd = formatWithTz(currentDay, tz, 'yyyy-MM-dd');
+      const dayStart = new Date(`${dayYmd}T00:00:00`);
+      const dayEnd = new Date(`${dayYmd}T23:59:59`);
 
       // Fetch interventions
       const {
@@ -124,7 +127,7 @@ export function TechnicianPlanningView() {
       } = await supabase.from('interventions').select(`
           id, title, description, scheduled_date, scheduled_time, status, intervention_type,
           boats(id, name, model)
-        `).eq('technician_id', user.id).eq('scheduled_date', currentDay.toISOString().split('T')[0]).order('scheduled_date');
+        `).eq('technician_id', user.id).eq('scheduled_date', dayYmd).order('scheduled_date');
       if (interventionsError) throw interventionsError;
 
       // Fetch preparations (exclude completed ones and those with 'ready' checklist status)
@@ -312,11 +315,9 @@ export function TechnicianPlanningView() {
           <div className="flex items-center gap-4">
             <div>
               <p className="text-lg font-semibold">
-                {format(currentDay, 'EEEE d MMMM yyyy', {
-                locale: fr
-              })}
+                {formatWithTz(currentDay, user?.timezone, 'EEEE d MMMM yyyy')}
               </p>
-              {isToday(currentDay) && <Badge variant="default" className="text-xs mt-1">Aujourd'hui</Badge>}
+              {formatWithTz(currentDay, user?.timezone, 'yyyy-MM-dd') === getLocalDateString(user?.timezone) && <Badge variant="default" className="text-xs mt-1">Aujourd'hui</Badge>}
             </div>
             <div className="text-sm text-muted-foreground">
               {sortedTasks.length} tâche{sortedTasks.length !== 1 ? 's' : ''} planifiée{sortedTasks.length !== 1 ? 's' : ''}
@@ -355,7 +356,7 @@ export function TechnicianPlanningView() {
                         <div className="flex flex-col items-end gap-2 ml-4">
                           {getStatusBadge(task.status, task.type)}
                           <div className="text-sm text-muted-foreground">
-                            {format(new Date(task.scheduled_start), 'HH:mm')} - {format(new Date(task.scheduled_end), 'HH:mm')}
+                            {formatWithTz(task.scheduled_start, user?.timezone, 'HH:mm')} - {formatWithTz(task.scheduled_end, user?.timezone, 'HH:mm')}
                           </div>
                         </div>
                       </div>
@@ -383,7 +384,7 @@ export function TechnicianPlanningView() {
       </Card>
 
       {/* Modal détails tâche */}
-      <TaskDetailsModal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} task={selectedTask} onCompleteIntervention={handleCompleteIntervention} onOpenChecklist={handleOpenChecklist} />
+      <TaskDetailsModal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} task={selectedTask} onCompleteIntervention={handleCompleteIntervention} onOpenChecklist={handleOpenChecklist} tz={user?.timezone} />
 
       {/* Dialog completion intervention */}
       {interventionToComplete && <InterventionCompletionDialog isOpen={showCompletionDialog} onClose={() => {

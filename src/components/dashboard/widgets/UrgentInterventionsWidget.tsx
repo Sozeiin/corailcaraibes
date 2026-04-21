@@ -10,6 +10,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
+import { getLocalDateString, formatDateInTimezone } from '@/lib/dateUtils';
 
 export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
@@ -30,8 +31,10 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
       )
       .map(intervention => {
         const boat = boats.find(b => b.id === intervention.boat_id);
-        const isOverdue = intervention.scheduled_date && 
-          new Date(intervention.scheduled_date) < new Date();
+        const tz = user?.timezone;
+        const todayYmd = getLocalDateString(tz);
+        const isOverdue = intervention.scheduled_date &&
+          formatDateInTimezone(intervention.scheduled_date, tz, 'yyyy-MM-dd') < todayYmd;
         
         return {
           ...intervention,

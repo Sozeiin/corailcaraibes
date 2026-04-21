@@ -9,8 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar, User, Anchor, Play, LogIn, LogOut, FileEdit, Trash2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { formatWithTz } from '@/lib/dateUtils';
 import { CheckinDialog } from './CheckinDialog';
 import { AdministrativeCheckinFormWithRelations } from '@/types/checkin';
 import { useNavigate } from 'react-router-dom';
@@ -417,7 +416,7 @@ export function TechnicianCheckinInterface() {
                     </div>
                     <p className="text-sm text-muted-foreground">
                       {draft.customer_name || 'Client non renseigné'} • 
-                      Modifié {draft.updated_at ? format(new Date(draft.updated_at), " d MMM à HH:mm", { locale: fr }) : ''}
+                      Modifié {draft.updated_at ? formatWithTz(draft.updated_at, user?.timezone, "d MMM 'à' HH:mm") : ''}
                     </p>
                   </div>
                   <div className="flex gap-2 ml-4">
@@ -578,9 +577,9 @@ export function TechnicianCheckinInterface() {
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="h-4 w-4" />
                               <span>
-                                {format(new Date(form.planned_start_date), 'dd MMM', { locale: fr })}
+                                {formatWithTz(form.planned_start_date, user?.timezone, 'dd MMM')}
                                 {' → '}
-                                {format(new Date(form.planned_end_date), 'dd MMM yyyy', { locale: fr })}
+                                {formatWithTz(form.planned_end_date, user?.timezone, 'dd MMM yyyy')}
                               </span>
                             </div>
 
@@ -636,9 +635,9 @@ export function TechnicianCheckinInterface() {
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="h-4 w-4" />
                               <span>
-                                {format(new Date(rental.start_date), 'dd MMM', { locale: fr })}
+                                {formatWithTz(rental.start_date, user?.timezone, 'dd MMM')}
                                 {' → '}
-                                {format(new Date(rental.end_date), 'dd MMM yyyy', { locale: fr })}
+                                {formatWithTz(rental.end_date, user?.timezone, 'dd MMM yyyy')}
                               </span>
                             </div>
 

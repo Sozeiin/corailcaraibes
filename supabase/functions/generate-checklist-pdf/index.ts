@@ -54,7 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('boat_checklists')
       .select(`
         *,
-        boats(name, model, serial_number, year),
+        boats(name, model, serial_number, year, base_id),
         technician:profiles!boat_checklists_technician_id_fkey(name, email)
       `)
       .eq('id', checklistId)
@@ -67,6 +67,18 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // Resolve the base timezone for this boat (Martinique / Guadeloupe / Paris...)
+    let baseTimezone = 'America/Martinique';
+    if (checklistData?.boats?.base_id) {
+      const { data: baseRow } = await supabase
+        .from('bases')
+        .select('timezone')
+        .eq('id', checklistData.boats.base_id)
+        .maybeSingle();
+      if (baseRow?.timezone) baseTimezone = baseRow.timezone;
+    }
+    console.log('🌍 Using base timezone:', baseTimezone);
 
     // Get all checklist items separately to avoid nesting issues
     console.log('📋 Fetching checklist items...');
@@ -144,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log('- Has customer signature:', !!checklist.customer_signature);
 
     // Instead of generating a PDF, return comprehensive HTML that can be printed as PDF
-    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type);
+    const printableHTML = generatePrintableHTML(checklist, customerName || rentalData?.customer_name || 'Client', type, baseTimezone);
     
     console.log('✅ HTML generated, length:', printableHTML.length);
 
@@ -193,13 +205,41 @@ async function fetchImageAsBase64(url: string): Promise<string | null> {
   }
 }
 
-function generatePrintableHTML(checklist: any, customerName: string, type: string): string {
+function timezoneLabel(tz: string): string {
+  switch (tz) {
+    case 'America/Martinique': return 'Martinique';
+    case 'America/Guadeloupe': return 'Guadeloupe';
+    case 'Europe/Paris': return 'Paris';
+    default: return tz.split('/').pop() || tz;
+  }
+}
+
+function fmtDateInTz(date: Date | string | null | undefined, tz: string): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', { timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+}
+
+function fmtDateTimeInTz(date: Date | string | null | undefined, tz: string): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', {
+    timeZone: tz,
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).format(d);
+}
+
+function generatePrintableHTML(checklist: any, customerName: string, type: string, baseTimezone: string = 'America/Martinique'): string {
   const boatName = checklist.boats?.name || 'Bateau inconnu';
   const technicianName = checklist.technician?.name || 'Technicien inconnu';
-  const checklistDate = new Date(checklist.checklist_date).toLocaleDateString('fr-FR');
+  const checklistDate = fmtDateInTz(checklist.checklist_date, baseTimezone);
+  const tzLabel = timezoneLabel(baseTimezone);
   const reportTitle = type === 'checkin' ? 'Rapport de Check-in' : 'Rapport de Check-out';
 
-  console.log('🔧 Starting HTML generation...');
+  console.log('🔧 Starting HTML generation in timezone', baseTimezone);
   console.log('📦 Checklist items received:', checklist.boat_checklist_items?.length || 0);
 
   // Group items by category with detailed logging
@@ -500,7 +540,7 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
       <div class="container">
         <div class="header">
           <h1>${reportTitle}</h1>
-          <p>Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+          <p>Généré le ${fmtDateTimeInTz(new Date(), baseTimezone)} (heure ${tzLabel})</p>
         </div>
         
         <div class="info-section">
@@ -510,7 +550,7 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
               <p><strong>Nom :</strong> ${customerName}</p>
               <p><strong>Email :</strong> ${checklist.rental?.customer_email || 'Non renseigné'}</p>
               ${checklist.rental ? `
-                <p><strong>Période :</strong> ${new Date(checklist.rental.start_date).toLocaleDateString('fr-FR')} - ${new Date(checklist.rental.end_date).toLocaleDateString('fr-FR')}</p>
+                <p><strong>Période :</strong> ${fmtDateInTz(checklist.rental.start_date, baseTimezone)} - ${fmtDateInTz(checklist.rental.end_date, baseTimezone)}</p>
               ` : ''}
             </div>
             
@@ -524,7 +564,7 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
             
             <div class="info-card">
               <h3>🔍 Informations Inspection</h3>
-              <p><strong>Date :</strong> ${checklistDate}</p>
+              <p><strong>Date :</strong> ${checklistDate} <span style="color:#6b7280;">(heure ${tzLabel})</span></p>
               <p><strong>Technicien :</strong> ${technicianName}</p>
               <p><strong>Type :</strong> ${type === 'checkin' ? 'Check-in' : 'Check-out'}</p>
             </div>
@@ -620,14 +660,14 @@ function generatePrintableHTML(checklist: any, customerName: string, type: strin
         
         ${checklist.signature_date ? `
           <p style="text-align: center; margin-top: 20px; color: #6b7280; font-size: 12px; font-weight: 500;">
-            📅 Document signé le ${new Date(checklist.signature_date).toLocaleDateString('fr-FR')}
+            📅 Document signé le ${fmtDateTimeInTz(checklist.signature_date, baseTimezone)} (heure ${tzLabel})
           </p>
         ` : ''}
         
         <div class="footer">
           <p><strong>Ce rapport a été généré automatiquement par le système de gestion marina</strong></p>
           <p>ID Checklist: ${checklist.id} | Type: ${type.toUpperCase()} | ${checklist.boat_checklist_items?.length || 0} items vérifiés</p>
-          <p>Généré le ${new Date().toLocaleString('fr-FR')}</p>
+          <p>Généré le ${fmtDateTimeInTz(new Date(), baseTimezone)} (heure ${tzLabel})</p>
         </div>
       </div>
     </body>

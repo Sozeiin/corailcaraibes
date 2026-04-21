@@ -4,9 +4,13 @@ import { WidgetProps } from '@/types/widget';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDateInTimezone } from '@/lib/dateUtils';
 
 export const AlertsWidget = ({ config }: WidgetProps) => {
   const dashboardData = useDashboardData();
+  const { user } = useAuth();
+  const tz = user?.timezone;
 
   const recentAlerts = useMemo(() => {
     if (dashboardData.loading || !dashboardData.alerts) return [];
@@ -74,12 +78,7 @@ export const AlertsWidget = ({ config }: WidgetProps) => {
                     {alert.message}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {new Date(alert.created_at).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
+                    {formatDateInTimezone(alert.created_at, tz, 'dd/MM HH:mm')}
                   </p>
                 </div>
               </div>
