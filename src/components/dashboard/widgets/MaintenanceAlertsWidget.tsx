@@ -8,23 +8,28 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Wrench, Calendar, ExternalLink, Zap } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
+import { formatDateInTimezone, getLocalDateString } from '@/lib/dateUtils';
 
 export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
   const dashboardData = useDashboardData();
   const [showInterventionDialog, setShowInterventionDialog] = useState(false);
 
+  const tz = user?.timezone;
+
   const alerts = useMemo(() => {
     if (dashboardData.loading) return [];
 
     const { boats } = dashboardData;
-    const today = new Date();
-    
+    const todayYmd = getLocalDateString(tz);
+    const todayMs = new Date(todayYmd + 'T00:00:00Z').getTime();
+
     return boats
       .filter(boat => boat.next_maintenance)
       .map(boat => {
-        const nextMaintenance = parseISO(boat.next_maintenance);
-        const daysUntil = differenceInDays(nextMaintenance, today);
+        const targetYmd = formatDateInTimezone(boat.next_maintenance, tz, 'yyyy-MM-dd');
+        const targetMs = new Date(targetYmd + 'T00:00:00Z').getTime();
+        const daysUntil = Math.round((targetMs - todayMs) / (1000 * 3600 * 24));
         
         let priority: 'critical' | 'warning' | 'info' = 'info';
         if (daysUntil < 0) priority = 'critical';
@@ -113,7 +118,7 @@ export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
                   </Badge>
                   <p className="text-xs text-muted-foreground mt-1">
                     <Calendar className="h-3 w-3 inline mr-1" />
-                    {new Date(alert.nextMaintenance).toLocaleDateString()}
+                    {formatDateInTimezone(alert.nextMaintenance, tz)}
                   </p>
                 </div>
                 <Button size="sm" variant="ghost" className="h-6 w-6 p-0">

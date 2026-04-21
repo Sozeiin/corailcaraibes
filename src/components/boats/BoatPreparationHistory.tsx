@@ -15,6 +15,8 @@ import {
   Clock,
   XCircle
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDateInTimezone, formatDateTimeInTimezone } from '@/lib/dateUtils';
 
 interface BoatPreparationHistoryProps {
   boatId: string;
@@ -36,6 +38,8 @@ interface PreparationHistoryItem {
 }
 
 export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) => {
+  const { user } = useAuth();
+  const tz = user?.timezone;
   const [selectedPreparation, setSelectedPreparation] = useState<string | null>(null);
   const [checklistDialogOpen, setChecklistDialogOpen] = useState(false);
 
@@ -165,7 +169,7 @@ export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) 
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-4 w-4" />
                           <span>
-                            {new Date(preparation.created_at).toLocaleDateString()}
+                            {formatDateInTimezone(preparation.created_at, tz)}
                           </span>
                         </div>
                         {(preparation.technician || (preparation as any).technician_name) && (
@@ -200,8 +204,8 @@ export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) 
                     <div className="text-sm text-muted-foreground">
                       <div className="flex items-center justify-between">
                         <span>
-                          Programmée du {new Date(preparation.planning_activity.scheduled_start).toLocaleString()} 
-                          au {new Date(preparation.planning_activity.scheduled_end).toLocaleString()}
+                          Programmée du {formatDateTimeInTimezone(preparation.planning_activity.scheduled_start, tz)} 
+                          au {formatDateTimeInTimezone(preparation.planning_activity.scheduled_end, tz)}
                         </span>
                       </div>
                     </div>
@@ -211,11 +215,11 @@ export const BoatPreparationHistory = ({ boatId }: BoatPreparationHistoryProps) 
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="text-xs text-muted-foreground">
                     <div>
-                      Créée le {new Date(preparation.created_at).toLocaleDateString()}
+                      Créée le {formatDateInTimezone(preparation.created_at, tz)}
                     </div>
                     {preparation.completion_date && (
                       <div>
-                        Terminée le {new Date(preparation.completion_date).toLocaleDateString()}
+                        Terminée le {formatDateInTimezone(preparation.completion_date, tz)}
                       </div>
                     )}
                   </div>

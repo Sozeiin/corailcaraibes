@@ -4,7 +4,7 @@ import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Calendar, Clock, Wrench } from 'lucide-react';
-import { formatDateSafe } from '@/lib/dateUtils';
+import { formatDateInTimezone, getLocalDateString } from '@/lib/dateUtils';
 import { useMemo } from 'react';
 
 export const MaintenanceWidget = ({ config }: WidgetProps) => {
@@ -38,21 +38,26 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
       });
   }, [dashboardData.interventions, dashboardData.boats, dashboardData.loading, user]);
 
+  const tz = user?.timezone;
+
+  const diffDaysFromToday = (date: string) => {
+    // Compare YYYY-MM-DD strings dans le fuseau de la base
+    const todayYmd = getLocalDateString(tz);
+    const targetYmd = formatDateInTimezone(date, tz, 'yyyy-MM-dd');
+    const today = new Date(todayYmd + 'T00:00:00Z').getTime();
+    const target = new Date(targetYmd + 'T00:00:00Z').getTime();
+    return Math.round((target - today) / (1000 * 3600 * 24));
+  };
+
   const getStatusColor = (date: string) => {
-    const today = new Date();
-    const scheduledDate = new Date(date);
-    const diffDays = Math.ceil((scheduledDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-    
+    const diffDays = diffDaysFromToday(date);
     if (diffDays < 0) return 'destructive';
     if (diffDays <= 3) return 'secondary';
     return 'outline';
   };
 
   const formatRelativeDate = (date: string) => {
-    const today = new Date();
-    const scheduledDate = new Date(date);
-    const diffDays = Math.ceil((scheduledDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
-    
+    const diffDays = diffDaysFromToday(date);
     if (diffDays < 0) return `En retard de ${Math.abs(diffDays)} jour(s)`;
     if (diffDays === 0) return "Aujourd'hui";
     if (diffDays === 1) return "Demain";
@@ -91,7 +96,7 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
                 <div className="flex items-center space-x-2 mt-1">
                   <Calendar className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">
-                    {formatDateSafe(maintenance.scheduled_date)}
+                    {formatDateInTimezone(maintenance.scheduled_date, tz)}
                   </span>
                   {maintenance.scheduled_time && (
                     <>

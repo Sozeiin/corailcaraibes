@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Ship, Calendar, Clock, CheckCircle, AlertTriangle, Play } from 'lucide-react';
 import { PreparationChecklistDialog } from '@/components/preparation/PreparationChecklistDialog';
 import { toast } from 'sonner';
+import { formatDateTimeInTimezone } from '@/lib/dateUtils';
 
 interface TechnicianPreparation {
   id: string;
@@ -177,7 +178,7 @@ export function TechnicianPreparations() {
                       <Calendar className="w-4 h-4" />
                       Début prévu
                     </p>
-                    <p>{new Date(prep.planning_activity.scheduled_start).toLocaleString()}</p>
+                    <p>{formatDateTimeInTimezone(prep.planning_activity.scheduled_start, user?.timezone)}</p>
                   </div>
                   <div>
                     <p className="text-gray-500 flex items-center gap-1">
@@ -185,7 +186,7 @@ export function TechnicianPreparations() {
                       Fin prévue
                     </p>
                     <p className={isOverdue(prep.planning_activity.scheduled_end) ? 'text-red-600 font-medium' : ''}>
-                      {new Date(prep.planning_activity.scheduled_end).toLocaleString()}
+                      {formatDateTimeInTimezone(prep.planning_activity.scheduled_end, user?.timezone)}
                     </p>
                   </div>
                   <div>
