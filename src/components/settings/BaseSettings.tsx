@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit, Save, X, Building, MapPin, Phone, Mail, User, Trash2 } from 'lucide-react';
+import { Plus, Edit, Save, X, Building, MapPin, Phone, Mail, User, Trash2, Globe } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -127,7 +128,8 @@ export function BaseSettings() {
       location: base?.location || '',
       phone: base?.phone || '',
       email: base?.email || '',
-      manager: base?.manager || ''
+      manager: base?.manager || '',
+      timezone: base?.timezone || 'America/Martinique',
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -185,6 +187,26 @@ export function BaseSettings() {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
+        </div>
+
+        <div>
+          <Label htmlFor="timezone">Fuseau horaire de la base *</Label>
+          <Select
+            value={formData.timezone}
+            onValueChange={(v) => setFormData({ ...formData, timezone: v })}
+          >
+            <SelectTrigger id="timezone">
+              <SelectValue placeholder="Choisir un fuseau" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="America/Martinique">Martinique (UTC-4)</SelectItem>
+              <SelectItem value="America/Guadeloupe">Guadeloupe (UTC-4)</SelectItem>
+              <SelectItem value="Europe/Paris">France métropolitaine (Paris)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-1">
+            Toutes les dates et heures saisies dans cette base utiliseront ce fuseau.
+          </p>
         </div>
 
         <div className="flex gap-2">
@@ -273,6 +295,10 @@ export function BaseSettings() {
                             {base.email}
                           </div>
                         )}
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4" />
+                          Fuseau : {base.timezone || 'America/Martinique'}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
