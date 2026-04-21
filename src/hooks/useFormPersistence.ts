@@ -23,9 +23,11 @@ export function useFormPersistence<T extends Record<string, any>>(
   const { user } = useAuth();
   const [hasSavedDraft, setHasSavedDraft] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const lastSaveTimeRef = useRef<number>(0);
   const isRestoredRef = useRef(false);
   const hasTriedRestoreRef = useRef(false);
+  const isHydratedRef = useRef(false);
   const isSavingRef = useRef(false);
 
   // Filtrer les champs exclus
@@ -41,6 +43,11 @@ export function useFormPersistence<T extends Record<string, any>>(
   // Sauvegarder dans Supabase (avec throttle de 2 secondes)
   const saveData = useCallback(async (data: T, force: boolean = false) => {
     if (isSavingRef.current) return;
+    // GARDE CRITIQUE: ne jamais sauvegarder avant la fin de l'hydratation
+    if (!isHydratedRef.current) {
+      console.log('⏸️ [FormPersistence] Sauvegarde bloquée (hydratation en cours)');
+      return;
+    }
     
     const now = Date.now();
     if (!force && now - lastSaveTimeRef.current < 2000) return;
@@ -60,7 +67,6 @@ export function useFormPersistence<T extends Record<string, any>>(
         updated_at: new Date().toISOString(),
       };
 
-      // Upsert based on form_key
       const { error } = await supabase
         .from('checkin_drafts')
         .upsert(
@@ -98,7 +104,6 @@ export function useFormPersistence<T extends Record<string, any>>(
       }
       if (!data) return null;
 
-      // Vérifier que les données ne sont pas trop anciennes (7 jours max)
       const age = Date.now() - new Date(data.updated_at).getTime();
       if (age > 7 * 24 * 60 * 60 * 1000) {
         console.log('🗑️ [FormPersistence] Brouillon trop ancien, suppression');
@@ -108,7 +113,6 @@ export function useFormPersistence<T extends Record<string, any>>(
 
       const savedData = data.form_data as T;
 
-      // VALIDATION: Vérifier que checklistItems est bien un tableau (si présent)
       if (savedData && 'checklistItems' in savedData) {
         const items = (savedData as any).checklistItems;
         if (items !== undefined && !Array.isArray(items)) {
@@ -132,6 +136,8 @@ export function useFormPersistence<T extends Record<string, any>>(
       await supabase.from('checkin_drafts').delete().eq('form_key', formKey);
       isRestoredRef.current = false;
       hasTriedRestoreRef.current = false;
+      isHydratedRef.current = false;
+      setIsHydrated(false);
       setHasSavedDraft(false);
       setLastSaveTime(null);
       console.log(`🗑️ [FormPersistence] Brouillon supprimé: ${formKey}`);
@@ -140,10 +146,14 @@ export function useFormPersistence<T extends Record<string, any>>(
     }
   }, [formKey]);
 
-  // Sauvegarder immédiatement
+  // Sauvegarder immédiatement (force, ignore l'hydratation si overrideData fourni)
   const saveNow = useCallback((overrideData?: T) => {
     const dataToSave = overrideData ?? formData;
     if (dataToSave) {
+      // Si overrideData fourni, on force même sans hydratation (cas finalisation)
+      if (overrideData && !isHydratedRef.current) {
+        isHydratedRef.current = true;
+      }
       saveData(dataToSave, true);
     }
   }, [formData, saveData]);
@@ -164,24 +174,34 @@ export function useFormPersistence<T extends Record<string, any>>(
           } else {
             setFormData({ ...formData, ...savedData });
           }
+        } else {
+          console.log('📭 [FormPersistence] Aucun brouillon existant');
         }
+      }).finally(() => {
+        // Hydratation finie quoi qu'il arrive — autoriser les sauvegardes
+        // Délai court pour laisser React appliquer les setState de la restauration
+        setTimeout(() => {
+          isHydratedRef.current = true;
+          setIsHydrated(true);
+          console.log('✅ [FormPersistence] Hydratation terminée, sauvegardes autorisées');
+        }, 300);
       });
     }
-  }, [isOpen]); // Volontairement pas de dépendances sur formData/setFormData pour éviter les boucles
+  }, [isOpen]);
 
-  // Sauvegarder à chaque modification (throttled)
+  // Sauvegarder à chaque modification (throttled) — bloqué tant que non hydraté
   useEffect(() => {
-    if (isOpen && formData && hasTriedRestoreRef.current) {
+    if (isOpen && formData && isHydrated) {
       saveData(formData);
     }
-  }, [formData, isOpen, saveData]);
+  }, [formData, isOpen, saveData, isHydrated]);
 
-  // Sauvegarder lors de la mise en veille (CRITIQUE pour tablettes)
+  // Sauvegarder lors de la mise en veille
   useEffect(() => {
     if (!isOpen) return;
 
     const handleVisibilityChange = () => {
-      if (document.hidden && formData) {
+      if (document.hidden && formData && isHydratedRef.current) {
         console.log('💤 [FormPersistence] Appareil en veille, sauvegarde forcée');
         saveData(formData, true);
       }
@@ -196,8 +216,7 @@ export function useFormPersistence<T extends Record<string, any>>(
     if (!isOpen) return;
 
     const handleBeforeUnload = () => {
-      if (formData) {
-        // Use sendBeacon for reliable save on page close
+      if (formData && isHydratedRef.current) {
         saveData(formData, true);
       }
     };
@@ -213,5 +232,6 @@ export function useFormPersistence<T extends Record<string, any>>(
     lastSaveTime,
     saveNow,
     isRestored: isRestoredRef.current,
+    isHydrated,
   };
 }

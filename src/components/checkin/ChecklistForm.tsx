@@ -71,6 +71,8 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   // Flag pour éviter l'écrasement des données restaurées
   const [isItemsInitialized, setIsItemsInitialized] = useState(false);
   const hasRestoredDataRef = useRef(false);
+  // Stocke les items restaurés tant que les fetchedItems ne sont pas dispo (pour fusion)
+  const pendingRestoredItemsRef = useRef<ChecklistItem[] | null>(null);
 
   // ===== REFS POUR CAPTURER L'ÉTAT IMMÉDIATEMENT (évite les closures périmées) =====
   const checklistItemsRef = useRef<ChecklistItem[]>([]);
@@ -133,9 +135,29 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
     hasRestoredDataRef.current = true;
     
     if (restoredData.checklistItems && restoredData.checklistItems.length > 0) {
-      checklistItemsRef.current = restoredData.checklistItems;
-      setChecklistItems(restoredData.checklistItems);
-      setIsItemsInitialized(true);
+      // Si les items de référence sont déjà dispo, fusionner immédiatement
+      // Sinon, stocker pour fusion ultérieure dans l'effet d'init
+      if (fetchedItems && fetchedItems.length > 0) {
+        const merged = fetchedItems.map((freshItem: any) => {
+          const savedItem = restoredData.checklistItems.find((s: any) => s.id === freshItem.id);
+          return {
+            id: freshItem.id,
+            name: freshItem.name,
+            category: freshItem.category,
+            isRequired: freshItem.is_required,
+            status: savedItem?.status ?? 'not_checked',
+            notes: savedItem?.notes ?? '',
+            photos: savedItem?.photos ?? [],
+          };
+        });
+        checklistItemsRef.current = merged;
+        setChecklistItems(merged);
+        setIsItemsInitialized(true);
+        console.log(`📂 [ChecklistForm] Items fusionnés (${merged.length}), ${merged.filter(i => i.status !== 'not_checked').length} déjà cochés`);
+      } else {
+        pendingRestoredItemsRef.current = restoredData.checklistItems;
+        console.log('⏳ [ChecklistForm] Items restaurés en attente de fetchedItems');
+      }
     }
     if (restoredData.generalNotes) {
       generalNotesRef.current = restoredData.generalNotes;
@@ -257,15 +279,39 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   // Initialize checklist items - NE PAS ÉCRASER SI DES DONNÉES ONT ÉTÉ RESTAURÉES
   useEffect(() => {
     if (fetchedItems && !isItemsInitialized) {
-      console.log('📋 [DEBUG] Items récupérés, initialisation:', fetchedItems.length, 'items');
+      console.log('📋 [DEBUG] Items récupérés:', fetchedItems.length, 'items');
       
-      // Si des données ont été restaurées, ne pas réinitialiser
+      // Cas 1: restauration en attente -> fusionner maintenant
+      if (pendingRestoredItemsRef.current) {
+        const saved = pendingRestoredItemsRef.current;
+        const merged = fetchedItems.map((freshItem: any) => {
+          const savedItem = saved.find((s: any) => s.id === freshItem.id);
+          return {
+            id: freshItem.id,
+            name: freshItem.name,
+            category: freshItem.category,
+            isRequired: freshItem.is_required,
+            status: savedItem?.status ?? 'not_checked',
+            notes: savedItem?.notes ?? '',
+            photos: savedItem?.photos ?? [],
+          };
+        });
+        checklistItemsRef.current = merged;
+        setChecklistItems(merged);
+        setIsItemsInitialized(true);
+        pendingRestoredItemsRef.current = null;
+        console.log(`📋 [ChecklistForm] Fusion différée: ${merged.filter(i => i.status !== 'not_checked').length} items cochés restaurés`);
+        return;
+      }
+      
+      // Cas 2: données déjà restaurées
       if (hasRestoredDataRef.current && checklistItems.length > 0) {
         console.log('📋 [DEBUG] Données restaurées détectées, pas de réinitialisation');
         setIsItemsInitialized(true);
         return;
       }
       
+      // Cas 3: initialisation fraîche
       const initialItems = fetchedItems.map((item: any) => ({
         id: item.id,
         name: item.name,
@@ -276,7 +322,6 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
         photos: [],
       }));
       
-      // Synchroniser ref ET state
       checklistItemsRef.current = initialItems;
       setChecklistItems(initialItems);
       setIsItemsInitialized(true);

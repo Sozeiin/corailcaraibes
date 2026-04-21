@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Hook pour la persistance des signatures dans Supabase (via checkin_drafts.signature_data)
- * Stocke les signatures base64 séparément des données du formulaire
  */
 export function useSignaturePersistence(
   formKey: string,
@@ -14,16 +13,19 @@ export function useSignaturePersistence(
   isOpen: boolean,
   onRestoreSignatures?: (signatures: { technicianSignature?: string; customerSignature?: string }) => void
 ) {
-  // Use formKey directly — it already includes _checkin or _checkout suffix
   const dbFormKey = formKey;
   const hasTriedRestoreRef = useRef(false);
+  const isHydratedRef = useRef(false);
   const [isRestored, setIsRestored] = useState(false);
   const isSavingRef = useRef(false);
   const lastSaveTimeRef = useRef<number>(0);
 
-  // Sauvegarder les signatures dans le champ signature_data de checkin_drafts
   const saveSignatures = useCallback(async () => {
     if (isSavingRef.current) return;
+    if (!isHydratedRef.current) {
+      console.log('⏸️ [SignaturePersistence] Sauvegarde bloquée (hydratation en cours)');
+      return;
+    }
     if (!signatures.technicianSignature && !signatures.customerSignature) return;
     
     const now = Date.now();
@@ -36,7 +38,6 @@ export function useSignaturePersistence(
         customerSignature: signatures.customerSignature || '',
       };
 
-      // Update existing draft with signature data
       const { error } = await supabase
         .from('checkin_drafts')
         .update({ 
@@ -58,7 +59,6 @@ export function useSignaturePersistence(
     }
   }, [signatures.technicianSignature, signatures.customerSignature, dbFormKey, formKey]);
 
-  // Charger les signatures sauvegardées
   const loadSignatures = useCallback(async (): Promise<{ technicianSignature?: string; customerSignature?: string } | null> => {
     try {
       const { data, error } = await supabase
@@ -80,7 +80,6 @@ export function useSignaturePersistence(
     }
   }, [dbFormKey]);
 
-  // Nettoyer les signatures
   const clearSignatures = useCallback(async () => {
     try {
       await supabase
@@ -88,6 +87,7 @@ export function useSignaturePersistence(
         .update({ signature_data: null, updated_at: new Date().toISOString() })
         .eq('form_key', dbFormKey);
       hasTriedRestoreRef.current = false;
+      isHydratedRef.current = false;
       setIsRestored(false);
       console.log(`🗑️ [SignaturePersistence] Signatures supprimées: ${formKey}`);
     } catch (error) {
@@ -95,7 +95,7 @@ export function useSignaturePersistence(
     }
   }, [dbFormKey, formKey]);
 
-  // Restaurer automatiquement à l'ouverture (une seule fois)
+  // Restaurer automatiquement à l'ouverture
   useEffect(() => {
     if (isOpen && !hasTriedRestoreRef.current) {
       hasTriedRestoreRef.current = true;
@@ -106,6 +106,11 @@ export function useSignaturePersistence(
           setIsRestored(true);
           onRestoreSignatures?.(savedSignatures);
         }
+      }).finally(() => {
+        setTimeout(() => {
+          isHydratedRef.current = true;
+          console.log('✅ [SignaturePersistence] Hydratation signatures terminée');
+        }, 300);
       });
     }
   }, [isOpen, loadSignatures, onRestoreSignatures]);
@@ -115,7 +120,7 @@ export function useSignaturePersistence(
     if (!isOpen) return;
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && isHydratedRef.current) {
         saveSignatures();
       }
     };
@@ -124,19 +129,20 @@ export function useSignaturePersistence(
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isOpen, saveSignatures]);
 
-  // Sauvegarder à chaque modification de signature
+  // Sauvegarder à chaque modification de signature (après hydratation)
   useEffect(() => {
-    if (isOpen && hasTriedRestoreRef.current) {
+    if (isOpen && isHydratedRef.current) {
       saveSignatures();
     }
   }, [signatures.technicianSignature, signatures.customerSignature, isOpen, saveSignatures]);
 
-  // Sauvegarder immédiatement
+  // Sauvegarder immédiatement (force, ignore l'hydratation)
   const saveNow = useCallback(async (overrideSignatures?: { technicianSignature?: string; customerSignature?: string }) => {
     const sigs = overrideSignatures || signatures;
     if (sigs.technicianSignature || sigs.customerSignature) {
-      isSavingRef.current = false; // Force allow
+      isSavingRef.current = false;
       lastSaveTimeRef.current = 0;
+      isHydratedRef.current = true; // Force pour saveNow
       
       try {
         const sigData = {
