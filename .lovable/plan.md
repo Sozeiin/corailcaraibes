@@ -1,70 +1,122 @@
 
-Corriger la reprise des brouillons pour que les cases cochées, notes, photos et signatures restent intactes au lieu d’être réécrites par l’état vide du formulaire.
 
-1. Sécuriser la restauration dans `src/hooks/useFormPersistence.ts`
-- Remplacer le déclenchement actuel de `hasTriedRestoreRef` avant la fin du chargement.
-- Introduire un état interne du type `isHydrating` / `isRestoring`.
-- Bloquer complètement l’auto-sauvegarde tant que le brouillon distant n’a pas fini d’être chargé et appliqué.
-- N’autoriser la première sauvegarde qu’après la restauration effective, ou après confirmation qu’aucun brouillon n’existe.
+## Objectif
+Tous les utilisateurs travaillent avec les dates et heures du **fuseau horaire de leur base** (Martinique/Guadeloupe = UTC-4, Métropole = UTC+1/+2). Plus aucun décalage d'1 jour, plus aucune confusion d'horaire entre la direction (France) et les techniciens (Antilles).
 
-2. Empêcher l’écrasement immédiat du brouillon au montage
-- Aujourd’hui, à l’ouverture, le formulaire démarre avec des éléments “non vérifiés”, puis l’effet de sauvegarde repart trop tôt.
-- Faire en sorte que l’effet `useEffect(() => saveData(formData))` ne se lance pas pendant l’initialisation.
-- Ajouter une garde pour ignorer les sauvegardes quand les données affichées correspondent encore à l’état par défaut initial.
+## Stratégie globale
 
-3. Fusionner correctement les items restaurés avec les items frais de la base dans `src/components/checkin/ChecklistForm.tsx`
-- Au lieu de réinjecter `restoredData.checklistItems` tel quel, reconstruire la liste à partir des `fetchedItems`.
-- Pour chaque item de checklist:
-  - conserver depuis la base la structure métier à jour (`id`, `name`, `category`, `isRequired`)
-  - réappliquer depuis le brouillon l’état utilisateur (`status`, `notes`, `photos`)
-- Cela évitera les pertes de propriétés critiques et garantira que les coches restaurées restent affichées correctement.
+1. Ajouter un fuseau horaire (`timezone`) à chaque **base** (table `bases`).
+2. Exposer ce fuseau dans `AuthContext.user` (`user.timezone`).
+3. Centraliser **toutes** les conversions dans `src/lib/dateUtils.ts` en utilisant ce fuseau, plus aucun appel direct à `new Date(...).toISOString()` ou `toLocaleDateString()` sans passer par les helpers.
+4. Distinguer clairement deux types de données :
+   - **Dates pures** (date de check-in, date d'intervention, date de maintenance) → stockées en `DATE` PostgreSQL ou ISO `YYYY-MM-DD`, jamais converties par fuseau.
+   - **Instants** (créations, signatures, début/fin réels) → stockés en `timestamptz` UTC, affichés dans le fuseau de la base.
 
-4. Renforcer `handleFormRestore` dans `ChecklistForm.tsx`
-- Utiliser une fusion par `item.id` entre données sauvegardées et définition fraîche des items.
-- Restaurer aussi `generalNotes`, `currentStep`, `customerEmail`, `sendEmailReport`, `engineHours`.
-- Conserver la logique actuelle de validation des brouillons corrompus, mais sans effacer les données valides.
+## 1. Base de données
 
-5. Corriger le timing de restauration dans le formulaire
-- Attendre que les `fetchedItems` soient disponibles avant d’appliquer définitivement la restauration des `checklistItems`.
-- Si le brouillon arrive avant les items de référence, le stocker temporairement puis effectuer la fusion une fois les items chargés.
-- Éviter qu’un `setChecklistItems(initialItems)` ultérieur remplace des données déjà restaurées.
+Migration :
+- Ajouter `timezone TEXT NOT NULL DEFAULT 'America/Martinique'` sur `bases`.
+- Initialiser :
+  - Base Martinique → `America/Martinique`
+  - Base Guadeloupe → `America/Guadeloupe`
+  - Métropole → `Europe/Paris`
+- Vérifier les colonnes critiques `administrative_checkin_forms.planned_start_date / planned_end_date` : actuellement `timestamptz`. On garde `timestamptz` mais on stocke à **midi du fuseau de la base** pour éviter tout décalage de jour.
 
-6. Vérifier aussi la persistance des signatures dans `src/hooks/useSignaturePersistence.ts`
-- Appliquer la même logique anti-écrasement au chargement des signatures.
-- Ne jamais pousser une mise à jour vide juste après reprise d’un brouillon si les signatures n’ont pas encore été relues depuis la base.
+## 2. AuthContext (`src/contexts/AuthContext.tsx`)
+- Charger aussi `bases.timezone` lors du `fetchUserProfile`.
+- Ajouter `timezone: string` dans le type `User`.
+- Fallback : `'America/Martinique'` si null.
 
-7. Vérifier les messages UX
-- Mettre à jour le message d’annulation “les données seront perdues” si le brouillon est en réalité sauvegardé.
-- Conserver le toast “Brouillon restauré”, mais uniquement quand la restauration est réellement finalisée.
+## 3. `src/lib/dateUtils.ts` — refonte centrée sur le fuseau
 
-Résultat attendu
-- Quand un technicien reprend un check-in ou check-out, toutes les cases déjà cochées restent cochées.
-- Les notes, photos, heures moteur et signatures restent présentes.
-- Le brouillon n’est plus écrasé par un état vide au moment de la reprise.
+Nouvelles fonctions (basées sur `Intl.DateTimeFormat` + `date-fns-tz`) :
 
-Détails techniques
+| Fonction | Rôle |
+|---|---|
+| `getBaseTimezone(user)` | Retourne le fuseau effectif (ou défaut). |
+| `nowInTimezone(tz)` | Date locale "now" dans le fuseau de la base. |
+| `getLocalDateString(tz)` | `YYYY-MM-DD` du jour dans le fuseau de la base (remplace l'actuelle qui dépendait du navigateur). |
+| `parseDateInputToUTC(dateString, tz)` | Convertit un `YYYY-MM-DD` (saisi dans un input type=date côté admin) en `timestamptz` représentant **midi heure locale de la base** → stable, jamais de décalage. |
+| `formatDateInTimezone(iso, tz, format)` | Formate un instant `timestamptz` dans le fuseau choisi. |
+| `formatDateSafe(dateString, tz)` | Compatibilité, utilise `tz` au lieu du navigateur. |
+| `formatDateForInput(iso, tz)` | Retourne `YYYY-MM-DD` correspondant à la date locale dans `tz` (corrige le bug actuel où `toISOString` peut renvoyer la veille). |
+| `formatDateTimeInTimezone(iso, tz)` | Pour signatures / horodatages. |
+
+Ajout dépendance : `date-fns-tz` (déjà compatible avec `date-fns` présent).
+
+## 4. Propagation du fuseau dans le code
+
+Tous les endroits qui aujourd'hui font :
+- `parseLocalDateToUTC(startDate)` → remplacés par `parseDateInputToUTC(startDate, user.timezone)`.
+- `getLocalDateString()` → `getLocalDateString(user.timezone)`.
+- `formatDateSafe(date)` → `formatDateSafe(date, user.timezone)`.
+- `formatDateForInput(date)` → `formatDateForInput(date, user.timezone)`.
+- `new Date(...).toLocaleDateString()` directs → remplacés par `formatDateInTimezone`.
+
+Fichiers principaux impactés (la liste exhaustive sera couverte) :
+- `src/components/administrative/AdministrativeCheckinFormNew.tsx` (création fiche)
+- `src/components/checkin/EditFormDialog.tsx`
+- `src/components/checkin/ChecklistForm.tsx`
+- `src/components/checkin/TechnicianCheckinInterface.tsx`
+- `src/components/maintenance/InterventionTable.tsx`
+- `src/components/maintenance/InterventionDialog.tsx` + `InterventionCompletionDialog.tsx`
+- `src/components/maintenance/GanttMaintenanceSchedule.tsx` (déjà annoté `TIMEZONE FIX`, à harmoniser)
+- `src/components/maintenance/planning/*` (toutes les vues)
+- `src/components/dashboard/widgets/MaintenanceWidget.tsx`
+- `src/hooks/useCreateIntervention.ts`
+- `src/components/preparation/*` et `src/components/shipments/*` (dates planifiées)
+- Tous les inputs `type="date"` qui réécrivent leur valeur initiale.
+
+## 5. Affichage explicite de l'heure de la base
+
+Quand un membre de la **direction** (France) consulte une fiche créée à la **Martinique**, on affiche par défaut l'heure de la base concernée (Martinique) avec un libellé clair :
+- `21/04/2026 (heure Martinique)` pour les fiches d'une base Antillaise vues par la direction.
+- Pour les listes mélangées (ex. dashboard direction multi-bases), on affiche l'heure de la base de la fiche, pas celle du navigateur.
+
+Helper : `formatDateForBase(iso, baseTimezone)` utilisé partout où l'on connaît le fuseau de la fiche, indépendant du fuseau de l'utilisateur connecté.
+
+## 6. Edge functions et triggers
+
+- `supabase/functions/send-checklist-report/index.ts` et `generate-checklist-pdf/index.ts` : formater les dates dans le fuseau de la base de la checklist (pas le fuseau Deno UTC par défaut).
+- Triggers DB : aucun changement nécessaire (PostgreSQL stocke déjà UTC en `timestamptz`).
+
+## 7. Validation
+
+Scénarios à valider après implémentation :
+1. Admin Guadeloupe (UTC-4) crée une fiche pour le 25 avril à 09:00 → la direction France voit "25/04 09:00 (heure Guadeloupe)", pas "25/04 15:00" et pas "24/04".
+2. Direction France ouvre la fiche, l'édite et change la date au 26 avril → enregistrée comme 26 avril heure Guadeloupe.
+3. Technicien Martinique fait un check-in à 14:00 locale → l'historique affiche "14:00 (heure Martinique)" pour tous les profils.
+4. Maintenance planifiée le 30 avril → reste le 30 avril dans toutes les vues, France comprise.
+5. Dashboard "aujourd'hui" → utilise `getLocalDateString(user.timezone)`, pas le fuseau du navigateur.
+
+## Détails techniques
+
 ```text
-Cause racine actuelle:
-1. ouverture du formulaire
-2. hasTriedRestoreRef passe à true immédiatement
-3. l'effet de sauvegarde devient autorisé
-4. le formulaire contient encore l'état initial (items non cochés)
-5. ce faux état est sauvegardé en base
-6. le vrai brouillon est donc écrasé
+Cause racine actuelle :
+- input type="date" renvoie YYYY-MM-DD basé sur le NAVIGATEUR
+- parseLocalDateToUTC stocke à midi UTC (12:00Z)
+- En Métropole été (UTC+2), midi UTC = 14h locale → OK même jour
+- En Guadeloupe (UTC-4), midi UTC = 08h locale → OK même jour
+  MAIS d'autres chemins de code utilisent encore `new Date(d).toISOString()`
+  ou `new Date(d)` qui interprète à 00:00 locale du navigateur
+  → Date stockée parfois à 00:00Z, qui en Guadeloupe = 20h la veille → -1 jour
 
-Correctif:
-- séparer "tentative de restauration" et "restauration terminée"
-- suspendre toute sauvegarde pendant l’hydratation
-- fusionner les données restaurées avec les checklist_items fraîches
+Correctif :
+- Tout passer par parseDateInputToUTC(value, baseTimezone)
+  qui force le stockage à midi DU FUSEAU DE LA BASE
+- Tout affichage passe par formatDateInTimezone(iso, baseTimezone)
+- Plus aucun new Date() / toISOString() non encapsulé
 ```
 
-Fichiers à modifier
-- `src/hooks/useFormPersistence.ts`
-- `src/hooks/useSignaturePersistence.ts`
-- `src/components/checkin/ChecklistForm.tsx`
+## Fichiers à créer / modifier
 
-Validation à faire après implémentation
-1. Cocher plusieurs éléments sur un check-in, fermer, reprendre: tout doit rester coché.
-2. Ajouter notes + photos, fermer, reprendre: tout doit revenir.
-3. Tester check-out sur le même bateau: aucune perte de données.
-4. Vérifier qu’un nouveau brouillon sans historique continue bien à s’auto-sauvegarder normalement.
+- Migration SQL : ajout colonne `bases.timezone` + initialisation des 3 bases.
+- `src/lib/dateUtils.ts` : refonte complète + nouvelles fonctions.
+- `src/contexts/AuthContext.tsx` : exposer `timezone`.
+- `package.json` : ajout `date-fns-tz`.
+- ~25-30 fichiers UI listés plus haut : remplacement des appels.
+- `src/components/settings/BaseSettings.tsx` : permettre à la direction d'éditer le fuseau d'une base.
+- 2 edge functions (PDF + email checklist) : formatage dans le fuseau de la base.
+
+Aucune donnée existante perdue : les `timestamptz` en base restent valides, seul l'affichage et la nouvelle écriture utiliseront le fuseau de la base.
+
