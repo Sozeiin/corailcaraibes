@@ -11,6 +11,8 @@ import {
   Wrench, Calendar, Clock, User, Package, 
   FileText, Gauge 
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDateSafe, formatDateTimeInTimezone } from '@/lib/dateUtils';
 
 interface InterventionDetailsDialogProps {
   isOpen: boolean;
@@ -23,7 +25,9 @@ export const InterventionDetailsDialog = ({
   onClose, 
   interventionId 
 }: InterventionDetailsDialogProps) => {
-  
+  const { user } = useAuth();
+  const tz = user?.timezone;
+
   const { data: intervention, isLoading } = useQuery({
     queryKey: ['intervention-details', interventionId],
     queryFn: async () => {
@@ -134,7 +138,7 @@ export const InterventionDetailsDialog = ({
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {intervention?.scheduled_date 
-                        ? new Date(intervention.scheduled_date).toLocaleDateString('fr-FR')
+                        ? formatDateSafe(intervention.scheduled_date, tz)
                         : 'N/A'
                       }
                     </p>
@@ -144,7 +148,7 @@ export const InterventionDetailsDialog = ({
                     <p className="text-sm text-muted-foreground flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {intervention?.completed_date 
-                        ? new Date(intervention.completed_date).toLocaleDateString('fr-FR')
+                        ? formatDateSafe(intervention.completed_date, tz)
                         : 'N/A'
                       }
                     </p>
