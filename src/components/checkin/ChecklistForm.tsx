@@ -551,7 +551,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
       // Create checklist with explicit type and customer information
       const checklistData: ChecklistData = {
         boatId: boat.id,
-        checklistDate: getLocalDateString(),
+        checklistDate: getLocalDateString(user?.timezone),
         technicianId: user.id,
         items: checklistItems,
         overallStatus,
@@ -662,7 +662,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
             description: interventionDescription,
             boat_id: boat.id,
             status: 'scheduled' as const,
-            scheduled_date: getLocalDateString(),
+            scheduled_date: getLocalDateString(user?.timezone),
             base_id: boat.base_id || user.baseId,
             intervention_type: 'corrective'
           });
