@@ -5,7 +5,7 @@ import { useDashboardData } from '@/hooks/useDashboardData';
 import { AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatDateInTimezone } from '@/lib/dateUtils';
+import { formatDateInTimezone, timezoneLabel } from '@/lib/dateUtils';
 
 export const AlertsWidget = ({ config }: WidgetProps) => {
   const dashboardData = useDashboardData();
@@ -50,7 +50,12 @@ export const AlertsWidget = ({ config }: WidgetProps) => {
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-base font-medium flex items-center justify-between">
-          {config.title}
+          <span className="flex items-center gap-2">
+            {config.title}
+            <Badge variant="outline" className="text-[10px] font-normal">
+              heure {timezoneLabel(tz)}
+            </Badge>
+          </span>
           <Badge variant="secondary" className="text-xs">
             {recentAlerts.length}
           </Badge>

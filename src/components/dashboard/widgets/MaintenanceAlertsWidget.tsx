@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react';
 import { AlertTriangle, Wrench, Calendar, ExternalLink, Zap } from 'lucide-react';
 import { differenceInDays, parseISO } from 'date-fns';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
-import { formatDateInTimezone, getLocalDateString } from '@/lib/dateUtils';
+import { formatDateInTimezone, getLocalDateString, timezoneLabel } from '@/lib/dateUtils';
 
 export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
@@ -89,6 +89,9 @@ export const MaintenanceAlertsWidget = ({ config }: WidgetProps) => {
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" />
           {config.title}
+          <Badge variant="outline" className="text-[10px] font-normal">
+            heure {timezoneLabel(tz)}
+          </Badge>
           <Badge variant="outline" className="ml-auto">
             {alerts.length}
           </Badge>
