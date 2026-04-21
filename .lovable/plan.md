@@ -1,67 +1,70 @@
 
+Corriger la reprise des brouillons pour que les cases cochées, notes, photos et signatures restent intactes au lieu d’être réécrites par l’état vide du formulaire.
 
-## Problème identifié
+1. Sécuriser la restauration dans `src/hooks/useFormPersistence.ts`
+- Remplacer le déclenchement actuel de `hasTriedRestoreRef` avant la fin du chargement.
+- Introduire un état interne du type `isHydrating` / `isRestoring`.
+- Bloquer complètement l’auto-sauvegarde tant que le brouillon distant n’a pas fini d’être chargé et appliqué.
+- N’autoriser la première sauvegarde qu’après la restauration effective, ou après confirmation qu’aucun brouillon n’existe.
 
-Quand un technicien fait un **check-in**, le check-in se transforme en **check-out** et l'envoi email échoue silencieusement. Idem dans l'autre sens. Cause : un seul bouton "Reprendre" dans la liste de brouillons partagés réutilise n'importe quel brouillon dont le `form_key` correspond, et la **clé d'identification du brouillon n'inclut pas le type** correctement, donc check-in et check-out se mélangent. De plus, l'envoi email échoue car le brouillon est supprimé avant la fin de l'envoi.
+2. Empêcher l’écrasement immédiat du brouillon au montage
+- Aujourd’hui, à l’ouverture, le formulaire démarre avec des éléments “non vérifiés”, puis l’effet de sauvegarde repart trop tôt.
+- Faire en sorte que l’effet `useEffect(() => saveData(formData))` ne se lance pas pendant l’initialisation.
+- Ajouter une garde pour ignorer les sauvegardes quand les données affichées correspondent encore à l’état par défaut initial.
 
-### Causes techniques précises
+3. Fusionner correctement les items restaurés avec les items frais de la base dans `src/components/checkin/ChecklistForm.tsx`
+- Au lieu de réinjecter `restoredData.checklistItems` tel quel, reconstruire la liste à partir des `fetchedItems`.
+- Pour chaque item de checklist:
+  - conserver depuis la base la structure métier à jour (`id`, `name`, `category`, `isRequired`)
+  - réappliquer depuis le brouillon l’état utilisateur (`status`, `notes`, `photos`)
+- Cela évitera les pertes de propriétés critiques et garantira que les coches restaurées restent affichées correctement.
 
-1. **`useSignaturePersistence.ts` ligne 17** :
-   ```
-   const dbFormKey = `checklist_${formKey.replace('checklist_', '')}`;
-   ```
-   `formKey` est déjà `checklist_<boatId>_checkin`. Après remplacement, on obtient `checklist_<boatId>_checkin` → OK pour le boat, mais le type est dans la chaîne. Le vrai problème est ailleurs : voir 2.
+4. Renforcer `handleFormRestore` dans `ChecklistForm.tsx`
+- Utiliser une fusion par `item.id` entre données sauvegardées et définition fraîche des items.
+- Restaurer aussi `generalNotes`, `currentStep`, `customerEmail`, `sendEmailReport`, `engineHours`.
+- Conserver la logique actuelle de validation des brouillons corrompus, mais sans effacer les données valides.
 
-2. **`TechnicianCheckinInterface.tsx` `handleResumeDraft`** : navigue vers `/checkin-process` en passant `type: checklistType` dans `state`, MAIS `CheckInProcess.tsx` (vu dans le contexte initial) **passe `type="checkin"` en dur** à `<ChecklistForm>`. Donc reprendre un brouillon de check-out ouvre un check-in qui charge le brouillon check-out → données mélangées et statut bateau erroné.
+5. Corriger le timing de restauration dans le formulaire
+- Attendre que les `fetchedItems` soient disponibles avant d’appliquer définitivement la restauration des `checklistItems`.
+- Si le brouillon arrive avant les items de référence, le stocker temporairement puis effectuer la fusion une fois les items chargés.
+- Éviter qu’un `setChecklistItems(initialItems)` ultérieur remplace des données déjà restaurées.
 
-3. **`ChecklistForm.tsx` ligne 169** : la `formKey` est `checklist_${boat.id}_${type}`. Quand on reprend un brouillon check-out via la page `/checkin-process` qui force `type="checkin"`, la formKey devient `checklist_<boat>_checkin` mais le brouillon en DB est `checklist_<boat>_checkout`. Pire : si le même bateau a un brouillon check-in ET check-out, ils s'écrasent l'un l'autre via `upsert` car `boat_id` se retrouve réutilisé.
+6. Vérifier aussi la persistance des signatures dans `src/hooks/useSignaturePersistence.ts`
+- Appliquer la même logique anti-écrasement au chargement des signatures.
+- Ne jamais pousser une mise à jour vide juste après reprise d’un brouillon si les signatures n’ont pas encore été relues depuis la base.
 
-4. **Ordre dans `handleComplete` (ChecklistForm ligne 728-737)** : `clearFormDraft()` et `clearSignatures()` sont appelés AVANT `onComplete()`. Si l'envoi email se fait via Promise et qu'une erreur survient juste après, l'utilisateur perd son brouillon ET le check-in n'est pas finalisé côté UI → "tout a été effacé".
+7. Vérifier les messages UX
+- Mettre à jour le message d’annulation “les données seront perdues” si le brouillon est en réalité sauvegardé.
+- Conserver le toast “Brouillon restauré”, mais uniquement quand la restauration est réellement finalisée.
 
-5. **Section "Brouillons en cours"** affiche TOUS les drafts de la base sans filtrer par technicien ni par type, et le bouton "Reprendre" ne respecte pas le type.
+Résultat attendu
+- Quand un technicien reprend un check-in ou check-out, toutes les cases déjà cochées restent cochées.
+- Les notes, photos, heures moteur et signatures restent présentes.
+- Le brouillon n’est plus écrasé par un état vide au moment de la reprise.
 
-## Plan de correction
+Détails techniques
+```text
+Cause racine actuelle:
+1. ouverture du formulaire
+2. hasTriedRestoreRef passe à true immédiatement
+3. l'effet de sauvegarde devient autorisé
+4. le formulaire contient encore l'état initial (items non cochés)
+5. ce faux état est sauvegardé en base
+6. le vrai brouillon est donc écrasé
 
-### 1. Corriger `CheckInProcess.tsx`
-- Lire `state.type` ('checkin' | 'checkout') et le passer à `<ChecklistForm type={state.type || 'checkin'} />`
-- Adapter le titre ("Check-in" vs "Check-out")
-- Adapter la logique de transfert ONE WAY (uniquement si `type === 'checkin'`)
+Correctif:
+- séparer "tentative de restauration" et "restauration terminée"
+- suspendre toute sauvegarde pendant l’hydratation
+- fusionner les données restaurées avec les checklist_items fraîches
+```
 
-### 2. Corriger `TechnicianCheckinInterface.tsx` — `handleResumeDraft`
-- Récupérer le bateau complet (`select * from boats where id`) et la fiche admin associée si check-in
-- Passer `type: draft.checklist_type` explicitement dans `state`
-- Pour un brouillon check-out, charger le rental associé
-
-### 3. Renforcer la séparation check-in / check-out dans `useFormPersistence` et `useSignaturePersistence`
-- S'assurer que `formKey` inclut TOUJOURS `_checkin` ou `_checkout`
-- Dans `useSignaturePersistence`, utiliser directement `formKey` (pas de manipulation `replace`) pour viser exactement la bonne ligne en DB
-- Ajouter dans la migration une contrainte unique `(boat_id, checklist_type)` en complément de `form_key` pour éviter les collisions futures
-
-### 4. Sécuriser l'ordre de finalisation dans `ChecklistForm.handleComplete`
-- Ne supprimer le brouillon (`clearFormDraft` + `clearSignatures`) **qu'après** que la checklist soit créée ET sauvegardée en DB avec succès
-- Si l'envoi email échoue, conserver la checklist mais ne PAS supprimer le brouillon tant que la création checklist DB n'est pas confirmée
-- Déplacer `clearFormDraft()` / `clearSignatures()` juste après `createChecklistMutation.mutateAsync` réussi, et entourer d'un try/catch dédié
-
-### 5. Filtrer la liste "Brouillons en cours"
-- Filtrer par `created_by = user.id` OU `updated_by = user.id` côté requête (ou afficher tous mais grouper par type)
-- Afficher clairement le badge type (déjà fait) et n'afficher dans l'onglet Check-in que les drafts `checklist_type='checkin'` quand on est en mode check-in (et inversement). Garder la section globale mais ordonnée.
-
-### 6. Diagnostic email (`send-checklist-report`)
-- Vérifier les logs récents de l'edge function pour comprendre pourquoi l'email ne part pas
-- Ajouter un retry et une remontée d'erreur plus visible côté UI (toast persistant)
-
-### Fichiers impactés
-- `src/pages/CheckInProcess.tsx`
-- `src/components/checkin/TechnicianCheckinInterface.tsx`
-- `src/components/checkin/ChecklistForm.tsx`
+Fichiers à modifier
 - `src/hooks/useFormPersistence.ts`
 - `src/hooks/useSignaturePersistence.ts`
-- Migration SQL : index unique `(boat_id, checklist_type)` sur `checkin_drafts` + nettoyage des doublons existants
-- Vérification logs `supabase/functions/send-checklist-report`
+- `src/components/checkin/ChecklistForm.tsx`
 
-### Validation E2E
-1. Démarrer un check-in TOPAZE → quitter à mi-chemin → reprendre le brouillon → doit rester un **check-in** (pas check-out)
-2. Démarrer un check-out sur le même bateau en parallèle → les deux brouillons coexistent sans s'écraser
-3. Finaliser le check-in avec envoi email → email part, brouillon supprimé, statut bateau = `rented`
-4. Si email échoue → checklist est créée, brouillon supprimé, message d'erreur clair sur l'email uniquement
-
+Validation à faire après implémentation
+1. Cocher plusieurs éléments sur un check-in, fermer, reprendre: tout doit rester coché.
+2. Ajouter notes + photos, fermer, reprendre: tout doit revenir.
+3. Tester check-out sur le même bateau: aucune perte de données.
+4. Vérifier qu’un nouveau brouillon sans historique continue bien à s’auto-sauvegarder normalement.
