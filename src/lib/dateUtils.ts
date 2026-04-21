@@ -71,12 +71,16 @@ export function parseLocalDateToUTC(dateString: string, tz?: TimezoneInput): Dat
 }
 
 /**
- * Normalise une Date (provenant d'un Calendar) en `midi heure locale de la base`.
+ * Normalise une Date (provenant d'un Calendar dans le navigateur) en
+ * `midi heure locale de la base`. On utilise les composants
+ * locaux de la Date (jour/mois/année tels que vus par l'utilisateur),
+ * sans passer par une conversion qui décalerait le jour.
  */
 export function normalizeToMiddayUTC(date: Date, tz?: TimezoneInput): Date {
-  const timezone = getBaseTimezone(tz);
-  const ymd = formatInTimeZone(date, timezone, 'yyyy-MM-dd');
-  return parseDateInputToUTC(ymd, timezone);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return parseDateInputToUTC(`${y}-${m}-${d}`, tz);
 }
 
 /**
