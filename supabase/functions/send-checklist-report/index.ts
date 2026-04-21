@@ -56,7 +56,7 @@ const handler = async (req: Request): Promise<Response> => {
       .from('boat_checklists')
       .select(`
         *,
-        boats(name, model, serial_number, year),
+        boats(name, model, serial_number, year, base_id),
         profiles(name, email),
         boat_checklist_items(
           *,
@@ -73,6 +73,18 @@ const handler = async (req: Request): Promise<Response> => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
+
+    // Resolve base timezone
+    let baseTimezone = 'America/Martinique';
+    if ((checklist as any)?.boats?.base_id) {
+      const { data: baseRow } = await supabase
+        .from('bases')
+        .select('timezone')
+        .eq('id', (checklist as any).boats.base_id)
+        .maybeSingle();
+      if (baseRow?.timezone) baseTimezone = baseRow.timezone;
+    }
+    console.log('🌍 Using base timezone:', baseTimezone);
 
     console.log('Checklist data fetched successfully:', checklist?.id);
 
@@ -94,7 +106,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Generate complete HTML report
     console.log('=== GENERATING COMPLETE REPORT ===');
-    const htmlReport = generateHTMLReport(checklist, boatName, customerName, type);
+    const htmlReport = generateHTMLReport(checklist, boatName, customerName, type, baseTimezone);
 
     console.log('About to send email...');
     console.log('From: Marina Reports <service.technique@corail.corailapp.fr>');
@@ -148,7 +160,35 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-function generateHTMLReport(checklist: any, boatName: string, customerName: string, type: string): string {
+function timezoneLabel(tz: string): string {
+  switch (tz) {
+    case 'America/Martinique': return 'Martinique';
+    case 'America/Guadeloupe': return 'Guadeloupe';
+    case 'Europe/Paris': return 'Paris';
+    default: return tz.split('/').pop() || tz;
+  }
+}
+
+function fmtDateInTz(date: Date | string | null | undefined, tz: string): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', { timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+}
+
+function fmtDateTimeInTz(date: Date | string | null | undefined, tz: string): string {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('fr-FR', {
+    timeZone: tz,
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  }).format(d);
+}
+
+function generateHTMLReport(checklist: any, boatName: string, customerName: string, type: string, baseTimezone: string = 'America/Martinique'): string {
+  const tzLabel = timezoneLabel(baseTimezone);
   const statusLabels = {
     'ok': 'OK ✅',
     'needs_repair': 'Réparation nécessaire ❌',
@@ -226,7 +266,7 @@ function generateHTMLReport(checklist: any, boatName: string, customerName: stri
       <div class="header">
         <h1>Rapport ${type === 'checkin' ? 'Check-in' : 'Check-out'}</h1>
         <p>Bateau: <strong>${boatName}</strong></p>
-        <p>Date: ${new Date(checklist.checklist_date).toLocaleDateString('fr-FR')}</p>
+        <p>Date: ${fmtDateInTz(checklist.checklist_date, baseTimezone)} <span style="color:#6b7280;">(heure ${tzLabel})</span></p>
       </div>
 
       <div class="info-grid">
@@ -258,12 +298,12 @@ function generateHTMLReport(checklist: any, boatName: string, customerName: stri
       <div class="signature-section">
         <h3>Signatures</h3>
         <p>Ce rapport a été généré automatiquement et signé électroniquement.</p>
-        ${checklist.signature_date ? `<p><strong>Signature technicien:</strong> ${new Date(checklist.signature_date).toLocaleString('fr-FR')}</p>` : ''}
-        ${checklist.customer_signature_date ? `<p><strong>Signature client:</strong> ${new Date(checklist.customer_signature_date).toLocaleString('fr-FR')}</p>` : ''}
+        ${checklist.signature_date ? `<p><strong>Signature technicien:</strong> ${fmtDateTimeInTz(checklist.signature_date, baseTimezone)} (heure ${tzLabel})</p>` : ''}
+        ${checklist.customer_signature_date ? `<p><strong>Signature client:</strong> ${fmtDateTimeInTz(checklist.customer_signature_date, baseTimezone)} (heure ${tzLabel})</p>` : ''}
       </div>
 
       <div class="footer">
-        <p>Rapport généré automatiquement le ${new Date().toLocaleString('fr-FR')}</p>
+        <p>Rapport généré automatiquement le ${fmtDateTimeInTz(new Date(), baseTimezone)} (heure ${tzLabel})</p>
         <p>Corail Caraibes</p>
       </div>
     </body>
