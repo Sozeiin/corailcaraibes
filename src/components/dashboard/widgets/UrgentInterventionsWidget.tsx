@@ -10,7 +10,7 @@ import { formatDistanceToNow, parseISO } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
 import { InterventionDialog } from '@/components/maintenance/InterventionDialog';
-import { getLocalDateString, formatDateInTimezone } from '@/lib/dateUtils';
+import { getLocalDateString, formatDateInTimezone, timezoneLabel } from '@/lib/dateUtils';
 
 export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
@@ -115,6 +115,9 @@ export const UrgentInterventionsWidget = ({ config }: WidgetProps) => {
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <Zap className="h-4 w-4" />
           {config.title}
+          <Badge variant="outline" className="text-[10px] font-normal">
+            heure {timezoneLabel(user?.timezone)}
+          </Badge>
           <Badge variant="outline" className="ml-auto">
             {urgentInterventions.length}
           </Badge>

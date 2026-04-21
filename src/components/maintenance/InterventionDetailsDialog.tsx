@@ -12,7 +12,7 @@ import {
   FileText, Gauge 
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatDateSafe, formatDateTimeInTimezone } from '@/lib/dateUtils';
+import { formatDateSafe, formatDateTimeInTimezone, timezoneLabel } from '@/lib/dateUtils';
 
 interface InterventionDetailsDialogProps {
   isOpen: boolean;
@@ -100,6 +100,9 @@ export const InterventionDetailsDialog = ({
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Wrench className="h-4 w-4" />
             <span>{intervention?.intervention_type}</span>
+            <Badge variant="outline" className="ml-2 text-[10px] font-normal">
+              Dates affichées en heure {timezoneLabel(tz)}
+            </Badge>
           </div>
         </DialogHeader>
 

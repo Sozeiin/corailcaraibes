@@ -14,7 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { getLocalDateString, formatDateInTimezone } from '@/lib/dateUtils';
+import { getLocalDateString, formatDateInTimezone, timezoneLabel } from '@/lib/dateUtils';
 
 export const BoatFlowWidget = ({ config }: WidgetProps) => {
   const { user } = useAuth();
@@ -241,6 +241,9 @@ export const BoatFlowWidget = ({ config }: WidgetProps) => {
         <CardTitle className="text-base font-medium flex items-center gap-2">
           <Ship className="h-4 w-4" />
           {config.title}
+          <Badge variant="outline" className="text-[10px] font-normal ml-auto">
+            heure {timezoneLabel(user?.timezone)}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">

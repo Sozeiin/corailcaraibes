@@ -4,7 +4,7 @@ import { WidgetProps } from '@/types/widget';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { Calendar, Clock, Wrench } from 'lucide-react';
-import { formatDateInTimezone, getLocalDateString } from '@/lib/dateUtils';
+import { formatDateInTimezone, getLocalDateString, timezoneLabel } from '@/lib/dateUtils';
 import { useMemo } from 'react';
 
 export const MaintenanceWidget = ({ config }: WidgetProps) => {
@@ -68,7 +68,12 @@ export const MaintenanceWidget = ({ config }: WidgetProps) => {
     <Card className="h-full">
       <CardHeader>
         <CardTitle className="text-base font-medium flex items-center justify-between">
-          {config.title}
+          <span className="flex items-center gap-2">
+            {config.title}
+            <Badge variant="outline" className="text-[10px] font-normal">
+              heure {timezoneLabel(tz)}
+            </Badge>
+          </span>
           <Badge variant="secondary" className="text-xs">
             {upcomingMaintenance.length}
           </Badge>
