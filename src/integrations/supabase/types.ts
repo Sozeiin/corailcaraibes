@@ -237,6 +237,7 @@ export type Database = {
           manager: string | null
           name: string
           phone: string | null
+          timezone: string
         }
         Insert: {
           created_at?: string | null
@@ -246,6 +247,7 @@ export type Database = {
           manager?: string | null
           name: string
           phone?: string | null
+          timezone?: string
         }
         Update: {
           created_at?: string | null
@@ -255,6 +257,7 @@ export type Database = {
           manager?: string | null
           name?: string
           phone?: string | null
+          timezone?: string
         }
         Relationships: []
       }
@@ -5418,16 +5421,19 @@ export type Database = {
           id: string | null
           location: string | null
           name: string | null
+          timezone: string | null
         }
         Insert: {
           id?: string | null
           location?: string | null
           name?: string | null
+          timezone?: string | null
         }
         Update: {
           id?: string | null
           location?: string | null
           name?: string | null
+          timezone?: string | null
         }
         Relationships: []
       }
