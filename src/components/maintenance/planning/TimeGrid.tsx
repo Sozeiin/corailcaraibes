@@ -62,6 +62,8 @@ interface DroppableTimeSlotProps {
 }
 
 function DroppableTimeSlot({ technicianId, date, timeSlot, activities, onActivityClick }: DroppableTimeSlotProps) {
+  const { user } = useAuth();
+  const tz = getBaseTimezone(user?.timezone);
   const { isOver, setNodeRef } = useDroppable({
     id: `${technicianId}-${date.toISOString()}-${timeSlot.hour}-${timeSlot.minute}`,
     data: {
@@ -72,8 +74,9 @@ function DroppableTimeSlot({ technicianId, date, timeSlot, activities, onActivit
   });
 
   const slotActivities = activities.filter(activity => {
-    const activityStart = new Date(activity.scheduled_start);
-    return activityStart.getHours() === timeSlot.hour && activityStart.getMinutes() === timeSlot.minute;
+    const hh = parseInt(formatInTimeZone(new Date(activity.scheduled_start), tz, 'H'), 10);
+    const mm = parseInt(formatInTimeZone(new Date(activity.scheduled_start), tz, 'm'), 10);
+    return hh === timeSlot.hour && mm === timeSlot.minute;
   });
 
   return (
