@@ -11,6 +11,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { getLocalDateString, formatDateForInput, formatWithTz, getBaseTimezone } from '@/lib/dateUtils';
+import { fromZonedTime } from 'date-fns-tz';
 
 interface PlanningActivity {
   id: string;
@@ -59,6 +61,11 @@ interface ActivityFormData {
 }
 
 export function ActivityDialog({ open, onOpenChange, activity, technicians }: ActivityDialogProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const tz = user?.timezone;
+
   const [formData, setFormData] = useState<ActivityFormData>({
     title: '',
     description: '',
@@ -68,13 +75,9 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
     technician_id: 'unassigned',
     boat_id: '',
     notes: '',
-    scheduled_date: new Date().toISOString().split('T')[0],
+    scheduled_date: getLocalDateString(tz),
     scheduled_time: '09:00'
   });
-
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
 
   // Debug logging
   console.log('ActivityDialog render:', { open, user: user?.baseId, technicians: technicians.length });
@@ -87,7 +90,6 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
 
   useEffect(() => {
     if (activity) {
-      const activityDate = new Date(activity.scheduled_start);
       setFormData({
         title: activity.title,
         description: activity.description || '',
@@ -97,8 +99,8 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         technician_id: activity.technician_id || 'unassigned',
         boat_id: activity.boat_id || '',
         notes: activity.notes || '',
-        scheduled_date: activityDate.toISOString().split('T')[0],
-        scheduled_time: activityDate.toTimeString().substring(0, 5)
+        scheduled_date: formatDateForInput(activity.scheduled_start, tz),
+        scheduled_time: formatWithTz(activity.scheduled_start, tz, 'HH:mm')
       });
     } else {
       setFormData({
@@ -110,11 +112,11 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
         technician_id: 'unassigned',
         boat_id: '',
         notes: '',
-        scheduled_date: new Date().toISOString().split('T')[0],
+        scheduled_date: getLocalDateString(tz),
         scheduled_time: '09:00'
       });
     }
-  }, [activity]);
+  }, [activity, tz]);
 
   const createActivityMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -171,12 +173,13 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Calculate start and end times using the form data
-    const [hours, minutes] = formData.scheduled_time.split(':').map(Number);
-    const startTime = new Date(formData.scheduled_date);
-    startTime.setHours(hours, minutes, 0, 0);
-    
+
+    // Convert "yyyy-MM-dd" + "HH:mm" in the user's base timezone → UTC instant
+    const startTime = fromZonedTime(
+      `${formData.scheduled_date}T${formData.scheduled_time}:00`,
+      getBaseTimezone(tz)
+    );
+
     const endTime = new Date(startTime);
     endTime.setMinutes(endTime.getMinutes() + formData.estimated_duration);
 

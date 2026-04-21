@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useAuth } from '@/contexts/AuthContext';
 import { formatDateSafe } from '@/lib/dateUtils';
 
 interface CreateInterventionData {
@@ -19,6 +20,7 @@ export function useCreateIntervention() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { createNotification } = useNotifications();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (data: CreateInterventionData) => {
@@ -45,7 +47,7 @@ export function useCreateIntervention() {
             user_id: data.technician_id,
             type: 'intervention_assigned',
             title: 'Nouvelle intervention assignée',
-            message: `Une intervention "${data.title}" vous a été assignée pour le ${boatName}. Date prévue: ${formatDateSafe(data.scheduled_date)}`,
+            message: `Une intervention "${data.title}" vous a été assignée pour le ${boatName}. Date prévue: ${formatDateSafe(data.scheduled_date, user?.timezone)}`,
             data: {
               intervention_id: intervention.id,
               boat_id: data.boat_id,
