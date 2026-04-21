@@ -82,12 +82,6 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
   // Debug logging
   console.log('ActivityDialog render:', { open, user: user?.baseId, technicians: technicians.length });
 
-  // Early return if no user or baseId
-  if (!user || !user.baseId) {
-    console.log('ActivityDialog: No user or baseId, returning null');
-    return null;
-  }
-
   useEffect(() => {
     if (activity) {
       setFormData({
@@ -170,6 +164,12 @@ export function ActivityDialog({ open, onOpenChange, activity, technicians }: Ac
       });
     }
   });
+
+  // Early return if no user or baseId (after all hooks)
+  if (!user || !user.baseId) {
+    console.log('ActivityDialog: No user or baseId, returning null');
+    return null;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
