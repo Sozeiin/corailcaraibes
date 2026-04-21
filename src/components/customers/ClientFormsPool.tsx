@@ -28,6 +28,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { EditFormDialog } from '@/components/checkin/EditFormDialog';
+import { formatDateInTimezone } from '@/lib/dateUtils';
 
 export function ClientFormsPool() {
   const { user } = useAuth();
@@ -203,10 +204,10 @@ export function ClientFormsPool() {
                       <Calendar className="h-4 w-4" />
                       <span>
                         {form.planned_start_date &&
-                          format(new Date(form.planned_start_date), 'dd MMM', { locale: fr })}
+                          formatDateInTimezone(form.planned_start_date, user?.timezone, 'dd MMM')}
                         {' → '}
                         {form.planned_end_date &&
-                          format(new Date(form.planned_end_date), 'dd MMM yyyy', { locale: fr })}
+                          formatDateInTimezone(form.planned_end_date, user?.timezone, 'dd MMM yyyy')}
                       </span>
                     </div>
                     {getDateBadge(form.planned_start_date)}

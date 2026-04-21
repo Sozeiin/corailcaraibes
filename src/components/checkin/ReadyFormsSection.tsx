@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { EditFormDialog } from "./EditFormDialog";
 import { AdministrativeCheckinFormWithRelations } from "@/types/checkin";
 import { toast } from "sonner";
+import { formatDateInTimezone } from "@/lib/dateUtils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -187,8 +188,8 @@ export function ReadyFormsSection() {
                         <div>
                           <p className="text-muted-foreground">Dates</p>
                           <p>
-                            {format(new Date(form.planned_start_date), "dd MMM", { locale: fr })} →{" "}
-                            {format(new Date(form.planned_end_date), "dd MMM yyyy", { locale: fr })}
+                            {formatDateInTimezone(form.planned_start_date, user?.timezone, 'dd MMM')} →{" "}
+                            {formatDateInTimezone(form.planned_end_date, user?.timezone, 'dd MMM yyyy')}
                           </p>
                         </div>
                       </div>

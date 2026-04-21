@@ -13,6 +13,7 @@ interface User {
   name: string;
   role: 'direction' | 'chef_base' | 'technicien' | 'administratif';
   baseId: string;
+  timezone: string;
   createdAt: string;
 }
 
@@ -136,12 +137,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             .update({ base_id: baseId })
             .eq('id', profile.id);
         }
+
+        // Récupère le fuseau de la base de l'utilisateur
+        let timezone = 'America/Martinique';
+        try {
+          const { data: baseRow } = await supabase
+            .from('bases')
+            .select('timezone')
+            .eq('id', baseId)
+            .maybeSingle();
+          if (baseRow?.timezone) timezone = baseRow.timezone;
+        } catch (err) {
+          console.warn('Could not fetch base timezone, falling back:', err);
+        }
+
         const userData = {
           id: profile.id,
           email: profile.email,
           name: profile.name,
           role: profile.role,
           baseId,
+          timezone,
           createdAt: profile.created_at
         };
         setUser(userData);
@@ -186,6 +202,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           name: profile.name,
           role: profile.role,
           baseId,
+          timezone: 'America/Martinique',
           createdAt: profile.created_at
         };
         setUser(userData);
