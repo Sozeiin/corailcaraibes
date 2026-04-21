@@ -71,6 +71,8 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
   // Flag pour éviter l'écrasement des données restaurées
   const [isItemsInitialized, setIsItemsInitialized] = useState(false);
   const hasRestoredDataRef = useRef(false);
+  // Stocke les items restaurés tant que les fetchedItems ne sont pas dispo (pour fusion)
+  const pendingRestoredItemsRef = useRef<ChecklistItem[] | null>(null);
 
   // ===== REFS POUR CAPTURER L'ÉTAT IMMÉDIATEMENT (évite les closures périmées) =====
   const checklistItemsRef = useRef<ChecklistItem[]>([]);
