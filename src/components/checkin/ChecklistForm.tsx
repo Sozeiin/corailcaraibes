@@ -821,6 +821,24 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
 
   const isComplete = isStepComplete('checklist') && isStepComplete('review') && isStepComplete('signatures') && isStepComplete('email');
 
+  // Diagnostic : listing précis des conditions manquantes pour Finaliser
+  const missingReasons: { label: string; goTo: 'checklist' | 'review' | 'signatures' | 'email' }[] = [];
+  if (!isStepComplete('checklist')) {
+    const n = checklistItems.filter(i => i.isRequired && i.status === 'not_checked').length;
+    missingReasons.push({ label: `${n} élément(s) obligatoire(s) non vérifié(s)`, goTo: 'checklist' });
+  }
+  if (!isStepComplete('review')) {
+    const n = checklistItems.filter(i => i.status === 'not_checked').length;
+    missingReasons.push({ label: `${n} élément(s) facultatif(s) à marquer (OK ou À réparer)`, goTo: 'review' });
+  }
+  if (!isStepComplete('signatures')) {
+    if (!technicianSignature) missingReasons.push({ label: 'Signature technicien manquante', goTo: 'signatures' });
+    if (!customerSignature) missingReasons.push({ label: 'Signature client manquante', goTo: 'signatures' });
+  }
+  if (!isStepComplete('email')) {
+    missingReasons.push({ label: 'Adresse email client invalide', goTo: 'email' });
+  }
+
   const handleCancel = () => {
     if (checklistItems.some(item => item.status !== 'not_checked') || generalNotes || technicianSignature || customerSignature) {
       setShowCancelConfirm(true);
