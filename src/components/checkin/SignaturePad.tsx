@@ -22,6 +22,7 @@ export function SignaturePad({ title, description, onSignature, required = true 
       sigPadRef.current.clear();
       setSigned(false);
       setIsEmpty(true);
+      onSignature(''); // 🔥 FIX: notifier le parent que la signature est vidée
     }
   };
 
@@ -35,7 +36,18 @@ export function SignaturePad({ title, description, onSignature, required = true 
 
   const handleEnd = () => {
     if (sigPadRef.current) {
-      setIsEmpty(sigPadRef.current.isEmpty());
+      const empty = sigPadRef.current.isEmpty();
+      setIsEmpty(empty);
+      // 🔥 FIX: propager automatiquement la signature au parent à chaque trait
+      // Évite que l'utilisateur oublie de cliquer "Valider" et que le bouton Finaliser reste grisé
+      if (!empty) {
+        const dataURL = sigPadRef.current.toDataURL('image/png');
+        onSignature(dataURL);
+        setSigned(true);
+      } else {
+        onSignature('');
+        setSigned(false);
+      }
     }
   };
 
