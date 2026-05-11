@@ -821,6 +821,24 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
 
   const isComplete = isStepComplete('checklist') && isStepComplete('review') && isStepComplete('signatures') && isStepComplete('email');
 
+  // Diagnostic : listing précis des conditions manquantes pour Finaliser
+  const missingReasons: { label: string; goTo: 'checklist' | 'review' | 'signatures' | 'email' }[] = [];
+  if (!isStepComplete('checklist')) {
+    const n = checklistItems.filter(i => i.isRequired && i.status === 'not_checked').length;
+    missingReasons.push({ label: `${n} élément(s) obligatoire(s) non vérifié(s)`, goTo: 'checklist' });
+  }
+  if (!isStepComplete('review')) {
+    const n = checklistItems.filter(i => i.status === 'not_checked').length;
+    missingReasons.push({ label: `${n} élément(s) facultatif(s) à marquer (OK ou À réparer)`, goTo: 'review' });
+  }
+  if (!isStepComplete('signatures')) {
+    if (!technicianSignature) missingReasons.push({ label: 'Signature technicien manquante', goTo: 'signatures' });
+    if (!customerSignature) missingReasons.push({ label: 'Signature client manquante', goTo: 'signatures' });
+  }
+  if (!isStepComplete('email')) {
+    missingReasons.push({ label: 'Adresse email client invalide', goTo: 'email' });
+  }
+
   const handleCancel = () => {
     if (checklistItems.some(item => item.status !== 'not_checked') || generalNotes || technicianSignature || customerSignature) {
       setShowCancelConfirm(true);
@@ -965,23 +983,49 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button
-              onClick={handleComplete}
-              disabled={!isComplete || isProcessing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Finalisation...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Finaliser
-                </>
+            <div className="flex flex-col items-end gap-2">
+              {!isComplete && missingReasons.length > 0 && (
+                <Alert variant="destructive" className="w-full md:max-w-md">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold mb-1">Impossible de finaliser :</div>
+                    <ul className="space-y-1">
+                      {missingReasons.map((r, i) => (
+                        <li key={i} className="flex items-center justify-between gap-2">
+                          <span>• {r.label}</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setCurrentStep(r.goTo)}
+                          >
+                            Corriger
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
               )}
-            </Button>
+              <Button
+                onClick={handleComplete}
+                disabled={!isComplete || isProcessing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Finalisation...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Finaliser
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
