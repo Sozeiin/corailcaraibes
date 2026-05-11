@@ -983,23 +983,49 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
               <ChevronRight className="h-4 w-4 ml-2" />
             </Button>
           ) : (
-            <Button
-              onClick={handleComplete}
-              disabled={!isComplete || isProcessing}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  Finalisation...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Finaliser
-                </>
+            <div className="flex flex-col items-end gap-2">
+              {!isComplete && missingReasons.length > 0 && (
+                <Alert variant="destructive" className="w-full md:max-w-md">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="font-semibold mb-1">Impossible de finaliser :</div>
+                    <ul className="space-y-1">
+                      {missingReasons.map((r, i) => (
+                        <li key={i} className="flex items-center justify-between gap-2">
+                          <span>• {r.label}</span>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            className="h-6 px-2 text-xs"
+                            onClick={() => setCurrentStep(r.goTo)}
+                          >
+                            Corriger
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
               )}
-            </Button>
+              <Button
+                onClick={handleComplete}
+                disabled={!isComplete || isProcessing}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Finalisation...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Finaliser
+                  </>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
