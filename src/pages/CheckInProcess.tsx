@@ -77,6 +77,14 @@ export default function CheckInProcess() {
       }
     }
 
+    // Check-out: clôturer un éventuel partage ONE WAY actif (no-op si aucun)
+    if (!isCheckin && state.boat?.id) {
+      const { error: closeShareError } = await supabase.rpc('handle_one_way_checkout_close', {
+        p_boat_id: state.boat.id,
+      });
+      if (closeShareError) console.error('Error closing ONE WAY sharing:', closeShareError);
+    }
+
     navigate('/checkin', {
       replace: true,
       state: {
