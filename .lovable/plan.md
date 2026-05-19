@@ -1,51 +1,37 @@
-Constat après audit en lecture seule
 
-- Il n’y a pas plusieurs bateaux TOPAZE dans la table `boats` : le bateau d’origine à conserver est `TOPAZE / FR-CATBG151J324`, id `66331047-1aa5-424d-8e12-ddf4f97d4c11`, actuellement en Base Guadeloupe.
-- Les “doublons” visibles viennent surtout de `boat_sharing` : TOPAZE a 3 partages ONE WAY encore marqués `active`, dont certains anciens ou contradictoires.
-- Le transfert ONE WAY actuel existe côté RPC (`handle_one_way_checkin_transfer`) mais il n’est pas assez idempotent : plusieurs finalisations/reprises peuvent créer plusieurs logs de transfert et laisser plusieurs partages actifs.
-- La page Bateaux combine les bateaux de la base + les bateaux partagés sans dédupliquer correctement par `boat.id`, donc un même bateau peut apparaître plusieurs fois.
+# Audit ONE WAY — État actuel
 
-Plan de correction
+## Principe ONE WAY confirmé
+Oui, c'est bien le comportement attendu et il est implémenté :
+1. Préparation fiche check-in avec case "ONE WAY" + base de destination.
+2. Le technicien fait le **check-in sur la base d'origine** → le bateau est immédiatement transféré (`base_id` → destination, `status = rented`) via `handle_one_way_checkin_transfer`.
+3. Le bateau apparaît alors sur la **base de destination**, où un autre technicien réalise le **check-out** → `status = available`, et `handle_one_way_checkout_close` clôture tout partage actif résiduel. Le bateau reste sur la base de destination (c'est le principe du one-way).
 
-1. Nettoyage sécurisé des données TOPAZE
-   - Ne pas supprimer la ligne originale dans `boats`.
-   - Passer en `ended` les anciens enregistrements `boat_sharing` actifs de TOPAZE qui ne correspondent plus à l’état courant.
-   - Conserver l’historique `boat_base_transfers` pour audit, sauf si on décide explicitement de masquer/nettoyer les doublons historiques dans une étape séparée.
-   - Vérifier après migration que TOPAZE n’apparaît plus qu’une seule fois dans la page Bateaux.
+## Audit : ce qui est correct
+- **Aucun doublon de bateau actif** (vérifié) ; aucun doublon de partage actif (l'index unique partiel `uniq_boat_sharing_active_per_boat` empêche toute régression).
+- **Trigger d'auto-création de partage retiré** sur `administrative_checkin_forms` (cause historique des doublons TOPAZE).
+- **RPC `handle_one_way_checkin_transfer` idempotente** : no-op si le bateau est déjà à destination, clôture les anciens partages, anti-doublon de log < 5 min.
+- **RPC `handle_one_way_checkout_close`** : clôture les partages actifs au check-out.
+- **Frontend, 3 points d'entrée couverts** :
+  - `TechnicianCheckinInterface` (check-in direct + check-out direct).
+  - `TechnicianCheckinInterface.handleResumeDraft` (reprise de brouillon ONE WAY — propage `oneWayMeta`).
+  - `CheckInProcess` (route `/checkin-process` : transfert au check-in, clôture au check-out).
+- **Page Bateaux** déduplique par `boat.id` (filet de sécurité visuel).
 
-2. Corriger la cause long terme côté base de données
-   - Remplacer/renforcer `handle_one_way_checkin_transfer` pour qu’elle soit idempotente :
-     - vérifier que le bateau existe ;
-     - refuser un transfert vers la même base ;
-     - transférer `boats.base_id` vers la destination et garder `status = rented` ;
-     - clôturer les anciens partages actifs du bateau ;
-     - créer ou mettre à jour un seul partage actif pour le ONE WAY concerné ;
-     - éviter d’insérer plusieurs lignes identiques dans `boat_base_transfers` si le transfert a déjà été enregistré récemment pour le même bateau/formulaire/contexte.
-   - Ajouter un index unique partiel sur `boat_sharing` pour empêcher plusieurs partages `active` simultanés pour un même bateau.
-   - Corriger/recréer le trigger `activate_one_way_sharing` si nécessaire pour qu’il ne recrée pas de partages multiples à la création/modification d’une fiche.
+## Dysfonctionnement résiduel détecté
+Il reste **5 enregistrements `boat_sharing` « actifs »** créés avant le correctif (TOPAZE, MORGANITE, HARENG, RUBIS, TANZANITE), dont la `sharing_end_date` est dépassée. Les bateaux concernés sont eux-mêmes corrects (TOPAZE est bien `available` sur Base Martinique). Ces lignes ne génèrent plus de doublon visuel grâce à la déduplication, mais elles polluent les requêtes "partages actifs" et peuvent troubler les rapports.
 
-3. Corriger l’affichage Bateaux
-   - Dédupliquer la liste finale par `boat.id` après combinaison `ownedBoats + sharedBoats`.
-   - Prioriser la ligne “owned/current base” si le bateau est déjà dans la base de l’utilisateur, afin qu’il ne soit pas affiché comme doublon partagé.
-   - Utiliser une clé React unique stable qui ne provoque plus de rendu multiple pour le même bateau.
+## Action proposée
+**Migration unique** (1 instruction SQL, aucun changement de code) :
+```sql
+UPDATE public.boat_sharing
+   SET status = 'ended', updated_at = now()
+ WHERE status = 'active'
+   AND sharing_end_date < now();
+```
+- Marque tous les partages échus comme `ended`.
+- N'affecte aucun bateau, aucun formulaire, aucune location.
+- Zéro risque de régression : la fonctionnalité ONE WAY moderne ne crée plus de nouveaux `boat_sharing` ; ces lignes sont des résidus historiques.
 
-4. Sécuriser le flux check-in / check-out ONE WAY
-   - Centraliser l’appel au transfert ONE WAY pour éviter les doubles appels entre les anciens parcours (`TechnicianCheckinInterface`) et le parcours `/checkin-process`.
-   - Après finalisation du check-in, invalider/rafraîchir les requêtes concernées pour que le technicien voie immédiatement le bateau dans la bonne base.
-   - Au check-out, clôturer le partage ONE WAY actif lié à la fiche/rental, puis rendre le bateau disponible dans sa base actuelle.
-
-5. Tests de non-régression
-   - Tester en base de données :
-     - TOPAZE n’a qu’une seule ligne dans `boats` ;
-     - TOPAZE n’a plus qu’un partage actif maximum ;
-     - un deuxième appel au RPC ONE WAY ne crée pas de nouveau doublon.
-   - Tester côté interface :
-     - la page Bateaux n’affiche TOPAZE qu’une seule fois ;
-     - un check-in ONE WAY transfère bien le bateau vers la base destination ;
-     - un check-out ONE WAY reste possible depuis la base destination ;
-     - les check-in/check-out non ONE WAY restent inchangés.
-
-Ce qui ne sera pas fait sans validation explicite
-
-- Suppression physique du bateau TOPAZE d’origine.
-- Suppression massive de l’historique de transferts ou de checklists, car cela casserait la traçabilité.
+## Conclusion
+Le flux ONE WAY (check-in base A → check-out base B) est **fonctionnel et protégé** contre les doublons. Après le nettoyage ci-dessus, le système est complètement assaini.
