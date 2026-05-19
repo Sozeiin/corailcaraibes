@@ -1,106 +1,51 @@
+Constat après audit en lecture seule
 
+- Il n’y a pas plusieurs bateaux TOPAZE dans la table `boats` : le bateau d’origine à conserver est `TOPAZE / FR-CATBG151J324`, id `66331047-1aa5-424d-8e12-ddf4f97d4c11`, actuellement en Base Guadeloupe.
+- Les “doublons” visibles viennent surtout de `boat_sharing` : TOPAZE a 3 partages ONE WAY encore marqués `active`, dont certains anciens ou contradictoires.
+- Le transfert ONE WAY actuel existe côté RPC (`handle_one_way_checkin_transfer`) mais il n’est pas assez idempotent : plusieurs finalisations/reprises peuvent créer plusieurs logs de transfert et laisser plusieurs partages actifs.
+- La page Bateaux combine les bateaux de la base + les bateaux partagés sans dédupliquer correctement par `boat.id`, donc un même bateau peut apparaître plusieurs fois.
 
-## Objectif
-Finaliser le chantier fuseau horaire en 3 lots pour éliminer tout risque de décalage de date entre la France (UTC+1/+2) et les Antilles (UTC-4).
+Plan de correction
 
-## Lot 1 — Maintenance & Planning
+1. Nettoyage sécurisé des données TOPAZE
+   - Ne pas supprimer la ligne originale dans `boats`.
+   - Passer en `ended` les anciens enregistrements `boat_sharing` actifs de TOPAZE qui ne correspondent plus à l’état courant.
+   - Conserver l’historique `boat_base_transfers` pour audit, sauf si on décide explicitement de masquer/nettoyer les doublons historiques dans une étape séparée.
+   - Vérifier après migration que TOPAZE n’apparaît plus qu’une seule fois dans la page Bateaux.
 
-Remplacer tous les `new Date(...).toISOString()`, `formatDateSafe(date)`, `parseLocalDateToUTC()` sans fuseau par les helpers `parseDateInputToUTC(value, user.timezone)` et `formatDateInTimezone(iso, baseTimezone)`.
+2. Corriger la cause long terme côté base de données
+   - Remplacer/renforcer `handle_one_way_checkin_transfer` pour qu’elle soit idempotente :
+     - vérifier que le bateau existe ;
+     - refuser un transfert vers la même base ;
+     - transférer `boats.base_id` vers la destination et garder `status = rented` ;
+     - clôturer les anciens partages actifs du bateau ;
+     - créer ou mettre à jour un seul partage actif pour le ONE WAY concerné ;
+     - éviter d’insérer plusieurs lignes identiques dans `boat_base_transfers` si le transfert a déjà été enregistré récemment pour le même bateau/formulaire/contexte.
+   - Ajouter un index unique partiel sur `boat_sharing` pour empêcher plusieurs partages `active` simultanés pour un même bateau.
+   - Corriger/recréer le trigger `activate_one_way_sharing` si nécessaire pour qu’il ne recrée pas de partages multiples à la création/modification d’une fiche.
 
-Fichiers :
-- `src/components/maintenance/InterventionTable.tsx`
-- `src/components/maintenance/InterventionDialog.tsx`
-- `src/components/maintenance/InterventionCompletionDialog.tsx`
-- `src/components/maintenance/InterventionDetailsDialog.tsx`
-- `src/components/maintenance/GanttMaintenanceSchedule.tsx` (harmoniser les TIMEZONE FIX existants)
-- `src/components/maintenance/MaintenanceSchedule.tsx`
-- `src/components/maintenance/ScheduledMaintenanceTable.tsx`
-- `src/components/maintenance/MaintenanceHistory.tsx`
-- `src/hooks/useCreateIntervention.ts`
-- `src/components/maintenance/planning/ChronologicalView.tsx`
-- `src/components/maintenance/planning/MonthlyView.tsx`
-- `src/components/maintenance/planning/ResourceView.tsx`
-- `src/components/maintenance/planning/GanttPlanningView.tsx`
-- `src/components/maintenance/planning/ActivityDialog.tsx`
-- `src/components/maintenance/planning/PlanningActivityCard.tsx`
-- `src/components/maintenance/planning/TimeGrid.tsx`
+3. Corriger l’affichage Bateaux
+   - Dédupliquer la liste finale par `boat.id` après combinaison `ownedBoats + sharedBoats`.
+   - Prioriser la ligne “owned/current base” si le bateau est déjà dans la base de l’utilisateur, afin qu’il ne soit pas affiché comme doublon partagé.
+   - Utiliser une clé React unique stable qui ne provoque plus de rendu multiple pour le même bateau.
 
-Règle : toute date stockée passe par midi du fuseau de la base, tout affichage utilise le fuseau de la base de l'entité (pas du navigateur).
+4. Sécuriser le flux check-in / check-out ONE WAY
+   - Centraliser l’appel au transfert ONE WAY pour éviter les doubles appels entre les anciens parcours (`TechnicianCheckinInterface`) et le parcours `/checkin-process`.
+   - Après finalisation du check-in, invalider/rafraîchir les requêtes concernées pour que le technicien voie immédiatement le bateau dans la bonne base.
+   - Au check-out, clôturer le partage ONE WAY actif lié à la fiche/rental, puis rendre le bateau disponible dans sa base actuelle.
 
-## Lot 2 — Dashboard, Préparations & Expéditions
+5. Tests de non-régression
+   - Tester en base de données :
+     - TOPAZE n’a qu’une seule ligne dans `boats` ;
+     - TOPAZE n’a plus qu’un partage actif maximum ;
+     - un deuxième appel au RPC ONE WAY ne crée pas de nouveau doublon.
+   - Tester côté interface :
+     - la page Bateaux n’affiche TOPAZE qu’une seule fois ;
+     - un check-in ONE WAY transfère bien le bateau vers la base destination ;
+     - un check-out ONE WAY reste possible depuis la base destination ;
+     - les check-in/check-out non ONE WAY restent inchangés.
 
-Fichiers :
-- `src/components/dashboard/widgets/MaintenanceWidget.tsx`
-- `src/components/dashboard/widgets/MaintenanceAlertsWidget.tsx`
-- `src/components/dashboard/widgets/UrgentInterventionsWidget.tsx`
-- `src/components/dashboard/widgets/AlertsWidget.tsx`
-- `src/components/dashboard/widgets/BoatFlowWidget.tsx`
-- `src/components/dashboard/TechnicianDashboard.tsx`
-- `src/components/dashboard/TechnicianPlanningView.tsx`
-- `src/components/preparation/BoatPreparationManager.tsx`
-- `src/components/preparation/PreparationOrdersTable.tsx`
-- `src/components/preparation/TechnicianPreparations.tsx`
-- `src/components/shipments/PreparationDialog.tsx`
-- `src/components/shipments/PreparationDetailsDialog.tsx`
-- `src/components/shipments/ShipmentReceptionDialog.tsx`
-- `src/components/checkin/TechnicianCheckinInterface.tsx`
-- `src/components/checkin/ChecklistReviewStep.tsx`
-- `src/components/boats/BoatChecklistHistory.tsx`
-- `src/components/boats/BoatInterventionHistory.tsx`
-- `src/components/boats/BoatPreparationHistory.tsx`
+Ce qui ne sera pas fait sans validation explicite
 
-Helper utilisé : `formatDateInTimezone(iso, baseTimezoneOfRecord)`. Les widgets « aujourd'hui » utilisent `getLocalDateString(user.timezone)`.
-
-## Lot 3 — Edge functions (PDF & Email)
-
-Modifier :
-- `supabase/functions/generate-checklist-pdf/index.ts`
-- `supabase/functions/send-checklist-report/index.ts`
-
-Changements :
-- Récupérer `bases.timezone` depuis l'enregistrement lié à la checklist.
-- Formater toutes les dates via `Intl.DateTimeFormat('fr-FR', { timeZone: baseTimezone, ... })` au lieu du défaut UTC de Deno.
-- Ajouter le libellé « heure Martinique / Guadeloupe / Paris » sous les dates dans le PDF et le corps de l'email.
-
-## Vérifications transverses
-
-Audit final via grep sur :
-- `new Date(` dans les composants ciblés → encapsulé ou justifié
-- `.toISOString()` → uniquement après passage par `parseDateInputToUTC`
-- `toLocaleDateString` / `toLocaleString` → remplacés par `formatDateInTimezone`
-- Tous les `<input type="date">` réécrivent leur valeur via `formatDateForInput(iso, user.timezone)`
-
-## Détails techniques
-
-```text
-Pattern de remplacement systématique :
-
-AVANT:
-  start_date: new Date(formData.startDate).toISOString()
-  affichage: format(new Date(iso), 'dd/MM/yyyy')
-
-APRÈS:
-  start_date: parseDateInputToUTC(formData.startDate, user.timezone)
-  affichage: formatDateInTimezone(iso, recordBaseTimezone, 'dd/MM/yyyy')
-
-Pour les listes multi-bases (vue direction) :
-  formatDateInTimezone(iso, item.boat.base.timezone || user.timezone)
-```
-
-## Validation finale
-
-Scénarios exécutés après chaque lot :
-1. Admin Guadeloupe crée une maintenance le 25/04 → direction France voit 25/04 (pas 24/04).
-2. Direction France planifie une intervention pour la Martinique le 30/04 → technicien Martinique voit 30/04.
-3. Dashboard « aujourd'hui » à 23h locale Antilles → liste correcte (pas de glissement au lendemain).
-4. PDF de check-in généré pour une location Martinique → horodatages affichent l'heure Martinique avec libellé.
-5. Email de rapport reçu par la direction → dates affichées dans le fuseau de la base, pas en UTC.
-
-## Fichiers à modifier
-
-- ~17 fichiers (Lot 1)
-- ~18 fichiers (Lot 2)
-- 2 edge functions (Lot 3)
-
-Aucun changement DB nécessaire (la colonne `bases.timezone` existe déjà).
-
+- Suppression physique du bateau TOPAZE d’origine.
+- Suppression massive de l’historique de transferts ou de checklists, car cela casserait la traçabilité.
