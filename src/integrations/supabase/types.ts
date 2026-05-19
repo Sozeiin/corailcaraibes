@@ -5566,6 +5566,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      handle_one_way_checkout_close: {
+        Args: { p_boat_id: string }
+        Returns: undefined
+      }
       handle_shipment_item_reception: {
         Args: {
           destination_base_id: string

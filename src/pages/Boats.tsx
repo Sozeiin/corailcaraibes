@@ -197,7 +197,13 @@ export const Boats = () => {
     ownerBaseName: sharing.owner_base?.name
   }));
 
-  const boats = [...ownedBoats, ...sharedBoatsWithBase];
+  // Dédupliquer par boat.id en priorisant la version "owned" (base courante)
+  const boatsById = new Map<string, any>();
+  for (const b of ownedBoats) boatsById.set(b.id, b);
+  for (const b of sharedBoatsWithBase) {
+    if (!boatsById.has(b.id)) boatsById.set(b.id, b);
+  }
+  const boats = Array.from(boatsById.values());
 
   const filteredBoats = boats?.filter(boat => {
     const matchesSearch = !searchTerm || 
