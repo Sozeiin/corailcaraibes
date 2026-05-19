@@ -382,6 +382,12 @@ export function TechnicianCheckinInterface() {
           })
           .eq('id', selectedRental.boat_id);
         if (boatError) console.error('Error setting boat available:', boatError);
+
+        // Clôturer un éventuel partage ONE WAY actif lié à ce bateau
+        const { error: closeShareError } = await supabase.rpc('handle_one_way_checkout_close', {
+          p_boat_id: selectedRental.boat_id,
+        });
+        if (closeShareError) console.error('Error closing ONE WAY sharing:', closeShareError);
       }
     }
     setIsDialogOpen(false);
