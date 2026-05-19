@@ -60,6 +60,13 @@ export function TechnicianCheckinInterface() {
 
       // Build rental data: for check-out load the active rental, for check-in load the admin form
       let rentalData: any = { customerName: draft.customer_name || 'Client' };
+      let oneWayMeta: {
+        formId?: string;
+        isOneWay?: boolean;
+        destinationBaseId?: string;
+        baseId?: string;
+        boatId?: string;
+      } = {};
 
       if (checklistType === 'checkout' && draft.boat_id) {
         const { data: rental } = await supabase
@@ -103,6 +110,13 @@ export function TechnicianCheckinInterface() {
             endDate: form.planned_end_date,
             notes: form.rental_notes || form.special_instructions,
           };
+          oneWayMeta = {
+            formId: form.id,
+            isOneWay: !!form.is_one_way,
+            destinationBaseId: form.destination_base_id || undefined,
+            baseId: form.base_id,
+            boatId: form.boat_id,
+          };
         }
       }
 
@@ -111,6 +125,7 @@ export function TechnicianCheckinInterface() {
           boat: boatData,
           rentalData,
           type: checklistType,
+          ...oneWayMeta,
         },
       });
     } catch (e) {
