@@ -9,6 +9,7 @@ import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
+import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
