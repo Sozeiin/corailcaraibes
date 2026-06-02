@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet, Download, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { StockDialog } from '@/components/stock/StockDialog';
 import { StockFilters } from '@/components/stock/StockFilters';
 import { StockImportDialog } from '@/components/stock/StockImportDialog';
 import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
+import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -31,6 +32,7 @@ export default function Stock() {
   const [showLowStock, setShowLowStock] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
@@ -235,6 +237,15 @@ export default function Stock() {
               <span className="xs:hidden">Import</span>
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setIsInventoryDialogOpen(true)}
+              className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              <span className="hidden xs:inline">Inventaire</span>
+              <span className="xs:hidden">Invent.</span>
+            </Button>
+            <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-marine-600 hover:bg-marine-700 text-sm"
             >
@@ -312,6 +323,16 @@ export default function Stock() {
         isOpen={isImportDialogOpen}
         onClose={() => setIsImportDialogOpen(false)}
       />
+
+      <StockInventoryDialog
+        isOpen={isInventoryDialogOpen}
+        onClose={() => setIsInventoryDialogOpen(false)}
+        items={stockItems}
+        bases={bases}
+        userRole={user?.role}
+        userBaseId={user?.baseId}
+      />
+
 
       <StockDuplicateDialog
         isOpen={isDuplicateDialogOpen}
