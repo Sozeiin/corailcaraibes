@@ -250,6 +250,79 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
           </Tabs>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Détail de l'inventaire — {selectedSession?.baseName}
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {selectedSession && formatDateSafe(selectedSession.date)} · Réalisé par {selectedSession.actorName ?? '—'}
+            </p>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="flex gap-4">
+              <Card className="flex-1">
+                <CardContent className="pt-4">
+                  <p className="text-sm text-muted-foreground">Articles comptés</p>
+                  <p className="text-2xl font-bold">{selectedSession?.itemCount}</p>
+                </CardContent>
+              </Card>
+              <Card className="flex-1">
+                <CardContent className="pt-4">
+                  <p className="text-sm text-muted-foreground">Écarts détectés</p>
+                  <p className={`text-2xl font-bold ${(selectedSession?.discrepancyCount ?? 0) > 0 ? 'text-destructive' : ''}`}>
+                    {selectedSession?.discrepancyCount}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="flex-1">
+                <CardContent className="pt-4">
+                  <p className="text-sm text-muted-foreground">Écart total</p>
+                  <p className={`text-2xl font-bold ${(selectedSession?.totalDifference ?? 0) < 0 ? 'text-destructive' : (selectedSession?.totalDifference ?? 0) > 0 ? 'text-emerald-600' : ''}`}>
+                    {(selectedSession?.totalDifference ?? 0) > 0 ? '+' : ''}{selectedSession?.totalDifference}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Article</TableHead>
+                  <TableHead>Référence</TableHead>
+                  <TableHead className="text-right">Théorique</TableHead>
+                  <TableHead className="text-right">Compté</TableHead>
+                  <TableHead className="text-right">Écart</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {(sessionDetails ?? []).map((rec) => (
+                  <TableRow key={rec.id} className={Number(rec.difference) !== 0 ? 'bg-destructive/5' : undefined}>
+                    <TableCell className="font-medium">{rec.item_name}</TableCell>
+                    <TableCell className="text-muted-foreground">{rec.item_reference ?? '—'}</TableCell>
+                    <TableCell className="text-right">{rec.theoretical_qty}</TableCell>
+                    <TableCell className="text-right">{rec.counted_qty}</TableCell>
+                    <TableCell className={`text-right font-medium ${Number(rec.difference) < 0 ? 'text-destructive' : Number(rec.difference) > 0 ? 'text-emerald-600' : ''}`}>
+                      {Number(rec.difference) > 0 ? '+' : ''}{rec.difference}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {(sessionDetails ?? []).length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      Aucun détail disponible pour cet inventaire.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
