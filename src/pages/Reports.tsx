@@ -5,25 +5,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { MaintenanceReports } from '@/components/reports/MaintenanceReports';
-import { ChecklistReports } from '@/components/reports/ChecklistReports';
-import { IncidentReports } from '@/components/reports/IncidentReports';
 import { OperationalReports } from '@/components/reports/OperationalReports';
-import { PreparationReports } from '@/components/reports/PreparationReports';
-import { PreparationHistoryView } from '@/components/reports/PreparationHistoryView';
+import { InventoryReports } from '@/components/reports/InventoryReports';
 import { useReportsData } from '@/hooks/useReportsData';
-import { usePreparationReportsData } from '@/hooks/usePreparationReportsData';
 import { exportReportToPDF, exportReportToExcel } from '@/lib/reportExports';
 import { 
   FileText, 
   Wrench, 
-  CheckSquare, 
-  AlertTriangle, 
   BarChart, 
-  Download,
   RefreshCw,
-  Calendar,
   FileSpreadsheet,
-  Ship
+  ClipboardList
 } from 'lucide-react';
 import { DateRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
@@ -37,7 +29,6 @@ export default function Reports() {
   });
 
   const { data: reportsData, isLoading, refetch } = useReportsData(dateRange);
-  const { data: preparationReportsData, isLoading: isLoadingPreparations, refetch: refetchPreparations } = usePreparationReportsData(dateRange);
 
   const exportReport = (format: 'pdf' | 'excel') => {
     if (!reportsData) return;
@@ -82,7 +73,6 @@ export default function Reports() {
           <Button 
             onClick={() => {
               refetch();
-              refetchPreparations();
             }} 
             variant="outline" 
             className="flex items-center gap-2"
@@ -109,26 +99,18 @@ export default function Reports() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="maintenance" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             Maintenance
           </TabsTrigger>
-          <TabsTrigger value="checklists" className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4" />
-            Check-in/out
-          </TabsTrigger>
-          <TabsTrigger value="preparations" className="flex items-center gap-2">
-            <Ship className="h-4 w-4" />
-            Préparations
-          </TabsTrigger>
-          <TabsTrigger value="incidents" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Incidents
-          </TabsTrigger>
           <TabsTrigger value="operational" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" />
             Opérationnel
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Inventaire
           </TabsTrigger>
         </TabsList>
 
@@ -141,44 +123,17 @@ export default function Reports() {
           />
         </TabsContent>
 
-        <TabsContent value="checklists" className="space-y-4">
-          <ChecklistReports 
-            data={reportsData?.checklists}
-            dateRange={dateRange} 
-            isDirection={isDirection}
-            isChefBase={isChefBase}
-          />
-        </TabsContent>
-
-        <TabsContent value="preparations" className="space-y-4">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div>
-              <PreparationReports 
-                data={preparationReportsData}
-                dateRange={dateRange} 
-                isDirection={isDirection}
-                isChefBase={isChefBase}
-              />
-            </div>
-            <div>
-              <PreparationHistoryView />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="incidents" className="space-y-4">
-          <IncidentReports 
-            data={reportsData?.incidents}
-            dateRange={dateRange} 
-            isDirection={isDirection}
-            isChefBase={isChefBase}
-          />
-        </TabsContent>
-
         <TabsContent value="operational" className="space-y-4">
           <OperationalReports 
             data={reportsData?.operational}
             dateRange={dateRange} 
+            isDirection={isDirection}
+            isChefBase={isChefBase}
+          />
+        </TabsContent>
+
+        <TabsContent value="inventory" className="space-y-4">
+          <InventoryReports 
             isDirection={isDirection}
             isChefBase={isChefBase}
           />
