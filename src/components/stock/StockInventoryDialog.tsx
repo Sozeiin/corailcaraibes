@@ -21,6 +21,7 @@ interface StockInventoryDialogProps {
   bases: BaseOption[];
   userRole?: string;
   userBaseId?: string;
+  onValidated?: () => void | Promise<void>;
 }
 
 export function StockInventoryDialog({
@@ -30,6 +31,7 @@ export function StockInventoryDialog({
   bases,
   userRole,
   userBaseId,
+  onValidated,
 }: StockInventoryDialogProps) {
   const isDirection = userRole === 'direction';
   const [selectedBase, setSelectedBase] = useState<string>(userBaseId || (bases[0]?.id ?? ''));
