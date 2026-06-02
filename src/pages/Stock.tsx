@@ -324,6 +324,16 @@ export default function Stock() {
         onClose={() => setIsImportDialogOpen(false)}
       />
 
+      <StockInventoryDialog
+        isOpen={isInventoryDialogOpen}
+        onClose={() => setIsInventoryDialogOpen(false)}
+        items={stockItems}
+        bases={bases}
+        userRole={user?.role}
+        userBaseId={user?.baseId}
+      />
+
+
       <StockDuplicateDialog
         isOpen={isDuplicateDialogOpen}
         onClose={handleDuplicateDialogClose}
