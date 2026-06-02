@@ -99,7 +99,8 @@ export function StockInventoryDialog({
 
   const handleValidate = () => {
     validateInventory.mutate(countedLines, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await onValidated?.();
         resetState();
         onClose();
       },
