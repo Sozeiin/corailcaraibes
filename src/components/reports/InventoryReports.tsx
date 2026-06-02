@@ -184,7 +184,11 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
                 </TableHeader>
                 <TableBody>
                   {baseSessions.map((s) => (
-                    <TableRow key={s.sessionId}>
+                    <TableRow
+                      key={s.sessionId}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => setSelectedSession(s)}
+                    >
                       <TableCell>{formatDateSafe(s.date)}</TableCell>
                       <TableCell>{s.actorName ?? '—'}</TableCell>
                       <TableCell className="text-right">{s.itemCount}</TableCell>
@@ -202,6 +206,11 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
                         <span className={s.totalDifference < 0 ? 'text-destructive' : s.totalDifference > 0 ? 'text-emerald-600' : ''}>
                           {s.totalDifference > 0 ? '+' : ''}{s.totalDifference}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setSelectedSession(s); }}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
