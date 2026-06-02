@@ -180,6 +180,7 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
                     <TableHead className="text-right">Articles comptés</TableHead>
                     <TableHead className="text-right">Écarts</TableHead>
                     <TableHead className="text-right">Écart total</TableHead>
+                    <TableHead className="text-right w-16">Détail</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
