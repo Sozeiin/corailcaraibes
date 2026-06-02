@@ -32,6 +32,7 @@ export default function Stock() {
   const [showLowStock, setShowLowStock] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isInventoryDialogOpen, setIsInventoryDialogOpen] = useState(false);
   const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<StockItem | null>(null);
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
