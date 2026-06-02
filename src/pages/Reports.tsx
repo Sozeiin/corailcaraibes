@@ -141,7 +141,4 @@ export default function Reports() {
       </Tabs>
     </div>
   );
-      </Tabs>
-    </div>
-  );
 }
