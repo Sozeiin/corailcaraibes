@@ -1,37 +1,50 @@
+# Fonctionnalité d'inventaire du stock
 
-# Audit ONE WAY — État actuel
+## Objectif
+Permettre de réaliser un inventaire physique : saisir la quantité réellement comptée pour chaque pièce d'une base, valider, puis mettre à jour automatiquement les stocks. Chaque validation conserve un historique traçable des écarts (stock théorique vs compté).
 
-## Principe ONE WAY confirmé
-Oui, c'est bien le comportement attendu et il est implémenté :
-1. Préparation fiche check-in avec case "ONE WAY" + base de destination.
-2. Le technicien fait le **check-in sur la base d'origine** → le bateau est immédiatement transféré (`base_id` → destination, `status = rented`) via `handle_one_way_checkin_transfer`.
-3. Le bateau apparaît alors sur la **base de destination**, où un autre technicien réalise le **check-out** → `status = available`, et `handle_one_way_checkout_close` clôture tout partage actif résiduel. Le bateau reste sur la base de destination (c'est le principe du one-way).
+## Expérience utilisateur
+- Dans l'onglet **Stock**, ajout d'un bouton **« Inventaire »** (à côté de « Ajouter un article »), visible pour les rôles autorisés à gérer le stock.
+- Le bouton ouvre un **écran/dialogue dédié** listant **toutes les pièces de la base sélectionnée** (sélecteur de base en haut du dialogue ; pour un chef de base / technicien, la base est verrouillée sur la sienne).
+- Pour chaque pièce, on affiche : nom, référence, emplacement, **quantité théorique** (stock actuel), et un **champ de saisie « Quantité comptée »**.
+- Un champ « écart » se calcule en direct et se colore (vert = identique, orange/rouge = écart) pour chaque ligne.
+- Une barre de recherche filtre la liste dans le dialogue (pratique sur grandes bases).
+- Les lignes non saisies sont considérées comme « non comptées » et **ne modifient pas** le stock (on n'écrase pas à 0 par erreur).
+- Bouton **« Valider l'inventaire »** : récapitule le nombre de pièces comptées et le nombre d'écarts avant confirmation.
 
-## Audit : ce qui est correct
-- **Aucun doublon de bateau actif** (vérifié) ; aucun doublon de partage actif (l'index unique partiel `uniq_boat_sharing_active_per_boat` empêche toute régression).
-- **Trigger d'auto-création de partage retiré** sur `administrative_checkin_forms` (cause historique des doublons TOPAZE).
-- **RPC `handle_one_way_checkin_transfer` idempotente** : no-op si le bateau est déjà à destination, clôture les anciens partages, anti-doublon de log < 5 min.
-- **RPC `handle_one_way_checkout_close`** : clôture les partages actifs au check-out.
-- **Frontend, 3 points d'entrée couverts** :
-  - `TechnicianCheckinInterface` (check-in direct + check-out direct).
-  - `TechnicianCheckinInterface.handleResumeDraft` (reprise de brouillon ONE WAY — propage `oneWayMeta`).
-  - `CheckInProcess` (route `/checkin-process` : transfert au check-in, clôture au check-out).
-- **Page Bateaux** déduplique par `boat.id` (filet de sécurité visuel).
+## Comportement à la validation
+Pour chaque pièce **comptée** :
+1. Mise à jour de `stock_items.quantity` avec la quantité comptée (+ `last_updated`).
+2. Enregistrement d'une ligne d'historique d'inventaire (quantité théorique, quantité comptée, écart, base, auteur, date, identifiant de session).
 
-## Dysfonctionnement résiduel détecté
-Il reste **5 enregistrements `boat_sharing` « actifs »** créés avant le correctif (TOPAZE, MORGANITE, HARENG, RUBIS, TANZANITE), dont la `sharing_end_date` est dépassée. Les bateaux concernés sont eux-mêmes corrects (TOPAZE est bien `available` sur Base Martinique). Ces lignes ne génèrent plus de doublon visuel grâce à la déduplication, mais elles polluent les requêtes "partages actifs" et peuvent troubler les rapports.
+Les pièces non saisies sont ignorées.
 
-## Action proposée
-**Migration unique** (1 instruction SQL, aucun changement de code) :
-```sql
-UPDATE public.boat_sharing
-   SET status = 'ended', updated_at = now()
- WHERE status = 'active'
-   AND sharing_end_date < now();
-```
-- Marque tous les partages échus comme `ended`.
-- N'affecte aucun bateau, aucun formulaire, aucune location.
-- Zéro risque de régression : la fonctionnalité ONE WAY moderne ne crée plus de nouveaux `boat_sharing` ; ces lignes sont des résidus historiques.
+## Détails techniques
 
-## Conclusion
-Le flux ONE WAY (check-in base A → check-out base B) est **fonctionnel et protégé** contre les doublons. Après le nettoyage ci-dessus, le système est complètement assaini.
+### Base de données (migration)
+- Nouvelle table `public.stock_inventory_records` :
+  - `session_id` (uuid) — regroupe les lignes d'un même inventaire
+  - `stock_item_id` (uuid, FK vers `stock_items`, `ON DELETE SET NULL`)
+  - `item_name`, `item_reference` (snapshot, pour conserver l'historique même si l'article est supprimé)
+  - `base_id` (uuid, FK `bases`)
+  - `theoretical_qty` (numeric), `counted_qty` (numeric), `difference` (numeric)
+  - `actor` (uuid), `actor_name` (snapshot), `created_at`
+- GRANT `SELECT, INSERT` à `authenticated`, `ALL` à `service_role` (pas d'accès `anon`).
+- RLS activée : lecture/insertion réservées aux utilisateurs authentifiés, filtrées par base (en cohérence avec les politiques stock existantes) ; rôle `direction` accès toutes bases.
+- Index sur `session_id` et `base_id`.
+
+> Remarque : `stock_movements` a une contrainte limitant `movement_type` à `outbound_distribution`/`inbound_distribution`, on utilise donc une table dédiée pour l'historique d'inventaire plutôt que de modifier cette contrainte.
+
+### Frontend
+- Nouveau composant `src/components/stock/StockInventoryDialog.tsx` : dialogue plein écran avec sélecteur de base, recherche, liste scrollable des pièces et champs de saisie, récapitulatif + confirmation.
+- Nouveau hook `src/hooks/useStockInventory.ts` :
+  - mutation `useValidateInventory` qui, pour chaque ligne comptée, met à jour `stock_items.quantity` et insère dans `stock_inventory_records` (même `session_id`), puis invalide les requêtes stock.
+- Branchement dans `src/pages/Stock.tsx` : état d'ouverture + bouton « Inventaire ».
+- Conventions respectées : `getLocalDateString` pour les dates, filtrage par `base_id`, tokens de design sémantiques pour les couleurs d'écart, snapshot des noms (`*_name`) pour préserver l'historique.
+
+### (Optionnel, même structure) Consultation de l'historique
+- Possibilité d'ajouter ultérieurement un onglet/section « Historique d'inventaire » lisant `stock_inventory_records` groupé par `session_id`. Non inclus par défaut dans cette première version sauf demande.
+
+## Hors périmètre
+- Pas de scan code-barres dédié à l'inventaire (réutilisation possible plus tard).
+- Pas de modification du flux des mouvements de sortie existants.
