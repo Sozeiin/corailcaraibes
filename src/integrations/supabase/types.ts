@@ -4128,6 +4128,73 @@ export type Database = {
           },
         ]
       }
+      stock_inventory_records: {
+        Row: {
+          actor: string | null
+          actor_name: string | null
+          base_id: string
+          counted_qty: number
+          created_at: string
+          difference: number
+          id: string
+          item_name: string
+          item_reference: string | null
+          session_id: string
+          stock_item_id: string | null
+          theoretical_qty: number
+        }
+        Insert: {
+          actor?: string | null
+          actor_name?: string | null
+          base_id: string
+          counted_qty?: number
+          created_at?: string
+          difference?: number
+          id?: string
+          item_name: string
+          item_reference?: string | null
+          session_id: string
+          stock_item_id?: string | null
+          theoretical_qty?: number
+        }
+        Update: {
+          actor?: string | null
+          actor_name?: string | null
+          base_id?: string
+          counted_qty?: number
+          created_at?: string
+          difference?: number
+          id?: string
+          item_name?: string
+          item_reference?: string | null
+          session_id?: string
+          stock_item_id?: string | null
+          theoretical_qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_inventory_records_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_inventory_records_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_inventory_records_stock_item_id_fkey"
+            columns: ["stock_item_id"]
+            isOneToOne: false
+            referencedRelation: "stock_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_item_quotes: {
         Row: {
           attachment_url: string | null
