@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ClipboardList, Package, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ClipboardList, Package, AlertTriangle, RefreshCw, Eye } from 'lucide-react';
 import { formatDateSafe } from '@/lib/dateUtils';
+import { Button } from '@/components/ui/button';
 
 interface InventoryReportsProps {
   isDirection: boolean;
