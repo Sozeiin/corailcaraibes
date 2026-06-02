@@ -29,7 +29,6 @@ export default function Reports() {
   });
 
   const { data: reportsData, isLoading, refetch } = useReportsData(dateRange);
-  const { data: preparationReportsData, isLoading: isLoadingPreparations, refetch: refetchPreparations } = usePreparationReportsData(dateRange);
 
   const exportReport = (format: 'pdf' | 'excel') => {
     if (!reportsData) return;
