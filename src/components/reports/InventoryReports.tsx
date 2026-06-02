@@ -82,6 +82,21 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
     return map;
   }, [bases]);
 
+  // Query details for selected session
+  const { data: sessionDetails } = useQuery({
+    queryKey: ['inventory-session-details', selectedSession?.sessionId],
+    enabled: !!selectedSession,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('stock_inventory_records')
+        .select('*')
+        .eq('session_id', selectedSession!.sessionId)
+        .order('item_name', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as InventoryRecord[];
+    },
+  });
+
   // Group records into sessions
   const sessionsByYear = useMemo(() => {
     const map = new Map<number, SessionSummary[]>();
