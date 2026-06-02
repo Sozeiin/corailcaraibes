@@ -44,6 +44,7 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const [yearTab, setYearTab] = useState(String(currentYear));
+  const [selectedSession, setSelectedSession] = useState<SessionSummary | null>(null);
 
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
