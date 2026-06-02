@@ -331,6 +331,7 @@ export default function Stock() {
         bases={bases}
         userRole={user?.role}
         userBaseId={user?.baseId}
+        onValidated={refetchStock}
       />
 
 
