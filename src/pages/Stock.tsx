@@ -237,6 +237,15 @@ export default function Stock() {
               <span className="xs:hidden">Import</span>
             </Button>
             <Button
+              variant="outline"
+              onClick={() => setIsInventoryDialogOpen(true)}
+              className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              <span className="hidden xs:inline">Inventaire</span>
+              <span className="xs:hidden">Invent.</span>
+            </Button>
+            <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-marine-600 hover:bg-marine-700 text-sm"
             >
