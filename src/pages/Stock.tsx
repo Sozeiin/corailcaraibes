@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, FileSpreadsheet, Download } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet, Download, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
