@@ -5,25 +5,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
 import { MaintenanceReports } from '@/components/reports/MaintenanceReports';
-import { ChecklistReports } from '@/components/reports/ChecklistReports';
-import { IncidentReports } from '@/components/reports/IncidentReports';
 import { OperationalReports } from '@/components/reports/OperationalReports';
-import { PreparationReports } from '@/components/reports/PreparationReports';
-import { PreparationHistoryView } from '@/components/reports/PreparationHistoryView';
+import { InventoryReports } from '@/components/reports/InventoryReports';
 import { useReportsData } from '@/hooks/useReportsData';
-import { usePreparationReportsData } from '@/hooks/usePreparationReportsData';
 import { exportReportToPDF, exportReportToExcel } from '@/lib/reportExports';
 import { 
   FileText, 
   Wrench, 
-  CheckSquare, 
-  AlertTriangle, 
   BarChart, 
-  Download,
   RefreshCw,
-  Calendar,
   FileSpreadsheet,
-  Ship
+  ClipboardList
 } from 'lucide-react';
 import { DateRange } from '@/components/ui/date-range-picker';
 import { addDays } from 'date-fns';
