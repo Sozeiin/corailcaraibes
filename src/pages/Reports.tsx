@@ -99,66 +99,24 @@ export default function Reports() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="maintenance" className="flex items-center gap-2">
             <Wrench className="h-4 w-4" />
             Maintenance
           </TabsTrigger>
-          <TabsTrigger value="checklists" className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4" />
-            Check-in/out
-          </TabsTrigger>
-          <TabsTrigger value="preparations" className="flex items-center gap-2">
-            <Ship className="h-4 w-4" />
-            Préparations
-          </TabsTrigger>
-          <TabsTrigger value="incidents" className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" />
-            Incidents
-          </TabsTrigger>
           <TabsTrigger value="operational" className="flex items-center gap-2">
             <BarChart className="h-4 w-4" />
             Opérationnel
+          </TabsTrigger>
+          <TabsTrigger value="inventory" className="flex items-center gap-2">
+            <ClipboardList className="h-4 w-4" />
+            Inventaire
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="maintenance" className="space-y-4">
           <MaintenanceReports 
             data={reportsData?.maintenance}
-            dateRange={dateRange} 
-            isDirection={isDirection}
-            isChefBase={isChefBase}
-          />
-        </TabsContent>
-
-        <TabsContent value="checklists" className="space-y-4">
-          <ChecklistReports 
-            data={reportsData?.checklists}
-            dateRange={dateRange} 
-            isDirection={isDirection}
-            isChefBase={isChefBase}
-          />
-        </TabsContent>
-
-        <TabsContent value="preparations" className="space-y-4">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div>
-              <PreparationReports 
-                data={preparationReportsData}
-                dateRange={dateRange} 
-                isDirection={isDirection}
-                isChefBase={isChefBase}
-              />
-            </div>
-            <div>
-              <PreparationHistoryView />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="incidents" className="space-y-4">
-          <IncidentReports 
-            data={reportsData?.incidents}
             dateRange={dateRange} 
             isDirection={isDirection}
             isChefBase={isChefBase}
@@ -173,6 +131,16 @@ export default function Reports() {
             isChefBase={isChefBase}
           />
         </TabsContent>
+
+        <TabsContent value="inventory" className="space-y-4">
+          <InventoryReports 
+            isDirection={isDirection}
+            isChefBase={isChefBase}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
       </Tabs>
     </div>
   );
