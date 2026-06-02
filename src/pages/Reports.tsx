@@ -73,7 +73,6 @@ export default function Reports() {
           <Button 
             onClick={() => {
               refetch();
-              refetchPreparations();
             }} 
             variant="outline" 
             className="flex items-center gap-2"
