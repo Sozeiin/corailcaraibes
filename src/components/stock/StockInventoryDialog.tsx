@@ -188,6 +188,27 @@ export function StockInventoryDialog({
     return counted - item.quantity;
   };
 
+  const downloadGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    const link = document.createElement('a');
+    link.href = generatedPDF.url;
+    link.download = generatedPDF.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const openGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
+  };
+
+  const printGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    const pdfWindow = window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
+    pdfWindow?.addEventListener('load', () => pdfWindow.print(), { once: true });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
