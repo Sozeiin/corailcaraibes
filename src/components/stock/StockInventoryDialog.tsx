@@ -217,7 +217,7 @@ export function StockInventoryDialog({
                 frame.contentWindow.print();
               }, 500);
             };
-          <\/script>
+          </script>
         </body>
       </html>
     `);
