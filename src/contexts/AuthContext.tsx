@@ -39,7 +39,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     let isSubscribed = true;
-    let isInitialized = false;
+    let profileRequestId = 0;
+
+    const loadProfileForSession = async (newSession: Session) => {
+      const requestId = ++profileRequestId;
+      setLoading(true);
+
+      try {
+        await fetchUserProfile(newSession);
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      } finally {
+        if (isSubscribed && requestId === profileRequestId) {
+          setLoading(false);
+        }
+      }
+    };
 
     // Set up auth state listener first to catch all events
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -52,18 +67,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(newSession);
         
         if (newSession?.user) {
-          // Fetch profile immédiatement pour éviter les race conditions
-          // où les composants tentent d'accéder à user.baseId avant qu'il soit défini
-          fetchUserProfile(newSession).catch(err => {
-            console.error('Error fetching profile on auth change:', err);
-          });
+          // Keep auth loading until the profile is available, otherwise routes can
+          // bounce between / and /auth while user is still null.
+          void loadProfileForSession(newSession);
         } else {
+          profileRequestId++;
           setUser(null);
-        }
-        
-        // Mark as not loading after first auth state change
-        if (!isInitialized) {
-          isInitialized = true;
           setLoading(false);
         }
       }
@@ -77,33 +86,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (error) {
           console.error('Error getting initial session:', error);
           setLoading(false);
-          isInitialized = true;
           return;
         }
         
         if (!isSubscribed) return;
         
-        // If we have a session but haven't been initialized by the listener yet
-        if (initialSession && !isInitialized) {
+        if (initialSession) {
           setSession(initialSession);
-          // Fetch profile immédiatement
-          try {
-            await fetchUserProfile(initialSession);
-          } catch (err) {
-            console.error('Error fetching profile on init:', err);
-          }
-        }
-        
-        // Ensure loading is false after initialization
-        if (!isInitialized) {
-          isInitialized = true;
+          await loadProfileForSession(initialSession);
+        } else {
+          setSession(null);
+          setUser(null);
           setLoading(false);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         if (isSubscribed) {
           setLoading(false);
-          isInitialized = true;
         }
       }
     };
