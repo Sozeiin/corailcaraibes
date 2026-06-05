@@ -195,43 +195,6 @@ export function StockInventoryDialog({
     return counted - item.quantity;
   };
 
-  const printGeneratedPDF = () => {
-    if (!generatedPDF) return;
-    const url = URL.createObjectURL(generatedPDF.blob);
-    const printWindow = window.open('', '_blank');
-
-    if (!printWindow) {
-      toast({
-        title: 'Impression bloquée',
-        description: 'Ouvrez le PDF puis imprimez-le depuis le lecteur PDF.',
-        variant: 'destructive',
-      });
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      return;
-    }
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html>
-        <head><title>${generatedPDF.fileName}</title></head>
-        <body style="margin:0">
-          <iframe id="pdf-frame" src="${url}" style="border:0;width:100vw;height:100vh"></iframe>
-          <script>
-            const frame = document.getElementById('pdf-frame');
-            frame.onload = function () {
-              setTimeout(function () {
-                frame.contentWindow.focus();
-                frame.contentWindow.print();
-              }, 500);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
