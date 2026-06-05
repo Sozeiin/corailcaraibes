@@ -20,6 +20,13 @@ export interface InventoryPDFFile {
   itemCount: number;
 }
 
+export interface InventoryPDFDocument {
+  doc: jsPDF;
+  fileName: string;
+  baseName: string;
+  itemCount: number;
+}
+
 function slugify(name: string): string {
   return name
     .normalize('NFD')
@@ -29,7 +36,7 @@ function slugify(name: string): string {
     .toLowerCase();
 }
 
-function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFFile {
+function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFDocument {
   const doc = new jsPDF({ orientation: 'landscape' });
   const dateStr = getLocalDateString();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -80,8 +87,16 @@ function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFFile {
   });
 
   const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
-  const blob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
-  return { blob, fileName, baseName, itemCount: sorted.length };
+  return { doc, fileName, baseName, itemCount: sorted.length };
+}
+
+function toFile(pdf: InventoryPDFDocument): InventoryPDFFile {
+  return {
+    blob: new Blob([pdf.doc.output('arraybuffer')], { type: 'application/pdf' }),
+    fileName: pdf.fileName,
+    baseName: pdf.baseName,
+    itemCount: pdf.itemCount,
+  };
 }
 
 /**
@@ -94,13 +109,21 @@ export function exportInventoryPDF(
   bases: BaseOption[],
   options: ExportOptions
 ): InventoryPDFFile[] {
+  return createInventoryPDFDocuments(items, bases, options).map(toFile);
+}
+
+export function createInventoryPDFDocuments(
+  items: StockItem[],
+  bases: BaseOption[],
+  options: ExportOptions
+): InventoryPDFDocument[] {
   const isDirection = options.role === 'direction';
 
   const targetBases = isDirection
     ? bases
     : bases.filter((b) => b.id === options.baseId);
 
-  const files: InventoryPDFFile[] = [];
+  const files: InventoryPDFDocument[] = [];
 
   targetBases.forEach((base) => {
     const baseItems = items.filter((item) => item.baseId === base.id);
@@ -109,4 +132,19 @@ export function exportInventoryPDF(
   });
 
   return files;
+}
+
+export function downloadInventoryPDF(pdf: InventoryPDFDocument) {
+  pdf.doc.save(pdf.fileName);
+}
+
+export function openInventoryPDF(pdf: InventoryPDFDocument): boolean {
+  const url = pdf.doc.output('bloburl');
+  return Boolean(window.open(url, '_blank'));
+}
+
+export function printInventoryPDF(pdf: InventoryPDFDocument): boolean {
+  pdf.doc.autoPrint();
+  const url = pdf.doc.output('bloburl');
+  return Boolean(window.open(url, '_blank'));
 }
