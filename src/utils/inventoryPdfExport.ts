@@ -13,6 +13,13 @@ interface ExportOptions {
   baseId?: string;
 }
 
+export interface InventoryPDFFile {
+  blob: Blob;
+  fileName: string;
+  baseName: string;
+  itemCount: number;
+}
+
 function slugify(name: string): string {
   return name
     .normalize('NFD')
@@ -22,7 +29,7 @@ function slugify(name: string): string {
     .toLowerCase();
 }
 
-function buildBasePdf(baseName: string, items: StockItem[]) {
+function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFFile {
   const doc = new jsPDF({ orientation: 'landscape' });
   const dateStr = getLocalDateString();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -74,16 +81,7 @@ function buildBasePdf(baseName: string, items: StockItem[]) {
 
   const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
   const blob = doc.output('blob');
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-
-  link.href = url;
-  link.download = fileName;
-  link.rel = 'noopener';
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { blob, fileName, baseName, itemCount: sorted.length };
 }
 
 /**
@@ -95,21 +93,20 @@ export function exportInventoryPDF(
   items: StockItem[],
   bases: BaseOption[],
   options: ExportOptions
-): number {
+): InventoryPDFFile[] {
   const isDirection = options.role === 'direction';
 
   const targetBases = isDirection
     ? bases
     : bases.filter((b) => b.id === options.baseId);
 
-  let generated = 0;
+  const files: InventoryPDFFile[] = [];
 
   targetBases.forEach((base) => {
     const baseItems = items.filter((item) => item.baseId === base.id);
     if (baseItems.length === 0) return;
-    buildBasePdf(base.name, baseItems);
-    generated += 1;
+    files.push(buildBasePdf(base.name, baseItems));
   });
 
-  return generated;
+  return files;
 }

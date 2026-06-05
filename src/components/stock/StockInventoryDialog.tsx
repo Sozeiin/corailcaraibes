@@ -5,12 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Search, Package, AlertTriangle, FileDown } from 'lucide-react';
+import { ClipboardList, Search, Package, AlertTriangle, FileDown, ExternalLink, Printer } from 'lucide-react';
 import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
-import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
+import { exportInventoryPDF, InventoryPDFFile } from '@/utils/inventoryPdfExport';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface BaseOption {
   id: string;
@@ -27,51 +26,8 @@ interface StockInventoryDialogProps {
   onValidated?: () => void | Promise<void>;
 }
 
-const STOCK_EXPORT_PAGE_SIZE = 1000;
-
-interface StockExportRow {
-  id: string;
-  name: string;
-  reference: string | null;
-  barcode: string | null;
-  brand: string | null;
-  supplier_reference: string | null;
-  category: string | null;
-  quantity: number | null;
-  min_threshold: number | null;
-  unit: string | null;
-  location: string | null;
-  base_id: string | null;
-  photo_url: string | null;
-  last_updated: string | null;
-  last_purchase_date: string | null;
-  last_purchase_cost: number | null;
-  last_supplier_id: string | null;
-}
-
-function mapStockRowToItem(row: StockExportRow, bases: BaseOption[]): StockItem {
-  const base = bases.find((b) => b.id === row.base_id);
-
-  return {
-    id: row.id,
-    name: row.name,
-    reference: row.reference || '',
-    barcode: row.barcode || '',
-    brand: row.brand || '',
-    supplierReference: row.supplier_reference || '',
-    category: row.category || '',
-    quantity: row.quantity || 0,
-    minThreshold: row.min_threshold || 0,
-    unit: row.unit || '',
-    location: row.location || '',
-    baseId: row.base_id || '',
-    baseName: base?.name || '',
-    photoUrl: row.photo_url || '',
-    lastUpdated: row.last_updated || new Date().toISOString(),
-    lastPurchaseDate: row.last_purchase_date || null,
-    lastPurchaseCost: row.last_purchase_cost || null,
-    lastSupplierId: row.last_supplier_id || null,
-  };
+interface GeneratedInventoryPDF extends InventoryPDFFile {
+  url: string;
 }
 
 export function StockInventoryDialog({
@@ -89,6 +45,7 @@ export function StockInventoryDialog({
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'count' | 'confirm'>('count');
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [generatedPDF, setGeneratedPDF] = useState<GeneratedInventoryPDF | null>(null);
   const validateInventory = useValidateInventory();
   const { toast } = useToast();
 
@@ -103,32 +60,13 @@ export function StockInventoryDialog({
     });
   }, [bases, isDirection, userBaseId]);
 
-  const fetchItemsForExport = async (baseId: string): Promise<StockItem[]> => {
-    const allRows: StockExportRow[] = [];
-    let from = 0;
+  useEffect(() => {
+    return () => {
+      if (generatedPDF) URL.revokeObjectURL(generatedPDF.url);
+    };
+  }, [generatedPDF]);
 
-    while (true) {
-      const { data, error } = await supabase
-        .from('stock_items')
-        .select('id, name, reference, barcode, brand, supplier_reference, category, quantity, min_threshold, unit, location, base_id, photo_url, last_updated, last_purchase_date, last_purchase_cost, last_supplier_id')
-        .eq('base_id', baseId)
-        .order('category', { ascending: true, nullsFirst: false })
-        .order('name', { ascending: true })
-        .range(from, from + STOCK_EXPORT_PAGE_SIZE - 1);
-
-      if (error) throw error;
-
-      const rows = data || [];
-      allRows.push(...rows);
-
-      if (rows.length < STOCK_EXPORT_PAGE_SIZE) break;
-      from += STOCK_EXPORT_PAGE_SIZE;
-    }
-
-    return allRows.map((row) => mapStockRowToItem(row, bases));
-  };
-
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
 
     if (!targetBase) {
@@ -140,11 +78,15 @@ export function StockInventoryDialog({
       return;
     }
 
-    setIsExportingPDF(true);
     try {
-      const exportItems = await fetchItemsForExport(targetBase);
-      const count = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
-      if (count === 0) {
+      setIsExportingPDF(true);
+      if (generatedPDF) {
+        URL.revokeObjectURL(generatedPDF.url);
+        setGeneratedPDF(null);
+      }
+      const exportItems = items.filter((item) => item.baseId === targetBase);
+      const files = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
+      if (files.length === 0) {
         toast({
           title: 'Aucun produit à exporter',
           description: 'Cette base ne contient aucun produit.',
@@ -152,15 +94,18 @@ export function StockInventoryDialog({
         });
         return;
       }
+      const file = files[0];
+      const url = URL.createObjectURL(file.blob);
+      setGeneratedPDF({ ...file, url });
       toast({
-        title: 'Export PDF généré',
-        description: 'Le PDF de la base sélectionnée a été téléchargé.',
+        title: 'PDF prêt',
+        description: 'Utilisez Télécharger, Ouvrir ou Imprimer ci-dessous.',
       });
     } catch (e) {
       console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
       toast({
         title: 'Erreur lors de l\'export',
-        description: 'Impossible de récupérer les produits de cette base pour générer le PDF.',
+        description: 'Impossible de générer le PDF de cette base.',
         variant: 'destructive',
       });
     } finally {
@@ -243,6 +188,27 @@ export function StockInventoryDialog({
     return counted - item.quantity;
   };
 
+  const downloadGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    const link = document.createElement('a');
+    link.href = generatedPDF.url;
+    link.download = generatedPDF.fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const openGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
+  };
+
+  const printGeneratedPDF = () => {
+    if (!generatedPDF) return;
+    const pdfWindow = window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
+    pdfWindow?.addEventListener('load', () => pdfWindow.print(), { once: true });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
@@ -307,6 +273,30 @@ export function StockInventoryDialog({
                   {isExportingPDF ? 'Export...' : 'Exporter PDF'}
                 </Button>
               </div>
+              {generatedPDF && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{generatedPDF.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {generatedPDF.itemCount} article(s) — {generatedPDF.baseName}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={downloadGeneratedPDF}>
+                      <FileDown className="h-4 w-4 mr-2" />
+                      Télécharger
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={openGeneratedPDF}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Ouvrir
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={printGeneratedPDF}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Imprimer
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
