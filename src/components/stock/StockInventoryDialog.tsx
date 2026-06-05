@@ -41,6 +41,31 @@ export function StockInventoryDialog({
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'count' | 'confirm'>('count');
   const validateInventory = useValidateInventory();
+  const { toast } = useToast();
+
+  const handleExportPDF = () => {
+    try {
+      const count = exportInventoryPDF(items, bases, { role: userRole, baseId: userBaseId });
+      if (count === 0) {
+        toast({
+          title: 'Aucun produit à exporter',
+          description: 'Aucune base ne contient de produit.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      toast({
+        title: 'Export PDF généré',
+        description: count > 1 ? `${count} fichiers PDF téléchargés (un par base).` : 'PDF téléchargé.',
+      });
+    } catch (e) {
+      toast({
+        title: 'Erreur lors de l\'export',
+        description: 'Impossible de générer le PDF.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Base verrouillée pour les non-direction
   const effectiveBase = isDirection ? selectedBase : (userBaseId || selectedBase);
