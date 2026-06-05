@@ -1,35 +1,35 @@
-# Export PDF des produits par base (dialogue Inventaire)
+Objectif : permettre au profil direction et aux chefs de base de télécharger un PDF imprimable contenant tous les produits de la base sélectionnée, directement depuis le dialogue Inventaire de la page Stock.
 
-## Objectif
-Ajouter un bouton **« Exporter PDF »** dans la fenêtre *Inventaire* (page Gestion du Stock) qui génère une liste imprimable de tous les produits :
-- **Direction** : un fichier PDF distinct pour **chaque base**.
-- **Chef de base** : un PDF pour **sa** base uniquement.
+Plan d’implémentation :
 
-## Comportement
-- Le bouton apparaît dans l'en-tête du dialogue Inventaire.
-- Pour la direction : génère un PDF par base existante (les bases sans produit sont ignorées).
-- Pour un chef de base : génère uniquement le PDF de sa base (`userBaseId`).
-- Chaque PDF contient le nom de la base, la date de génération, et un tableau de tous les produits triés par catégorie puis par nom.
+1. Revenir à une mécanique simple et fiable
+- Supprimer le système intermédiaire “PDF prêt / ouvrir / imprimer” qui ajoute trop de points de blocage.
+- Garder une seule action principale : “Télécharger PDF”.
+- Le clic génère immédiatement le fichier et lance directement `jsPDF.save(...)`, comme les autres exports PDF déjà présents dans l’application.
 
-## Contenu de chaque PDF
-En-tête : « Inventaire – {Nom de la base} » + date du jour.
+2. Générer le PDF à partir des produits visibles pour la base sélectionnée
+- Utiliser `baseItems`, qui correspond déjà exactement aux produits de la base choisie dans le dialogue Inventaire.
+- Pour direction : la base vient du sélecteur dans le dialogue.
+- Pour chef de base : la base reste verrouillée sur sa base.
+- Ne pas modifier la validation d’inventaire ni les champs de comptage.
 
-Tableau avec colonnes :
-| Catégorie | Nom | Référence | Marque | Quantité | Seuil min | Unité | Emplacement |
+3. Corriger l’utilitaire PDF
+- Créer une fonction dédiée et explicite du type `downloadInventoryPDFForBase(baseName, items)`.
+- Elle génère un PDF paysage avec colonnes : catégorie, nom, référence, marque, quantité, seuil min, unité, emplacement.
+- Elle appelle directement `doc.save(filename)` dans le même clic utilisateur.
+- Garder le tri par catégorie puis nom.
 
-Pied de page : numéro de page + total d'articles.
+4. Simplifier l’UI
+- Remplacer les 3 boutons actuels par un seul bouton stable : “Télécharger PDF”.
+- Le bouton sera désactivé uniquement si aucune base n’est sélectionnée ou si la base n’a aucun article.
+- Le message toast indiquera clairement le nombre d’articles exportés.
 
-Nom de fichier : `inventaire_{nom_base}_{AAAA-MM-JJ}.pdf`.
+5. Préserver les fonctionnalités existantes
+- Ne pas toucher aux imports Excel, à l’ajout d’articles, aux filtres stock, ni à la validation d’inventaire.
+- Ne pas changer les règles Supabase/RLS.
+- Ne pas ajouter de nouvelle dépendance.
 
-## Détails techniques
-- Ajouter la dépendance `jspdf-autotable` (jsPDF 4.0.0 est déjà présent) pour générer des tableaux propres et paginés automatiquement.
-- Créer un utilitaire `src/utils/inventoryPdfExport.ts` exportant `exportInventoryPDF(items, bases, { role, baseId })` :
-  - regroupe les `StockItem` par `baseId`,
-  - filtre selon le rôle (direction = toutes les bases, sinon la base de l'utilisateur),
-  - pour chaque base, crée un document jsPDF, écrit l'en-tête et le tableau via autotable, puis `doc.save(...)`.
-  - utilise `getLocalDateString` (`src/lib/dateUtils.ts`) pour la date du nom de fichier.
-- Modifier `src/components/stock/StockInventoryDialog.tsx` :
-  - ajouter un bouton « Exporter PDF » (icône `FileDown`) dans l'en-tête du dialogue,
-  - au clic, appeler `exportInventoryPDF(items, bases, { role: userRole, baseId: userBaseId })`,
-  - afficher un toast de confirmation / d'erreur.
-- Aucune modification de base de données ou de logique métier : la fonctionnalité utilise les `items` déjà chargés et passés au dialogue.
+6. Vérification
+- Vérifier le lint TypeScript sur les fichiers modifiés.
+- Vérifier que l’ancienne logique cassée (`generatedPDF`, blob URL stockée, boutons ouvrir/imprimer) a bien disparu.
+- Si la preview demande une connexion, te demander de te reconnecter avant un test navigateur réel.

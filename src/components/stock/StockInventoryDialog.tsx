@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Search, Package, AlertTriangle, FileDown, ExternalLink, Printer } from 'lucide-react';
+import { ClipboardList, Search, Package, AlertTriangle, FileDown } from 'lucide-react';
 import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
-import { createInventoryPDFDocuments, downloadInventoryPDF, openInventoryPDF, printInventoryPDF } from '@/utils/inventoryPdfExport';
+import { downloadInventoryPDFForBase } from '@/utils/inventoryPdfExport';
 import { useToast } from '@/hooks/use-toast';
 
 interface BaseOption {
@@ -55,7 +55,7 @@ export function StockInventoryDialog({
     });
   }, [bases, isDirection, userBaseId]);
 
-  const getPDFDocumentForSelectedBase = () => {
+  const handleDownloadPDF = () => {
     const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
 
     if (!targetBase) {
@@ -64,38 +64,33 @@ export function StockInventoryDialog({
         description: 'Sélectionnez une base avant de générer le PDF.',
         variant: 'destructive',
       });
-      return null;
+      return;
     }
 
     const exportItems = items.filter((item) => item.baseId === targetBase);
-    const documents = createInventoryPDFDocuments(exportItems, bases, { role: 'chef_base', baseId: targetBase });
 
-    if (documents.length === 0) {
+    if (exportItems.length === 0) {
       toast({
         title: 'Aucun produit à exporter',
         description: 'Cette base ne contient aucun produit.',
         variant: 'destructive',
       });
-      return null;
+      return;
     }
 
-    return documents[0];
-  };
+    const baseName = bases.find((b) => b.id === targetBase)?.name || 'Base';
 
-  const handleDownloadPDF = () => {
     try {
       setIsExportingPDF(true);
-      const pdf = getPDFDocumentForSelectedBase();
-      if (!pdf) return;
-      downloadInventoryPDF(pdf);
+      const count = downloadInventoryPDFForBase(baseName, exportItems);
       toast({
         title: 'Téléchargement lancé',
-        description: `${pdf.itemCount} article(s) exporté(s).`,
+        description: `${count} article(s) exporté(s).`,
       });
     } catch (e) {
       console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
       toast({
-        title: 'Erreur lors de l\'export',
+        title: "Erreur lors de l'export",
         description: 'Impossible de générer le PDF de cette base.',
         variant: 'destructive',
       });
@@ -104,21 +99,6 @@ export function StockInventoryDialog({
     }
   };
 
-  const handleOpenPDF = () => {
-    const pdf = getPDFDocumentForSelectedBase();
-    if (!pdf) return;
-    if (!openInventoryPDF(pdf)) {
-      toast({ title: 'Ouverture bloquée', description: 'Autorisez les pop-ups ou utilisez Télécharger.', variant: 'destructive' });
-    }
-  };
-
-  const handlePrintPDF = () => {
-    const pdf = getPDFDocumentForSelectedBase();
-    if (!pdf) return;
-    if (!printInventoryPDF(pdf)) {
-      toast({ title: 'Impression bloquée', description: 'Autorisez les pop-ups ou utilisez Télécharger.', variant: 'destructive' });
-    }
-  };
 
   // Base verrouillée pour les non-direction
   const effectiveBase = isDirection ? selectedBase : (userBaseId || selectedBase);
@@ -249,19 +229,12 @@ export function StockInventoryDialog({
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
                 <div className="ml-auto flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase}>
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase || baseItems.length === 0}>
                     <FileDown className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleOpenPDF} disabled={!effectiveBase}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ouvrir
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handlePrintPDF} disabled={!effectiveBase}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Imprimer
-                  </Button>
                 </div>
+
               </div>
             </div>
 
