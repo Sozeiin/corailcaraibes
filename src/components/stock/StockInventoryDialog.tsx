@@ -229,19 +229,12 @@ export function StockInventoryDialog({
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
                 <div className="ml-auto flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase}>
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase || baseItems.length === 0}>
                     <FileDown className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
-                  <Button variant="outline" size="sm" onClick={handleOpenPDF} disabled={!effectiveBase}>
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Ouvrir
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={handlePrintPDF} disabled={!effectiveBase}>
-                    <Printer className="h-4 w-4 mr-2" />
-                    Imprimer
-                  </Button>
                 </div>
+
               </div>
             </div>
 
