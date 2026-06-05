@@ -72,7 +72,18 @@ function buildBasePdf(baseName: string, items: StockItem[]) {
     },
   });
 
-  doc.save(`inventaire_${slugify(baseName)}_${dateStr}.pdf`);
+  const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /**
