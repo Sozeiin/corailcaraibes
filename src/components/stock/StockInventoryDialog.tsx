@@ -248,45 +248,21 @@ export function StockInventoryDialog({
                 <Badge variant="secondary">{baseItems.length} article(s)</Badge>
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportPDF}
-                  disabled={isExportingPDF || !effectiveBase}
-                  className="ml-auto"
-                >
-                  <FileDown className="h-4 w-4 mr-2" />
-                  {isExportingPDF ? 'Export...' : 'Exporter PDF'}
-                </Button>
-              </div>
-              {generatedPDF && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border bg-muted/30 p-3 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{generatedPDF.fileName}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {generatedPDF.itemCount} article(s) — {generatedPDF.baseName}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={generatedPDF.url} download={generatedPDF.fileName}>
-                        <FileDown className="h-4 w-4 mr-2" />
-                        Télécharger
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={generatedPDF.url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Ouvrir
-                      </a>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={printGeneratedPDF}>
-                      <Printer className="h-4 w-4 mr-2" />
-                      Imprimer
-                    </Button>
-                  </div>
+                <div className="ml-auto flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Télécharger PDF
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleOpenPDF} disabled={!effectiveBase}>
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Ouvrir
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handlePrintPDF} disabled={!effectiveBase}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimer
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
