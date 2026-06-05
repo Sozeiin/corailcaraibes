@@ -10,7 +10,6 @@ import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
 import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 interface BaseOption {
   id: string;
@@ -25,53 +24,6 @@ interface StockInventoryDialogProps {
   userRole?: string;
   userBaseId?: string;
   onValidated?: () => void | Promise<void>;
-}
-
-const STOCK_EXPORT_PAGE_SIZE = 1000;
-
-interface StockExportRow {
-  id: string;
-  name: string;
-  reference: string | null;
-  barcode: string | null;
-  brand: string | null;
-  supplier_reference: string | null;
-  category: string | null;
-  quantity: number | null;
-  min_threshold: number | null;
-  unit: string | null;
-  location: string | null;
-  base_id: string | null;
-  photo_url: string | null;
-  last_updated: string | null;
-  last_purchase_date: string | null;
-  last_purchase_cost: number | null;
-  last_supplier_id: string | null;
-}
-
-function mapStockRowToItem(row: StockExportRow, bases: BaseOption[]): StockItem {
-  const base = bases.find((b) => b.id === row.base_id);
-
-  return {
-    id: row.id,
-    name: row.name,
-    reference: row.reference || '',
-    barcode: row.barcode || '',
-    brand: row.brand || '',
-    supplierReference: row.supplier_reference || '',
-    category: row.category || '',
-    quantity: row.quantity || 0,
-    minThreshold: row.min_threshold || 0,
-    unit: row.unit || '',
-    location: row.location || '',
-    baseId: row.base_id || '',
-    baseName: base?.name || '',
-    photoUrl: row.photo_url || '',
-    lastUpdated: row.last_updated || new Date().toISOString(),
-    lastPurchaseDate: row.last_purchase_date || null,
-    lastPurchaseCost: row.last_purchase_cost || null,
-    lastSupplierId: row.last_supplier_id || null,
-  };
 }
 
 export function StockInventoryDialog({
