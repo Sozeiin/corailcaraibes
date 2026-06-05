@@ -298,13 +298,17 @@ export function StockInventoryDialog({
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="outline" size="sm" onClick={downloadGeneratedPDF}>
-                      <FileDown className="h-4 w-4 mr-2" />
-                      Télécharger
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={generatedPDF.url} download={generatedPDF.fileName}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        Télécharger
+                      </a>
                     </Button>
-                    <Button variant="outline" size="sm" onClick={openGeneratedPDF}>
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Ouvrir
+                    <Button variant="outline" size="sm" asChild>
+                      <a href={generatedPDF.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Ouvrir
+                      </a>
                     </Button>
                     <Button variant="outline" size="sm" onClick={printGeneratedPDF}>
                       <Printer className="h-4 w-4 mr-2" />
