@@ -55,7 +55,7 @@ export function StockInventoryDialog({
     });
   }, [bases, isDirection, userBaseId]);
 
-  const getPDFDocumentForSelectedBase = () => {
+  const handleDownloadPDF = () => {
     const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
 
     if (!targetBase) {
@@ -64,38 +64,33 @@ export function StockInventoryDialog({
         description: 'Sélectionnez une base avant de générer le PDF.',
         variant: 'destructive',
       });
-      return null;
+      return;
     }
 
     const exportItems = items.filter((item) => item.baseId === targetBase);
-    const documents = createInventoryPDFDocuments(exportItems, bases, { role: 'chef_base', baseId: targetBase });
 
-    if (documents.length === 0) {
+    if (exportItems.length === 0) {
       toast({
         title: 'Aucun produit à exporter',
         description: 'Cette base ne contient aucun produit.',
         variant: 'destructive',
       });
-      return null;
+      return;
     }
 
-    return documents[0];
-  };
+    const baseName = bases.find((b) => b.id === targetBase)?.name || 'Base';
 
-  const handleDownloadPDF = () => {
     try {
       setIsExportingPDF(true);
-      const pdf = getPDFDocumentForSelectedBase();
-      if (!pdf) return;
-      downloadInventoryPDF(pdf);
+      const count = downloadInventoryPDFForBase(baseName, exportItems);
       toast({
         title: 'Téléchargement lancé',
-        description: `${pdf.itemCount} article(s) exporté(s).`,
+        description: `${count} article(s) exporté(s).`,
       });
     } catch (e) {
       console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
       toast({
-        title: 'Erreur lors de l\'export',
+        title: "Erreur lors de l'export",
         description: 'Impossible de générer le PDF de cette base.',
         variant: 'destructive',
       });
@@ -104,21 +99,6 @@ export function StockInventoryDialog({
     }
   };
 
-  const handleOpenPDF = () => {
-    const pdf = getPDFDocumentForSelectedBase();
-    if (!pdf) return;
-    if (!openInventoryPDF(pdf)) {
-      toast({ title: 'Ouverture bloquée', description: 'Autorisez les pop-ups ou utilisez Télécharger.', variant: 'destructive' });
-    }
-  };
-
-  const handlePrintPDF = () => {
-    const pdf = getPDFDocumentForSelectedBase();
-    if (!pdf) return;
-    if (!printInventoryPDF(pdf)) {
-      toast({ title: 'Impression bloquée', description: 'Autorisez les pop-ups ou utilisez Télécharger.', variant: 'destructive' });
-    }
-  };
 
   // Base verrouillée pour les non-direction
   const effectiveBase = isDirection ? selectedBase : (userBaseId || selectedBase);
