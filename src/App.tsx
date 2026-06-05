@@ -1,9 +1,7 @@
 
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { FormStateProvider } from "@/contexts/FormStateContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { Layout } from "@/components/Layout";
 import { GlobalRealtimeProvider } from "@/components/GlobalRealtimeProvider";
 import { NavigationRefresh } from "@/components/NavigationRefresh";
@@ -39,8 +37,6 @@ import NotFound from "./pages/NotFound";
 import Messagerie from "./pages/Messagerie";
 import Admin from "./pages/Admin";
 import Customers from "./pages/Customers";
-
-const queryClient = new QueryClient();
 
 function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: Array<'direction' | 'chef_base' | 'technicien' | 'administratif'> }) {
   const { isAuthenticated, loading, session, user } = useAuth();
@@ -346,15 +342,9 @@ function AppWithAutoRefresh() {
 
 const App = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <FormStateProvider>
-        <AuthProvider>
-          <GlobalRealtimeProvider>
-            <AppWithAutoRefresh />
-          </GlobalRealtimeProvider>
-        </AuthProvider>
-      </FormStateProvider>
-    </QueryClientProvider>
+    <GlobalRealtimeProvider>
+      <AppWithAutoRefresh />
+    </GlobalRealtimeProvider>
   );
 };
 
