@@ -280,10 +280,11 @@ export function StockInventoryDialog({
                   variant="outline"
                   size="sm"
                   onClick={handleExportPDF}
+                  disabled={isExportingPDF || !effectiveBase}
                   className="ml-auto"
                 >
                   <FileDown className="h-4 w-4 mr-2" />
-                  Exporter PDF
+                  {isExportingPDF ? 'Export...' : 'Exporter PDF'}
                 </Button>
               </div>
             </div>
