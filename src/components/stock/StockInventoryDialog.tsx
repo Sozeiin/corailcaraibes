@@ -229,7 +229,13 @@ export function StockInventoryDialog({
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
                 <div className="ml-auto flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isExportingPDF || !effectiveBase || baseItems.length === 0}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDownloadPDF}
+                    disabled={isExportingPDF || !effectiveBase || baseItems.length === 0}
+                  >
                     <FileDown className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
