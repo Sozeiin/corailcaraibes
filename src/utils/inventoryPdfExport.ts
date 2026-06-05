@@ -80,7 +80,7 @@ function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFFile {
   });
 
   const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
-  const blob = doc.output('blob');
+  const blob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
   return { blob, fileName, baseName, itemCount: sorted.length };
 }
 
