@@ -188,55 +188,41 @@ export function StockInventoryDialog({
     return counted - item.quantity;
   };
 
-  const downloadGeneratedPDF = () => {
+  const printGeneratedPDF = () => {
     if (!generatedPDF) return;
     const url = URL.createObjectURL(generatedPDF.blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = generatedPDF.fileName;
-    link.target = '_self';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  };
+    const printWindow = window.open('', '_blank');
 
-  const openGeneratedPDF = () => {
-    if (!generatedPDF) return;
-    const url = URL.createObjectURL(generatedPDF.blob);
-    const pdfWindow = window.open(url, '_blank');
-    if (!pdfWindow) {
+    if (!printWindow) {
       toast({
-        title: 'Ouverture bloquée',
-        description: 'Utilisez le bouton Télécharger pour récupérer le PDF.',
+        title: 'Impression bloquée',
+        description: 'Ouvrez le PDF puis imprimez-le depuis le lecteur PDF.',
         variant: 'destructive',
       });
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       return;
     }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  };
 
-  const printGeneratedPDF = () => {
-    if (!generatedPDF) return;
-    const url = URL.createObjectURL(generatedPDF.blob);
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '1px';
-    iframe.style.height = '1px';
-    iframe.style.border = '0';
-    iframe.src = url;
-    document.body.appendChild(iframe);
-    iframe.onload = () => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(url);
-      }, 60000);
-    };
+    printWindow.document.write(`
+      <!doctype html>
+      <html>
+        <head><title>${generatedPDF.fileName}</title></head>
+        <body style="margin:0">
+          <iframe id="pdf-frame" src="${url}" style="border:0;width:100vw;height:100vh"></iframe>
+          <script>
+            const frame = document.getElementById('pdf-frame');
+            frame.onload = function () {
+              setTimeout(function () {
+                frame.contentWindow.focus();
+                frame.contentWindow.print();
+              }, 500);
+            };
+          <\/script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   return (
