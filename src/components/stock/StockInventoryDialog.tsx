@@ -190,23 +190,53 @@ export function StockInventoryDialog({
 
   const downloadGeneratedPDF = () => {
     if (!generatedPDF) return;
+    const url = URL.createObjectURL(generatedPDF.blob);
     const link = document.createElement('a');
-    link.href = generatedPDF.url;
+    link.href = url;
     link.download = generatedPDF.fileName;
+    link.target = '_self';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   };
 
   const openGeneratedPDF = () => {
     if (!generatedPDF) return;
-    window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
+    const url = URL.createObjectURL(generatedPDF.blob);
+    const pdfWindow = window.open(url, '_blank');
+    if (!pdfWindow) {
+      toast({
+        title: 'Ouverture bloquée',
+        description: 'Utilisez le bouton Télécharger pour récupérer le PDF.',
+        variant: 'destructive',
+      });
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      return;
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   const printGeneratedPDF = () => {
     if (!generatedPDF) return;
-    const pdfWindow = window.open(generatedPDF.url, '_blank', 'noopener,noreferrer');
-    pdfWindow?.addEventListener('load', () => pdfWindow.print(), { once: true });
+    const url = URL.createObjectURL(generatedPDF.blob);
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
+    iframe.style.border = '0';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(url);
+      }, 60000);
+    };
   };
 
   return (
