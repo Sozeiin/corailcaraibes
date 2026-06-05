@@ -29,7 +29,27 @@ interface StockInventoryDialogProps {
 
 const STOCK_EXPORT_PAGE_SIZE = 1000;
 
-function mapStockRowToItem(row: any, bases: BaseOption[]): StockItem {
+interface StockExportRow {
+  id: string;
+  name: string;
+  reference: string | null;
+  barcode: string | null;
+  brand: string | null;
+  supplier_reference: string | null;
+  category: string | null;
+  quantity: number | null;
+  min_threshold: number | null;
+  unit: string | null;
+  location: string | null;
+  base_id: string | null;
+  photo_url: string | null;
+  last_updated: string | null;
+  last_purchase_date: string | null;
+  last_purchase_cost: number | null;
+  last_supplier_id: string | null;
+}
+
+function mapStockRowToItem(row: StockExportRow, bases: BaseOption[]): StockItem {
   const base = bases.find((b) => b.id === row.base_id);
 
   return {
@@ -84,7 +104,7 @@ export function StockInventoryDialog({
   }, [bases, isDirection, userBaseId]);
 
   const fetchItemsForExport = async (baseId: string): Promise<StockItem[]> => {
-    const allRows: any[] = [];
+    const allRows: StockExportRow[] = [];
     let from = 0;
 
     while (true) {
