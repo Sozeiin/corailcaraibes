@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Search, Package, AlertTriangle } from 'lucide-react';
+import { ClipboardList, Search, Package, AlertTriangle, FileDown } from 'lucide-react';
 import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
+import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
+import { useToast } from '@/hooks/use-toast';
 
 interface BaseOption {
   id: string;
