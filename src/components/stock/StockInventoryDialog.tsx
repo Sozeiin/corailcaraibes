@@ -5,10 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Search, Package, AlertTriangle, FileDown } from 'lucide-react';
+import { ClipboardList, Search, Package, AlertTriangle, FileDown, ExternalLink, Printer } from 'lucide-react';
 import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
-import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
+import { exportInventoryPDF, InventoryPDFFile } from '@/utils/inventoryPdfExport';
 import { useToast } from '@/hooks/use-toast';
 
 interface BaseOption {
@@ -26,6 +26,10 @@ interface StockInventoryDialogProps {
   onValidated?: () => void | Promise<void>;
 }
 
+interface GeneratedInventoryPDF extends InventoryPDFFile {
+  url: string;
+}
+
 export function StockInventoryDialog({
   isOpen,
   onClose,
@@ -41,6 +45,7 @@ export function StockInventoryDialog({
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'count' | 'confirm'>('count');
   const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [generatedPDF, setGeneratedPDF] = useState<GeneratedInventoryPDF | null>(null);
   const validateInventory = useValidateInventory();
   const { toast } = useToast();
 
@@ -54,6 +59,12 @@ export function StockInventoryDialog({
       return bases[0].id;
     });
   }, [bases, isDirection, userBaseId]);
+
+  useEffect(() => {
+    return () => {
+      if (generatedPDF) URL.revokeObjectURL(generatedPDF.url);
+    };
+  }, [generatedPDF]);
 
   const handleExportPDF = () => {
     const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
@@ -69,9 +80,13 @@ export function StockInventoryDialog({
 
     try {
       setIsExportingPDF(true);
+      if (generatedPDF) {
+        URL.revokeObjectURL(generatedPDF.url);
+        setGeneratedPDF(null);
+      }
       const exportItems = items.filter((item) => item.baseId === targetBase);
-      const count = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
-      if (count === 0) {
+      const files = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
+      if (files.length === 0) {
         toast({
           title: 'Aucun produit à exporter',
           description: 'Cette base ne contient aucun produit.',
@@ -79,9 +94,12 @@ export function StockInventoryDialog({
         });
         return;
       }
+      const file = files[0];
+      const url = URL.createObjectURL(file.blob);
+      setGeneratedPDF({ ...file, url });
       toast({
-        title: 'Export PDF généré',
-        description: 'Le PDF de la base sélectionnée a été téléchargé.',
+        title: 'PDF prêt',
+        description: 'Utilisez Télécharger, Ouvrir ou Imprimer ci-dessous.',
       });
     } catch (e) {
       console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
