@@ -146,26 +146,13 @@ export function StockInventoryDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <DialogTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                Inventaire du stock
-              </DialogTitle>
-              <DialogDescription>
-                Saisissez les quantités comptées pour mettre à jour le stock.
-              </DialogDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExportPDF}
-              className="shrink-0"
-            >
-              <FileDown className="h-4 w-4 mr-2" />
-              Exporter PDF
-            </Button>
-          </div>
+          <DialogTitle className="flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Inventaire du stock
+          </DialogTitle>
+          <DialogDescription>
+            Saisissez les quantités comptées pour mettre à jour le stock.
+          </DialogDescription>
         </DialogHeader>
 
         {step === 'count' ? (
@@ -204,10 +191,19 @@ export function StockInventoryDialog({
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <Badge variant="secondary">{baseItems.length} article(s)</Badge>
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  className="ml-auto"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Exporter PDF
+                </Button>
               </div>
             </div>
 
