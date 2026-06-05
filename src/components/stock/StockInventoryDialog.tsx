@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
 import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface BaseOption {
   id: string;
@@ -26,6 +27,33 @@ interface StockInventoryDialogProps {
   onValidated?: () => void | Promise<void>;
 }
 
+const STOCK_EXPORT_PAGE_SIZE = 1000;
+
+function mapStockRowToItem(row: any, bases: BaseOption[]): StockItem {
+  const base = bases.find((b) => b.id === row.base_id);
+
+  return {
+    id: row.id,
+    name: row.name,
+    reference: row.reference || '',
+    barcode: row.barcode || '',
+    brand: row.brand || '',
+    supplierReference: row.supplier_reference || '',
+    category: row.category || '',
+    quantity: row.quantity || 0,
+    minThreshold: row.min_threshold || 0,
+    unit: row.unit || '',
+    location: row.location || '',
+    baseId: row.base_id || '',
+    baseName: base?.name || '',
+    photoUrl: row.photo_url || '',
+    lastUpdated: row.last_updated || new Date().toISOString(),
+    lastPurchaseDate: row.last_purchase_date || null,
+    lastPurchaseCost: row.last_purchase_cost || null,
+    lastSupplierId: row.last_supplier_id || null,
+  };
+}
+
 export function StockInventoryDialog({
   isOpen,
   onClose,
@@ -40,13 +68,62 @@ export function StockInventoryDialog({
   const [searchTerm, setSearchTerm] = useState('');
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'count' | 'confirm'>('count');
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const validateInventory = useValidateInventory();
   const { toast } = useToast();
 
-  const handleExportPDF = () => {
+  useEffect(() => {
+    if (bases.length === 0) return;
+
+    setSelectedBase((current) => {
+      if (isDirection && bases.some((base) => base.id === current)) return current;
+      if (!isDirection && userBaseId) return userBaseId;
+      if (userBaseId && bases.some((base) => base.id === userBaseId)) return userBaseId;
+      return bases[0].id;
+    });
+  }, [bases, isDirection, userBaseId]);
+
+  const fetchItemsForExport = async (baseId: string): Promise<StockItem[]> => {
+    const allRows: any[] = [];
+    let from = 0;
+
+    while (true) {
+      const { data, error } = await supabase
+        .from('stock_items')
+        .select('id, name, reference, barcode, brand, supplier_reference, category, quantity, min_threshold, unit, location, base_id, photo_url, last_updated, last_purchase_date, last_purchase_cost, last_supplier_id')
+        .eq('base_id', baseId)
+        .order('category', { ascending: true, nullsFirst: false })
+        .order('name', { ascending: true })
+        .range(from, from + STOCK_EXPORT_PAGE_SIZE - 1);
+
+      if (error) throw error;
+
+      const rows = data || [];
+      allRows.push(...rows);
+
+      if (rows.length < STOCK_EXPORT_PAGE_SIZE) break;
+      from += STOCK_EXPORT_PAGE_SIZE;
+    }
+
+    return allRows.map((row) => mapStockRowToItem(row, bases));
+  };
+
+  const handleExportPDF = async () => {
+    const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
+
+    if (!targetBase) {
+      toast({
+        title: 'Base requise',
+        description: 'Sélectionnez une base avant de générer le PDF.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsExportingPDF(true);
     try {
-      const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
-      const count = exportInventoryPDF(items, bases, { role: 'chef_base', baseId: targetBase });
+      const exportItems = await fetchItemsForExport(targetBase);
+      const count = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
       if (count === 0) {
         toast({
           title: 'Aucun produit à exporter',
@@ -60,11 +137,14 @@ export function StockInventoryDialog({
         description: 'Le PDF de la base sélectionnée a été téléchargé.',
       });
     } catch (e) {
+      console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
       toast({
         title: 'Erreur lors de l\'export',
-        description: 'Impossible de générer le PDF.',
+        description: 'Impossible de récupérer les produits de cette base pour générer le PDF.',
         variant: 'destructive',
       });
+    } finally {
+      setIsExportingPDF(false);
     }
   };
 
