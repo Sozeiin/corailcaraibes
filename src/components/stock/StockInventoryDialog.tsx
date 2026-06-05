@@ -191,10 +191,19 @@ export function StockInventoryDialog({
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 text-sm">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
                 <Badge variant="secondary">{baseItems.length} article(s)</Badge>
                 <Badge variant="default">{countedTotal} compté(s)</Badge>
                 {diffTotal > 0 && <Badge variant="destructive">{diffTotal} écart(s)</Badge>}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  className="ml-auto"
+                >
+                  <FileDown className="h-4 w-4 mr-2" />
+                  Exporter PDF
+                </Button>
               </div>
             </div>
 
