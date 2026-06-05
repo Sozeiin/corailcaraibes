@@ -3,30 +3,6 @@ import autoTable from 'jspdf-autotable';
 import { StockItem } from '@/types';
 import { getLocalDateString } from '@/lib/dateUtils';
 
-interface BaseOption {
-  id: string;
-  name: string;
-}
-
-interface ExportOptions {
-  role?: string;
-  baseId?: string;
-}
-
-export interface InventoryPDFFile {
-  blob: Blob;
-  fileName: string;
-  baseName: string;
-  itemCount: number;
-}
-
-export interface InventoryPDFDocument {
-  doc: jsPDF;
-  fileName: string;
-  baseName: string;
-  itemCount: number;
-}
-
 function slugify(name: string): string {
   return name
     .normalize('NFD')
@@ -36,7 +12,16 @@ function slugify(name: string): string {
     .toLowerCase();
 }
 
-function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFDocument {
+/**
+ * Génère et télécharge immédiatement un PDF d'inventaire pour une base donnée.
+ * Le téléchargement est déclenché de façon synchrone dans le geste de clic
+ * utilisateur via jsPDF.save(), comme les autres exports PDF de l'app.
+ * Retourne le nombre d'articles exportés.
+ */
+export function downloadInventoryPDFForBase(
+  baseName: string,
+  items: StockItem[]
+): number {
   const doc = new jsPDF({ orientation: 'landscape' });
   const dateStr = getLocalDateString();
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -87,64 +72,7 @@ function buildBasePdf(baseName: string, items: StockItem[]): InventoryPDFDocumen
   });
 
   const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
-  return { doc, fileName, baseName, itemCount: sorted.length };
-}
+  doc.save(fileName);
 
-function toFile(pdf: InventoryPDFDocument): InventoryPDFFile {
-  return {
-    blob: new Blob([pdf.doc.output('arraybuffer')], { type: 'application/pdf' }),
-    fileName: pdf.fileName,
-    baseName: pdf.baseName,
-    itemCount: pdf.itemCount,
-  };
-}
-
-/**
- * Génère un PDF imprimable par base.
- * - Direction : un PDF pour chaque base ayant des produits.
- * - Autres rôles : un PDF uniquement pour la base de l'utilisateur.
- */
-export function exportInventoryPDF(
-  items: StockItem[],
-  bases: BaseOption[],
-  options: ExportOptions
-): InventoryPDFFile[] {
-  return createInventoryPDFDocuments(items, bases, options).map(toFile);
-}
-
-export function createInventoryPDFDocuments(
-  items: StockItem[],
-  bases: BaseOption[],
-  options: ExportOptions
-): InventoryPDFDocument[] {
-  const isDirection = options.role === 'direction';
-
-  const targetBases = isDirection
-    ? bases
-    : bases.filter((b) => b.id === options.baseId);
-
-  const files: InventoryPDFDocument[] = [];
-
-  targetBases.forEach((base) => {
-    const baseItems = items.filter((item) => item.baseId === base.id);
-    if (baseItems.length === 0) return;
-    files.push(buildBasePdf(base.name, baseItems));
-  });
-
-  return files;
-}
-
-export function downloadInventoryPDF(pdf: InventoryPDFDocument) {
-  pdf.doc.save(pdf.fileName);
-}
-
-export function openInventoryPDF(pdf: InventoryPDFDocument): boolean {
-  const url = pdf.doc.output('bloburl');
-  return Boolean(window.open(url, '_blank'));
-}
-
-export function printInventoryPDF(pdf: InventoryPDFDocument): boolean {
-  pdf.doc.autoPrint();
-  const url = pdf.doc.output('bloburl');
-  return Boolean(window.open(url, '_blank'));
+  return sorted.length;
 }
