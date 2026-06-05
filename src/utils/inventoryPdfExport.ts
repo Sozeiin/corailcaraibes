@@ -12,10 +12,27 @@ function slugify(name: string): string {
     .toLowerCase();
 }
 
+function downloadPdfBlob(doc: jsPDF, fileName: string) {
+  const blob = doc.output('blob');
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+
+  link.href = url;
+  link.download = fileName;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
+}
+
 /**
  * Génère et télécharge immédiatement un PDF d'inventaire pour une base donnée.
  * Le téléchargement est déclenché de façon synchrone dans le geste de clic
- * utilisateur via jsPDF.save(), comme les autres exports PDF de l'app.
+ * utilisateur via un lien Blob immédiat, plus fiable dans la preview et les navigateurs.
  * Retourne le nombre d'articles exportés.
  */
 export function downloadInventoryPDFForBase(
@@ -72,7 +89,7 @@ export function downloadInventoryPDFForBase(
   });
 
   const fileName = `inventaire_${slugify(baseName)}_${dateStr}.pdf`;
-  doc.save(fileName);
+  downloadPdfBlob(doc, fileName);
 
   return sorted.length;
 }
