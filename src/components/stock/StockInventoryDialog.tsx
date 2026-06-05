@@ -273,6 +273,30 @@ export function StockInventoryDialog({
                   {isExportingPDF ? 'Export...' : 'Exporter PDF'}
                 </Button>
               </div>
+              {generatedPDF && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-md border bg-muted/30 p-3 text-sm">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{generatedPDF.fileName}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {generatedPDF.itemCount} article(s) — {generatedPDF.baseName}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" size="sm" onClick={downloadGeneratedPDF}>
+                      <FileDown className="h-4 w-4 mr-2" />
+                      Télécharger
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={openGeneratedPDF}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Ouvrir
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={printGeneratedPDF}>
+                      <Printer className="h-4 w-4 mr-2" />
+                      Imprimer
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
