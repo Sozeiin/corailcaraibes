@@ -45,18 +45,19 @@ export function StockInventoryDialog({
 
   const handleExportPDF = () => {
     try {
-      const count = exportInventoryPDF(items, bases, { role: userRole, baseId: userBaseId });
+      const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
+      const count = exportInventoryPDF(items, bases, { role: 'chef_base', baseId: targetBase });
       if (count === 0) {
         toast({
           title: 'Aucun produit à exporter',
-          description: 'Aucune base ne contient de produit.',
+          description: 'Cette base ne contient aucun produit.',
           variant: 'destructive',
         });
         return;
       }
       toast({
         title: 'Export PDF généré',
-        description: count > 1 ? `${count} fichiers PDF téléchargés (un par base).` : 'PDF téléchargé.',
+        description: 'Le PDF de la base sélectionnée a été téléchargé.',
       });
     } catch (e) {
       toast({
