@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ClipboardList, Search, Package, AlertTriangle } from 'lucide-react';
+import { ClipboardList, Search, Package, AlertTriangle, FileDown } from 'lucide-react';
 import { StockItem } from '@/types';
 import { useValidateInventory, InventoryCountLine } from '@/hooks/useStockInventory';
+import { exportInventoryPDF } from '@/utils/inventoryPdfExport';
+import { useToast } from '@/hooks/use-toast';
 
 interface BaseOption {
   id: string;
@@ -39,6 +41,31 @@ export function StockInventoryDialog({
   const [counts, setCounts] = useState<Record<string, string>>({});
   const [step, setStep] = useState<'count' | 'confirm'>('count');
   const validateInventory = useValidateInventory();
+  const { toast } = useToast();
+
+  const handleExportPDF = () => {
+    try {
+      const count = exportInventoryPDF(items, bases, { role: userRole, baseId: userBaseId });
+      if (count === 0) {
+        toast({
+          title: 'Aucun produit à exporter',
+          description: 'Aucune base ne contient de produit.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      toast({
+        title: 'Export PDF généré',
+        description: count > 1 ? `${count} fichiers PDF téléchargés (un par base).` : 'PDF téléchargé.',
+      });
+    } catch (e) {
+      toast({
+        title: 'Erreur lors de l\'export',
+        description: 'Impossible de générer le PDF.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Base verrouillée pour les non-direction
   const effectiveBase = isDirection ? selectedBase : (userBaseId || selectedBase);
@@ -119,13 +146,26 @@ export function StockInventoryDialog({
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="px-6 pt-6">
-          <DialogTitle className="flex items-center gap-2">
-            <ClipboardList className="h-5 w-5 text-primary" />
-            Inventaire du stock
-          </DialogTitle>
-          <DialogDescription>
-            Saisissez les quantités comptées pour mettre à jour le stock.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-primary" />
+                Inventaire du stock
+              </DialogTitle>
+              <DialogDescription>
+                Saisissez les quantités comptées pour mettre à jour le stock.
+              </DialogDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              className="shrink-0"
+            >
+              <FileDown className="h-4 w-4 mr-2" />
+              Exporter PDF
+            </Button>
+          </div>
         </DialogHeader>
 
         {step === 'count' ? (

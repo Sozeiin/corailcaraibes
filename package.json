@@ -78,6 +78,7 @@
     "jeep-sqlite": "^2.8.0",
     "jsbarcode": "^3.12.1",
     "jspdf": "4.0.0",
+    "jspdf-autotable": "^5.0.8",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "qrcode": "^1.5.4",
