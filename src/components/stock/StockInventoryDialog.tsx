@@ -55,32 +55,7 @@ export function StockInventoryDialog({
     });
   }, [bases, isDirection, userBaseId]);
 
-  const fetchItemsForExport = async (baseId: string): Promise<StockItem[]> => {
-    const allRows: StockExportRow[] = [];
-    let from = 0;
-
-    while (true) {
-      const { data, error } = await supabase
-        .from('stock_items')
-        .select('id, name, reference, barcode, brand, supplier_reference, category, quantity, min_threshold, unit, location, base_id, photo_url, last_updated, last_purchase_date, last_purchase_cost, last_supplier_id')
-        .eq('base_id', baseId)
-        .order('category', { ascending: true, nullsFirst: false })
-        .order('name', { ascending: true })
-        .range(from, from + STOCK_EXPORT_PAGE_SIZE - 1);
-
-      if (error) throw error;
-
-      const rows = data || [];
-      allRows.push(...rows);
-
-      if (rows.length < STOCK_EXPORT_PAGE_SIZE) break;
-      from += STOCK_EXPORT_PAGE_SIZE;
-    }
-
-    return allRows.map((row) => mapStockRowToItem(row, bases));
-  };
-
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     const targetBase = isDirection ? selectedBase : (userBaseId || selectedBase);
 
     if (!targetBase) {
@@ -92,9 +67,9 @@ export function StockInventoryDialog({
       return;
     }
 
-    setIsExportingPDF(true);
     try {
-      const exportItems = await fetchItemsForExport(targetBase);
+      setIsExportingPDF(true);
+      const exportItems = items.filter((item) => item.baseId === targetBase);
       const count = exportInventoryPDF(exportItems, bases, { role: 'chef_base', baseId: targetBase });
       if (count === 0) {
         toast({
@@ -112,7 +87,7 @@ export function StockInventoryDialog({
       console.error('[StockInventoryDialog] Erreur export PDF inventaire:', e);
       toast({
         title: 'Erreur lors de l\'export',
-        description: 'Impossible de récupérer les produits de cette base pour générer le PDF.',
+        description: 'Impossible de générer le PDF de cette base.',
         variant: 'destructive',
       });
     } finally {
