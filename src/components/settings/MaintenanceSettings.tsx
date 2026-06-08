@@ -3,13 +3,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Wrench, FileText, Calendar, AlertTriangle } from 'lucide-react';
 import { AutomaticSchedulingSettings } from '../maintenance/AutomaticSchedulingSettings';
+import { OilChangeIntervalsSettings } from '../maintenance/OilChangeIntervalsSettings';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function MaintenanceSettings() {
+  const { user } = useAuth();
   return (
     <div className="space-y-6">
       <h3 className="text-lg font-semibold">Configuration de la maintenance</h3>
       
       <div className="grid gap-6">
+        {user?.role === 'direction' && <OilChangeIntervalsSettings />}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
