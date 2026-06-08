@@ -1,7 +1,13 @@
+export const DEFAULT_OIL_CHANGE_INTERVAL = 250;
+
+/** Threshold (in hours before the interval) at which the "due soon" warning starts. */
+const DUE_SOON_RATIO = 0.8; // 80% of the interval
+
 export interface BoatEngineData {
   id: string;
   current_engine_hours: number;
   last_oil_change_hours: number;
+  oil_change_interval_hours?: number;
 }
 
 export interface EngineComponent {
@@ -10,6 +16,7 @@ export interface EngineComponent {
   component_type: string;
   current_engine_hours: number;
   last_oil_change_hours: number;
+  oil_change_interval_hours?: number;
 }
 
 export interface BoatEngineComponentsData {
@@ -18,15 +25,26 @@ export interface BoatEngineComponentsData {
   components: EngineComponent[];
 }
 
+const resolveInterval = (interval?: number): number => {
+  if (!interval || interval <= 0) return DEFAULT_OIL_CHANGE_INTERVAL;
+  return interval;
+};
+
 /**
  * Calculate oil change status based on engine hours
  */
-export const calculateOilChangeStatus = (currentHours: number, lastChangeHours: number): string => {
+export const calculateOilChangeStatus = (
+  currentHours: number,
+  lastChangeHours: number,
+  interval: number = DEFAULT_OIL_CHANGE_INTERVAL
+): string => {
+  const limit = resolveInterval(interval);
+  const dueSoon = limit * DUE_SOON_RATIO;
   const hoursSinceLastChange = currentHours - lastChangeHours;
-  
-  if (hoursSinceLastChange >= 250) {
+
+  if (hoursSinceLastChange >= limit) {
     return 'overdue';
-  } else if (hoursSinceLastChange >= 200) {
+  } else if (hoursSinceLastChange >= dueSoon) {
     return 'due_soon';
   } else {
     return 'ok';
@@ -36,24 +54,34 @@ export const calculateOilChangeStatus = (currentHours: number, lastChangeHours: 
 /**
  * Get oil change status color based on hours since last change
  */
-export const getOilChangeStatusColor = (hoursSinceLastChange: number): string => {
-  if (hoursSinceLastChange >= 250) return 'text-red-500'; // Red - overdue
-  if (hoursSinceLastChange >= 200) return 'text-orange-500'; // Orange - due soon
+export const getOilChangeStatusColor = (
+  hoursSinceLastChange: number,
+  interval: number = DEFAULT_OIL_CHANGE_INTERVAL
+): string => {
+  const limit = resolveInterval(interval);
+  if (hoursSinceLastChange >= limit) return 'text-red-500'; // Red - overdue
+  if (hoursSinceLastChange >= limit * DUE_SOON_RATIO) return 'text-orange-500'; // Orange - due soon
   return 'text-green-500'; // Green - OK
 };
 
 /**
  * Get oil change status badge info for engine components
  */
-export const getOilChangeStatusBadge = (currentHours: number, lastChangeHours: number) => {
-  console.log('🔧 getOilChangeStatusBadge called with:', { currentHours, lastChangeHours });
-  
+export const getOilChangeStatusBadge = (
+  currentHours: number,
+  lastChangeHours: number,
+  interval: number = DEFAULT_OIL_CHANGE_INTERVAL
+) => {
+  const limit = resolveInterval(interval);
+  const dueSoon = limit * DUE_SOON_RATIO;
+
   // Si les données sont manquantes ou incohérentes
   if (currentHours <= 0 && lastChangeHours <= 0) {
     return {
       status: 'no_data',
       color: 'text-gray-400',
       hoursSinceLastChange: 0,
+      interval: limit,
       isOverdue: false,
       isDueSoon: false,
       isOk: false,
@@ -61,13 +89,14 @@ export const getOilChangeStatusBadge = (currentHours: number, lastChangeHours: n
       message: 'Données manquantes'
     };
   }
-  
+
   // Si on a des heures moteur mais pas d'heures de dernière vidange
   if (currentHours > 0 && lastChangeHours <= 0) {
     return {
       status: 'overdue',
       color: 'text-red-500',
       hoursSinceLastChange: currentHours,
+      interval: limit,
       isOverdue: true,
       isDueSoon: false,
       isOk: false,
@@ -75,34 +104,29 @@ export const getOilChangeStatusBadge = (currentHours: number, lastChangeHours: n
       message: 'Vidange jamais effectuée'
     };
   }
-  
+
   const hoursSinceLastChange = currentHours - lastChangeHours;
-  const status = calculateOilChangeStatus(currentHours, lastChangeHours);
-  const color = getOilChangeStatusColor(hoursSinceLastChange);
-  
-  const result = {
+  const status = calculateOilChangeStatus(currentHours, lastChangeHours, limit);
+  const color = getOilChangeStatusColor(hoursSinceLastChange, limit);
+
+  return {
     status,
     color,
     hoursSinceLastChange,
-    isOverdue: hoursSinceLastChange >= 250,
-    isDueSoon: hoursSinceLastChange >= 200 && hoursSinceLastChange < 250,
-    isOk: hoursSinceLastChange < 200,
-    needsAttention: hoursSinceLastChange >= 200,
-    message: hoursSinceLastChange >= 250 ? 'En retard' : hoursSinceLastChange >= 200 ? 'Bientôt' : 'Correct'
+    interval: limit,
+    isOverdue: hoursSinceLastChange >= limit,
+    isDueSoon: hoursSinceLastChange >= dueSoon && hoursSinceLastChange < limit,
+    isOk: hoursSinceLastChange < dueSoon,
+    needsAttention: hoursSinceLastChange >= dueSoon,
+    message: hoursSinceLastChange >= limit ? 'En retard' : hoursSinceLastChange >= dueSoon ? 'Bientôt' : 'Correct'
   };
-  
-  console.log('🔧 getOilChangeStatusBadge result:', result);
-  return result;
 };
 
 /**
  * Get the worst oil change status across all engine components
  */
 export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
-  console.log(`🔧 [engineUtils] Analyzing ${engines?.length || 0} engines:`, engines);
-  
   if (!engines || engines.length === 0) {
-    console.log(`⚪ [engineUtils] No engines found, returning default status`);
     return {
       status: 'ok',
       color: 'text-green-500',
@@ -121,28 +145,17 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
   let needsAttention = false;
   let worstMessage = 'Correct';
 
-  engines.forEach((engine, index) => {
+  engines.forEach((engine) => {
     const currentHours = engine.current_engine_hours || 0;
     const lastOilChangeHours = engine.last_oil_change_hours || 0;
-    const status = getOilChangeStatusBadge(currentHours, lastOilChangeHours);
-    
-    console.log(`🛢️ [engineUtils] Engine ${index + 1} (${engine.component_name}):`, {
-      currentHours,
-      lastOilChangeHours,
-      hoursSinceChange: status.hoursSinceLastChange,
-      status: status.status,
-      isOverdue: status.isOverdue,
-      isDueSoon: status.isDueSoon,
-      needsAttention: status.needsAttention
-    });
-    
+    const status = getOilChangeStatusBadge(currentHours, lastOilChangeHours, engine.oil_change_interval_hours);
+
     maxHours = Math.max(maxHours, status.hoursSinceLastChange);
-    
-    // Mettre à jour si ce badge nécessite une attention
+
     if (status.needsAttention) {
       needsAttention = true;
     }
-    
+
     // Priorité: overdue > due_soon > no_data > ok
     if (status.isOverdue || (status.status === 'overdue' && worstStatus !== 'overdue')) {
       worstStatus = 'overdue';
@@ -159,7 +172,7 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
     }
   });
 
-  const result = {
+  return {
     status: worstStatus,
     color: worstColor,
     hoursSinceLastChange: maxHours,
@@ -169,18 +182,19 @@ export const getWorstOilChangeStatus = (engines: EngineComponent[]) => {
     needsAttention,
     message: worstMessage
   };
-
-  console.log(`🎯 [engineUtils] Worst oil status result:`, result);
-  
-  return result;
 };
 
 /**
  * Calculate progress percentage toward next oil change (0-100%)
  */
-export const calculateOilChangeProgress = (currentHours: number, lastChangeHours: number): number => {
+export const calculateOilChangeProgress = (
+  currentHours: number,
+  lastChangeHours: number,
+  interval: number = DEFAULT_OIL_CHANGE_INTERVAL
+): number => {
+  const limit = resolveInterval(interval);
   const hoursSinceLastChange = currentHours - lastChangeHours;
-  const progress = (hoursSinceLastChange / 250) * 100;
+  const progress = (hoursSinceLastChange / limit) * 100;
   return Math.min(Math.max(progress, 0), 100);
 };
 
@@ -189,12 +203,16 @@ export const calculateOilChangeProgress = (currentHours: number, lastChangeHours
  */
 export const calculateWorstOilChangeProgress = (engines: EngineComponent[]): number => {
   if (!engines || engines.length === 0) return 0;
-  
+
   let maxProgress = 0;
   engines.forEach(engine => {
-    const progress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours);
+    const progress = calculateOilChangeProgress(
+      engine.current_engine_hours,
+      engine.last_oil_change_hours,
+      engine.oil_change_interval_hours
+    );
     maxProgress = Math.max(maxProgress, progress);
   });
-  
+
   return maxProgress;
 };
