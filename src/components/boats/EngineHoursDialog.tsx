@@ -47,6 +47,7 @@ interface EngineHoursDialogProps {
     component_name: string;
     current_engine_hours: number;
     last_oil_change_hours: number;
+    oil_change_interval_hours?: number;
   };
   onSave: (engineId: string, data: { current_engine_hours: number; last_oil_change_hours: number }) => Promise<void>;
 }
