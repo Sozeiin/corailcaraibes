@@ -135,7 +135,8 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boat
             />
             {oilProgress > 100 && (
               <p className="text-xs text-destructive font-medium">
-                En retard de {(oilStatus.hoursSinceLastChange - 250)}h
+                En retard de {(oilStatus.hoursSinceLastChange - (oilStatus.interval ?? 250))}h
+
               </p>
             )}
           </div>
