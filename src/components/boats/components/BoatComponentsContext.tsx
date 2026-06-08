@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { BoatComponent } from '@/types';
+import { compareEngineComponents } from '@/utils/engineComponentOrder';
 
 interface ComponentFormData {
   componentName: string;
@@ -166,7 +167,12 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
     // Apply sorting
     switch (filters.sortBy) {
       case 'name':
-        filtered.sort((a, b) => safeString(a.componentName).localeCompare(safeString(b.componentName)));
+        filtered.sort((a, b) =>
+          compareEngineComponents(
+            { name: a.componentName, type: a.componentType },
+            { name: b.componentName, type: b.componentType }
+          )
+        );
         break;
       case 'name_desc':
         filtered.sort((a, b) => safeString(b.componentName).localeCompare(safeString(a.componentName)));
@@ -181,7 +187,12 @@ export function BoatComponentsProvider({ children, boatId, boatName }: BoatCompo
         filtered.sort((a, b) => a.maintenanceIntervalDays - b.maintenanceIntervalDays);
         break;
       default:
-        filtered.sort((a, b) => safeString(a.componentName).localeCompare(safeString(b.componentName)));
+        filtered.sort((a, b) =>
+          compareEngineComponents(
+            { name: a.componentName, type: a.componentType },
+            { name: b.componentName, type: b.componentType }
+          )
+        );
     }
 
     console.log(`Filtered ${filtered.length} components from ${components.length} total`);
