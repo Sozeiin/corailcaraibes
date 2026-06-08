@@ -7,6 +7,7 @@ export interface BoatEngine {
   component_type: string;
   current_engine_hours: number | null;
   last_oil_change_hours: number | null;
+  oil_change_interval_hours: number | null;
 }
 
 export function useBoatEngines(boatId: string | undefined) {
