@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { compareEngineComponents } from '@/utils/engineComponentOrder';
 
 export interface BoatEngine {
   id: string;
@@ -23,7 +24,13 @@ export function useBoatEngines(boatId: string | undefined) {
         .or('component_type.ilike.%moteur%,component_type.ilike.%générateur%,component_type.ilike.%generator%,component_type.ilike.%engine%');
       
       if (error) throw error;
-      return (data || []) as BoatEngine[];
+      const engines = (data || []) as BoatEngine[];
+      return [...engines].sort((a, b) =>
+        compareEngineComponents(
+          { name: a.component_name, type: a.component_type },
+          { name: b.component_name, type: b.component_type }
+        )
+      );
     },
     enabled: !!boatId,
   });
