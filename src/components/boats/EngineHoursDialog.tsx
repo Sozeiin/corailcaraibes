@@ -81,11 +81,13 @@ export const EngineHoursDialog: React.FC<EngineHoursDialogProps> = ({
   // Calculate preview status
   const previewOilStatus = getOilChangeStatusBadge(
     watchedValues.currentEngineHours || 0,
-    watchedValues.lastOilChangeHours || 0
+    watchedValues.lastOilChangeHours || 0,
+    engine.oil_change_interval_hours
   );
   const previewProgress = calculateOilChangeProgress(
     watchedValues.currentEngineHours || 0,
-    watchedValues.lastOilChangeHours || 0
+    watchedValues.lastOilChangeHours || 0,
+    engine.oil_change_interval_hours
   );
 
   const getOilStatusVariant = (status: string) => {
