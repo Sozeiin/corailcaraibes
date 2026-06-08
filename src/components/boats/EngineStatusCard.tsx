@@ -16,6 +16,7 @@ interface EngineStatusCardProps {
     component_type?: string;
     current_engine_hours: number;
     last_oil_change_hours: number;
+    oil_change_interval_hours?: number;
     status: string;
   };
   boatId: string;
@@ -27,8 +28,8 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boat
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const updateEngineHours = useUpdateEngineHours(boatId);
   
-  const oilStatus = getOilChangeStatusBadge(engine.current_engine_hours, engine.last_oil_change_hours);
-  const oilProgress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours);
+  const oilStatus = getOilChangeStatusBadge(engine.current_engine_hours, engine.last_oil_change_hours, engine.oil_change_interval_hours);
+  const oilProgress = calculateOilChangeProgress(engine.current_engine_hours, engine.last_oil_change_hours, engine.oil_change_interval_hours);
 
   // Show edit button only for chef_base and direction
   const canEdit = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
@@ -134,7 +135,8 @@ export const EngineStatusCard: React.FC<EngineStatusCardProps> = ({ engine, boat
             />
             {oilProgress > 100 && (
               <p className="text-xs text-destructive font-medium">
-                En retard de {(oilStatus.hoursSinceLastChange - 250)}h
+                En retard de {(oilStatus.hoursSinceLastChange - (oilStatus.interval ?? 250))}h
+
               </p>
             )}
           </div>

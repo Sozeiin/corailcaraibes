@@ -476,6 +476,7 @@ export type Database = {
           model: string | null
           next_maintenance_date: string | null
           notes: string | null
+          oil_change_interval_hours: number
           reference: string | null
           serial_number: string | null
           status: string | null
@@ -496,6 +497,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
+          oil_change_interval_hours?: number
           reference?: string | null
           serial_number?: string | null
           status?: string | null
@@ -516,6 +518,7 @@ export type Database = {
           model?: string | null
           next_maintenance_date?: string | null
           notes?: string | null
+          oil_change_interval_hours?: number
           reference?: string | null
           serial_number?: string | null
           status?: string | null

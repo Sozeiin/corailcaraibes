@@ -47,6 +47,7 @@ interface EngineHoursDialogProps {
     component_name: string;
     current_engine_hours: number;
     last_oil_change_hours: number;
+    oil_change_interval_hours?: number;
   };
   onSave: (engineId: string, data: { current_engine_hours: number; last_oil_change_hours: number }) => Promise<void>;
 }
@@ -80,11 +81,13 @@ export const EngineHoursDialog: React.FC<EngineHoursDialogProps> = ({
   // Calculate preview status
   const previewOilStatus = getOilChangeStatusBadge(
     watchedValues.currentEngineHours || 0,
-    watchedValues.lastOilChangeHours || 0
+    watchedValues.lastOilChangeHours || 0,
+    engine.oil_change_interval_hours
   );
   const previewProgress = calculateOilChangeProgress(
     watchedValues.currentEngineHours || 0,
-    watchedValues.lastOilChangeHours || 0
+    watchedValues.lastOilChangeHours || 0,
+    engine.oil_change_interval_hours
   );
 
   const getOilStatusVariant = (status: string) => {
@@ -191,7 +194,7 @@ export const EngineHoursDialog: React.FC<EngineHoursDialogProps> = ({
                 {previewProgress > 100 && (
                   <div className="flex items-center gap-2 text-xs text-destructive">
                     <AlertCircle className="h-3 w-3" />
-                    <span>En retard de {previewOilStatus.hoursSinceLastChange - 250}h</span>
+                    <span>En retard de {previewOilStatus.hoursSinceLastChange - (previewOilStatus.interval ?? 250)}h</span>
                   </div>
                 )}
               </div>
