@@ -18,7 +18,7 @@ export function useBoatEngines(boatId: string | undefined) {
       
       const { data, error } = await supabase
         .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
+        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, oil_change_interval_hours')
         .eq('boat_id', boatId)
         .or('component_type.ilike.%moteur%,component_type.ilike.%générateur%,component_type.ilike.%generator%,component_type.ilike.%engine%');
       
