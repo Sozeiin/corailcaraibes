@@ -194,7 +194,7 @@ export const EngineHoursDialog: React.FC<EngineHoursDialogProps> = ({
                 {previewProgress > 100 && (
                   <div className="flex items-center gap-2 text-xs text-destructive">
                     <AlertCircle className="h-3 w-3" />
-                    <span>En retard de {previewOilStatus.hoursSinceLastChange - 250}h</span>
+                    <span>En retard de {previewOilStatus.hoursSinceLastChange - (previewOilStatus.interval ?? 250)}h</span>
                   </div>
                 )}
               </div>
