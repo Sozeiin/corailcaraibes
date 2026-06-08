@@ -109,7 +109,7 @@ export function StockItemAutocomplete({
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative flex-1 min-w-0">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -125,25 +125,25 @@ export function StockItemAutocomplete({
       </div>
 
       {isOpen && filteredItems.length > 0 && (
-        <Card className="absolute top-full left-0 right-0 sm:right-auto sm:min-w-[600px] md:min-w-[700px] z-[100] mt-1 max-h-64 overflow-y-auto shadow-lg bg-background">
+        <Card className="absolute top-full left-0 right-0 sm:right-auto sm:min-w-[600px] md:min-w-[700px] z-[100] mt-1 max-h-[70vh] sm:max-h-80 overflow-y-auto shadow-lg bg-background">
           <div className="p-1">
             {filteredItems.map((item) => (
               <Button
                 key={item.id}
                 variant="ghost"
-                className="w-full justify-start p-3 h-auto text-left hover:bg-accent transition-colors"
+                className="w-full justify-start p-3 h-auto min-h-[3rem] text-left hover:bg-accent transition-colors whitespace-normal"
                 onClick={() => handleSelect(item)}
               >
                 <div className="flex items-start gap-3 w-full">
-                  <Package className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+                  <Package className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate">
+                    <div className="font-medium text-sm sm:text-base break-words">
                       {item.name}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-1 break-words">
                       {getDisplayInfo(item)}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                       <span className={item.quantity > 0 ? 'text-green-600' : 'text-red-600'}>
                         Stock: {item.quantity}
                       </span>
