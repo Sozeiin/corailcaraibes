@@ -1,35 +1,32 @@
-Objectif : permettre au profil direction et aux chefs de base de télécharger un PDF imprimable contenant tous les produits de la base sélectionnée, directement depuis le dialogue Inventaire de la page Stock.
+## Objectif
 
-Plan d’implémentation :
+Permettre au profil **direction** de modifier l'intervalle d'heures avant vidange (alerte) de chaque moteur et génératrice individuellement, avec des valeurs distinctes par composant, depuis **Paramètres > Maintenance**.
 
-1. Revenir à une mécanique simple et fiable
-- Supprimer le système intermédiaire “PDF prêt / ouvrir / imprimer” qui ajoute trop de points de blocage.
-- Garder une seule action principale : “Télécharger PDF”.
-- Le clic génère immédiatement le fichier et lance directement `jsPDF.save(...)`, comme les autres exports PDF déjà présents dans l’application.
+Aujourd'hui cet intervalle est codé en dur à 250h (alerte « bientôt » à 200h) dans `engineMaintenanceUtils.ts` et s'applique uniformément à tous les composants.
 
-2. Générer le PDF à partir des produits visibles pour la base sélectionnée
-- Utiliser `baseItems`, qui correspond déjà exactement aux produits de la base choisie dans le dialogue Inventaire.
-- Pour direction : la base vient du sélecteur dans le dialogue.
-- Pour chef de base : la base reste verrouillée sur sa base.
-- Ne pas modifier la validation d’inventaire ni les champs de comptage.
+## Changements prévus
 
-3. Corriger l’utilitaire PDF
-- Créer une fonction dédiée et explicite du type `downloadInventoryPDFForBase(baseName, items)`.
-- Elle génère un PDF paysage avec colonnes : catégorie, nom, référence, marque, quantité, seuil min, unité, emplacement.
-- Elle appelle directement `doc.save(filename)` dans le même clic utilisateur.
-- Garder le tri par catégorie puis nom.
+### 1. Base de données
+- Ajouter une colonne `oil_change_interval_hours` (entier, défaut **250**) à la table `boat_components`.
+- Les composants existants héritent donc de la valeur 250 actuelle (aucune régression).
 
-4. Simplifier l’UI
-- Remplacer les 3 boutons actuels par un seul bouton stable : “Télécharger PDF”.
-- Le bouton sera désactivé uniquement si aucune base n’est sélectionnée ou si la base n’a aucun article.
-- Le message toast indiquera clairement le nombre d’articles exportés.
+### 2. Logique de calcul (`src/utils/engineMaintenanceUtils.ts`)
+- Faire accepter un paramètre `interval` (heures) aux fonctions de statut/progression au lieu du `250` codé en dur :
+  - `calculateOilChangeStatus`, `getOilChangeStatusColor`, `getOilChangeStatusBadge`, `calculateOilChangeProgress`, `getWorstOilChangeStatus`, `calculateWorstOilChangeProgress`.
+- Le seuil « bientôt » (aujourd'hui 200h) devient proportionnel (ex. 80 % de l'intervalle) pour rester cohérent avec un intervalle personnalisé.
+- Valeur par défaut 250 si l'intervalle n'est pas fourni → comportement inchangé partout où l'appel n'est pas encore mis à jour.
 
-5. Préserver les fonctionnalités existantes
-- Ne pas toucher aux imports Excel, à l’ajout d’articles, aux filtres stock, ni à la validation d’inventaire.
-- Ne pas changer les règles Supabase/RLS.
-- Ne pas ajouter de nouvelle dépendance.
+### 3. Composants existants utilisant ces fonctions
+- Mettre à jour les appels pour transmettre `oil_change_interval_hours` de chaque composant :
+  `BoatFleetCard.tsx`, `EngineStatusCard.tsx`, `OilChangeStatusBadge.tsx`, `BoatsDashboard.tsx`, `EngineHoursDialog.tsx`.
+- Ajouter le champ dans la requête `useBoatEngines` (`src/hooks/useBoatEngines.ts`) et l'interface `BoatEngine`.
 
-6. Vérification
-- Vérifier le lint TypeScript sur les fichiers modifiés.
-- Vérifier que l’ancienne logique cassée (`generatedPDF`, blob URL stockée, boutons ouvrir/imprimer) a bien disparu.
-- Si la preview demande une connexion, te demander de te reconnecter avant un test navigateur réel.
+### 4. Nouvelle UI dans Paramètres > Maintenance
+- Dans `MaintenanceSettings.tsx`, ajouter une carte « Intervalles de vidange (heures moteur) » réservée au profil direction.
+- Lister les bateaux et, pour chacun, ses composants de type moteur/génératrice avec un champ numérique éditable pour l'intervalle (heures), un bouton Enregistrer par composant ou global.
+- Nouveau hook de mutation pour mettre à jour `oil_change_interval_hours` sur `boat_components` + invalidation des queries (`boat-engines`, `boat-components`, `boats`, `boat-dashboard`).
+
+## Détails techniques
+- L'accès direction est déjà géré : l'onglet Maintenance n'apparaît que pour `direction`/`chef_base` (voir `Settings.tsx`). On limitera la nouvelle carte au rôle `direction`.
+- Pas de nouvelle table : un simple ajout de colonne suffit puisque le réglage est par composant.
+- RLS : `boat_components` a déjà des policies; l'update passe par les policies existantes (aucune nouvelle policy nécessaire si l'update est déjà autorisé pour direction; sinon ajout d'une policy d'update ciblée).
