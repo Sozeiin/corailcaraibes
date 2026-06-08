@@ -1005,7 +1005,7 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex gap-2">
+          <div className="space-y-2">
             <StockItemAutocomplete
               stockItems={stockItems}
               value={scannedCode}
@@ -1014,24 +1014,26 @@ export function StockScanner({ stockItems, onRefreshStock }: StockScannerProps) 
               placeholder="Rechercher un article ou saisir un code..."
               className="text-sm"
             />
-            <Button 
-              onClick={() => setCurrentOperation('add')}
-              variant={currentOperation === 'add' ? 'default' : 'outline'}
-              size="sm"
-              className="px-3"
-              title="Ajouter au stock"
-            >
-              <Plus className="h-3 w-3" />
-            </Button>
-            <Button 
-              onClick={() => setCurrentOperation('remove')}
-              variant={currentOperation === 'remove' ? 'default' : 'outline'}
-              size="sm"
-              className="px-3"
-              title="Retirer du stock"
-            >
-              <Minus className="h-3 w-3" />
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setCurrentOperation('add')}
+                variant={currentOperation === 'add' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter
+              </Button>
+              <Button 
+                onClick={() => setCurrentOperation('remove')}
+                variant={currentOperation === 'remove' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+              >
+                <Minus className="h-4 w-4 mr-2" />
+                Retirer
+              </Button>
+            </div>
           </div>
           <Button 
             onClick={handleManualCode} 
