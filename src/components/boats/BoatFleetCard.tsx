@@ -39,7 +39,7 @@ export const BoatFleetCard: React.FC<BoatFleetCardProps> = ({
       console.log(`🔍 Fetching engine components for boat ${boat.id}`);
       const { data, error } = await supabase
         .from('boat_components')
-        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, updated_at')
+        .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours, oil_change_interval_hours, updated_at')
         .eq('boat_id', boat.id)
         .ilike('component_type', '%moteur%')
         .order('updated_at', { ascending: false });
