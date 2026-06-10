@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ClipboardList, Package, AlertTriangle, RefreshCw, Eye } from 'lucide-react';
+import { ClipboardList, Package, AlertTriangle, RefreshCw, Eye, Download } from 'lucide-react';
 import { formatDateSafe } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
+import { downloadInventoryReportPDFForBase } from '@/utils/inventoryPdfExport';
+import { toast } from '@/hooks/use-toast';
 
 interface InventoryReportsProps {
   isDirection: boolean;
@@ -139,6 +141,18 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
     );
   }
 
+  const handleDownloadBase = (baseId: string, baseName: string, year: number) => {
+    const baseRecords = (records ?? []).filter(
+      (r) => r.base_id === baseId && new Date(r.created_at).getFullYear() === year
+    );
+    if (baseRecords.length === 0) {
+      toast({ title: 'Aucune donnée', description: `Aucun inventaire à exporter pour ${baseName} en ${year}.`, variant: 'destructive' });
+      return;
+    }
+    const count = downloadInventoryReportPDFForBase(baseName, year, baseRecords);
+    toast({ title: 'PDF généré', description: `${count} inventaire(s) exporté(s) pour ${baseName}.` });
+  };
+
   const renderYear = (year: number) => {
     const sessions = sessionsByYear.get(year) ?? [];
 
@@ -163,13 +177,24 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
         {Array.from(byBase.entries()).map(([baseId, baseSessions]) => (
           <Card key={baseId}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="h-5 w-5" />
-                {baseSessions[0].baseName}
-                <Badge variant="secondary" className="ml-2">
-                  {baseSessions.length} inventaire{baseSessions.length > 1 ? 's' : ''}
-                </Badge>
-              </CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Package className="h-5 w-5" />
+                  {baseSessions[0].baseName}
+                  <Badge variant="secondary" className="ml-2">
+                    {baseSessions.length} inventaire{baseSessions.length > 1 ? 's' : ''}
+                  </Badge>
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => handleDownloadBase(baseId, baseSessions[0].baseName, year)}
+                >
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
