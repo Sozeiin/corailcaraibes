@@ -141,6 +141,18 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
     );
   }
 
+  const handleDownloadBase = (baseId: string, baseName: string, year: number) => {
+    const baseRecords = (records ?? []).filter(
+      (r) => r.base_id === baseId && new Date(r.created_at).getFullYear() === year
+    );
+    if (baseRecords.length === 0) {
+      toast({ title: 'Aucune donnée', description: `Aucun inventaire à exporter pour ${baseName} en ${year}.`, variant: 'destructive' });
+      return;
+    }
+    const count = downloadInventoryReportPDFForBase(baseName, year, baseRecords);
+    toast({ title: 'PDF généré', description: `${count} inventaire(s) exporté(s) pour ${baseName}.` });
+  };
+
   const renderYear = (year: number) => {
     const sessions = sessionsByYear.get(year) ?? [];
 
