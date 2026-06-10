@@ -259,7 +259,7 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
               Détail de l'inventaire — {selectedSession?.baseName}
             </DialogTitle>
             <p className="text-sm text-muted-foreground">
-              {selectedSession && formatDateSafe(selectedSession.date)} · Réalisé par {selectedSession.actorName ?? '—'}
+              {selectedSession && formatDateSafe(selectedSession.date)} · Réalisé par {selectedSession?.actorName ?? '—'}
             </p>
           </DialogHeader>
 
