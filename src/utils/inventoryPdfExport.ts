@@ -104,3 +104,103 @@ export function downloadInventoryPDFForBase(
 
   return sorted.length;
 }
+
+/**
+ * Génère et télécharge un PDF du rapport d'inventaire (sessions historiques)
+ * pour une base et une année données. Chaque session est détaillée avec ses écarts.
+ * Retourne le nombre de sessions exportées.
+ */
+export function downloadInventoryReportPDFForBase(
+  baseName: string,
+  year: number,
+  records: InventoryReportRecord[]
+): number {
+  const doc = new jsPDF({ orientation: 'landscape' });
+  const dateStr = getLocalDateString();
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // Regroupe les enregistrements par session
+  const sessionMap = new Map<string, InventoryReportRecord[]>();
+  records.forEach((rec) => {
+    const arr = sessionMap.get(rec.session_id) ?? [];
+    arr.push(rec);
+    sessionMap.set(rec.session_id, arr);
+  });
+
+  const sessions = Array.from(sessionMap.entries())
+    .map(([sessionId, recs]) => ({ sessionId, recs }))
+    .sort(
+      (a, b) =>
+        new Date(b.recs[0].created_at).getTime() - new Date(a.recs[0].created_at).getTime()
+    );
+
+  doc.setFontSize(16);
+  doc.text(`Rapport d'inventaire - ${baseName}`, 14, 16);
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Année ${year} · ${sessions.length} inventaire(s) · Généré le ${dateStr}`, 14, 22);
+  doc.setTextColor(0);
+
+  let cursorY = 30;
+
+  sessions.forEach(({ recs }, index) => {
+    const first = recs[0];
+    const discrepancies = recs.filter((r) => Number(r.difference) !== 0).length;
+    const totalDiff = recs.reduce((sum, r) => sum + Number(r.difference), 0);
+
+    if (index > 0) cursorY += 4;
+
+    doc.setFontSize(11);
+    doc.setTextColor(30, 64, 120);
+    doc.text(
+      `Inventaire du ${formatDateSafe(first.created_at)} · Réalisé par ${first.actor_name ?? '—'}`,
+      14,
+      cursorY
+    );
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(
+      `${recs.length} article(s) · ${discrepancies} écart(s) · Écart total : ${totalDiff > 0 ? '+' : ''}${totalDiff}`,
+      14,
+      cursorY + 5
+    );
+    doc.setTextColor(0);
+
+    const sorted = [...recs].sort((a, b) => (a.item_name || '').localeCompare(b.item_name || ''));
+
+    autoTable(doc, {
+      startY: cursorY + 8,
+      head: [['Article', 'Référence', 'Théorique', 'Compté', 'Écart']],
+      body: sorted.map((rec) => [
+        rec.item_name || '-',
+        rec.item_reference || '-',
+        String(rec.theoretical_qty ?? 0),
+        String(rec.counted_qty ?? 0),
+        `${Number(rec.difference) > 0 ? '+' : ''}${rec.difference}`,
+      ]),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [30, 64, 120], textColor: 255 },
+      alternateRowStyles: { fillColor: [243, 246, 250] },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data) => {
+        const pageCount = doc.getNumberOfPages();
+        doc.setFontSize(8);
+        doc.setTextColor(120);
+        doc.text(
+          `Page ${data.pageNumber}/${pageCount}`,
+          pageWidth - 14,
+          doc.internal.pageSize.getHeight() - 8,
+          { align: 'right' }
+        );
+        doc.setTextColor(0);
+      },
+    });
+
+    cursorY = (doc as any).lastAutoTable.finalY + 6;
+  });
+
+  const fileName = `rapport_inventaire_${slugify(baseName)}_${year}_${dateStr}.pdf`;
+  downloadPdfBlob(doc, fileName);
+
+  return sessions.length;
+}
