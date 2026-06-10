@@ -1,7 +1,18 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { StockItem } from '@/types';
-import { getLocalDateString } from '@/lib/dateUtils';
+import { getLocalDateString, formatDateSafe } from '@/lib/dateUtils';
+
+export interface InventoryReportRecord {
+  session_id: string;
+  item_name: string;
+  item_reference: string | null;
+  theoretical_qty: number;
+  counted_qty: number;
+  difference: number;
+  actor_name: string | null;
+  created_at: string;
+}
 
 function slugify(name: string): string {
   return name
