@@ -165,13 +165,24 @@ export function InventoryReports({ isDirection }: InventoryReportsProps) {
         {Array.from(byBase.entries()).map(([baseId, baseSessions]) => (
           <Card key={baseId}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Package className="h-5 w-5" />
-                {baseSessions[0].baseName}
-                <Badge variant="secondary" className="ml-2">
-                  {baseSessions.length} inventaire{baseSessions.length > 1 ? 's' : ''}
-                </Badge>
-              </CardTitle>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Package className="h-5 w-5" />
+                  {baseSessions[0].baseName}
+                  <Badge variant="secondary" className="ml-2">
+                    {baseSessions.length} inventaire{baseSessions.length > 1 ? 's' : ''}
+                  </Badge>
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => handleDownloadBase(baseId, baseSessions[0].baseName, year)}
+                >
+                  <Download className="h-4 w-4" />
+                  PDF
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
