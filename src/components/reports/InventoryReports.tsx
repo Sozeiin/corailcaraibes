@@ -7,9 +7,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ClipboardList, Package, AlertTriangle, RefreshCw, Eye } from 'lucide-react';
+import { ClipboardList, Package, AlertTriangle, RefreshCw, Eye, Download } from 'lucide-react';
 import { formatDateSafe } from '@/lib/dateUtils';
 import { Button } from '@/components/ui/button';
+import { downloadInventoryReportPDFForBase } from '@/utils/inventoryPdfExport';
+import { toast } from '@/hooks/use-toast';
 
 interface InventoryReportsProps {
   isDirection: boolean;
