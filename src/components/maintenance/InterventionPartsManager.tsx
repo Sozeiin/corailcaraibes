@@ -663,6 +663,38 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         )}
       </CardContent>
 
+      <Dialog open={isScanning} onOpenChange={(open) => { if (!open) stopScan(); }}>
+        <DialogContent className="max-w-md p-4">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <Scan className="h-5 w-5" />
+              Retirer du stock — Intervention
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground text-center">
+              Placez le code-barres dans la zone. Sortie automatique du stock.
+            </p>
+            <div className="relative mx-auto w-full overflow-hidden rounded-lg border-2 border-red-500 bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-[300px] object-cover"
+              />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 h-[120px] w-[250px] -translate-x-1/2 -translate-y-1/2 rounded-md border-4 border-red-500 bg-red-500/10 animate-pulse" />
+            </div>
+            <p className="text-center text-sm font-medium min-h-[20px]">{scanStatus}</p>
+            <div className="flex justify-center">
+              <Button variant="destructive" onClick={stopScan}>
+                <X className="h-4 w-4 mr-1" />
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
