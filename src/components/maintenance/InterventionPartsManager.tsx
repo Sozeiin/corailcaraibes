@@ -142,12 +142,170 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     ctx.putImageData(imageData, 0, 0);
   }, []);
 
-  const startInterventionScan = async () => {
+  const startInterventionScan = () => {
     console.log('🚀 DEBUT DU SCAN INTERVENTION');
+    setScanStatus('🔍 Initialisation du scanner...');
     setIsScanning(true);
-    
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
+  };
+
+  // Démarre la caméra et la boucle de scan une fois la vidéo montée dans le Dialog
+  React.useEffect(() => {
+    if (!isScanning) return;
+
+    let cancelled = false;
+    const codeReader = new BrowserMultiFormatReader();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let attemptCount = 0;
+    let lastScanTime = 0;
+    const scanCooldown = 80;
+
+    const run = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Caméra non supportée');
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment',
+            width: { min: 720, ideal: 1920, max: 1920 },
+            height: { min: 480, ideal: 1080, max: 1080 },
+            frameRate: { ideal: 30, max: 60 }
+          }
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        scanningRef.current = true;
+
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        video.srcObject = stream;
+
+        await new Promise<void>((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play().then(() => resolve()).catch(() => resolve());
+          };
+        });
+
+        setScanStatus('🔍 Scan ultra-rapide actif...');
+
+        const performAdvancedScan = () => {
+          if (!scanningRef.current || cancelled) return;
+
+          const now = Date.now();
+          if (now - lastScanTime < scanCooldown) {
+            requestAnimationFrame(performAdvancedScan);
+            return;
+          }
+          lastScanTime = now;
+          attemptCount++;
+
+          try {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const cropX = canvas.width * 0.1;
+            const cropY = canvas.height * 0.3;
+            const cropWidth = canvas.width * 0.8;
+            const cropHeight = canvas.height * 0.4;
+
+            const croppedCanvas = document.createElement('canvas');
+            const croppedCtx = croppedCanvas.getContext('2d');
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+
+            croppedCtx?.drawImage(
+              canvas, cropX, cropY, cropWidth, cropHeight,
+              0, 0, cropWidth, cropHeight
+            );
+
+            try {
+              const result = codeReader.decodeFromCanvas(croppedCanvas);
+              if (scanningRef.current && result) {
+                handleSuccessfulInterventionScan(result.getText().trim(), attemptCount);
+                return;
+              }
+            } catch {
+              if (scanningRef.current && croppedCtx) {
+                try {
+                  enhanceImageForScanning(croppedCanvas, croppedCtx);
+                  const enhancedResult = codeReader.decodeFromCanvas(croppedCanvas);
+                  if (scanningRef.current && enhancedResult) {
+                    handleSuccessfulInterventionScan(enhancedResult.getText().trim(), attemptCount);
+                    return;
+                  }
+                } catch {
+                  // continuer
+                }
+              }
+            }
+
+            if (attemptCount % 40 === 0) {
+              setScanStatus('🔍 Recherche intensive pour codes endommagés...');
+            }
+
+            if (scanningRef.current) {
+              requestAnimationFrame(performAdvancedScan);
+            }
+          } catch (error) {
+            console.error('Erreur capture frame:', error);
+            if (scanningRef.current) requestAnimationFrame(performAdvancedScan);
+          }
+        };
+
+        requestAnimationFrame(performAdvancedScan);
+      } catch (error: any) {
+        console.error('❌ ERREUR SCANNER INTERVENTION:', error);
+        if (!cancelled) {
+          setIsScanning(false);
+          toast({
+            title: 'Erreur Scanner',
+            description: `Impossible d'accéder à la caméra: ${error.message}`,
+            variant: 'destructive'
+          });
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      scanningRef.current = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScanning]);
+
+  const handleSuccessfulInterventionScan = async (code: string, attemptCount: number) => {
+    if (!validateBarcodeFormat(code)) {
+      setScanStatus(`⚠️ Code invalide: ${code}`);
+      setTimeout(() => setScanStatus('🔍 Scan ultra-rapide actif...'), 1000);
+      return;
+    }
+
+    console.log(`✅ CODE VALIDE détecté en ${attemptCount} tentatives:`, code);
+    setScanStatus(`✅ ${code} - Détecté!`);
+    scanningRef.current = false;
+
+    setTimeout(() => {
+      stopScan();
+      processInterventionScan(code);
+    }, 500);
+  };
         throw new Error('Caméra non supportée');
       }
 
