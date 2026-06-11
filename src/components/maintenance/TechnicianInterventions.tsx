@@ -100,6 +100,7 @@ export function TechnicianInterventions() {
             boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
           `)
           .eq('technician_id', user.id)
+          .in('status', ['scheduled', 'in_progress'])
           .order('scheduled_date', { ascending: true });
 
         if (assignedError) {
