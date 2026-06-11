@@ -43,16 +43,22 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   const queryClient = useQueryClient();
   const [stockSearchValue, setStockSearchValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('🔍 Initialisation du scanner...');
+
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const scanningRef = React.useRef(false);
 
   const stopScan = useCallback(() => {
+    scanningRef.current = false;
     setIsScanning(false);
-    const video = document.getElementById('intervention-scanner-video') as HTMLVideoElement;
-    if (video && video.srcObject) {
-      const stream = video.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      video.srcObject = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-    safeRemoveById('intervention-scanner-canvas');
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }, []);
 
   // Fetch available stock items
