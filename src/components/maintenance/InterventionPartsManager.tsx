@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { useQueryClient } from '@tanstack/react-query';
-import { safeRemoveById, safeRemoveChild } from '@/lib/domUtils';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 
@@ -43,16 +43,22 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
   const queryClient = useQueryClient();
   const [stockSearchValue, setStockSearchValue] = useState('');
   const [isScanning, setIsScanning] = useState(false);
+  const [scanStatus, setScanStatus] = useState('🔍 Initialisation du scanner...');
+
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const streamRef = React.useRef<MediaStream | null>(null);
+  const scanningRef = React.useRef(false);
 
   const stopScan = useCallback(() => {
+    scanningRef.current = false;
     setIsScanning(false);
-    const video = document.getElementById('intervention-scanner-video') as HTMLVideoElement;
-    if (video && video.srcObject) {
-      const stream = video.srcObject as MediaStream;
-      stream.getTracks().forEach(track => track.stop());
-      video.srcObject = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
-    safeRemoveById('intervention-scanner-canvas');
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   }, []);
 
   // Fetch available stock items
@@ -136,270 +142,172 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
     ctx.putImageData(imageData, 0, 0);
   }, []);
 
-  const startInterventionScan = async () => {
+  const startInterventionScan = () => {
     console.log('🚀 DEBUT DU SCAN INTERVENTION');
+    setScanStatus('🔍 Initialisation du scanner...');
     setIsScanning(true);
-    
-    try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Caméra non supportée');
-      }
-
-      // Configuration caméra optimisée
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { 
-          facingMode: 'environment',
-          width: { min: 720, ideal: 1920, max: 1920 },
-          height: { min: 480, ideal: 1080, max: 1080 },
-          frameRate: { ideal: 30, max: 60 }
-        }
-      });
-
-      // Interface scanner complète comme dans StockScanner
-      const overlay = document.createElement('div');
-      overlay.id = 'intervention-scanner-overlay';
-      overlay.style.cssText = `
-        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.95); z-index: 10000; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; padding: 20px;
-      `;
-
-      const video = document.createElement('video');
-      video.srcObject = stream;
-      video.autoplay = true;
-      video.playsInline = true;
-      video.muted = true;
-      video.style.cssText = `
-        width: 100%; max-width: 400px; height: 300px; 
-        border: 3px solid #ef4444;
-        border-radius: 12px; object-fit: cover; 
-        box-shadow: 0 0 30px rgba(255,255,255,0.3);
-        filter: brightness(1.1) contrast(1.2);
-      `;
-
-      // Zone de scan avec animation
-      const scanZone = document.createElement('div');
-      scanZone.style.cssText = `
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-        width: 250px; height: 120px; border: 4px solid #ef4444;
-        border-radius: 8px; pointer-events: none; z-index: 1;
-        background: rgba(239, 68, 68, 0.1);
-        animation: pulse 2s infinite;
-      `;
-
-      // Animation CSS
-      const style = document.createElement('style');
-      style.textContent = `
-        @keyframes pulse {
-          0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
-        }
-      `;
-      document.head.appendChild(style);
-
-      const videoContainer = document.createElement('div');
-      videoContainer.style.cssText = 'position: relative; display: inline-block;';
-      videoContainer.appendChild(video);
-      videoContainer.appendChild(scanZone);
-
-      const title = document.createElement('h2');
-      title.textContent = '📤 RETIRER DU STOCK - INTERVENTION';
-      title.style.cssText = `
-        color: #ef4444; margin-bottom: 15px; text-align: center; 
-        font-size: 20px; font-weight: bold;
-      `;
-
-      const instruction = document.createElement('div');
-      instruction.textContent = 'Placez le code-barres dans la zone. Sortie automatique du stock.';
-      instruction.style.cssText = `
-        color: #ccc; margin-bottom: 15px; text-align: center; font-size: 14px;
-      `;
-
-      const status = document.createElement('div');
-      status.id = 'intervention-scan-status';
-      status.textContent = '🔍 Scanner ultra-rapide activé...';
-      status.style.cssText = `
-        color: white; margin: 15px 0; text-align: center; 
-        font-size: 16px; font-weight: bold; min-height: 24px;
-      `;
-
-      const qualityIndicator = document.createElement('div');
-      qualityIndicator.id = 'intervention-quality-indicator';
-      qualityIndicator.style.cssText = `
-        color: #888; margin: 5px 0; text-align: center; 
-        font-size: 12px; min-height: 16px;
-      `;
-
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = '✕ FERMER';
-      closeBtn.style.cssText = `
-        padding: 12px 30px; background: #ef4444; color: white;
-        border: none; border-radius: 8px; font-size: 16px; 
-        font-weight: bold; cursor: pointer; margin-top: 15px; transition: all 0.2s;
-      `;
-      closeBtn.onmouseover = () => closeBtn.style.background = '#dc2626';
-      closeBtn.onmouseout = () => closeBtn.style.background = '#ef4444';
-
-      overlay.appendChild(title);
-      overlay.appendChild(instruction);
-      overlay.appendChild(videoContainer);
-      overlay.appendChild(status);
-      overlay.appendChild(qualityIndicator);
-      overlay.appendChild(closeBtn);
-      document.body.appendChild(overlay);
-
-      let scanning = true;
-      let attemptCount = 0;
-      let lastScanTime = 0;
-      const scanCooldown = 80;
-      
-      const codeReader = new BrowserMultiFormatReader();
-
-      const cleanup = () => {
-        console.log('🧹 NETTOYAGE SCANNER INTERVENTION');
-        scanning = false;
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Supprimer l'overlay et les styles
-        const overlayEl = document.getElementById('intervention-scanner-overlay');
-        if (overlayEl) overlayEl.remove();
-        
-        const styleElements = document.querySelectorAll('style');
-        styleElements.forEach(styleEl => {
-          if (styleEl.textContent?.includes('@keyframes pulse')) {
-            styleEl.remove();
-          }
-        });
-        
-        setIsScanning(false);
-      };
-
-      closeBtn.onclick = cleanup;
-
-      // Attendre que la vidéo soit prête
-      await new Promise((resolve) => {
-        video.addEventListener('loadedmetadata', () => {
-          video.play().then(resolve);
-        });
-      });
-
-      console.log('🔍 DEMARRAGE SCAN INTERVENTION...');
-      status.textContent = '🔍 Scan ultra-rapide actif...';
-
-      // Canvas pour préprocessing
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Fonction de scan optimisée identique à StockScanner
-      const performAdvancedScan = () => {
-        if (!scanning) return;
-        
-        const now = Date.now();
-        if (now - lastScanTime < scanCooldown) {
-          requestAnimationFrame(performAdvancedScan);
-          return;
-        }
-        lastScanTime = now;
-        attemptCount++;
-
-        try {
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-          // Zone de scan focalisée
-          const cropX = canvas.width * 0.1;
-          const cropY = canvas.height * 0.3;
-          const cropWidth = canvas.width * 0.8;
-          const cropHeight = canvas.height * 0.4;
-
-          const croppedCanvas = document.createElement('canvas');
-          const croppedCtx = croppedCanvas.getContext('2d');
-          croppedCanvas.width = cropWidth;
-          croppedCanvas.height = cropHeight;
-          
-          croppedCtx?.drawImage(
-            canvas, cropX, cropY, cropWidth, cropHeight,
-            0, 0, cropWidth, cropHeight
-          );
-
-          // Tentative 1: Image normale
-          try {
-            const result = codeReader.decodeFromCanvas(croppedCanvas);
-            if (scanning && result) {
-              const code = result.getText().trim();
-              console.log('📷 CODE DETECTE:', code);
-              handleSuccessfulInterventionScan(code, status, cleanup, attemptCount);
-              return;
-            }
-          } catch (normalError) {
-            // Tentative 2: Image améliorée
-            if (scanning && croppedCtx) {
-              try {
-                enhanceImageForScanning(croppedCanvas, croppedCtx);
-                const enhancedResult = codeReader.decodeFromCanvas(croppedCanvas);
-                
-                if (scanning && enhancedResult) {
-                  const code = enhancedResult.getText().trim();
-                  console.log('📷 CODE DETECTE (amélioré):', code);
-                  handleSuccessfulInterventionScan(code, status, cleanup, attemptCount);
-                  return;
-                }
-              } catch (enhancedError) {
-                // Continuer le scan
-              }
-            }
-          }
-          
-          // Feedback utilisateur
-          if (attemptCount % 25 === 0) {
-            qualityIndicator.textContent = `💡 Conseil: Rapprochez/éloignez le code ou améliorez l'éclairage`;
-          }
-          if (attemptCount % 40 === 0) {
-            status.textContent = '🔍 Recherche intensive pour codes endommagés...';
-          }
-          
-          if (scanning) {
-            requestAnimationFrame(performAdvancedScan);
-          }
-
-        } catch (error) {
-          console.error('Erreur capture frame:', error);
-          requestAnimationFrame(performAdvancedScan);
-        }
-      };
-
-      // Démarrer le scan
-      requestAnimationFrame(performAdvancedScan);
-      
-    } catch (error) {
-      console.error('❌ ERREUR SCANNER INTERVENTION:', error);
-      setIsScanning(false);
-      toast({
-        title: 'Erreur Scanner',
-        description: `Impossible d'accéder à la caméra: ${error.message}`,
-        variant: 'destructive'
-      });
-    }
   };
 
-  const handleSuccessfulInterventionScan = async (code: string, status: HTMLElement, cleanup: () => void, attemptCount: number) => {
+  // Démarre la caméra et la boucle de scan une fois la vidéo montée dans le Dialog
+  React.useEffect(() => {
+    if (!isScanning) return;
+
+    let cancelled = false;
+    const codeReader = new BrowserMultiFormatReader();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    let attemptCount = 0;
+    let lastScanTime = 0;
+    const scanCooldown = 80;
+
+    const run = async () => {
+      try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          throw new Error('Caméra non supportée');
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'environment',
+            width: { min: 720, ideal: 1920, max: 1920 },
+            height: { min: 480, ideal: 1080, max: 1080 },
+            frameRate: { ideal: 30, max: 60 }
+          }
+        });
+
+        if (cancelled) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+
+        streamRef.current = stream;
+        scanningRef.current = true;
+
+        const video = videoRef.current;
+        if (!video) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
+        video.srcObject = stream;
+
+        await new Promise<void>((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play().then(() => resolve()).catch(() => resolve());
+          };
+        });
+
+        setScanStatus('🔍 Scan ultra-rapide actif...');
+
+        const performAdvancedScan = () => {
+          if (!scanningRef.current || cancelled) return;
+
+          const now = Date.now();
+          if (now - lastScanTime < scanCooldown) {
+            requestAnimationFrame(performAdvancedScan);
+            return;
+          }
+          lastScanTime = now;
+          attemptCount++;
+
+          try {
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const cropX = canvas.width * 0.1;
+            const cropY = canvas.height * 0.3;
+            const cropWidth = canvas.width * 0.8;
+            const cropHeight = canvas.height * 0.4;
+
+            const croppedCanvas = document.createElement('canvas');
+            const croppedCtx = croppedCanvas.getContext('2d');
+            croppedCanvas.width = cropWidth;
+            croppedCanvas.height = cropHeight;
+
+            croppedCtx?.drawImage(
+              canvas, cropX, cropY, cropWidth, cropHeight,
+              0, 0, cropWidth, cropHeight
+            );
+
+            try {
+              const result = codeReader.decodeFromCanvas(croppedCanvas);
+              if (scanningRef.current && result) {
+                handleSuccessfulInterventionScan(result.getText().trim(), attemptCount);
+                return;
+              }
+            } catch {
+              if (scanningRef.current && croppedCtx) {
+                try {
+                  enhanceImageForScanning(croppedCanvas, croppedCtx);
+                  const enhancedResult = codeReader.decodeFromCanvas(croppedCanvas);
+                  if (scanningRef.current && enhancedResult) {
+                    handleSuccessfulInterventionScan(enhancedResult.getText().trim(), attemptCount);
+                    return;
+                  }
+                } catch {
+                  // continuer
+                }
+              }
+            }
+
+            if (attemptCount % 40 === 0) {
+              setScanStatus('🔍 Recherche intensive pour codes endommagés...');
+            }
+
+            if (scanningRef.current) {
+              requestAnimationFrame(performAdvancedScan);
+            }
+          } catch (error) {
+            console.error('Erreur capture frame:', error);
+            if (scanningRef.current) requestAnimationFrame(performAdvancedScan);
+          }
+        };
+
+        requestAnimationFrame(performAdvancedScan);
+      } catch (error: any) {
+        console.error('❌ ERREUR SCANNER INTERVENTION:', error);
+        if (!cancelled) {
+          setIsScanning(false);
+          toast({
+            title: 'Erreur Scanner',
+            description: `Impossible d'accéder à la caméra: ${error.message}`,
+            variant: 'destructive'
+          });
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      scanningRef.current = false;
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isScanning]);
+
+  const handleSuccessfulInterventionScan = async (code: string, attemptCount: number) => {
     if (!validateBarcodeFormat(code)) {
-      status.textContent = `⚠️ Code invalide: ${code}`;
-      setTimeout(() => {
-        status.textContent = '🔍 Scan ultra-rapide actif...';
-      }, 1000);
+      setScanStatus(`⚠️ Code invalide: ${code}`);
+      setTimeout(() => setScanStatus('🔍 Scan ultra-rapide actif...'), 1000);
       return;
     }
 
     console.log(`✅ CODE VALIDE détecté en ${attemptCount} tentatives:`, code);
-    status.textContent = `✅ ${code} - Détecté!`;
-    
+    setScanStatus(`✅ ${code} - Détecté!`);
+    scanningRef.current = false;
+
     setTimeout(() => {
-      cleanup();
+      stopScan();
       processInterventionScan(code);
     }, 500);
   };
+
+
 
   const processInterventionScan = async (code: string) => {
     console.log('🔍 Processing intervention scan:', code);
@@ -755,6 +663,38 @@ export function InterventionPartsManager({ parts, onPartsChange, disabled = fals
         )}
       </CardContent>
 
+      <Dialog open={isScanning} onOpenChange={(open) => { if (!open) stopScan(); }}>
+        <DialogContent className="max-w-md p-4">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <Scan className="h-5 w-5" />
+              Retirer du stock — Intervention
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground text-center">
+              Placez le code-barres dans la zone. Sortie automatique du stock.
+            </p>
+            <div className="relative mx-auto w-full overflow-hidden rounded-lg border-2 border-red-500 bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-[300px] object-cover"
+              />
+              <div className="pointer-events-none absolute left-1/2 top-1/2 h-[120px] w-[250px] -translate-x-1/2 -translate-y-1/2 rounded-md border-4 border-red-500 bg-red-500/10 animate-pulse" />
+            </div>
+            <p className="text-center text-sm font-medium min-h-[20px]">{scanStatus}</p>
+            <div className="flex justify-center">
+              <Button variant="destructive" onClick={stopScan}>
+                <X className="h-4 w-4 mr-1" />
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
