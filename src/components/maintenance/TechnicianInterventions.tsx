@@ -74,6 +74,9 @@ export function TechnicianInterventions() {
           *,
           boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
         `)
+        // On ne s'intéresse qu'aux interventions actives (les terminées/annulées sont dans l'historique).
+        // Cela évite aussi d'atteindre la limite de 1000 lignes de Supabase qui masquait les nouvelles interventions.
+        .in('status', ['scheduled', 'in_progress'])
         .order('scheduled_date', { ascending: true });
 
       // Lorsque la base du technicien est connue, on récupère toutes les interventions de cette base
@@ -97,6 +100,7 @@ export function TechnicianInterventions() {
             boats(name, model, current_engine_hours, current_engine_hours_starboard, current_engine_hours_port)
           `)
           .eq('technician_id', user.id)
+          .in('status', ['scheduled', 'in_progress'])
           .order('scheduled_date', { ascending: true });
 
         if (assignedError) {
