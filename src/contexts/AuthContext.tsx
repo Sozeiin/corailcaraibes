@@ -265,7 +265,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Idle timer for automatic logout (2 hours - augmenté pour techniciens)
   // NOUVEAU: Le timer est en pause quand un formulaire est ouvert (check-in/check-out)
   const { isWarning, remainingTime, resetTimer } = useIdleTimer({
-    timeout: 2 * 60 * 60 * 1000, // 2 heures (au lieu de 30 minutes)
+    timeout: 8 * 60 * 60 * 1000, // 8 heures (journée de travail complète)
     warningTime: 5 * 60 * 1000, // 5 minutes warning (au lieu de 1 minute)
     paused: hasOpenForms, // PAUSE le timer quand un formulaire est ouvert
     onIdle: () => {
