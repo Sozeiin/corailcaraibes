@@ -104,7 +104,10 @@ export function StockInventoryDialog({
   const effectiveBase = isDirection ? selectedBase : (userBaseId || selectedBase);
 
   const baseItems = useMemo(
-    () => items.filter((item) => item.baseId === effectiveBase),
+    () =>
+      items
+        .filter((item) => item.baseId === effectiveBase)
+        .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' })),
     [items, effectiveBase]
   );
 
