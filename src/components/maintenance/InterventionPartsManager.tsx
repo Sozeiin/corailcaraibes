@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { useQueryClient } from '@tanstack/react-query';
-import { safeRemoveById, safeRemoveChild } from '@/lib/domUtils';
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { X } from 'lucide-react';
 
