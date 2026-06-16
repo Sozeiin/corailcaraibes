@@ -12,6 +12,7 @@ import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
+import { QuickSupplyRequestDialog } from '@/components/stock/QuickSupplyRequestDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +42,8 @@ export default function Stock() {
   const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [purchaseItem, setPurchaseItem] = useState<StockItem | null>(null);
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const location = useLocation();
