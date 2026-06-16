@@ -26,6 +26,8 @@ export function StockTable({
   onUpdateQuantity,
   onViewDetails,
   onDelete,
+  onRequestPurchase,
+  canRequestPurchase,
   canManage,
   userBaseId
 }: StockTableProps) {
