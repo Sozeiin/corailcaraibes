@@ -208,7 +208,13 @@ export default function Stock() {
     });
   };
 
+  const handleRequestPurchase = (item: StockItem) => {
+    setPurchaseItem(item);
+    setIsPurchaseDialogOpen(true);
+  };
+
   const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
+  const canRequestPurchase = ['chef_base', 'administratif'].includes(user?.role || '');
 
   return (
     <div className="space-y-4 sm:space-y-6">
