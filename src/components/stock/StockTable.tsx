@@ -159,6 +159,12 @@ export function StockTable({
                 </TableCell>
                 {canManage && <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {canRequestPurchase && onRequestPurchase && <Button variant="ghost" size="sm" onClick={e => {
+                  e.stopPropagation();
+                  onRequestPurchase(item);
+                }} title="Demande d'achats" className="h-8 w-8 p-0 text-marine-600 hover:text-marine-700 hover:bg-marine-50">
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>}
                       {onDuplicate && <Button variant="ghost" size="sm" onClick={e => {
                   e.stopPropagation();
                   onDuplicate(item);
