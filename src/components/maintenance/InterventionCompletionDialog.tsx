@@ -69,7 +69,7 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
       .from('boat_components')
       .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
       .eq('boat_id', intervention.boat_id)
-      .ilike('component_type', '%moteur%');
+      .or('component_type.ilike.%moteur%,component_type.ilike.%générateur%,component_type.ilike.%generateur%');
 
     if (error) {
       console.error('Error fetching engine components:', error);
