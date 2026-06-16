@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus } from 'lucide-react';
+import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ interface StockTableProps {
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
   onViewDetails?: (item: StockItem) => void;
   onDelete: (item: StockItem) => void;
+  onRequestPurchase?: (item: StockItem) => void;
+  canRequestPurchase?: boolean;
   canManage: boolean;
   userBaseId?: string;
 }
