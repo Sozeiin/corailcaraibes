@@ -375,6 +375,17 @@ export default function Stock() {
         onClose={handleDetailsDialogClose}
       />
 
+      <QuickSupplyRequestDialog
+        item={purchaseItem}
+        isOpen={isPurchaseDialogOpen}
+        onClose={() => {
+          setIsPurchaseDialogOpen(false);
+          setPurchaseItem(null);
+        }}
+      />
+
+
+
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
