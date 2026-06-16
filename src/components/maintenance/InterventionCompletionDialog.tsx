@@ -230,7 +230,7 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
           <div className="space-y-6">
             {engineComponents.length > 0 ? (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Moteurs du bateau</h3>
+                <h3 className="text-lg font-medium">Moteurs et générateur du bateau</h3>
                 
                 {engineComponents.map((engine) => {
                   const currentHours = engineUpdates[engine.id]?.current_engine_hours || engine.current_engine_hours;
