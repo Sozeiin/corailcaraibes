@@ -69,7 +69,7 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
       .from('boat_components')
       .select('id, component_name, component_type, current_engine_hours, last_oil_change_hours')
       .eq('boat_id', intervention.boat_id)
-      .ilike('component_type', '%moteur%');
+      .or('component_type.ilike.%moteur%,component_type.ilike.%générateur%,component_type.ilike.%generateur%');
 
     if (error) {
       console.error('Error fetching engine components:', error);
@@ -230,7 +230,7 @@ export const InterventionCompletionDialog: React.FC<InterventionCompletionDialog
           <div className="space-y-6">
             {engineComponents.length > 0 ? (
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Moteurs du bateau</h3>
+                <h3 className="text-lg font-medium">Moteurs et générateur du bateau</h3>
                 
                 {engineComponents.map((engine) => {
                   const currentHours = engineUpdates[engine.id]?.current_engine_hours || engine.current_engine_hours;

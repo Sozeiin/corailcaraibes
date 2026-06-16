@@ -1,30 +1,32 @@
-# Allonger les sessions et protéger les saisies
-
 ## Objectif
-Éviter que l'application déconnecte trop tôt l'utilisateur et qu'elle rafraîchisse les données pendant une saisie, ce qui fait perdre le travail non enregistré.
 
-## Changements prévus
+Dans la fenêtre **Terminer l'intervention** (section "Moteurs du bateau"), inclure aussi le composant **Générateur (génératrice / groupe électrogène)** afin que les techniciens puissent saisir ses heures moteur et cocher « Vidange effectuée sur ce moteur » pour mettre à jour ce composant — exactement comme pour Moteur bâbord et Moteur tribord.
 
-### 1. Allonger le temps d'inactivité à 8 heures
-Dans `src/contexts/AuthContext.tsx` (timer d'inactivité) :
-- Faire passer le délai de déconnexion automatique de **2 heures à 8 heures**.
-- Garder l'avertissement 5 minutes avant la déconnexion.
+## Constat
 
-### 2. Protéger les saisies des refresh automatiques
-Aujourd'hui l'app rafraîchit les données dans 3 situations : changement de page, retour sur l'onglet/fenêtre, et toutes les 60 secondes. Le refresh périodique respecte déjà les formulaires ouverts, mais le composant `NavigationRefresh` rafraîchit systématiquement.
+Le composant `src/components/maintenance/InterventionCompletionDialog.tsx` charge uniquement les composants dont le type contient « moteur » :
 
-- Dans `src/hooks/useAutoRefresh.ts` : conserver la logique existante (déjà protégée par `hasOpenForms`).
-- Dans `src/components/NavigationRefresh.tsx` : suspendre le refresh complet quand un formulaire/dialogue est ouvert (utiliser `hasOpenForms` du `FormStateContext`), pour ne pas écraser une saisie en cours lors d'un changement d'écran involontaire.
+```
+.ilike('component_type', '%moteur%')
+```
 
-### 3. Vérification
-- Confirmer qu'aucune autre source ne force un rechargement complet de page pendant une saisie.
-- Vérifier le bon fonctionnement : le timer reste en pause quand un formulaire est ouvert, et la déconnexion n'arrive qu'après 8h d'inactivité réelle.
+Or les générateurs ont le type `Générateur` en base (10 enregistrements), donc ils n'apparaissent jamais. Le reste de l'interface (champ heures + interrupteur vidange + logique de mise à jour) est déjà générique : il boucle sur tous les composants récupérés. Il suffit donc d'élargir la requête.
 
-## Détails techniques
-- `AuthContext.tsx` : `timeout: 8 * 60 * 60 * 1000`.
-- `NavigationRefresh.tsx` : early-return si `hasOpenForms` est vrai.
-- Le mécanisme de pause existant via `FormStateProvider` (qui enveloppe `AuthProvider`) reste la garantie principale contre la perte de données.
+## Modifications
 
-## Hors périmètre
-- Pas de modification du Service Worker ni de la configuration du token Supabase.
-- Pas de changement de la déconnexion manuelle.
+Fichier : `src/components/maintenance/InterventionCompletionDialog.tsx`
+
+1. Remplacer le filtre de la requête `fetchEngineComponents` pour inclure les moteurs **et** les générateurs :
+   ```
+   .or('component_type.ilike.%moteur%,component_type.ilike.%générateur%,component_type.ilike.%generateur%')
+   ```
+   (couvre les variantes accentuées/non accentuées).
+
+2. Mettre à jour le titre de section de « Moteurs du bateau » en « Moteurs et générateur du bateau » pour refléter le contenu.
+
+Aucun autre changement nécessaire : l'affichage des heures, l'interrupteur « Vidange effectuée sur ce moteur » et la mise à jour de `current_engine_hours` / `last_oil_change_hours` dans `boat_components` fonctionnent déjà pour chaque composant listé, donc le générateur sera mis à jour de la même manière.
+
+## Vérification
+
+- Ouvrir « Terminer l'intervention » sur un bateau ayant un générateur : le bloc Générateur doit apparaître avec ses heures actuelles et l'interrupteur de vidange.
+- Cocher la vidange et finaliser : confirmer que `current_engine_hours` et `last_oil_change_hours` du composant générateur sont bien mis à jour.
