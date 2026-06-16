@@ -303,7 +303,24 @@ export default function Stock() {
           ) : isMobile ? (
             <MobileTable
               data={filteredItems}
-              columns={mobileColumns}
+              columns={canRequestPurchase ? [...mobileColumns, {
+                key: 'achats',
+                label: 'Achats',
+                render: (_: any, item: StockItem) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-marine-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRequestPurchase(item);
+                    }}
+                    title="Demande d'achats"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                  </Button>
+                )
+              }] : mobileColumns}
               onRowClick={handleViewDetails}
             />
           ) : (
@@ -315,6 +332,8 @@ export default function Stock() {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDelete}
               onViewDetails={handleViewDetails}
+              onRequestPurchase={handleRequestPurchase}
+              canRequestPurchase={canRequestPurchase}
               canManage={canManageStock}
               userBaseId={user?.baseId}
             />
