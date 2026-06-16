@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, FileSpreadsheet, Download, ClipboardList } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet, Download, ClipboardList, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +12,7 @@ import { StockDuplicateDialog } from '@/components/stock/StockDuplicateDialog';
 import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
+import { QuickSupplyRequestDialog } from '@/components/stock/QuickSupplyRequestDialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +42,8 @@ export default function Stock() {
   const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [purchaseItem, setPurchaseItem] = useState<StockItem | null>(null);
+  const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -205,7 +208,13 @@ export default function Stock() {
     });
   };
 
+  const handleRequestPurchase = (item: StockItem) => {
+    setPurchaseItem(item);
+    setIsPurchaseDialogOpen(true);
+  };
+
   const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
+  const canRequestPurchase = ['chef_base', 'administratif'].includes(user?.role || '');
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -294,7 +303,24 @@ export default function Stock() {
           ) : isMobile ? (
             <MobileTable
               data={filteredItems}
-              columns={mobileColumns}
+              columns={canRequestPurchase ? [...mobileColumns, {
+                key: 'achats',
+                label: 'Achats',
+                render: (_: any, item: StockItem) => (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-marine-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRequestPurchase(item);
+                    }}
+                    title="Demande d'achats"
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                  </Button>
+                )
+              }] : mobileColumns}
               onRowClick={handleViewDetails}
             />
           ) : (
@@ -306,6 +332,8 @@ export default function Stock() {
               onUpdateQuantity={handleUpdateQuantity}
               onDelete={handleDelete}
               onViewDetails={handleViewDetails}
+              onRequestPurchase={handleRequestPurchase}
+              canRequestPurchase={canRequestPurchase}
               canManage={canManageStock}
               userBaseId={user?.baseId}
             />
@@ -346,6 +374,17 @@ export default function Stock() {
         isOpen={isDetailsDialogOpen}
         onClose={handleDetailsDialogClose}
       />
+
+      <QuickSupplyRequestDialog
+        item={purchaseItem}
+        isOpen={isPurchaseDialogOpen}
+        onClose={() => {
+          setIsPurchaseDialogOpen(false);
+          setPurchaseItem(null);
+        }}
+      />
+
+
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>

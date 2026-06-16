@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus } from 'lucide-react';
+import { Edit, Trash2, Package, AlertTriangle, Copy, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,8 @@ interface StockTableProps {
   onUpdateQuantity?: (itemId: string, newQuantity: number) => void;
   onViewDetails?: (item: StockItem) => void;
   onDelete: (item: StockItem) => void;
+  onRequestPurchase?: (item: StockItem) => void;
+  canRequestPurchase?: boolean;
   canManage: boolean;
   userBaseId?: string;
 }
@@ -24,6 +26,8 @@ export function StockTable({
   onUpdateQuantity,
   onViewDetails,
   onDelete,
+  onRequestPurchase,
+  canRequestPurchase,
   canManage,
   userBaseId
 }: StockTableProps) {
@@ -155,6 +159,12 @@ export function StockTable({
                 </TableCell>
                 {canManage && <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      {canRequestPurchase && onRequestPurchase && <Button variant="ghost" size="sm" onClick={e => {
+                  e.stopPropagation();
+                  onRequestPurchase(item);
+                }} title="Demande d'achats" className="h-8 w-8 p-0 text-marine-600 hover:text-marine-700 hover:bg-marine-50">
+                          <ShoppingCart className="h-4 w-4" />
+                        </Button>}
                       {onDuplicate && <Button variant="ghost" size="sm" onClick={e => {
                   e.stopPropagation();
                   onDuplicate(item);
