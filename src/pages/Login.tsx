@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Ship } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { PageShell } from '@/components/PageShell';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -39,7 +40,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 gradient-ocean wave-pattern">
+    <PageShell className="min-h-[100dvh] flex items-center justify-center p-4 gradient-ocean wave-pattern">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-full mb-4 shadow-lg">
@@ -69,7 +70,7 @@ export default function Login() {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe</Label>
                 <Input
@@ -107,6 +108,6 @@ export default function Login() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageShell>
   );
 }
