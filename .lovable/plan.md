@@ -1,38 +1,37 @@
-# Corriger le bug "null value in column start_date"
+# Corriger la suppression des utilisateurs (contraintes de clés étrangères bloquantes)
 
 ## Problème
-Quand on finalise un brouillon (ex. HOKI), l'application insère une nouvelle location dans la table `boat_rentals`. La date de début (`start_date`) est parfois absente (cas des check-in/out hors dates prévues ou brouillon incomplet). La base de données refuse l'enregistrement car `start_date` ne peut pas être vide → erreur bloquante.
+Impossible de supprimer un utilisateur. Le message d'erreur système est :
+`update or delete on table "users" violates foreign key constraint "administrative_checkin_forms_used_by_fkey"`.
 
-## Cause technique
-Dans `src/hooks/useChecklistData.ts`, la fonction `useCreateRental` insère les données telles quelles. La valeur `start_date` (et `end_date`) provient de `rentalData.startDate` (`src/components/checkin/ChecklistForm.tsx`, ligne 531), qui peut être `null`/`undefined`. Aucune valeur de repli n'existe, donc l'insertion viole la contrainte `NOT NULL`.
+## Cause
+Plusieurs colonnes de la base pointent vers un utilisateur (`auth.users`) via des clés étrangères configurées en mode « bloquant » (NO ACTION) au lieu de « mettre à vide » (SET NULL). Quand on supprime l'utilisateur, ces références empêchent la suppression au lieu de se vider automatiquement.
 
-## Solution (durable, centralisée)
-Garantir qu'une date valide est **toujours** présente avant l'insertion, au seul endroit qui insère dans `boat_rentals` :
+La fonction de suppression `delete_user_cascade` supprime bien le profil et les rôles, mais ces 14 colonnes référencent directement `auth.users` et bloquent l'opération finale.
 
-1. Dans `useCreateRental` (`src/hooks/useChecklistData.ts`), avant l'`insert` :
-   - Si `start_date` est absente/invalide → utiliser la date du jour (`new Date().toISOString()`).
-   - Si `end_date` est absente/invalide → utiliser `start_date` (durée = même jour) afin de ne jamais laisser ce champ vide non plus.
-   - Construire un objet nettoyé (`sanitizedRental`) et insérer celui-ci.
-   - Journaliser (console.warn) quand un repli est appliqué, pour tracer les cas rares de check-in/out hors dates.
+Colonnes concernées (toutes déjà autorisées à être vides) :
+- `administrative_checkin_forms.used_by`
+- `api_logs.user_id`
+- `boat_base_transfers.transferred_by`
+- `boat_documents.uploaded_by`
+- `planning_activities.planned_by`
+- `security_events.user_id`
+- `smart_thread_entities.linked_by`
+- `stock_reservations.reserved_by`
+- `supply_request_comments.author_id`
+- `thread_assignments.assigned_by`
+- `thread_workflow_states.assigned_to`
+- `thread_workflow_states.resolved_by`
+- `user_permissions.granted_by`
+- `user_roles.assigned_by`
 
-2. Côté `ChecklistForm.tsx` (ligne ~526), aucune logique métier modifiée : la sécurisation est faite dans le hook, ce qui couvre tous les chemins d'appel (brouillons, fiches admin, locations forcées).
+## Solution (durable)
+Migration base de données : reconfigurer ces 14 clés étrangères en **ON DELETE SET NULL**. Ainsi, à la suppression d'un utilisateur, ces références passent automatiquement à vide au lieu de bloquer — conforme au principe déjà en place (préserver l'historique sans casser la suppression).
 
-Cette approche corrige le cas présent et tous les futurs cas de dates manquantes, sans changer le comportement quand les dates sont correctement renseignées.
+Pour chaque contrainte : suppression de l'ancienne contrainte puis recréation avec `ON DELETE SET NULL`.
 
-## Détails techniques
-Fichier : `src/hooks/useChecklistData.ts`, fonction `useCreateRental`.
-
-```text
-mutationFn(rentalData):
-  now = new Date().toISOString()
-  start = (rentalData.start_date valide ?) ? rentalData.start_date : now
-  end   = (rentalData.end_date valide ?)   ? rentalData.end_date   : start
-  sanitizedRental = { ...rentalData, start_date: start, end_date: end }
-  insert(sanitizedRental)
-```
-
-"valide" = chaîne non vide et `Date` parseable (`!isNaN(new Date(x).getTime())`).
+Aucune donnée n'est perdue (les colonnes deviennent nulles, l'historique métier reste dans les tables). Aucune modification de code applicatif nécessaire : la fonction `delete_user_cascade` existante fonctionnera ensuite correctement.
 
 ## Vérification
-- Finaliser un brouillon sans dates (type HOKI) → la location se crée avec la date du jour, plus d'erreur.
-- Finaliser une fiche avec dates renseignées → dates inchangées (comportement identique à aujourd'hui).
+- Après migration, supprimer un utilisateur via l'interface d'administration réussit.
+- Les enregistrements liés (fiches, documents, plannings, etc.) restent présents avec le champ « auteur/responsable » vidé.
