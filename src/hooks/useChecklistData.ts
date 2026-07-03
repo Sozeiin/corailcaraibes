@@ -187,9 +187,27 @@ export function useCreateRental() {
     mutationFn: async (rentalData: BoatRental) => {
       console.log('🚀 [DEBUG] Création location:', rentalData);
 
+      // Sécurisation des dates: garantir que start_date/end_date ne sont jamais nuls/invalides
+      // (cas rares de check-in/check-out effectués hors des dates prévues ou brouillon incomplet)
+      const isValidDate = (value: unknown): value is string =>
+        typeof value === 'string' && value.trim() !== '' && !isNaN(new Date(value).getTime());
+
+      const now = new Date().toISOString();
+      const start = isValidDate(rentalData.start_date) ? rentalData.start_date : now;
+      const end = isValidDate(rentalData.end_date) ? rentalData.end_date : start;
+
+      if (!isValidDate(rentalData.start_date)) {
+        console.warn('⚠️ [DEBUG] start_date manquante/invalide, repli sur la date du jour:', start);
+      }
+      if (!isValidDate(rentalData.end_date)) {
+        console.warn('⚠️ [DEBUG] end_date manquante/invalide, repli sur start_date:', end);
+      }
+
+      const sanitizedRental = { ...rentalData, start_date: start, end_date: end };
+
       const { data, error } = await supabase
         .from('boat_rentals')
-        .insert(rentalData)
+        .insert(sanitizedRental)
         .select()
         .single();
 
