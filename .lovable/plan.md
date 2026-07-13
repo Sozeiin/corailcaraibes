@@ -1,37 +1,44 @@
-# Corriger la suppression des utilisateurs (contraintes de clés étrangères bloquantes)
-
 ## Problème
-Impossible de supprimer un utilisateur. Le message d'erreur système est :
-`update or delete on table "users" violates foreign key constraint "administrative_checkin_forms_used_by_fkey"`.
 
-## Cause
-Plusieurs colonnes de la base pointent vers un utilisateur (`auth.users`) via des clés étrangères configurées en mode « bloquant » (NO ACTION) au lieu de « mettre à vide » (SET NULL). Quand on supprime l'utilisateur, ces références empêchent la suppression au lieu de se vider automatiquement.
+Lors de la finalisation d'un check-in/check-out (ex. M. Franck Seguy), l'insertion dans `boat_rentals` échoue avec :
+`null value in column "start_date" of relation "boat_rentals" violates not-null constraint`.
 
-La fonction de suppression `delete_user_cascade` supprime bien le profil et les rôles, mais ces 14 colonnes référencent directement `auth.users` et bloquent l'opération finale.
+Cela arrive quand un check-in/out est réalisé en dehors des dates prévues, ou quand le formulaire administratif / brouillon a une date vide. Le garde-fou frontend actuel (dans `useCreateRental`) ne suffit pas : il dépend du build déployé et ne couvre pas tous les chemins.
 
-Colonnes concernées (toutes déjà autorisées à être vides) :
-- `administrative_checkin_forms.used_by`
-- `api_logs.user_id`
-- `boat_base_transfers.transferred_by`
-- `boat_documents.uploaded_by`
-- `planning_activities.planned_by`
-- `security_events.user_id`
-- `smart_thread_entities.linked_by`
-- `stock_reservations.reserved_by`
-- `supply_request_comments.author_id`
-- `thread_assignments.assigned_by`
-- `thread_workflow_states.assigned_to`
-- `thread_workflow_states.resolved_by`
-- `user_permissions.granted_by`
-- `user_roles.assigned_by`
+## Solution définitive (au niveau base de données)
 
-## Solution (durable)
-Migration base de données : reconfigurer ces 14 clés étrangères en **ON DELETE SET NULL**. Ainsi, à la suppression d'un utilisateur, ces références passent automatiquement à vide au lieu de bloquer — conforme au principe déjà en place (préserver l'historique sans casser la suppression).
+Ajouter un **trigger `BEFORE INSERT/UPDATE`** sur `boat_rentals` qui remplit automatiquement `start_date` / `end_date` quand elles sont nulles. Ainsi, quelle que soit l'origine de l'insertion (frontend, sync, futur code), la contrainte NOT NULL ne pourra plus être violée.
 
-Pour chaque contrainte : suppression de l'ancienne contrainte puis recréation avec `ON DELETE SET NULL`.
+Règles du trigger :
+- Si `start_date` est NULL → utiliser `now()`.
+- Si `end_date` est NULL → utiliser `start_date` (déjà résolue).
+- Aucune donnée existante n'est modifiée (uniquement les insertions/mises à jour qui laissent ces champs vides).
 
-Aucune donnée n'est perdue (les colonnes deviennent nulles, l'historique métier reste dans les tables). Aucune modification de code applicatif nécessaire : la fonction `delete_user_cascade` existante fonctionnera ensuite correctement.
+```text
+INSERT boat_rentals (start_date = NULL)
+        │
+        ▼
+  trigger BEFORE INSERT
+        │  start_date := COALESCE(start_date, now())
+        │  end_date   := COALESCE(end_date, start_date)
+        ▼
+  ligne insérée valide ✔
+```
+
+### Détails techniques
+
+1. Migration DB créant :
+   - Une fonction `public.ensure_boat_rental_dates()` (`SECURITY DEFINER`, `SET search_path = public`) qui applique les COALESCE ci-dessus sur `NEW`.
+   - Un trigger `BEFORE INSERT OR UPDATE ON public.boat_rentals FOR EACH ROW`.
+
+2. Le garde-fou frontend existant dans `src/hooks/useChecklistData.ts` (`useCreateRental`) est conservé comme double sécurité — aucune modification nécessaire.
 
 ## Vérification
-- Après migration, supprimer un utilisateur via l'interface d'administration réussit.
-- Les enregistrements liés (fiches, documents, plannings, etc.) restent présents avec le champ « auteur/responsable » vidé.
+
+- Finaliser un check-in avec une date de départ manquante → la location est créée sans erreur, `start_date` = date du jour.
+- Les locations existantes restent inchangées.
+- Plus aucune erreur « null value in column start_date » possible, quel que soit le chemin d'insertion.
+
+## Note
+
+Republier l'application après la migration pour que le correctif complet (DB + frontend déjà en place) soit actif en production.
