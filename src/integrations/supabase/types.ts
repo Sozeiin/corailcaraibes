@@ -4884,6 +4884,7 @@ export type Database = {
       }
       supply_request_comments: {
         Row: {
+          attachments: Json
           author_id: string | null
           author_name: string
           comment: string
@@ -4893,6 +4894,7 @@ export type Database = {
           supply_request_id: string
         }
         Insert: {
+          attachments?: Json
           author_id?: string | null
           author_name: string
           comment: string
@@ -4902,6 +4904,7 @@ export type Database = {
           supply_request_id: string
         }
         Update: {
+          attachments?: Json
           author_id?: string | null
           author_name?: string
           comment?: string
@@ -4913,6 +4916,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "supply_request_comments_supply_request_id_fkey"
+            columns: ["supply_request_id"]
+            isOneToOne: false
+            referencedRelation: "supply_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supply_request_status_history: {
+        Row: {
+          changed_by: string | null
+          changed_by_name: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          new_status: string
+          old_status: string | null
+          supply_request_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          supply_request_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          changed_by_name?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          supply_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_request_status_history_supply_request_id_fkey"
             columns: ["supply_request_id"]
             isOneToOne: false
             referencedRelation: "supply_requests"
