@@ -1,44 +1,33 @@
-## Problème
+# Ne plus perdre filtres et saisies au changement d'onglet
 
-Lors de la finalisation d'un check-in/check-out (ex. M. Franck Seguy), l'insertion dans `boat_rentals` échoue avec :
-`null value in column "start_date" of relation "boat_rentals" violates not-null constraint`.
+## Le problème observé
 
-Cela arrive quand un check-in/out est réalisé en dehors des dates prévues, ou quand le formulaire administratif / brouillon a une date vide. Le garde-fou frontend actuel (dans `useCreateRental`) ne suffit pas : il dépend du build déployé et ne couvre pas tous les chemins.
+Quand vous quittez l'onglet du navigateur puis revenez sur "Demandes d'approvisionnement" :
+- les filtres (statut, urgence, recherche) reviennent à zéro,
+- une demande ouverte en cours de saisie se referme.
 
-## Solution définitive (au niveau base de données)
+## Cause confirmée
 
-Ajouter un **trigger `BEFORE INSERT/UPDATE`** sur `boat_rentals` qui remplit automatiquement `start_date` / `end_date` quand elles sont nulles. Ainsi, quelle que soit l'origine de l'insertion (frontend, sync, futur code), la contrainte NOT NULL ne pourra plus être violée.
+Deux mécanismes se cumulent au retour de focus :
 
-Règles du trigger :
-- Si `start_date` est NULL → utiliser `now()`.
-- Si `end_date` est NULL → utiliser `start_date` (déjà résolue).
-- Aucune donnée existante n'est modifiée (uniquement les insertions/mises à jour qui laissent ces champs vides).
+1. Supabase émet un évènement d'authentification (`TOKEN_REFRESHED` / `SIGNED_IN`). Dans `AuthContext`, chaque évènement repasse `loading` à `true` (ligne 46), ce qui fait afficher l'écran de chargement par `ProtectedRoute` (`App.tsx`). La page est alors **démontée** : ses filtres et ses boîtes de dialogue ouvertes (état local React) sont perdus.
+2. Plusieurs rafraîchissements se déclenchent en même temps au focus : `refetchOnWindowFocus`, `refetchInterval: 30000` et `staleTime: 0` (`main.tsx`), plus le `forceRefresh` sur `focus` de `useAutoRefresh`.
 
-```text
-INSERT boat_rentals (start_date = NULL)
-        │
-        ▼
-  trigger BEFORE INSERT
-        │  start_date := COALESCE(start_date, now())
-        │  end_date   := COALESCE(end_date, start_date)
-        ▼
-  ligne insérée valide ✔
-```
+Les boîtes de dialogue des demandes d'approvisionnement ne sont pas non plus enregistrées dans `FormStateContext`, donc les protections « formulaire ouvert » déjà en place ne s'y appliquent pas.
 
-### Détails techniques
+## Ce qui va être fait
 
-1. Migration DB créant :
-   - Une fonction `public.ensure_boat_rental_dates()` (`SECURITY DEFINER`, `SET search_path = public`) qui applique les COALESCE ci-dessus sur `NEW`.
-   - Un trigger `BEFORE INSERT OR UPDATE ON public.boat_rentals FOR EACH ROW`.
+1. **Ne plus afficher l'écran de chargement pour un simple rafraîchissement de session** : le profil est rechargé silencieusement en arrière-plan quand un utilisateur est déjà connecté. L'écran de chargement reste uniquement au tout premier chargement de l'app et lors d'une vraie connexion/déconnexion. La page n'est donc plus démontée → filtres et saisies conservés.
+2. **Calmer les rafraîchissements automatiques** : désactiver `refetchOnWindowFocus`, retirer le `refetchInterval` global de 30 s et donner un `staleTime` court (30 s) ; supprimer le `forceRefresh` global sur l'évènement `focus` de `useAutoRefresh` (le refresh périodique sélectif et le bouton de refresh manuel restent).
+3. **Protéger les dialogues d'approvisionnement** : enregistrer `SupplyRequestDialog`, `SupplyRequestDetailsDialog` et `SupplyManagementDialog` dans `FormStateContext` (comme les dialogues de check-in et d'intervention) afin que tout refresh soit suspendu pendant leur ouverture.
+4. **Garder les filtres même après un rechargement de page** : mémoriser statut / urgence / recherche de la page Demandes d'approvisionnement dans `sessionStorage` et les restaurer au montage.
 
-2. Le garde-fou frontend existant dans `src/hooks/useChecklistData.ts` (`useCreateRental`) est conservé comme double sécurité — aucune modification nécessaire.
+## Détails techniques
 
-## Vérification
+- `src/contexts/AuthContext.tsx` : dans `loadProfileForSession`, ne déclencher `setLoading(true)` que si aucun utilisateur n'est encore chargé (rafraîchissement silencieux sinon) ; ignorer les évènements `TOKEN_REFRESHED` quand l'ID utilisateur ne change pas.
+- `src/main.tsx` : `refetchOnWindowFocus: false`, suppression de `refetchInterval`, `staleTime: 30000`.
+- `src/hooks/useAutoRefresh.ts` : suppression de l'écouteur `focus` déclenchant `invalidateQueries()` global.
+- `src/components/supply/SupplyRequestDialog.tsx`, `SupplyRequestDetailsDialog.tsx`, `SupplyManagementDialog.tsx` : `registerForm()` / `unregisterForm()` selon l'état d'ouverture.
+- `src/pages/SupplyRequests.tsx` : persistance des trois filtres dans `sessionStorage`.
 
-- Finaliser un check-in avec une date de départ manquante → la location est créée sans erreur, `start_date` = date du jour.
-- Les locations existantes restent inchangées.
-- Plus aucune erreur « null value in column start_date » possible, quel que soit le chemin d'insertion.
-
-## Note
-
-Republier l'application après la migration pour que le correctif complet (DB + frontend déjà en place) soit actif en production.
+Aucune modification de base de données, aucune fonctionnalité retirée.
