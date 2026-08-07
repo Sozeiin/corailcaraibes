@@ -85,12 +85,9 @@ export default function Stock() {
     refetch: refetchStock
   } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
 
-  // Set default base filter for chefs de base (one time only)
-  useEffect(() => {
-    if (user && bases.length > 0 && selectedBase === 'all' && user.role === 'chef_base' && user.baseId) {
-      setSelectedBase(user.baseId);
-    }
-  }, [user, bases]); // Removed selectedBase from deps to avoid loop
+  // Vue agrégée par fiche produit (multi-emplacements) pour direction / administratif
+  const { data: stockProducts = [], isLoading: isLoadingProducts } = useStockProducts();
+
 
   // Use mutations and realtime updates
   const deleteStockMutation = useDeleteStockItem();
