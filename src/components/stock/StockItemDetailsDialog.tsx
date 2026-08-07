@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, TrendingUp, Wrench, User, Package, Barcode } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ShoppingCart, TrendingUp, Wrench, User, Package, Barcode, Euro } from 'lucide-react';
 import { StockItem } from '@/types';
 import { PurchaseHistory } from './PurchaseHistory';
 import { SupplierHistory } from './SupplierHistory';
@@ -11,6 +12,9 @@ import { UsageAnalysis } from './UsageAnalysis';
 import { StockItemQuotes } from './StockItemQuotes';
 import { OptimizedImage } from '@/components/ui/optimized-image';
 import { BarcodeDownloader } from './BarcodeDownloader';
+import { QuickSupplyRequestDialog } from './QuickSupplyRequestDialog';
+import { StockSupplierPriceDialog } from './StockSupplierPriceDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StockItemDetailsDialogProps {
   item: StockItem | null;
@@ -19,7 +23,13 @@ interface StockItemDetailsDialogProps {
 }
 
 export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetailsDialogProps) {
+  const { user } = useAuth();
+  const [isSupplyOpen, setIsSupplyOpen] = useState(false);
+  const [isSupplierPriceOpen, setIsSupplierPriceOpen] = useState(false);
+  const canManage = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
+
   if (!item) return null;
+
 
   const getStockStatus = (item: StockItem) => {
     if (item.quantity === 0) {
@@ -123,6 +133,21 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
           </div>
         </div>
 
+        {canManage && (
+          <div className="flex flex-wrap gap-2 pt-4">
+            <Button variant="outline" onClick={() => setIsSupplierPriceOpen(true)}>
+              <Euro className="h-4 w-4 mr-2" />
+              Fournisseur & tarif
+            </Button>
+            <Button onClick={() => setIsSupplyOpen(true)}>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Demande d'approvisionnement
+            </Button>
+          </div>
+        )}
+
+
+
         <Tabs defaultValue="barcode" className="mt-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="barcode" className="flex items-center gap-2">
@@ -179,7 +204,19 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
             <UsageAnalysis stockItemId={item.id} />
           </TabsContent>
         </Tabs>
+
+        <QuickSupplyRequestDialog
+          item={item}
+          isOpen={isSupplyOpen}
+          onClose={() => setIsSupplyOpen(false)}
+        />
+        <StockSupplierPriceDialog
+          item={item}
+          isOpen={isSupplierPriceOpen}
+          onClose={() => setIsSupplierPriceOpen(false)}
+        />
       </DialogContent>
     </Dialog>
+
   );
 }
