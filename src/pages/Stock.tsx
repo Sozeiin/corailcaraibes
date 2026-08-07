@@ -284,10 +284,30 @@ export default function Stock() {
     }
   };
 
+  const handleViewProductDetails = (product: StockProduct) => {
+    setDetailsProduct(product);
+    setIsProductDetailsOpen(true);
+  };
 
+  const handleProductPurchase = (product: StockProduct) => {
+    const level = product.levels.find((l) => l.baseId === user?.baseId) || product.levels[0];
+    if (level) handleRequestPurchase(level);
+  };
+
+  const handleEditLevel = (level: StockProductLevel) => {
+    setIsProductDetailsOpen(false);
+    handleEdit(level);
+  };
+
+  const handleAddLocation = (product: StockProduct) => {
+    setIsProductDetailsOpen(false);
+    handleDuplicate(product.levels[0]);
+  };
 
   const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canRequestPurchase = ['chef_base', 'administratif'].includes(user?.role || '');
+  const canMergeProducts = ['direction', 'administratif'].includes(user?.role || '');
+
 
   return (
     <div className="space-y-4 sm:space-y-6">
