@@ -7,6 +7,8 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SupplyRequest } from '@/pages/SupplyRequests';
 import { SupplyRequestCommentsSection } from './SupplyRequestCommentsSection';
+import { SupplyRequestStatusHistory } from './SupplyRequestStatusHistory';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useFormState } from '@/contexts/FormStateContext';
@@ -116,7 +118,14 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="details" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="details">Détails</TabsTrigger>
+            <TabsTrigger value="comments">Commentaires</TabsTrigger>
+            <TabsTrigger value="history">Historique</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-6 mt-4">
           {/* Status and Priority */}
           <div className="flex items-center justify-between">
             <Badge variant={getStatusBadgeVariant(request.status)} className="flex items-center gap-1">
@@ -367,12 +376,19 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
             </Card>
           )}
 
-          {/* Comments Section */}
-          <SupplyRequestCommentsSection 
-            requestId={request.id} 
-            currentStatus={request.status}
-          />
-        </div>
+          </TabsContent>
+
+          <TabsContent value="comments" className="mt-4">
+            <SupplyRequestCommentsSection
+              requestId={request.id}
+              currentStatus={request.status}
+            />
+          </TabsContent>
+
+          <TabsContent value="history" className="mt-4">
+            <SupplyRequestStatusHistory requestId={request.id} />
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

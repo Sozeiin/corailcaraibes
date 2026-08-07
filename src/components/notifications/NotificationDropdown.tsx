@@ -29,6 +29,8 @@ export function NotificationDropdown() {
         return '✅';
       case 'intervention_cancelled':
         return '❌';
+      case 'supply_request_comment':
+        return '💬';
       default:
         return '📋';
     }
