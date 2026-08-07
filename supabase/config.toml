@@ -24,6 +24,15 @@ site_url = "http://localhost:3000"
 additional_redirect_urls = ["https://gdhiiynmlokocelkqsiz.supabase.co"]
 jwt_expiry = 3600
 enable_signup = true
+enable_anonymous_sign_ins = false
+
+[auth.email]
+otp_expiry = 600
+
+[auth.email.password_requirements]
+# Leaked password protection (HaveIBeenPwned) must also be enabled in the
+# Supabase dashboard: Authentication > Policies > Password strength.
+min_length = 8
 
 [functions.generate-checklist-pdf]
 
