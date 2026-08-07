@@ -9,6 +9,7 @@ interface SupplyRequestFiltersProps {
   onUrgencyFilterChange: (value: string) => void;
   searchTerm: string;
   onSearchTermChange: (value: string) => void;
+  showStatusFilter?: boolean;
 }
 
 export function SupplyRequestFilters({
@@ -18,6 +19,7 @@ export function SupplyRequestFilters({
   onUrgencyFilterChange,
   searchTerm,
   onSearchTermChange,
+  showStatusFilter = true,
 }: SupplyRequestFiltersProps) {
   return (
     <div className="flex flex-col sm:flex-row gap-4">
@@ -31,21 +33,23 @@ export function SupplyRequestFilters({
         />
       </div>
 
-      <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="Filtrer par statut" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Tous les statuts</SelectItem>
-          <SelectItem value="pending">En attente</SelectItem>
-          <SelectItem value="approved">Approuvé</SelectItem>
-          <SelectItem value="ordered">Commandé</SelectItem>
-          <SelectItem value="shipped">Expédié</SelectItem>
-          <SelectItem value="received">Reçu</SelectItem>
-          <SelectItem value="completed">Terminé</SelectItem>
-          <SelectItem value="rejected">Rejeté</SelectItem>
-        </SelectContent>
-      </Select>
+      {showStatusFilter && (
+        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrer par statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="pending">En attente</SelectItem>
+            <SelectItem value="approved">Approuvé</SelectItem>
+            <SelectItem value="ordered">Commandé</SelectItem>
+            <SelectItem value="shipped">Expédié</SelectItem>
+            <SelectItem value="received">Reçu</SelectItem>
+            <SelectItem value="completed">Terminé</SelectItem>
+            <SelectItem value="rejected">Rejeté</SelectItem>
+          </SelectContent>
+        </Select>
+      )}
 
       <Select value={urgencyFilter} onValueChange={onUrgencyFilterChange}>
         <SelectTrigger className="w-48">
