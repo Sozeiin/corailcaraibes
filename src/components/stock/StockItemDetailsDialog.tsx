@@ -204,7 +204,19 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
             <UsageAnalysis stockItemId={item.id} />
           </TabsContent>
         </Tabs>
+
+        <QuickSupplyRequestDialog
+          item={item}
+          isOpen={isSupplyOpen}
+          onClose={() => setIsSupplyOpen(false)}
+        />
+        <StockSupplierPriceDialog
+          item={item}
+          isOpen={isSupplierPriceOpen}
+          onClose={() => setIsSupplierPriceOpen(false)}
+        />
       </DialogContent>
     </Dialog>
+
   );
 }
