@@ -35,7 +35,9 @@ interface SupplyRequestDialogProps {
 
 export function SupplyRequestDialog({ isOpen, onClose, onSuccess }: SupplyRequestDialogProps) {
   const { user } = useAuth();
+  const { registerForm, unregisterForm } = useFormState();
   const [selectedStockItem, setSelectedStockItem] = useState<any>(null);
+
   const [searchValue, setSearchValue] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
