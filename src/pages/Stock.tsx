@@ -502,6 +502,25 @@ export default function Stock() {
         onClose={handleDetailsDialogClose}
       />
 
+      <StockProductDetailsDialog
+        product={detailsProduct}
+        isOpen={isProductDetailsOpen}
+        onClose={() => {
+          setIsProductDetailsOpen(false);
+          setDetailsProduct(null);
+        }}
+        onEditLevel={handleEditLevel}
+        onAddLocation={handleAddLocation}
+        onRequestPurchase={canRequestPurchase ? handleRequestPurchase : undefined}
+      />
+
+      <StockMergeProductsDialog
+        isOpen={isMergeDialogOpen}
+        onClose={() => setIsMergeDialogOpen(false)}
+        products={stockProducts}
+      />
+
+
       <QuickSupplyRequestDialog
         item={purchaseItem}
         isOpen={isPurchaseDialogOpen}
