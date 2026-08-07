@@ -19,6 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useDeleteStockItem, useUpdateStockQuantity } from '@/hooks/useStockMutations';
 import { useRealtimeStockUpdates } from '@/hooks/useRealtimeUpdates';
 import { downloadStockTemplate } from '@/utils/stockTemplate';
+import { exportInventoryToExcel } from '@/utils/inventoryExcelExport';
+
 
 import { StockItem } from '@/types';
 import { MobileTable, ResponsiveBadge } from '@/components/ui/mobile-table';
@@ -44,6 +46,8 @@ export default function Stock() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [purchaseItem, setPurchaseItem] = useState<StockItem | null>(null);
   const [isPurchaseDialogOpen, setIsPurchaseDialogOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const location = useLocation();
@@ -214,6 +218,33 @@ export default function Stock() {
     setIsPurchaseDialogOpen(true);
   };
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      const effectiveBaseId = baseId || (selectedBase !== 'all' ? selectedBase : undefined);
+      const result = await exportInventoryToExcel({
+        baseId: effectiveBaseId,
+        category: selectedCategory,
+        searchTerm,
+        onlyLowStock: showLowStock,
+      });
+      toast({
+        title: 'Export Excel généré',
+        description: `${result.count} article(s) exporté(s) — ${result.fileName}`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur d'export",
+        description: error?.message || "Impossible de générer le fichier Excel",
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+
+
   const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canRequestPurchase = ['chef_base', 'administratif'].includes(user?.role || '');
 
@@ -255,6 +286,17 @@ export default function Stock() {
               <span className="hidden xs:inline">Inventaire</span>
               <span className="xs:hidden">Invent.</span>
             </Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={isExporting}
+              className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              <span className="hidden xs:inline">{isExporting ? 'Export...' : 'Exporter Excel'}</span>
+              <span className="xs:hidden">Export</span>
+            </Button>
+
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-marine-600 hover:bg-marine-700 text-sm"
