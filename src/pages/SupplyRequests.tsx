@@ -5,6 +5,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Plus, Package, Clock, CheckCircle, XCircle, Truck, Eye, Trash2 } from 'lucide-react';
 import { SupplyRequestDialog } from '@/components/supply/SupplyRequestDialog';
 import { SupplyRequestDetailsDialog } from '@/components/supply/SupplyRequestDetailsDialog';
@@ -50,22 +59,27 @@ export interface SupplyRequest {
 
 export default function SupplyRequests() {
   const { user } = useAuth();
-  
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isManagementDialogOpen, setIsManagementDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupplyRequest | null>(null);
+  const [activeTab, setActiveTab] = useState<'active' | 'archive'>(() => {
+    const saved = sessionStorage.getItem('supply-requests-tab');
+    return saved === 'archive' ? 'archive' : 'active';
+  });
   const [statusFilter, setStatusFilter] = useState(() => sessionStorage.getItem('supply-requests-filter-status') || 'all');
   const [urgencyFilter, setUrgencyFilter] = useState(() => sessionStorage.getItem('supply-requests-filter-urgency') || 'all');
   const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('supply-requests-filter-search') || '');
 
-  // Conserver les filtres même si la page est remontée / rechargée
+  // Conserver les filtres et l'onglet actif même si la page est remontée / rechargée
   useEffect(() => {
+    sessionStorage.setItem('supply-requests-tab', activeTab);
     sessionStorage.setItem('supply-requests-filter-status', statusFilter);
     sessionStorage.setItem('supply-requests-filter-urgency', urgencyFilter);
     sessionStorage.setItem('supply-requests-filter-search', searchTerm);
-  }, [statusFilter, urgencyFilter, searchTerm]);
+  }, [activeTab, statusFilter, urgencyFilter, searchTerm]);
 
 
   const deleteMutation = useDeleteSupplyRequest();
@@ -89,22 +103,22 @@ export default function SupplyRequests() {
   const canDelete = (request: SupplyRequest) => {
     // Direction can delete any request
     if (user?.role === 'direction') return true;
-    
+
     // Users can delete their own pending requests
     if (request.requested_by === user?.id && request.status === 'pending') return true;
-    
+
     // Chef_base can delete pending requests in their base
     if (user?.role === 'chef_base' && request.base_id === user?.baseId && request.status === 'pending') return true;
-    
+
     return false;
   };
 
   // Fetch supply requests
   const { data: requests = [], isLoading, refetch, error } = useQuery({
-    queryKey: ['supply-requests', statusFilter, urgencyFilter, searchTerm, user?.baseId],
+    queryKey: ['supply-requests', activeTab, statusFilter, urgencyFilter, searchTerm, user?.baseId],
     queryFn: async () => {
-      console.log('Fetching supply requests for user:', { role: user?.role, baseId: user?.baseId });
-      
+      console.log('Fetching supply requests for user:', { role: user?.role, baseId: user?.baseId, activeTab });
+
       try {
         // Simplified query - remove boat join since there's no foreign key relationship
         let query = supabase
@@ -118,9 +132,16 @@ export default function SupplyRequests() {
           console.log('Filtering by base_id:', user.baseId);
         }
 
-        // Apply status filter
-        if (statusFilter !== 'all') {
-          query = query.eq('status', statusFilter);
+        // Archive = completed only; Active = everything except completed
+        if (activeTab === 'archive') {
+          query = query.eq('status', 'completed');
+        } else {
+          query = query.neq('status', 'completed');
+
+          // Apply status filter only in active tab
+          if (statusFilter !== 'all') {
+            query = query.eq('status', statusFilter);
+          }
         }
 
         // Apply urgency filter
@@ -134,7 +155,7 @@ export default function SupplyRequests() {
         }
 
         const { data: requests, error } = await query;
-        
+
         if (error) {
           console.error('Error fetching supply requests:', error);
           throw error;
@@ -293,6 +314,121 @@ export default function SupplyRequests() {
   const canCreate = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canManage = user?.role === 'direction';
 
+  const activeCount = activeTab === 'active' ? requests.length : 0;
+  const archiveCount = activeTab === 'archive' ? requests.length : 0;
+
+  const renderActiveList = () => (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {requests.map((request) => (
+        <Card key={request.id} className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg">{request.request_number}</CardTitle>
+              <Badge variant={getStatusBadgeVariant(request.status)} className="flex items-center gap-1">
+                {getStatusIcon(request.status)}
+                {request.status}
+              </Badge>
+            </div>
+            <CardDescription className="flex items-center gap-2">
+              <span className={getUrgencyColor(request.urgency_level)}>
+                ●
+              </span>
+              {request.urgency_level} priority
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <h4 className="font-medium">{request.item_name}</h4>
+              {request.item_reference && (
+                <p className="text-sm text-muted-foreground">Réf: {request.item_reference}</p>
+              )}
+              <p className="text-sm text-muted-foreground">Qté: {request.quantity_needed}</p>
+            </div>
+
+            {request.description && (
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {request.description}
+              </p>
+            )}
+
+            <div className="text-xs text-muted-foreground">
+              Demandé par: {request.requester?.name || 'N/A'}
+            </div>
+
+            <div className="text-xs text-muted-foreground">
+              {new Date(request.created_at).toLocaleDateString('fr-FR')}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleViewDetails(request)}
+                className="flex-1"
+              >
+                <Eye className="h-3 w-3 mr-1" />
+                Voir
+              </Button>
+              {canManage && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleManage(request)}
+                  className="flex-1"
+                >
+                  Gérer
+                </Button>
+              )}
+              {canDelete(request) && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(request)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  const renderArchiveList = () => (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Date</TableHead>
+            <TableHead>Nom de la demande</TableHead>
+            <TableHead>Créateur</TableHead>
+            <TableHead className="w-24 text-right">Action</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests.map((request) => (
+            <TableRow key={request.id}>
+              <TableCell>{new Date(request.created_at).toLocaleDateString('fr-FR')}</TableCell>
+              <TableCell className="font-medium">{request.item_name}</TableCell>
+              <TableCell>{request.requester?.name || 'N/A'}</TableCell>
+              <TableCell className="text-right">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewDetails(request)}
+                >
+                  <Eye className="h-3 w-3 mr-1" />
+                  Voir
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -302,8 +438,8 @@ export default function SupplyRequests() {
             Gérez toutes les demandes d'approvisionnement et suivez leur statut
           </p>
         </div>
-        
-        {canCreate && (
+
+        {canCreate && activeTab === 'active' && (
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Nouvelle demande
@@ -311,127 +447,110 @@ export default function SupplyRequests() {
         )}
       </div>
 
-      <SupplyRequestFilters
-        statusFilter={statusFilter}
-        onStatusFilterChange={setStatusFilter}
-        urgencyFilter={urgencyFilter}
-        onUrgencyFilterChange={setUrgencyFilter}
-        searchTerm={searchTerm}
-        onSearchTermChange={setSearchTerm}
-      />
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'active' | 'archive')}>
+        <TabsList className="w-full sm:w-auto">
+          <TabsTrigger value="active">
+            Demandes en cours {activeCount > 0 && `(${activeCount})`}
+          </TabsTrigger>
+          <TabsTrigger value="archive">
+            Archive {archiveCount > 0 && `(${archiveCount})`}
+          </TabsTrigger>
+        </TabsList>
 
-      {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-muted rounded w-3/4" />
-                <div className="h-3 bg-muted rounded w-1/2" />
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted rounded" />
-                  <div className="h-3 bg-muted rounded w-2/3" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mt-4">
+          <SupplyRequestFilters
+            statusFilter={statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            urgencyFilter={urgencyFilter}
+            onUrgencyFilterChange={setUrgencyFilter}
+            searchTerm={searchTerm}
+            onSearchTermChange={setSearchTerm}
+            showStatusFilter={activeTab === 'active'}
+          />
         </div>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {requests.map((request) => (
-            <Card key={request.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{request.request_number}</CardTitle>
-                  <Badge variant={getStatusBadgeVariant(request.status)} className="flex items-center gap-1">
-                    {getStatusIcon(request.status)}
-                    {request.status}
-                  </Badge>
-                </div>
-                <CardDescription className="flex items-center gap-2">
-                  <span className={getUrgencyColor(request.urgency_level)}>
-                    ●
-                  </span>
-                  {request.urgency_level} priority
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h4 className="font-medium">{request.item_name}</h4>
-                  {request.item_reference && (
-                    <p className="text-sm text-muted-foreground">Réf: {request.item_reference}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">Qté: {request.quantity_needed}</p>
-                </div>
 
-                {request.description && (
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {request.description}
-                  </p>
-                )}
+        <TabsContent value="active" className="mt-4">
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-4 bg-muted rounded w-3/4" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="h-3 bg-muted rounded" />
+                      <div className="h-3 bg-muted rounded w-2/3" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            renderActiveList()
+          )}
 
-                <div className="text-xs text-muted-foreground">
-                  Demandé par: {request.requester?.name || 'N/A'}
-                </div>
-
-                <div className="text-xs text-muted-foreground">
-                  {new Date(request.created_at).toLocaleDateString('fr-FR')}
-                </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetails(request)}
-                    className="flex-1"
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    Voir
+          {requests.length === 0 && !isLoading && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucune demande trouvée</h3>
+                <p className="text-muted-foreground mb-4">
+                  {canCreate ? "Créez votre première demande d'approvisionnement" : "Aucune demande ne correspond à vos critères"}
+                </p>
+                {canCreate && (
+                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nouvelle demande
                   </Button>
-                  {canManage && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleManage(request)}
-                      className="flex-1"
-                    >
-                      Gérer
-                    </Button>
-                  )}
-                  {canDelete(request) && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(request)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          )}
+        </TabsContent>
 
-      {requests.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-medium mb-2">Aucune demande trouvée</h3>
-            <p className="text-muted-foreground mb-4">
-              {canCreate ? "Créez votre première demande d'approvisionnement" : "Aucune demande ne correspond à vos critères"}
-            </p>
-            {canCreate && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nouvelle demande
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="archive" className="mt-4">
+          {isLoading ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Nom de la demande</TableHead>
+                    <TableHead>Créateur</TableHead>
+                    <TableHead className="w-24 text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[...Array(4)].map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><div className="h-4 bg-muted rounded w-24" /></TableCell>
+                      <TableCell><div className="h-4 bg-muted rounded w-48" /></TableCell>
+                      <TableCell><div className="h-4 bg-muted rounded w-32" /></TableCell>
+                      <TableCell className="text-right"><div className="h-8 bg-muted rounded w-20 ml-auto" /></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            renderArchiveList()
+          )}
+
+          {requests.length === 0 && !isLoading && (
+            <Card>
+              <CardContent className="text-center py-8">
+                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Aucune archive</h3>
+                <p className="text-muted-foreground">
+                  Aucune demande terminée ne correspond à vos critères
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <SupplyRequestDialog
         isOpen={isCreateDialogOpen}
