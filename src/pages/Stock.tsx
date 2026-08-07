@@ -104,9 +104,10 @@ export default function Stock() {
       baseName,
       photoUrl: item.photo_url || '',
       lastUpdated: item.last_updated || new Date().toISOString(),
-      lastPurchaseDate: null,
-      lastPurchaseCost: null,
-      lastSupplierId: null
+      lastPurchaseDate: item.last_purchase_date || null,
+      lastPurchaseCost: item.last_purchase_cost != null ? Number(item.last_purchase_cost) : null,
+      lastSupplierId: item.last_supplier_id || null
+
     };
   });
 
