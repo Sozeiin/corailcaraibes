@@ -133,6 +133,21 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
           </div>
         </div>
 
+        {canManage && (
+          <div className="flex flex-wrap gap-2 pt-4">
+            <Button variant="outline" onClick={() => setIsSupplierPriceOpen(true)}>
+              <Euro className="h-4 w-4 mr-2" />
+              Fournisseur & tarif
+            </Button>
+            <Button onClick={() => setIsSupplyOpen(true)}>
+              <ShoppingCart className="h-4 w-4 mr-2" />
+              Demande d'approvisionnement
+            </Button>
+          </div>
+        )}
+
+
+
         <Tabs defaultValue="barcode" className="mt-4">
           <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="barcode" className="flex items-center gap-2">
