@@ -165,14 +165,17 @@ export default function Stock() {
           relevantLevels.some((l) => l.quantity <= l.minThreshold);
         return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
       })
-      .map((product) => (
-        selectedBase === 'all'
-          ? product
-          : {
-              ...product,
-              levels: product.levels.filter((l) => l.baseId === selectedBase),
-            }
-      ));
+      .map((product) => {
+        if (selectedBase === 'all') return product;
+        const levels = product.levels.filter((l) => l.baseId === selectedBase);
+        return {
+          ...product,
+          levels,
+          totalQuantity: levels.reduce((sum, l) => sum + l.quantity, 0),
+          totalThreshold: levels.reduce((sum, l) => sum + l.minThreshold, 0),
+        };
+      });
+
   }, [stockProducts, searchTerm, selectedCategory, selectedBase, showLowStock]);
 
   const getStockStatus = (item: StockItem) => {
