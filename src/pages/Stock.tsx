@@ -101,6 +101,7 @@ export default function Stock() {
     
     return {
       id: item.id,
+      productId: item.product_id || undefined,
       name: item.name,
       reference: item.reference || '',
       barcode: item.barcode || '',
@@ -143,6 +144,36 @@ export default function Stock() {
     
     return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
   });
+
+  // Vue produit : filtres appliqués sur la fiche et ses emplacements
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return stockProducts
+      .filter((product) => {
+        const matchesSearch = term === '' ||
+          product.name.toLowerCase().includes(term) ||
+          product.reference.toLowerCase().includes(term) ||
+          product.category.toLowerCase().includes(term) ||
+          product.brand?.toLowerCase().includes(term) ||
+          product.levels.some((l) => l.supplierReference?.toLowerCase().includes(term));
+        const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+        const matchesBase = selectedBase === 'all' || product.levels.some((l) => l.baseId === selectedBase);
+        const relevantLevels = selectedBase === 'all'
+          ? product.levels
+          : product.levels.filter((l) => l.baseId === selectedBase);
+        const matchesLowStock = !showLowStock ||
+          relevantLevels.some((l) => l.quantity <= l.minThreshold);
+        return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
+      })
+      .map((product) => (
+        selectedBase === 'all'
+          ? product
+          : {
+              ...product,
+              levels: product.levels.filter((l) => l.baseId === selectedBase),
+            }
+      ));
+  }, [stockProducts, searchTerm, selectedCategory, selectedBase, showLowStock]);
 
   const getStockStatus = (item: StockItem) => {
     if (item.quantity === 0) {
