@@ -7,7 +7,9 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SupplyRequest } from '@/pages/SupplyRequests';
 import { SupplyRequestCommentsSection } from './SupplyRequestCommentsSection';
+import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useFormState } from '@/contexts/FormStateContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface SupplyRequestDetailsDialogProps {
@@ -17,6 +19,16 @@ interface SupplyRequestDetailsDialogProps {
 }
 
 export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyRequestDetailsDialogProps) {
+  const { registerForm, unregisterForm } = useFormState();
+
+  // Suspendre les refresh globaux tant que le dialogue est ouvert
+  useEffect(() => {
+    if (isOpen) {
+      registerForm();
+      return () => unregisterForm();
+    }
+  }, [isOpen, registerForm, unregisterForm]);
+
   // Récupérer le nom du bateau si boat_id est présent
   const { data: boat } = useQuery({
     queryKey: ['boat', request?.boat_id],

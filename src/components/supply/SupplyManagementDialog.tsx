@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { SupplyRequest } from '@/pages/SupplyRequests';
 import { SupplierAutocomplete } from '@/components/suppliers/SupplierAutocomplete';
 import { useAddSupplyRequestComment } from '@/hooks/useSupplyRequestComments';
+import { useFormState } from '@/contexts/FormStateContext';
 
 interface FormData {
   status: string;
@@ -35,6 +36,16 @@ export function SupplyManagementDialog({ isOpen, onClose, request, onSuccess }: 
   const queryClient = useQueryClient();
   const [action, setAction] = useState<'approve' | 'reject' | 'order' | 'ship' | null>(null);
   const addComment = useAddSupplyRequestComment();
+  const { registerForm, unregisterForm } = useFormState();
+
+  // Suspendre les refresh globaux tant que le dialogue est ouvert
+  useEffect(() => {
+    if (isOpen) {
+      registerForm();
+      return () => unregisterForm();
+    }
+  }, [isOpen, registerForm, unregisterForm]);
+
 
   // Function to create purchase history entry
   const createPurchaseHistoryEntry = async (supplyRequest: SupplyRequest, purchasePrice: number, supplierName: string) => {
