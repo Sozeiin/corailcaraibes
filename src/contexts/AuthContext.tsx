@@ -108,7 +108,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (initialSession) {
           setSession(initialSession);
-          await loadProfileForSession(initialSession);
+          const alreadyLoaded = currentUserId === initialSession.user?.id && hasLoadedProfileOnce;
+          currentUserId = initialSession.user?.id ?? null;
+          if (!alreadyLoaded) {
+            await loadProfileForSession(initialSession);
+          } else {
+            setLoading(false);
+          }
+
         } else {
           setSession(null);
           setUser(null);
