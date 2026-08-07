@@ -18,9 +18,12 @@ Fiche produit (nom, référence, catégorie, unité, marque, photo, code-barres)
 | Rôle | Vision |
 |---|---|
 | Direction, Administratif | Toutes les fiches, avec la quantité de **chaque** emplacement sur la fiche + total, et un **filtre par emplacement** |
-| Chef de base, Technicien | Uniquement la ligne de stock de **leur** base : quantité, seuil, emplacement détaillé. Les autres bases ne sont pas visibles |
+| Chef de base, Technicien | Uniquement la ligne de stock de **leur** base : quantité, seuil, emplacement détaillé. Les quantités des autres bases ne sont pas visibles |
 
 Le détail d'emplacement (rayonnage, casier, commentaire) saisi par une base n'est lisible que par les membres de cette base, la direction et l'administratif.
+
+**Tarifs et fournisseurs : visibles par tous.** Quel que soit le rôle et l'emplacement, chaque fiche produit affiche l'ensemble des tarifs et fournisseurs pratiqués sur toutes les bases (fournisseur, référence fournisseur, prix unitaire, dernier achat et date, base concernée), ainsi que l'historique des achats et des devis. Seules les quantités, seuils et emplacements détaillés restent restreints à la base de l'utilisateur.
+
 
 ## Migration des données
 
@@ -34,7 +37,7 @@ Pour fusionner ensuite les vrais doublons, un outil **« Fusionner des fiches »
 - Colonnes direction/administratif : produit, référence, catégorie, **qté Guadeloupe / Martinique / Métropole**, total, seuil global atteint ou non.
 - Filtre « Emplacement » : tout / une base précise (n'affiche alors que les produits présents sur cette base, avec sa quantité).
 - Chef de base / technicien : colonnes produit, référence, catégorie, quantité, seuil, emplacement détaillé — restreint à leur base.
-- Fiche article (clic) : entête produit commun, puis un bloc par emplacement autorisé (qté, seuil, emplacement détaillé, fournisseur, tarif, dernier achat).
+- Fiche article (clic) : entête produit commun, un bloc « Stock par emplacement » limité aux emplacements autorisés (qté, seuil, emplacement détaillé), et un bloc « Tarifs & fournisseurs » visible par tous listant tous les tarifs de toutes les bases + historique achats et devis.
 - Boutons existants conservés : mouvement de stock, inventaire, demande d'approvisionnement, fournisseur & tarif, export Excel, export PDF, import, scanner, code-barres. Ils agissent désormais sur le couple produit + emplacement.
 
 ## Détails techniques
@@ -42,7 +45,8 @@ Pour fusionner ensuite les vrais doublons, un outil **« Fusionner des fiches »
 Nouveau schéma, ajouté sans casser l'existant :
 
 - `stock_products` : `id`, `name`, `reference`, `category`, `unit`, `brand`, `photo_url`, `barcode` (unique), timestamps. Lecture pour tous les rôles authentifiés, écriture direction / administratif / chef de base.
-- `stock_base_levels` : `id`, `product_id` → `stock_products`, `base_id` → `bases`, `quantity`, `min_threshold`, `location`, `unit_price`, `last_supplier_id`, `supplier_reference`, `last_purchase_date`, `last_purchase_cost`, `last_updated`. Unicité `(product_id, base_id)`. GRANT + RLS : direction et administratif sur toutes les lignes, chef de base et technicien sur `base_id = get_user_base_id()`.
+- `stock_base_levels` : `id`, `product_id` → `stock_products`, `base_id` → `bases`, `quantity`, `min_threshold`, `location`, `unit_price`, `last_supplier_id`, `supplier_reference`, `last_purchase_date`, `last_purchase_cost`, `last_updated`. Unicité `(product_id, base_id)`. GRANT + RLS : direction et administratif sur toutes les lignes, chef de base et technicien en écriture et lecture complète sur `base_id = get_user_base_id()`.
+- Vue `stock_product_pricing` (`security_invoker = false`, GRANT lecture à `authenticated`) exposant uniquement les colonnes tarifaires de `stock_base_levels` (produit, base, fournisseur, référence fournisseur, prix unitaire, dernier achat, date) — sans quantité ni emplacement. Elle sert le bloc « Tarifs & fournisseurs » pour tous les rôles. Les tables `stock_purchase_history` et `stock_item_quotes` reçoivent une politique de lecture ouverte à tous les rôles authentifiés.
 - Migration de données : pour chaque `stock_items` → 1 `stock_products` + 1 `stock_base_levels`. On conserve `stock_items.id` comme `stock_base_levels.id` afin que toutes les tables qui référencent `stock_item_id` (mouvements, inventaires, réservations, historiques d'achat, liens composants, interventions, demandes d'appro, expéditions, order_items) restent valides sans réécriture.
 - `stock_items` est conservée en vue de compatibilité (`security_invoker`) construite sur la jointure produit + niveau, le temps de migrer les écrans secondaires ; les écrans stock principaux passent directement sur les nouvelles tables.
 - Fonction `merge_stock_products(keep_id uuid, merge_ids uuid[])` en `SECURITY DEFINER` avec contrôle de rôle direction/administratif, qui recolle les lignes de stock (addition des quantités si même base) et supprime les fiches vidées.
