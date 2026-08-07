@@ -16,6 +16,7 @@ import { StockItemAutocomplete } from '@/components/stock/StockItemAutocomplete'
 import { PhotoCapture } from './PhotoCapture';
 import { useNavigate } from 'react-router-dom';
 import { useFormPersistence } from '@/hooks/useFormPersistence';
+import { useFormState } from '@/contexts/FormStateContext';
 
 interface FormData {
   boat_id: string;
@@ -35,10 +36,21 @@ interface SupplyRequestDialogProps {
 
 export function SupplyRequestDialog({ isOpen, onClose, onSuccess }: SupplyRequestDialogProps) {
   const { user } = useAuth();
+  const { registerForm, unregisterForm } = useFormState();
   const [selectedStockItem, setSelectedStockItem] = useState<any>(null);
+
   const [searchValue, setSearchValue] = useState('');
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  // Suspendre les refresh globaux tant que le dialogue est ouvert
+  useEffect(() => {
+    if (isOpen) {
+      registerForm();
+      return () => unregisterForm();
+    }
+  }, [isOpen, registerForm, unregisterForm]);
+
 
   const form = useForm<FormData>({
     defaultValues: {

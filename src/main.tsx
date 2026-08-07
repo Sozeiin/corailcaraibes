@@ -14,11 +14,11 @@ import './index.css';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 0, // Always consider data stale to force refresh
-      refetchOnWindowFocus: true, // Refresh when window gets focus
+      staleTime: 30000, // Données considérées fraîches 30s (évite les refetch en cascade)
+      refetchOnWindowFocus: false, // Ne pas rafraîchir au retour d'onglet (perte de saisie)
       refetchOnMount: true, // Refresh when component mounts
       refetchOnReconnect: true, // Refresh when reconnecting
-      refetchInterval: 30000, // Auto-refresh every 30 seconds
+
       retry: (failureCount, error: any) => {
         // Don't retry on 4xx errors except 408 (timeout)
         if (error?.status >= 400 && error?.status < 500 && error?.status !== 408) {

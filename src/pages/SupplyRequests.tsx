@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,9 +56,17 @@ export default function SupplyRequests() {
   const [isManagementDialogOpen, setIsManagementDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SupplyRequest | null>(null);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [urgencyFilter, setUrgencyFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState(() => sessionStorage.getItem('supply-requests-filter-status') || 'all');
+  const [urgencyFilter, setUrgencyFilter] = useState(() => sessionStorage.getItem('supply-requests-filter-urgency') || 'all');
+  const [searchTerm, setSearchTerm] = useState(() => sessionStorage.getItem('supply-requests-filter-search') || '');
+
+  // Conserver les filtres même si la page est remontée / rechargée
+  useEffect(() => {
+    sessionStorage.setItem('supply-requests-filter-status', statusFilter);
+    sessionStorage.setItem('supply-requests-filter-urgency', urgencyFilter);
+    sessionStorage.setItem('supply-requests-filter-search', searchTerm);
+  }, [statusFilter, urgencyFilter, searchTerm]);
+
 
   const deleteMutation = useDeleteSupplyRequest();
 

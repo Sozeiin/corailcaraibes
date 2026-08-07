@@ -63,16 +63,9 @@ export const useAutoRefresh = () => {
     return () => clearInterval(interval);
   }, [queryClient, hasOpenForms]);
 
-  // Refresh au focus de la fenêtre
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('🔄 Fenêtre focus, refresh des données...');
-      forceRefresh();
-    };
+  // Pas de refresh au focus de la fenêtre : cela démontait/réinitialisait
+  // les pages (filtres perdus, dialogues fermés) au retour d'onglet.
 
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [forceRefresh]);
 
   return { forceRefresh };
 };

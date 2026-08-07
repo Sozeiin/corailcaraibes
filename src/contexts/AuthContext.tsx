@@ -40,17 +40,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let isSubscribed = true;
     let profileRequestId = 0;
+    let currentUserId: string | null = null;
+    let hasLoadedProfileOnce = false;
 
-    const loadProfileForSession = async (newSession: Session) => {
+    const loadProfileForSession = async (newSession: Session, silent = false) => {
       const requestId = ++profileRequestId;
-      setLoading(true);
+      // Ne pas afficher l'écran de chargement pour un simple rafraîchissement de
+      // session : cela démonterait la page en cours (filtres/saisies perdus).
+      if (!silent) setLoading(true);
 
       try {
         await fetchUserProfile(newSession);
+        hasLoadedProfileOnce = true;
       } catch (err) {
         console.error('Error fetching profile:', err);
       } finally {
-        if (isSubscribed && requestId === profileRequestId) {
+        if (isSubscribed && requestId === profileRequestId && !silent) {
           setLoading(false);
         }
       }
@@ -67,16 +72,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(newSession);
         
         if (newSession?.user) {
-          // Keep auth loading until the profile is available, otherwise routes can
-          // bounce between / and /auth while user is still null.
-          void loadProfileForSession(newSession);
+          const sameUser = currentUserId === newSession.user.id;
+          currentUserId = newSession.user.id;
+
+          // Rafraîchissement de token pour le même utilisateur : rien à recharger
+          if (event === 'TOKEN_REFRESHED' && sameUser && hasLoadedProfileOnce) {
+            return;
+          }
+
+          // Silencieux si un profil est déjà chargé pour ce même utilisateur
+          void loadProfileForSession(newSession, sameUser && hasLoadedProfileOnce);
         } else {
           profileRequestId++;
+          currentUserId = null;
+          hasLoadedProfileOnce = false;
           setUser(null);
           setLoading(false);
         }
       }
     );
+
 
     // Get initial session after setting up listener
     const initializeAuth = async () => {
@@ -93,7 +108,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (initialSession) {
           setSession(initialSession);
-          await loadProfileForSession(initialSession);
+          const alreadyLoaded = currentUserId === initialSession.user?.id && hasLoadedProfileOnce;
+          currentUserId = initialSession.user?.id ?? null;
+          if (!alreadyLoaded) {
+            await loadProfileForSession(initialSession);
+          } else {
+            setLoading(false);
+          }
+
         } else {
           setSession(null);
           setUser(null);
