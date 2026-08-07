@@ -18,9 +18,12 @@ Fiche produit (nom, référence, catégorie, unité, marque, photo, code-barres)
 | Rôle | Vision |
 |---|---|
 | Direction, Administratif | Toutes les fiches, avec la quantité de **chaque** emplacement sur la fiche + total, et un **filtre par emplacement** |
-| Chef de base, Technicien | Uniquement la ligne de stock de **leur** base : quantité, seuil, emplacement détaillé. Les autres bases ne sont pas visibles |
+| Chef de base, Technicien | Uniquement la ligne de stock de **leur** base : quantité, seuil, emplacement détaillé. Les quantités des autres bases ne sont pas visibles |
 
 Le détail d'emplacement (rayonnage, casier, commentaire) saisi par une base n'est lisible que par les membres de cette base, la direction et l'administratif.
+
+**Tarifs et fournisseurs : visibles par tous.** Quel que soit le rôle et l'emplacement, chaque fiche produit affiche l'ensemble des tarifs et fournisseurs pratiqués sur toutes les bases (fournisseur, référence fournisseur, prix unitaire, dernier achat et date, base concernée), ainsi que l'historique des achats et des devis. Seules les quantités, seuils et emplacements détaillés restent restreints à la base de l'utilisateur.
+
 
 ## Migration des données
 
