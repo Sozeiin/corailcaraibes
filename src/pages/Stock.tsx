@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, FileSpreadsheet, Download, ClipboardList, ShoppingCart } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet, Download, ClipboardList, ShoppingCart, Merge } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,10 @@ import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { QuickSupplyRequestDialog } from '@/components/stock/QuickSupplyRequestDialog';
+import { StockProductTable } from '@/components/stock/StockProductTable';
+import { StockProductDetailsDialog } from '@/components/stock/StockProductDetailsDialog';
+import { StockMergeProductsDialog } from '@/components/stock/StockMergeProductsDialog';
+import { useStockProducts, isGlobalStockRole, StockProduct, StockProductLevel } from '@/hooks/useStockProducts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +45,9 @@ export default function Stock() {
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
   const [detailsItem, setDetailsItem] = useState<StockItem | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [detailsProduct, setDetailsProduct] = useState<StockProduct | null>(null);
+  const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -53,8 +60,11 @@ export default function Stock() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Seuls les techniciens ont accès limité à leur base
-  const baseId = user?.role === 'technicien' ? user?.baseId : undefined;
+  // Direction et administratif voient tous les emplacements ; chef de base et
+  // technicien sont restreints à leur propre base.
+  const isGlobalRole = isGlobalStockRole(user?.role);
+  const baseId = isGlobalRole ? undefined : user?.baseId;
+
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
