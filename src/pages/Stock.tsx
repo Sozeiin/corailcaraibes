@@ -400,7 +400,17 @@ export default function Stock() {
         </div>
 
         <div className="p-4 sm:p-6">
-          {isLoading ? (
+          {isGlobalRole ? (
+            <StockProductTable
+              products={filteredProducts}
+              bases={bases}
+              isLoading={isLoadingProducts}
+              onViewDetails={handleViewProductDetails}
+              onRequestPurchase={handleProductPurchase}
+              canRequestPurchase={canRequestPurchase}
+              filteredBaseId={selectedBase}
+            />
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
             </div>
@@ -443,6 +453,7 @@ export default function Stock() {
             />
           )}
         </div>
+
       </div>
 
       <StockDialog
