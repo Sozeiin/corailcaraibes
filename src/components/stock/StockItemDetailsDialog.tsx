@@ -15,6 +15,7 @@ import { BarcodeDownloader } from './BarcodeDownloader';
 import { QuickSupplyRequestDialog } from './QuickSupplyRequestDialog';
 import { StockSupplierPriceDialog } from './StockSupplierPriceDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { StockProductPricingPanel } from './StockProductPricingPanel';
 
 interface StockItemDetailsDialogProps {
   item: StockItem | null;
@@ -149,10 +150,14 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
 
 
         <Tabs defaultValue="barcode" className="mt-4">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="barcode" className="flex items-center gap-2">
               <Barcode className="h-4 w-4" />
               Code-barres
+            </TabsTrigger>
+            <TabsTrigger value="pricing" className="flex items-center gap-2">
+              <Euro className="h-4 w-4" />
+              Tarifs
             </TabsTrigger>
             <TabsTrigger value="purchases" className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
@@ -175,6 +180,11 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
               Utilisation
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="pricing" className="mt-6">
+            <StockProductPricingPanel productId={item.productId} />
+          </TabsContent>
+
 
           <TabsContent value="barcode" className="mt-6">
             <BarcodeDownloader 
