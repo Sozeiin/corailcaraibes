@@ -79,6 +79,7 @@ export interface OrderItem {
 
 export interface StockItem {
   id: string;
+  productId?: string;
   name: string;
   reference: string;
   barcode?: string;

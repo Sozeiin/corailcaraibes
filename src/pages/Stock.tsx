@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useOfflineData } from '@/lib/hooks/useOfflineData';
-import { Plus, Search, FileSpreadsheet, Download, ClipboardList, ShoppingCart } from 'lucide-react';
+import { Plus, Search, FileSpreadsheet, Download, ClipboardList, ShoppingCart, Merge } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,10 @@ import { StockInventoryDialog } from '@/components/stock/StockInventoryDialog';
 
 import { StockItemDetailsDialog } from '@/components/stock/StockItemDetailsDialog';
 import { QuickSupplyRequestDialog } from '@/components/stock/QuickSupplyRequestDialog';
+import { StockProductTable } from '@/components/stock/StockProductTable';
+import { StockProductDetailsDialog } from '@/components/stock/StockProductDetailsDialog';
+import { StockMergeProductsDialog } from '@/components/stock/StockMergeProductsDialog';
+import { useStockProducts, isGlobalStockRole, StockProduct, StockProductLevel } from '@/hooks/useStockProducts';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +45,9 @@ export default function Stock() {
   const [duplicatingItem, setDuplicatingItem] = useState<StockItem | null>(null);
   const [detailsItem, setDetailsItem] = useState<StockItem | null>(null);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [detailsProduct, setDetailsProduct] = useState<StockProduct | null>(null);
+  const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
   const [deleteItem, setDeleteItem] = useState<StockItem | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -53,8 +60,11 @@ export default function Stock() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Seuls les techniciens ont accès limité à leur base
-  const baseId = user?.role === 'technicien' ? user?.baseId : undefined;
+  // Direction et administratif voient tous les emplacements ; chef de base et
+  // technicien sont restreints à leur propre base.
+  const isGlobalRole = isGlobalStockRole(user?.role);
+  const baseId = isGlobalRole ? undefined : user?.baseId;
+
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -75,12 +85,9 @@ export default function Stock() {
     refetch: refetchStock
   } = useOfflineData<any>({ table: 'stock_items', baseId, dependencies: [user?.role, user?.baseId] });
 
-  // Set default base filter for chefs de base (one time only)
-  useEffect(() => {
-    if (user && bases.length > 0 && selectedBase === 'all' && user.role === 'chef_base' && user.baseId) {
-      setSelectedBase(user.baseId);
-    }
-  }, [user, bases]); // Removed selectedBase from deps to avoid loop
+  // Vue agrégée par fiche produit (multi-emplacements) pour direction / administratif
+  const { data: stockProducts = [], isLoading: isLoadingProducts } = useStockProducts();
+
 
   // Use mutations and realtime updates
   const deleteStockMutation = useDeleteStockItem();
@@ -94,6 +101,7 @@ export default function Stock() {
     
     return {
       id: item.id,
+      productId: item.product_id || undefined,
       name: item.name,
       reference: item.reference || '',
       barcode: item.barcode || '',
@@ -136,6 +144,39 @@ export default function Stock() {
     
     return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
   });
+
+  // Vue produit : filtres appliqués sur la fiche et ses emplacements
+  const filteredProducts = useMemo(() => {
+    const term = searchTerm.toLowerCase();
+    return stockProducts
+      .filter((product) => {
+        const matchesSearch = term === '' ||
+          product.name.toLowerCase().includes(term) ||
+          product.reference.toLowerCase().includes(term) ||
+          product.category.toLowerCase().includes(term) ||
+          product.brand?.toLowerCase().includes(term) ||
+          product.levels.some((l) => l.supplierReference?.toLowerCase().includes(term));
+        const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+        const matchesBase = selectedBase === 'all' || product.levels.some((l) => l.baseId === selectedBase);
+        const relevantLevels = selectedBase === 'all'
+          ? product.levels
+          : product.levels.filter((l) => l.baseId === selectedBase);
+        const matchesLowStock = !showLowStock ||
+          relevantLevels.some((l) => l.quantity <= l.minThreshold);
+        return matchesSearch && matchesCategory && matchesBase && matchesLowStock;
+      })
+      .map((product) => {
+        if (selectedBase === 'all') return product;
+        const levels = product.levels.filter((l) => l.baseId === selectedBase);
+        return {
+          ...product,
+          levels,
+          totalQuantity: levels.reduce((sum, l) => sum + l.quantity, 0),
+          totalThreshold: levels.reduce((sum, l) => sum + l.minThreshold, 0),
+        };
+      });
+
+  }, [stockProducts, searchTerm, selectedCategory, selectedBase, showLowStock]);
 
   const getStockStatus = (item: StockItem) => {
     if (item.quantity === 0) {
@@ -243,10 +284,30 @@ export default function Stock() {
     }
   };
 
+  const handleViewProductDetails = (product: StockProduct) => {
+    setDetailsProduct(product);
+    setIsProductDetailsOpen(true);
+  };
 
+  const handleProductPurchase = (product: StockProduct) => {
+    const level = product.levels.find((l) => l.baseId === user?.baseId) || product.levels[0];
+    if (level) handleRequestPurchase(level);
+  };
+
+  const handleEditLevel = (level: StockProductLevel) => {
+    setIsProductDetailsOpen(false);
+    handleEdit(level);
+  };
+
+  const handleAddLocation = (product: StockProduct) => {
+    setIsProductDetailsOpen(false);
+    handleDuplicate(product.levels[0]);
+  };
 
   const canManageStock = ['direction', 'chef_base', 'administratif'].includes(user?.role || '');
   const canRequestPurchase = ['chef_base', 'administratif'].includes(user?.role || '');
+  const canMergeProducts = ['direction', 'administratif'].includes(user?.role || '');
+
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -297,6 +358,18 @@ export default function Stock() {
               <span className="xs:hidden">Export</span>
             </Button>
 
+            {canMergeProducts && (
+              <Button
+                variant="outline"
+                onClick={() => setIsMergeDialogOpen(true)}
+                className="border-marine-200 text-marine-700 hover:bg-marine-50 text-sm"
+              >
+                <Merge className="h-4 w-4 mr-2" />
+                <span className="hidden xs:inline">Fusionner des fiches</span>
+                <span className="xs:hidden">Fusion</span>
+              </Button>
+            )}
+
             <Button
               onClick={() => setIsDialogOpen(true)}
               className="bg-marine-600 hover:bg-marine-700 text-sm"
@@ -339,7 +412,17 @@ export default function Stock() {
         </div>
 
         <div className="p-4 sm:p-6">
-          {isLoading ? (
+          {isGlobalRole ? (
+            <StockProductTable
+              products={filteredProducts}
+              bases={bases}
+              isLoading={isLoadingProducts}
+              onViewDetails={handleViewProductDetails}
+              onRequestPurchase={handleProductPurchase}
+              canRequestPurchase={canRequestPurchase}
+              filteredBaseId={selectedBase}
+            />
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-marine-600"></div>
             </div>
@@ -382,6 +465,7 @@ export default function Stock() {
             />
           )}
         </div>
+
       </div>
 
       <StockDialog
@@ -417,6 +501,25 @@ export default function Stock() {
         isOpen={isDetailsDialogOpen}
         onClose={handleDetailsDialogClose}
       />
+
+      <StockProductDetailsDialog
+        product={detailsProduct}
+        isOpen={isProductDetailsOpen}
+        onClose={() => {
+          setIsProductDetailsOpen(false);
+          setDetailsProduct(null);
+        }}
+        onEditLevel={handleEditLevel}
+        onAddLocation={handleAddLocation}
+        onRequestPurchase={canRequestPurchase ? handleRequestPurchase : undefined}
+      />
+
+      <StockMergeProductsDialog
+        isOpen={isMergeDialogOpen}
+        onClose={() => setIsMergeDialogOpen(false)}
+        products={stockProducts}
+      />
+
 
       <QuickSupplyRequestDialog
         item={purchaseItem}

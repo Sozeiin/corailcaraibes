@@ -47,7 +47,8 @@ export function StockFilters({
     (!['chef_base', 'administratif'].includes(userRole || '') && selectedBase !== 'all') ||
     (['chef_base', 'administratif'].includes(userRole || '') && selectedBase !== 'all' && selectedBase !== userBaseId) ||
     showLowStock;
-  const showBaseFilter = ['direction', 'chef_base', 'administratif'].includes(userRole || '');
+  // Seuls direction et administratif voient plusieurs emplacements
+  const showBaseFilter = ['direction', 'administratif'].includes(userRole || '');
 
   return (
     <div className="border-t pt-4 space-y-4">
