@@ -1,16 +1,19 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, Send, Trash2, User } from "lucide-react";
+import { MessageSquare, Send, Trash2, User, Paperclip, X, FileText, Camera } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 import {
   useSupplyRequestComments,
   useAddSupplyRequestComment,
   useDeleteSupplyRequestComment,
+  uploadCommentAttachment,
+  SupplyRequestCommentAttachment,
 } from "@/hooks/useSupplyRequestComments";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -27,6 +30,10 @@ export function SupplyRequestCommentsSection({
 }: SupplyRequestCommentsSectionProps) {
   const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
+  const [attachments, setAttachments] = useState<SupplyRequestCommentAttachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const { data: comments = [], isLoading } = useSupplyRequestComments(requestId);
   const addComment = useAddSupplyRequestComment();
   const deleteComment = useDeleteSupplyRequestComment();
@@ -53,17 +60,45 @@ export function SupplyRequestCommentsSection({
     }
   };
 
+  const handleFilesSelected = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setIsUploading(true);
+    try {
+      const uploaded: SupplyRequestCommentAttachment[] = [];
+      for (const file of Array.from(files)) {
+        if (file.size > 20 * 1024 * 1024) {
+          toast.error(`${file.name} dépasse 20 Mo`);
+          continue;
+        }
+        uploaded.push(await uploadCommentAttachment(requestId, file));
+      }
+      setAttachments((prev) => [...prev, ...uploaded]);
+      if (uploaded.length > 0) toast.success("Pièce(s) jointe(s) ajoutée(s)");
+    } catch (error) {
+      console.error("Error uploading attachment:", error);
+      toast.error("Erreur lors de l'envoi de la pièce jointe");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
+    }
+  };
+
   const handleSubmit = () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && attachments.length === 0) return;
 
     addComment.mutate(
       {
         requestId,
-        comment: newComment.trim(),
+        comment: newComment.trim() || "(pièce jointe)",
         statusAtComment: currentStatus,
+        attachments,
       },
       {
-        onSuccess: () => setNewComment(""),
+        onSuccess: () => {
+          setNewComment("");
+          setAttachments([]);
+        },
       }
     );
   };
@@ -73,6 +108,8 @@ export function SupplyRequestCommentsSection({
       deleteComment.mutate({ commentId, requestId });
     }
   };
+
+  const isImage = (type: string) => type.startsWith("image/");
 
   return (
     <Card>
@@ -91,7 +128,7 @@ export function SupplyRequestCommentsSection({
             Aucun commentaire pour le moment
           </p>
         ) : (
-          <div className="space-y-3 max-h-64 overflow-y-auto">
+          <div className="space-y-3 max-h-80 overflow-y-auto">
             {comments.map((comment) => (
               <div
                 key={comment.id}
@@ -127,7 +164,35 @@ export function SupplyRequestCommentsSection({
                     )}
                   </div>
                 </div>
-                <p className="text-sm">{comment.comment}</p>
+                <p className="text-sm whitespace-pre-wrap">{comment.comment}</p>
+
+                {(comment.attachments || []).length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {(comment.attachments || []).map((file, index) => (
+                      <a
+                        key={`${comment.id}-${index}`}
+                        href={file.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        {isImage(file.type) ? (
+                          <img
+                            src={file.url}
+                            alt={file.name}
+                            loading="lazy"
+                            className="h-20 w-20 rounded border object-cover"
+                          />
+                        ) : (
+                          <span className="flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs hover:bg-muted">
+                            <FileText className="h-3 w-3" />
+                            {file.name}
+                          </span>
+                        )}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -145,11 +210,84 @@ export function SupplyRequestCommentsSection({
                 rows={2}
                 className="resize-none"
               />
-              <div className="flex justify-end">
+
+              {attachments.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {attachments.map((file, index) => (
+                    <div
+                      key={`${file.url}-${index}`}
+                      className="relative flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs"
+                    >
+                      {isImage(file.type) ? (
+                        <img src={file.url} alt={file.name} className="h-8 w-8 rounded object-cover" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
+                      <span className="max-w-[140px] truncate">{file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setAttachments((prev) => prev.filter((_, i) => i !== index))
+                        }
+                        className="ml-1 rounded-full p-0.5 hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                className="hidden"
+                onChange={(e) => handleFilesSelected(e.target.files)}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => handleFilesSelected(e.target.files)}
+              />
+
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    {isUploading ? "Envoi..." : "Joindre"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploading}
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="flex items-center gap-2"
+                  >
+                    <Camera className="h-4 w-4" />
+                    Photo
+                  </Button>
+                </div>
                 <Button
                   size="sm"
                   onClick={handleSubmit}
-                  disabled={!newComment.trim() || addComment.isPending}
+                  disabled={
+                    (!newComment.trim() && attachments.length === 0) ||
+                    addComment.isPending ||
+                    isUploading
+                  }
                   className="flex items-center gap-2"
                 >
                   <Send className="h-4 w-4" />
