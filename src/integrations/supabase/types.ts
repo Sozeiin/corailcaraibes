@@ -4472,6 +4472,96 @@ export type Database = {
           },
         ]
       }
+      stock_product_prices: {
+        Row: {
+          base_id: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          currency: string
+          id: string
+          minimum_quantity: number
+          notes: string | null
+          price_date: string
+          product_id: string
+          supplier_id: string | null
+          supplier_name: string | null
+          supplier_reference: string | null
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          base_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          currency?: string
+          id?: string
+          minimum_quantity?: number
+          notes?: string | null
+          price_date?: string
+          product_id: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_reference?: string | null
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          base_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          currency?: string
+          id?: string
+          minimum_quantity?: number
+          notes?: string | null
+          price_date?: string
+          product_id?: string
+          supplier_id?: string | null
+          supplier_name?: string | null
+          supplier_reference?: string | null
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_product_prices_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_product_prices_base_id_fkey"
+            columns: ["base_id"]
+            isOneToOne: false
+            referencedRelation: "bases_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_product_prices_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_product_prices_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "stock_products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_product_prices_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_products: {
         Row: {
           barcode: string | null
