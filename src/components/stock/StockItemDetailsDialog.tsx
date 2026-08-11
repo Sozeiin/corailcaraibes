@@ -46,11 +46,11 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 text-left">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold mb-2">
+              <DialogTitle className="text-base sm:text-xl font-bold mb-2 break-words">
                 {item.name}
               </DialogTitle>
               {item.reference && (

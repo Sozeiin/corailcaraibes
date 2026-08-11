@@ -39,11 +39,11 @@ export function StockProductDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 text-left">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold mb-2">{product.name}</DialogTitle>
+              <DialogTitle className="text-base sm:text-xl font-bold mb-2 break-words">{product.name}</DialogTitle>
               {product.reference && (
                 <p className="text-sm text-muted-foreground">Référence : {product.reference}</p>
               )}
@@ -67,43 +67,43 @@ export function StockProductDetailsDialog({
               className="hidden sm:block flex-shrink-0"
               fallbackIcon={<Package className="h-8 w-8 text-muted-foreground" />}
             />
-            <div className="text-right flex-shrink-0">
-              <div className="text-2xl font-bold">{product.totalQuantity}</div>
-              <div className="text-sm text-muted-foreground">{product.unit || 'unité(s)'} au total</div>
+            <div className="text-left sm:text-right flex-shrink-0">
+              <div className="text-xl sm:text-2xl font-bold">{product.totalQuantity}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">{product.unit || 'unité(s)'} au total</div>
             </div>
           </div>
         </DialogHeader>
 
         {canManage && onAddLocation && (
           <div className="pt-2">
-            <Button variant="outline" onClick={() => onAddLocation(product)}>
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => onAddLocation(product)}>
               <Copy className="h-4 w-4 mr-2" />
-              Ajouter cet article à une autre base
+              <span className="truncate">Ajouter cet article à une autre base</span>
             </Button>
           </div>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="locations" className="flex items-center gap-2">
-              <MapPin className="h-4 w-4" />
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto gap-1">
+            <TabsTrigger value="locations" className="flex items-center gap-2 text-xs sm:text-sm py-2">
+              <MapPin className="h-4 w-4 shrink-0" />
               Emplacements
             </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <Euro className="h-4 w-4" />
-              Tarifs & fournisseurs
+            <TabsTrigger value="pricing" className="flex items-center gap-2 text-xs sm:text-sm py-2">
+              <Euro className="h-4 w-4 shrink-0" />
+              <span className="truncate">Tarifs</span>
             </TabsTrigger>
-            <TabsTrigger value="purchases" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
+            <TabsTrigger value="purchases" className="flex items-center gap-2 text-xs sm:text-sm py-2">
+              <ShoppingCart className="h-4 w-4 shrink-0" />
               Achats
             </TabsTrigger>
-            <TabsTrigger value="barcode" className="flex items-center gap-2">
-              <Barcode className="h-4 w-4" />
-              Code-barres
+            <TabsTrigger value="barcode" className="flex items-center gap-2 text-xs sm:text-sm py-2">
+              <Barcode className="h-4 w-4 shrink-0" />
+              <span className="truncate">Code-barres</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="locations" className="mt-6">
+          <TabsContent value="locations" className="mt-4 sm:mt-6">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
