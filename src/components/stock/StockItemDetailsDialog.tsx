@@ -46,11 +46,11 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[95vw] sm:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4 text-left">
             <div className="flex-1 min-w-0">
-              <DialogTitle className="text-xl font-bold mb-2">
+              <DialogTitle className="text-base sm:text-xl font-bold mb-2 break-words">
                 {item.name}
               </DialogTitle>
               {item.reference && (
@@ -94,11 +94,11 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
                 fallbackIcon={<Package className="h-6 w-6 text-muted-foreground" />}
               />
             </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold">
+            <div className="text-left sm:text-right">
+              <div className="text-xl sm:text-2xl font-bold">
                 {item.quantity}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-xs sm:text-sm text-muted-foreground">
                 {item.unit || 'unité(s)'}
               </div>
             </div>
@@ -135,49 +135,47 @@ export function StockItemDetailsDialog({ item, isOpen, onClose }: StockItemDetai
         </div>
 
         {canManage && (
-          <div className="flex flex-wrap gap-2 pt-4">
-            <Button variant="outline" onClick={() => setIsSupplierPriceOpen(true)}>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-2 pt-4">
+            <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsSupplierPriceOpen(true)}>
               <Euro className="h-4 w-4 mr-2" />
               Fournisseur & tarif
             </Button>
-            <Button onClick={() => setIsSupplyOpen(true)}>
+            <Button className="w-full sm:w-auto" onClick={() => setIsSupplyOpen(true)}>
               <ShoppingCart className="h-4 w-4 mr-2" />
-              Demande d'approvisionnement
+              <span className="truncate">Demande d'approvisionnement</span>
             </Button>
           </div>
         )}
 
-
-
         <Tabs defaultValue="barcode" className="mt-4">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="barcode" className="flex items-center gap-2">
-              <Barcode className="h-4 w-4" />
-              Code-barres
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 h-auto gap-1">
+            <TabsTrigger value="barcode" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Barcode className="h-4 w-4 shrink-0" />
+              <span className="truncate">Code-barres</span>
             </TabsTrigger>
-            <TabsTrigger value="pricing" className="flex items-center gap-2">
-              <Euro className="h-4 w-4" />
-              Tarifs
+            <TabsTrigger value="pricing" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Euro className="h-4 w-4 shrink-0" />
+              <span className="truncate">Tarifs</span>
             </TabsTrigger>
-            <TabsTrigger value="purchases" className="flex items-center gap-2">
-              <ShoppingCart className="h-4 w-4" />
-              Achats
+            <TabsTrigger value="purchases" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <ShoppingCart className="h-4 w-4 shrink-0" />
+              <span className="truncate">Achats</span>
             </TabsTrigger>
-            <TabsTrigger value="quotes" className="flex items-center gap-2">
-              <Package className="h-4 w-4" />
-              Devis
+            <TabsTrigger value="quotes" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Package className="h-4 w-4 shrink-0" />
+              <span className="truncate">Devis</span>
             </TabsTrigger>
-            <TabsTrigger value="supplier" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Fournisseur
+            <TabsTrigger value="supplier" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <User className="h-4 w-4 shrink-0" />
+              <span className="truncate">Fournisseur</span>
             </TabsTrigger>
-            <TabsTrigger value="analysis" className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Analyse
+            <TabsTrigger value="analysis" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <TrendingUp className="h-4 w-4 shrink-0" />
+              <span className="truncate">Analyse</span>
             </TabsTrigger>
-            <TabsTrigger value="usage" className="flex items-center gap-2">
-              <Wrench className="h-4 w-4" />
-              Utilisation
+            <TabsTrigger value="usage" className="flex items-center gap-1.5 text-xs sm:text-sm py-2">
+              <Wrench className="h-4 w-4 shrink-0" />
+              <span className="truncate">Utilisation</span>
             </TabsTrigger>
           </TabsList>
 
