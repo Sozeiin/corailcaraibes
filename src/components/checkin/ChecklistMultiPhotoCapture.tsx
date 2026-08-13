@@ -4,13 +4,14 @@ import { Camera, Upload, X, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ImagePreview } from '@/components/ui/image-preview';
-import {
 import { StorageImage } from '@/components/ui/storage-image';
+import {
   uploadChecklistPhoto,
   deleteChecklistPhoto,
   saveChecklistPhoto,
   deleteChecklistPhotoFromDB
 } from '@/lib/checklistPhotoUtils';
+
 
 interface ChecklistMultiPhotoCaptureProps {
   photos: Array<{ id?: string; url: string; displayOrder: number }>;
