@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useToast } from '@/hooks/use-toast';
 import { ImagePreview } from '@/components/ui/image-preview';
 import {
+import { StorageImage } from '@/components/ui/storage-image';
   uploadChecklistPhoto,
   deleteChecklistPhoto,
   saveChecklistPhoto,
@@ -292,7 +293,7 @@ export function ChecklistMultiPhotoCapture({
               className="relative flex-shrink-0 group cursor-pointer"
               onClick={() => setSelectedPhotoIndex(index)}
             >
-              <img
+              <StorageImage
                 src={photo.url}
                 alt={`Photo ${index + 1}`}
                 className="w-16 h-16 object-cover rounded-lg border-2 border-border group-hover:border-primary transition-colors"

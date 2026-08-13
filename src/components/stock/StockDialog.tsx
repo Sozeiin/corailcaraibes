@@ -31,6 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { StockItem, Base } from '@/types';
 import { withBrandColumnFallback } from '@/lib/supabaseFallbacks';
 import { StockPhotoUpload } from './StockPhotoUpload';
+import { StorageImage } from '@/components/ui/storage-image';
 
 interface StockDialogProps {
   isOpen: boolean;
@@ -505,7 +506,7 @@ export function StockDialog({ isOpen, onClose, item }: StockDialogProps) {
                   {form.watch('photoUrl') && (
                     <div className="text-center">
                       <p className="text-sm text-muted-foreground mb-2">Aperçu</p>
-                      <img 
+                      <StorageImage 
                         src={form.watch('photoUrl')} 
                         alt="Aperçu" 
                         className="max-w-32 max-h-32 object-cover rounded-lg border shadow-sm"
