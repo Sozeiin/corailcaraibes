@@ -16,6 +16,8 @@ import {
   SupplyRequestCommentAttachment,
 } from "@/hooks/useSupplyRequestComments";
 import { useAuth } from "@/contexts/AuthContext";
+import { StorageImage } from "@/components/ui/storage-image";
+import { openStorageFile } from "@/lib/storageUrls";
 
 interface SupplyRequestCommentsSectionProps {
   requestId: string;
@@ -219,7 +221,7 @@ export function SupplyRequestCommentsSection({
                       className="relative flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs"
                     >
                       {isImage(file.type) ? (
-                        <img src={file.url} alt={file.name} className="h-8 w-8 rounded object-cover" />
+                        <StorageImage src={file.url} alt={file.name} className="h-8 w-8 rounded object-cover" />
                       ) : (
                         <FileText className="h-3 w-3" />
                       )}
