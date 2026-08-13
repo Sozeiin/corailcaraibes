@@ -16,6 +16,8 @@ import {
   SupplyRequestCommentAttachment,
 } from "@/hooks/useSupplyRequestComments";
 import { useAuth } from "@/contexts/AuthContext";
+import { StorageImage } from "@/components/ui/storage-image";
+import { openStorageFile } from "@/lib/storageUrls";
 
 interface SupplyRequestCommentsSectionProps {
   requestId: string;
@@ -169,15 +171,14 @@ export function SupplyRequestCommentsSection({
                 {(comment.attachments || []).length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(comment.attachments || []).map((file, index) => (
-                      <a
+                      <button
                         key={`${comment.id}-${index}`}
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        type="button"
+                        onClick={() => openStorageFile(file.url)}
                         className="block"
                       >
                         {isImage(file.type) ? (
-                          <img
+                          <StorageImage
                             src={file.url}
                             alt={file.name}
                             loading="lazy"
@@ -189,7 +190,8 @@ export function SupplyRequestCommentsSection({
                             {file.name}
                           </span>
                         )}
-                      </a>
+                      </button>
+
                     ))}
                   </div>
                 )}
@@ -219,7 +221,7 @@ export function SupplyRequestCommentsSection({
                       className="relative flex items-center gap-1 rounded border bg-background px-2 py-1 text-xs"
                     >
                       {isImage(file.type) ? (
-                        <img src={file.url} alt={file.name} className="h-8 w-8 rounded object-cover" />
+                        <StorageImage src={file.url} alt={file.name} className="h-8 w-8 rounded object-cover" />
                       ) : (
                         <FileText className="h-3 w-3" />
                       )}

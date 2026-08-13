@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Camera, Upload, Trash2, X } from 'lucide-react';
+import { StorageImage } from '@/components/ui/storage-image';
 
 interface StockPhotoUploadProps {
   photoUrl?: string;
@@ -260,7 +261,7 @@ export const StockPhotoUpload = ({ photoUrl, onPhotoChange, disabled = false }: 
 
       {photoUrl && (
         <div className="relative">
-          <img
+          <StorageImage
             src={photoUrl}
             alt="Article"
             className="w-full h-48 object-cover rounded-lg border"

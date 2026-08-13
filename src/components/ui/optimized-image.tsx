@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { ImageIcon, Package } from 'lucide-react';
+import { useSignedStorageUrl } from '@/lib/storageUrls';
 
 interface OptimizedImageProps {
   src?: string | null;
@@ -24,6 +25,7 @@ export function OptimizedImage({
   fallbackIcon,
   size = 'md' 
 }: OptimizedImageProps) {
+  const resolvedSrc = useSignedStorageUrl(src);
   const [isLoading, setIsLoading] = useState(!!src);
   const [hasError, setHasError] = useState(false);
 
@@ -56,17 +58,20 @@ export function OptimizedImage({
           <ImageIcon className="h-1/3 w-1/3 text-muted-foreground animate-pulse" />
         </div>
       )}
-      <img
-        src={src}
-        alt={alt}
-        className={cn(
-          'w-full h-full object-cover transition-opacity duration-200',
-          isLoading ? 'opacity-0' : 'opacity-100'
-        )}
-        onLoad={handleLoad}
-        onError={handleError}
-        loading="lazy"
-      />
+      {resolvedSrc && (
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          className={cn(
+            'w-full h-full object-cover transition-opacity duration-200',
+            isLoading ? 'opacity-0' : 'opacity-100'
+          )}
+          onLoad={handleLoad}
+          onError={handleError}
+          loading="lazy"
+        />
+      )}
+
     </div>
   );
 }

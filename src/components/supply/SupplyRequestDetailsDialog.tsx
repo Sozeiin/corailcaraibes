@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useFormState } from '@/contexts/FormStateContext';
 import { supabase } from '@/integrations/supabase/client';
+import { StorageImage } from '@/components/ui/storage-image';
 
 interface SupplyRequestDetailsDialogProps {
   isOpen: boolean;
@@ -191,7 +192,7 @@ export function SupplyRequestDetailsDialog({ isOpen, onClose, request }: SupplyR
                     <Image className="h-4 w-4" />
                     Photo de l'article
                   </label>
-                  <img
+                  <StorageImage
                     src={request.photo_url || request.stockItem?.photo_url}
                     alt="Photo de l'article"
                     className="w-48 h-48 object-cover rounded border mt-2"
