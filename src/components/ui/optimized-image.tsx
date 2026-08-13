@@ -58,17 +58,20 @@ export function OptimizedImage({
           <ImageIcon className="h-1/3 w-1/3 text-muted-foreground animate-pulse" />
         </div>
       )}
-      <img
-        src={resolvedSrc}
-        alt={alt}
-        className={cn(
-          'w-full h-full object-cover transition-opacity duration-200',
-          isLoading ? 'opacity-0' : 'opacity-100'
-        )}
-        onLoad={handleLoad}
-        onError={handleError}
-        loading="lazy"
-      />
+      {resolvedSrc && (
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          className={cn(
+            'w-full h-full object-cover transition-opacity duration-200',
+            isLoading ? 'opacity-0' : 'opacity-100'
+          )}
+          onLoad={handleLoad}
+          onError={handleError}
+          loading="lazy"
+        />
+      )}
+
     </div>
   );
 }
