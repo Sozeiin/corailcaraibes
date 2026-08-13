@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Camera, X, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { StorageImage } from '@/components/ui/storage-image';
 interface ChecklistPhotoCaptureProps {
   photoUrl: string | null;
   onPhotoChange: (url: string | null) => void;
@@ -188,7 +189,7 @@ export function ChecklistPhotoCapture({
           </Button>
           
         </div> : <div className="flex items-center gap-1">
-          <img src={photoUrl} alt="Photo checklist" className="w-12 h-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowPreview(true)} title="Cliquer pour agrandir" onError={e => {
+          <StorageImage src={photoUrl} alt="Photo checklist" className="w-12 h-12 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setShowPreview(true)} title="Cliquer pour agrandir" onError={e => {
         console.error('Error loading image:', photoUrl);
         console.error('Image error event:', e);
       }} onLoad={() => console.log('Image loaded successfully:', photoUrl)} />
@@ -232,7 +233,7 @@ export function ChecklistPhotoCapture({
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 bg-black/90">
           <div className="relative w-full h-full flex items-center justify-center">
-            <img src={photoUrl || ''} alt="Aperçu photo checklist" className="max-w-full max-h-full object-contain" />
+            <StorageImage src={photoUrl || ''} alt="Aperçu photo checklist" className="max-w-full max-h-full object-contain" />
             <Button variant="ghost" size="icon" onClick={() => setShowPreview(false)} className="absolute top-4 right-4 text-white hover:bg-white/20" title="Fermer">
               <X className="h-6 w-6" />
             </Button>

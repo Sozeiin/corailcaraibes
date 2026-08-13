@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Camera, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { StorageImage } from '@/components/ui/storage-image';
 
 interface PhotoCaptureProps {
   photoUrl: string | null;
@@ -115,7 +116,7 @@ export function PhotoCapture({ photoUrl, onPhotoChange }: PhotoCaptureProps) {
       </Button>
       {photoUrl && (
         <div className="relative w-32 h-32">
-          <img src={photoUrl} alt="Preview" className="w-full h-full object-cover rounded border" />
+          <StorageImage src={photoUrl} alt="Preview" className="w-full h-full object-cover rounded border" />
           <Button
             type="button"
             variant="ghost"

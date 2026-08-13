@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { StockItem } from '@/types';
 import { OptimizedSkeleton } from '@/components/ui/optimized-skeleton';
+import { StorageImage } from '@/components/ui/storage-image';
 
 interface StockCardsProps {
   items: StockItem[];
@@ -41,7 +42,7 @@ const StockCard = memo(({
     <Card className={`transition-shadow hover:shadow-md ${isLowStock ? 'border-orange-200' : ''}`}>
       {item.photoUrl && (
         <div className="mb-4">
-          <img
+          <StorageImage
             src={item.photoUrl}
             alt={item.name}
             className="w-full h-32 object-cover rounded-t-lg"
