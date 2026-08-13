@@ -169,15 +169,14 @@ export function SupplyRequestCommentsSection({
                 {(comment.attachments || []).length > 0 && (
                   <div className="flex flex-wrap gap-2 pt-1">
                     {(comment.attachments || []).map((file, index) => (
-                      <a
+                      <button
                         key={`${comment.id}-${index}`}
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        type="button"
+                        onClick={() => openStorageFile(file.url)}
                         className="block"
                       >
                         {isImage(file.type) ? (
-                          <img
+                          <StorageImage
                             src={file.url}
                             alt={file.name}
                             loading="lazy"
@@ -189,7 +188,8 @@ export function SupplyRequestCommentsSection({
                             {file.name}
                           </span>
                         )}
-                      </a>
+                      </button>
+
                     ))}
                   </div>
                 )}
