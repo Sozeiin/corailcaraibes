@@ -2404,6 +2404,8 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          inbound_api_key: string | null
+          inbound_api_key_created_at: string | null
           is_active: boolean
           maintenance_api_key_encrypted: string | null
           maintenance_api_url: string
@@ -2415,6 +2417,8 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          inbound_api_key?: string | null
+          inbound_api_key_created_at?: string | null
           is_active?: boolean
           maintenance_api_key_encrypted?: string | null
           maintenance_api_url: string
@@ -2426,6 +2430,8 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          inbound_api_key?: string | null
+          inbound_api_key_created_at?: string | null
           is_active?: boolean
           maintenance_api_key_encrypted?: string | null
           maintenance_api_url?: string
