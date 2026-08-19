@@ -77,27 +77,9 @@ export function MaintenanceIntegrationSettings() {
     }
     setGeneratingKey(true);
     try {
-      const newKey = `cc_${randomHex(24)}`;
-      const now = new Date().toISOString();
-
-      if (integration?.id) {
-        const { error } = await supabase
-          .from('maintenance_integrations')
-          .update({ inbound_api_key: newKey, inbound_api_key_created_at: now })
-          .eq('id', integration.id);
-        if (error) throw error;
-      } else {
-        // Aucune configuration encore enregistrée : on crée la ligne pour porter la clé entrante
-        const { error } = await supabase.from('maintenance_integrations').insert({
-          maintenance_api_url: apiUrl.trim() || 'https://a-configurer.invalid',
-          marevo_tenant_id: tenantId.trim() || null,
-          webhook_secret: webhookSecret.trim() || null,
-          is_active: isActive,
-          inbound_api_key: newKey,
-          inbound_api_key_created_at: now,
-        });
-        if (error) throw error;
-      }
+      const { data, error } = await supabase.functions.invoke('generate-maintenance-inbound-key');
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error(JSON.stringify((data as any).error));
 
       await queryClient.invalidateQueries({ queryKey: ['maintenance-integration'] });
       toast.success('Nouvelle clé API générée — copiez-la dans Marevo');
@@ -107,6 +89,7 @@ export function MaintenanceIntegrationSettings() {
       setGeneratingKey(false);
     }
   };
+
 
 
   const copyToClipboard = async (value: string, label: string) => {
