@@ -40,15 +40,18 @@ Deno.serve(async (req) => {
 
     const { data: integration } = await admin
       .from('maintenance_integrations')
-      .select('id, webhook_secret, is_active, marevo_tenant_id')
+      .select('id, webhook_secret, inbound_api_key, is_active, marevo_tenant_id')
       .eq('singleton', true)
       .maybeSingle();
 
-    const provided = req.headers.get('x-webhook-secret') ?? '';
-    if (!integration || !integration.is_active || !integration.webhook_secret) {
+    const providedSecret = req.headers.get('x-webhook-secret') ?? '';
+    const providedKey = req.headers.get('x-api-key') ?? '';
+    if (!integration || !integration.is_active) {
       return json({ error: 'no_integration' }, 403);
     }
-    if (provided !== integration.webhook_secret) {
+    const secretOk = !!integration.webhook_secret && providedSecret === integration.webhook_secret;
+    const keyOk = !!integration.inbound_api_key && providedKey === integration.inbound_api_key;
+    if (!secretOk && !keyOk) {
       console.error('webhook rejected: bad secret');
       return json({ error: 'invalid_secret' }, 401);
     }
