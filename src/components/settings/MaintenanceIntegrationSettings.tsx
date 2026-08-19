@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Plug, RefreshCw, ShieldCheck } from 'lucide-react';
+import { Copy, KeyRound, Loader2, Plug, RefreshCw, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,6 +24,7 @@ export function MaintenanceIntegrationSettings() {
   const [isActive, setIsActive] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [generatingKey, setGeneratingKey] = useState(false);
 
   const { data: integration, isLoading } = useQuery({
     queryKey: ['maintenance-integration'],
@@ -31,7 +32,7 @@ export function MaintenanceIntegrationSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('maintenance_integrations')
-        .select('id, maintenance_api_url, webhook_secret, marevo_tenant_id, is_active, updated_at')
+        .select('id, maintenance_api_url, webhook_secret, inbound_api_key, inbound_api_key_created_at, marevo_tenant_id, is_active, updated_at')
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -59,6 +60,49 @@ export function MaintenanceIntegrationSettings() {
     const bytes = new Uint8Array(24);
     crypto.getRandomValues(bytes);
     setWebhookSecret(Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join(''));
+  };
+
+  const randomHex = (bytes: number) => {
+    const arr = new Uint8Array(bytes);
+    crypto.getRandomValues(arr);
+    return Array.from(arr).map((b) => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  const handleGenerateInboundKey = async () => {
+    if (!integration?.id) {
+      toast.error("Enregistrez d'abord la configuration avant de générer une clé");
+      return;
+    }
+    if (
+      integration.inbound_api_key &&
+      !window.confirm('Générer une nouvelle clé invalidera la clé actuelle utilisée par Marevo. Continuer ?')
+    ) {
+      return;
+    }
+    setGeneratingKey(true);
+    try {
+      const newKey = `cc_${randomHex(24)}`;
+      const { error } = await supabase
+        .from('maintenance_integrations')
+        .update({ inbound_api_key: newKey, inbound_api_key_created_at: new Date().toISOString() })
+        .eq('id', integration.id);
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ['maintenance-integration'] });
+      toast.success('Nouvelle clé API générée — copiez-la dans Marevo');
+    } catch (e) {
+      toast.error(`Génération impossible : ${(e as Error).message}`);
+    } finally {
+      setGeneratingKey(false);
+    }
+  };
+
+  const copyToClipboard = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copiée`);
+    } catch {
+      toast.error('Copie impossible, sélectionnez le texte manuellement');
+    }
   };
 
   const handleSave = async () => {
@@ -187,6 +231,52 @@ export function MaintenanceIntegrationSettings() {
                   <p className="text-xs text-muted-foreground break-all">
                     URL à configurer côté Marevo : {webhookUrl} (en-tête <code>x-webhook-secret</code>)
                   </p>
+                </div>
+
+                <div className="space-y-2 rounded-lg border p-3">
+                  <Label className="flex items-center gap-2">
+                    <KeyRound className="h-4 w-4" />
+                    Clé API Corail Caraïbes (à coller dans Marevo)
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    C'est la clé que Marevo doit utiliser pour appeler Corail Caraïbes (en-tête <code>x-api-key</code>).
+                    La clé <code>mk_…</code> demandée par Marevo, elle, est fournie par Marevo et se colle dans le champ « Clé API » ci-dessus.
+                  </p>
+                  {integration?.inbound_api_key ? (
+                    <>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <Input readOnly value={integration.inbound_api_key} className="font-mono text-xs" />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => copyToClipboard(integration.inbound_api_key!, 'Clé API')}
+                        >
+                          <Copy className="mr-2 h-4 w-4" />
+                          Copier
+                        </Button>
+                      </div>
+                      {integration.inbound_api_key_created_at && (
+                        <p className="text-xs text-muted-foreground">
+                          Générée le {new Date(integration.inbound_api_key_created_at).toLocaleString('fr-FR')}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucune clé générée pour le moment.</p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateInboundKey}
+                    disabled={generatingKey}
+                  >
+                    {generatingKey ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="mr-2 h-4 w-4" />
+                    )}
+                    {integration?.inbound_api_key ? 'Régénérer la clé' : 'Générer une clé API'}
+                  </Button>
                 </div>
 
                 <div className="space-y-2">
