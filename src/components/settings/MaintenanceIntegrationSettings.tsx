@@ -69,12 +69,8 @@ export function MaintenanceIntegrationSettings() {
   };
 
   const handleGenerateInboundKey = async () => {
-    if (!integration?.id) {
-      toast.error("Enregistrez d'abord la configuration avant de générer une clé");
-      return;
-    }
     if (
-      integration.inbound_api_key &&
+      integration?.inbound_api_key &&
       !window.confirm('Générer une nouvelle clé invalidera la clé actuelle utilisée par Marevo. Continuer ?')
     ) {
       return;
@@ -82,11 +78,27 @@ export function MaintenanceIntegrationSettings() {
     setGeneratingKey(true);
     try {
       const newKey = `cc_${randomHex(24)}`;
-      const { error } = await supabase
-        .from('maintenance_integrations')
-        .update({ inbound_api_key: newKey, inbound_api_key_created_at: new Date().toISOString() })
-        .eq('id', integration.id);
-      if (error) throw error;
+      const now = new Date().toISOString();
+
+      if (integration?.id) {
+        const { error } = await supabase
+          .from('maintenance_integrations')
+          .update({ inbound_api_key: newKey, inbound_api_key_created_at: now })
+          .eq('id', integration.id);
+        if (error) throw error;
+      } else {
+        // Aucune configuration encore enregistrée : on crée la ligne pour porter la clé entrante
+        const { error } = await supabase.from('maintenance_integrations').insert({
+          maintenance_api_url: apiUrl.trim() || 'https://a-configurer.invalid',
+          marevo_tenant_id: tenantId.trim() || null,
+          webhook_secret: webhookSecret.trim() || null,
+          is_active: isActive,
+          inbound_api_key: newKey,
+          inbound_api_key_created_at: now,
+        });
+        if (error) throw error;
+      }
+
       await queryClient.invalidateQueries({ queryKey: ['maintenance-integration'] });
       toast.success('Nouvelle clé API générée — copiez-la dans Marevo');
     } catch (e) {
@@ -95,6 +107,7 @@ export function MaintenanceIntegrationSettings() {
       setGeneratingKey(false);
     }
   };
+
 
   const copyToClipboard = async (value: string, label: string) => {
     try {
