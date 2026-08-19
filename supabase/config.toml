@@ -62,3 +62,6 @@ verify_jwt = false
 
 [functions.retry-failed-maintenance-syncs]
 verify_jwt = false
+
+[functions.generate-maintenance-inbound-key]
+verify_jwt = false
