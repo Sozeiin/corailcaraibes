@@ -34,7 +34,8 @@ export default function Settings() {
     if (user?.role === 'direction') {
       baseTabs.push(
         { id: 'base', label: 'Bases', component: BaseSettings, icon: Building },
-        { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users }
+        { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users },
+        { id: 'maintenance-integration', label: 'Intégration', component: MaintenanceIntegrationSettings, icon: Plug }
       );
     }
 
