@@ -2,7 +2,8 @@ import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User } from 'lucide-react';
+import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User, Plug } from 'lucide-react';
+import { MaintenanceIntegrationSettings } from '@/components/settings/MaintenanceIntegrationSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
 import { BaseSettings } from '@/components/settings/BaseSettings';
@@ -34,7 +35,8 @@ export default function Settings() {
     if (user?.role === 'direction') {
       baseTabs.push(
         { id: 'base', label: 'Bases', component: BaseSettings, icon: Building },
-        { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users }
+        { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users },
+        { id: 'maintenance-integration', label: 'Intégration', component: MaintenanceIntegrationSettings, icon: Plug }
       );
     }
 

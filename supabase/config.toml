@@ -45,3 +45,20 @@ min_length = 8
 [functions.send-web-push]
 
 [functions.test-push]
+[functions.save-maintenance-credentials]
+verify_jwt = false
+
+[functions.test-maintenance-connection]
+verify_jwt = false
+
+[functions.sync-rental-to-maintenance]
+verify_jwt = false
+
+[functions.sync-boat-to-maintenance]
+verify_jwt = false
+
+[functions.receive-maintenance-webhook]
+verify_jwt = false
+
+[functions.retry-failed-maintenance-syncs]
+verify_jwt = false

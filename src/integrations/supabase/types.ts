@@ -2400,6 +2400,42 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_integrations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          maintenance_api_key_encrypted: string | null
+          maintenance_api_url: string
+          marevo_tenant_id: string | null
+          singleton: boolean
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          maintenance_api_key_encrypted?: string | null
+          maintenance_api_url: string
+          marevo_tenant_id?: string | null
+          singleton?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          maintenance_api_key_encrypted?: string | null
+          maintenance_api_url?: string
+          marevo_tenant_id?: string | null
+          singleton?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       maintenance_manual_tasks: {
         Row: {
           created_at: string
@@ -2485,6 +2521,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      maintenance_sync_log: {
+        Row: {
+          action: string
+          attempts: number
+          created_at: string
+          entity_id: string
+          entity_type: string
+          external_id: string | null
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          request_payload: Json | null
+          response_data: Json | null
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          action: string
+          attempts?: number
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          external_id?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          request_payload?: Json | null
+          response_data?: Json | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          action?: string
+          attempts?: number
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          external_id?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          request_payload?: Json | null
+          response_data?: Json | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
       }
       maintenance_tasks: {
         Row: {
