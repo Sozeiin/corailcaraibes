@@ -56,7 +56,7 @@ async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
   const { data: form, error } = await admin
     .from('administrative_checkin_forms')
     .select(
-      'id, marevo_booking_id, boat_id, base_id, planned_start_date, planned_end_date, rental_notes, used_at, status, customers(first_name, last_name, email, phone), boats(id, name, model), bases(name)',
+      'id, marevo_booking_id, boat_id, base_id, planned_start_date, planned_end_date, rental_notes, used_at, status, customers!administrative_checkin_forms_customer_id_fkey(first_name, last_name, email, phone), boats!administrative_checkin_forms_boat_id_fkey(id, name, model), bases!administrative_checkin_forms_base_id_fkey(name)',
     )
     .eq('id', formId)
     .maybeSingle();
@@ -162,7 +162,7 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
   if (!bookingRef && row.customer_email) {
     const { data: form } = await admin
       .from('administrative_checkin_forms')
-      .select('marevo_booking_id, customers(email)')
+      .select('marevo_booking_id')
       .eq('boat_id', row.boat_id)
       .not('marevo_booking_id', 'is', null)
       .order('used_at', { ascending: false })
