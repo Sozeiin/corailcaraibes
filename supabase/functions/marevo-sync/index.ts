@@ -114,8 +114,9 @@ async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/checkin-completed');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/checkin-completed'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
   const written = await writeBackBooking(admin, cfg, row.marevo_booking_id ?? null, 'checkin', payload);
 
@@ -208,8 +209,9 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/checkout-completed');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/checkout-completed'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
   const written = await writeBackBooking(admin, cfg, bookingRef, 'checkout', payload);
 
@@ -269,8 +271,9 @@ async function pushBoat(admin: Admin, cfg: MarevoConfig, boatId: string, action:
     status: action === 'delete' ? 'out_of_service' : (boat?.status ?? 'available'),
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/sync-boats');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/sync-boats'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
   await logSync(admin, {
     tenant_id: cfg.marevo_tenant_id,
@@ -477,8 +480,7 @@ async function testConnection(admin: Admin, cfg: MarevoConfig) {
     return { success: false, status: api.status, message: readableError(api.status, api.error) };
   }
 
-  const url = endpointUrl(cfg.marevo_base_url, '/ping');
-  const res = await callMarevo(cfg, url, 'POST', {
+  const res = await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/ping'), 'POST', {
     event: 'ping',
     source: 'corail-caraibes',
     tenant_id: cfg.marevo_tenant_id ?? undefined,
