@@ -227,8 +227,114 @@ export function MarevoIntegrationSettings() {
     );
   }
 
+  const inboundWebhookUrlWithToken = webhookSecret
+    ? `${inboundWebhookUrl}?token=${webhookSecret}`
+    : inboundWebhookUrl;
+
+  const handleGenerateInboundKey = async () => {
+    const key = `cc_${randomSecret(56)}`;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from('marevo_integration_config').upsert(
+        {
+          singleton: true,
+          marevo_base_url: baseUrl.trim() || 'https://marevo.invalid',
+          marevo_api_key: apiKey.trim() || null,
+          marevo_tenant_id: tenantId.trim() || null,
+          webhook_secret: key,
+          sync_enabled: syncEnabled,
+          sync_boats_enabled: syncBoats,
+          sync_bookings_enabled: syncBookings,
+        },
+        { onConflict: 'singleton' },
+      );
+      if (error) throw error;
+      setWebhookSecret(key);
+      setShowSecret(true);
+      await navigator.clipboard.writeText(key).catch(() => undefined);
+      toast.success('Clé API Corail Caraïbes générée et copiée');
+      await queryClient.invalidateQueries({ queryKey: ['marevo-config'] });
+    } catch (e) {
+      toast.error(`Génération impossible : ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
+      <Card className="border-primary/40">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <KeyRound className="h-5 w-5" />
+            Connecter Marevo Booking à Corail Caraïbes
+          </CardTitle>
+          <CardDescription>
+            Générez la clé API Corail Caraïbes, puis collez la clé et l'URL du webhook dans Marevo Booking.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              Clé API Corail Caraïbes <FieldCheck filled={!!webhookSecret} />
+            </Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Input
+                readOnly
+                type={showSecret ? 'text' : 'password'}
+                value={webhookSecret}
+                placeholder="Aucune clé générée"
+                className="flex-1 font-mono text-xs"
+              />
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="icon" onClick={() => setShowSecret((v) => !v)}>
+                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  disabled={!webhookSecret}
+                  onClick={() => copy(webhookSecret, 'Clé API')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button type="button" onClick={handleGenerateInboundKey} disabled={saving}>
+                  {saving ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="mr-2 h-4 w-4" />
+                  )}
+                  {webhookSecret ? 'Régénérer' : 'Générer la clé'}
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              La clé est enregistrée immédiatement. Régénérer invalide l'ancienne clé.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>URL du webhook Corail Caraïbes (à coller dans Marevo Booking)</Label>
+            <div className="flex gap-2">
+              <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => copy(inboundWebhookUrlWithToken, 'URL du webhook')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Marevo peut aussi envoyer la clé dans l'en-tête <code>x-api-key</code> ou{' '}
+              <code>x-webhook-secret</code> au lieu du paramètre <code>token</code>.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">

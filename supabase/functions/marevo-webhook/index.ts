@@ -160,7 +160,12 @@ Deno.serve(async (req) => {
     body = parsed.data;
 
     const cfg = await getConfig(admin);
-    const provided = req.headers.get('x-webhook-secret') ?? req.headers.get('x-api-key') ?? '';
+    const urlToken = new URL(req.url).searchParams.get('token') ?? '';
+    const provided =
+      req.headers.get('x-webhook-secret') ??
+      req.headers.get('x-api-key') ??
+      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ??
+      urlToken;
     if (!cfg || !cfg.webhook_secret || provided !== cfg.webhook_secret) {
       console.error('marevo-webhook rejected: invalid secret');
       return json({ error: 'unauthorized' }, 401);
