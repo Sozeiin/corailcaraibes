@@ -264,8 +264,9 @@ export function MarevoIntegrationSettings() {
   }
 
   const inboundWebhookUrlWithToken = webhookSecret
-    ? `${inboundWebhookUrl}?token=${webhookSecret}`
+    ? `${inboundWebhookUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : inboundWebhookUrl;
+
 
   const handleGenerateInboundKey = async () => {
     const key = `cc_${randomSecret(56)}`;
