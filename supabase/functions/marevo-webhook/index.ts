@@ -108,16 +108,21 @@ Deno.serve(async (req) => {
     body = parsed.data;
 
     const cfg = await getConfig(admin);
-    const urlToken = new URL(req.url).searchParams.get('token') ?? '';
-    const provided =
-      req.headers.get('x-webhook-secret') ??
-      req.headers.get('x-api-key') ??
-      req.headers.get('api_key') ??
-      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ??
-      urlToken;
-    if (!cfg || !cfg.webhook_secret || provided !== cfg.webhook_secret) {
+    const params = new URL(req.url).searchParams;
+    const candidates = [
+      req.headers.get('x-webhook-secret'),
+      req.headers.get('x-api-key'),
+      req.headers.get('api_key'),
+      req.headers.get('x-corail-key'),
+      req.headers.get('x-corail-api-key'),
+      req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null,
+      params.get('token'),
+      params.get('key'),
+      params.get('secret'),
+    ].filter((v): v is string => !!v && v.length > 0);
+    if (!cfg || !cfg.webhook_secret || !candidates.includes(cfg.webhook_secret)) {
       console.error('marevo-webhook rejected: invalid secret');
-      return json({ error: 'unauthorized' }, 401);
+      return json({ error: 'unauthorized', hint: 'Clé Corail Caraïbes attendue dans ?token=… ou en-tête x-api-key' }, 401);
     }
     if (cfg.marevo_tenant_id && body.tenant_id && body.tenant_id !== cfg.marevo_tenant_id) {
       console.error('marevo-webhook rejected: tenant mismatch');
@@ -126,36 +131,63 @@ Deno.serve(async (req) => {
 
     const normalized = normalize(body);
     const bookingRef = normalized.booking_ref;
-    const event = body.event.toLowerCase();
+    const rawEvent = body.event ?? body.type ?? (body.boats ? 'boat.sync' : (body.entity ?? 'booking.updated'));
+    const event = rawEvent.toLowerCase();
 
-    // ---- Boat updates from Marevo ---------------------------------------
-    if (event.startsWith('boat.')) {
-      const boat = await resolveBoat(admin, normalized);
-      const newStatus =
-        event === 'boat.out_of_service'
-          ? 'out_of_service'
-          : ((body.data?.status as string | undefined) ?? body.status ?? null);
-      let applied = false;
-      if (boat && newStatus) {
-        const { error } = await admin
-          .from('boats')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
-          .eq('id', boat.id);
-        applied = !error;
+    // ---- Boat updates from Marevo (single or batch) ----------------------
+    if (event.startsWith('boat') || Array.isArray(body.boats)) {
+      const items = Array.isArray(body.boats) && body.boats.length
+        ? body.boats.map((b) => ({
+            boat_external_id: b.marevo_boat_id ?? b.boat_external_id ?? b.id ?? null,
+            boat_name: b.name ?? b.boat_name ?? null,
+            status: b.status ?? null,
+          }))
+        : [
+            {
+              boat_external_id: normalized.boat_external_id,
+              boat_name: normalized.boat_name,
+              status: (body.data?.status as string | undefined) ?? body.status ?? null,
+            },
+          ];
+
+      const results: { boat_name: string | null; boat_id: string | null; applied: boolean }[] = [];
+      for (const item of items) {
+        const boat = await resolveBoat(admin, {
+          booking_ref: null,
+          boat_external_id: item.boat_external_id,
+          boat_name: item.boat_name,
+        });
+        const newStatus = event === 'boat.out_of_service' ? 'out_of_service' : item.status;
+        let applied = false;
+        if (boat && newStatus) {
+          const { error } = await admin
+            .from('boats')
+            .update({ status: newStatus, updated_at: new Date().toISOString() })
+            .eq('id', boat.id);
+          applied = !error;
+        } else if (boat) {
+          // Nothing to change: the boat exists on both sides, the link is valid.
+          applied = true;
+        }
+        results.push({ boat_name: item.boat_name ?? boat?.name ?? null, boat_id: boat?.id ?? null, applied });
       }
+
+      const matched = results.filter((r) => r.boat_id).length;
       await logSync(admin, {
         tenant_id: cfg.marevo_tenant_id,
         direction: 'inbound',
-        endpoint: `webhook:${body.event}`,
+        endpoint: `webhook:${rawEvent}`,
         entity_type: 'boat',
-        entity_id: boat?.id ?? null,
+        entity_id: results.length === 1 ? results[0].boat_id : null,
         request_payload: { ...body, tenant_id: undefined },
+        response_payload: { results } as unknown as Record<string, unknown>,
         http_status: 200,
-        status: applied ? 'success' : 'skipped',
-        error_message: applied ? null : 'Bateau introuvable ou statut non applicable',
+        status: matched > 0 ? 'success' : 'skipped',
+        error_message: matched > 0 ? null : 'Aucun bateau correspondant dans Corail Caraïbes',
       });
-      return json({ success: true, applied, boat_id: boat?.id ?? null });
+      return json({ success: true, matched, total: results.length, results });
     }
+
 
     // ---- Booking cancelled ----------------------------------------------
     const cancelled = event.includes('cancel') || (body.status ?? '').toLowerCase().includes('cancel');
