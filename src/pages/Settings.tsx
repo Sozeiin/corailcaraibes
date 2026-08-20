@@ -36,7 +36,7 @@ export default function Settings() {
       baseTabs.push(
         { id: 'base', label: 'Bases', component: BaseSettings, icon: Building },
         { id: 'users', label: 'Utilisateurs', component: UserSettings, icon: Users },
-        { id: 'maintenance-integration', label: 'Intégration', component: MaintenanceIntegrationSettings, icon: Plug }
+        { id: 'maintenance-integration', label: 'Marevo', component: MarevoIntegrationSettings, icon: Plug }
       );
     }
 
