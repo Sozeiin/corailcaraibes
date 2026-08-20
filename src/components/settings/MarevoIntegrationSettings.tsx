@@ -1,0 +1,459 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Check,
+  Copy,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Loader2,
+  Plug,
+  RefreshCw,
+  Save,
+  Zap,
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
+
+const SUPABASE_FUNCTIONS_URL = 'https://gdhiiynmlokocelkqsiz.supabase.co/functions/v1';
+
+interface MarevoConfigRow {
+  id: string;
+  marevo_base_url: string;
+  marevo_api_key: string | null;
+  marevo_tenant_id: string | null;
+  webhook_secret: string | null;
+  sync_enabled: boolean;
+  sync_boats_enabled: boolean;
+  sync_bookings_enabled: boolean;
+  last_sync_at: string | null;
+  updated_at: string;
+}
+
+interface SyncLogRow {
+  id: string;
+  direction: string;
+  endpoint: string | null;
+  entity_type: string;
+  entity_id: string | null;
+  request_payload: unknown;
+  response_payload: unknown;
+  http_status: number | null;
+  status: string;
+  error_message: string | null;
+  attempt: number;
+  created_at: string;
+}
+
+const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  success: 'default',
+  skipped: 'secondary',
+  error: 'destructive',
+};
+
+function randomSecret(length = 64) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('');
+}
+
+function FieldCheck({ filled }: { filled: boolean }) {
+  if (!filled) return null;
+  return <Check className="h-4 w-4 text-primary" aria-label="Renseigné" />;
+}
+
+export function MarevoIntegrationSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const isDirection = user?.role === 'direction';
+
+  const [baseUrl, setBaseUrl] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [tenantId, setTenantId] = useState('');
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [showKey, setShowKey] = useState(false);
+  const [showSecret, setShowSecret] = useState(false);
+  const [syncEnabled, setSyncEnabled] = useState(false);
+  const [syncBoats, setSyncBoats] = useState(true);
+  const [syncBookings, setSyncBookings] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  const { data: config, isLoading } = useQuery({
+    queryKey: ['marevo-config', user?.id],
+    enabled: !!user?.id && isDirection,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marevo_integration_config')
+        .select('*')
+        .eq('singleton', true)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as MarevoConfigRow) ?? null;
+    },
+  });
+
+  const { data: logs } = useQuery({
+    queryKey: ['marevo-sync-log', user?.id],
+    enabled: !!user?.id && isDirection,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('marevo_sync_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as SyncLogRow[];
+    },
+  });
+
+  useEffect(() => {
+    if (!config) return;
+    setBaseUrl(config.marevo_base_url ?? '');
+    setApiKey(config.marevo_api_key ?? '');
+    setTenantId(config.marevo_tenant_id ?? '');
+    setWebhookSecret(config.webhook_secret ?? '');
+    setSyncEnabled(config.sync_enabled);
+    setSyncBoats(config.sync_boats_enabled);
+    setSyncBookings(config.sync_bookings_enabled);
+  }, [config]);
+
+  const inboundWebhookUrl = useMemo(() => `${SUPABASE_FUNCTIONS_URL}/marevo-webhook`, []);
+
+  const copy = async (value: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success(`${label} copié`);
+    } catch {
+      toast.error('Copie impossible');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!baseUrl.trim()) {
+      toast.error("L'URL Marevo est obligatoire");
+      return;
+    }
+    setSaving(true);
+    try {
+      const payload = {
+        singleton: true,
+        marevo_base_url: baseUrl.trim(),
+        marevo_api_key: apiKey.trim() || null,
+        marevo_tenant_id: tenantId.trim() || null,
+        webhook_secret: webhookSecret.trim() || null,
+        sync_enabled: syncEnabled,
+        sync_boats_enabled: syncBoats,
+        sync_bookings_enabled: syncBookings,
+      };
+      const { error } = await supabase
+        .from('marevo_integration_config')
+        .upsert(payload, { onConflict: 'singleton' });
+      if (error) throw error;
+      toast.success('Configuration enregistrée');
+      await queryClient.invalidateQueries({ queryKey: ['marevo-config'] });
+    } catch (e) {
+      toast.error(`Enregistrement impossible : ${(e as Error).message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const invoke = async (body: Record<string, unknown>) => {
+    const { data, error } = await supabase.functions.invoke('marevo-sync', { body });
+    if (error) throw error;
+    return data as { success?: boolean; message?: string; error?: string; skipped?: boolean };
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const res = await invoke({ action: 'test_connection' });
+      const message = res.message ?? res.error ?? 'Réponse inattendue';
+      setTestResult(message);
+      res.success ? toast.success(message) : toast.error(message);
+    } catch (e) {
+      const message = (e as Error).message;
+      setTestResult(message);
+      toast.error(`Test impossible : ${message}`);
+    } finally {
+      setTesting(false);
+      queryClient.invalidateQueries({ queryKey: ['marevo-sync-log'] });
+    }
+  };
+
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    try {
+      const res = await invoke({ action: 'sync_all' });
+      if (res.skipped) toast.info('Synchronisation désactivée : rien envoyé');
+      else if (res.success) toast.success('Synchronisation lancée');
+      else toast.error(res.error ?? 'Échec de la synchronisation');
+    } catch (e) {
+      toast.error(`Synchronisation impossible : ${(e as Error).message}`);
+    } finally {
+      setSyncing(false);
+      queryClient.invalidateQueries({ queryKey: ['marevo-sync-log'] });
+      queryClient.invalidateQueries({ queryKey: ['marevo-config'] });
+    }
+  };
+
+  if (!isDirection) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Cette configuration est réservée au profil direction.
+      </p>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Chargement de la configuration…
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Plug className="h-5 w-5" />
+                Marevo Maintenance
+              </CardTitle>
+              <CardDescription>
+                Connexion sortante et entrante entre Corail Caraïbes et Marevo Maintenance.
+              </CardDescription>
+            </div>
+            {config && (
+              <Badge variant="secondary">
+                Configuration enregistrée · {new Date(config.updated_at).toLocaleString('fr-FR')}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="marevo-url" className="flex items-center gap-2">
+              URL Marevo (ou URL de webhook complète) <FieldCheck filled={!!baseUrl.trim()} />
+            </Label>
+            <Input
+              id="marevo-url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://…/functions/v1 ou URL de webhook avec token"
+            />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="marevo-key" className="flex items-center gap-2">
+                Clé API Marevo <FieldCheck filled={!!apiKey.trim()} />
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="marevo-key"
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="mk_live_…"
+                  autoComplete="off"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={() => setShowKey((v) => !v)}>
+                  {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="marevo-tenant" className="flex items-center gap-2">
+                Identifiant tenant Marevo (optionnel) <FieldCheck filled={!!tenantId.trim()} />
+              </Label>
+              <Input
+                id="marevo-tenant"
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
+                placeholder="6984dc4e…"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="marevo-secret" className="flex items-center gap-2">
+              Secret webhook entrant <FieldCheck filled={!!webhookSecret.trim()} />
+            </Label>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <div className="flex flex-1 gap-2">
+                <Input
+                  id="marevo-secret"
+                  type={showSecret ? 'text' : 'password'}
+                  value={webhookSecret}
+                  onChange={(e) => setWebhookSecret(e.target.value)}
+                  placeholder="64 caractères"
+                  autoComplete="off"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={() => setShowSecret((v) => !v)}>
+                  {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" onClick={() => setWebhookSecret(randomSecret(64))}>
+                  <KeyRound className="mr-2 h-4 w-4" />
+                  Générer
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!webhookSecret}
+                  onClick={() => copy(webhookSecret, 'Secret')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              À renseigner côté Marevo dans l'en-tête <code>x-webhook-secret</code>.
+            </p>
+          </div>
+
+          <div className="space-y-3 rounded-lg border p-3">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Synchronisation automatique</p>
+                <p className="text-xs text-muted-foreground">
+                  Envoi automatique + synchronisation planifiée toutes les 15 minutes
+                </p>
+              </div>
+              <Switch checked={syncEnabled} onCheckedChange={setSyncEnabled} />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm">Réservations (check-in)</p>
+              <Switch checked={syncBookings} onCheckedChange={setSyncBookings} />
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm">Bateaux</p>
+              <Switch checked={syncBoats} onCheckedChange={setSyncBoats} />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">URL du webhook entrant (Marevo → Corail)</Label>
+            <div className="flex gap-2">
+              <Input readOnly value={inboundWebhookUrl} className="font-mono text-xs" />
+              <Button type="button" variant="outline" size="icon" onClick={() => copy(inboundWebhookUrl, 'URL')}>
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Sauvegarder la configuration
+            </Button>
+            <Button variant="outline" onClick={handleTest} disabled={testing || !baseUrl.trim()}>
+              {testing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Plug className="mr-2 h-4 w-4" />}
+              Tester la connexion
+            </Button>
+            <Button variant="outline" onClick={handleSyncNow} disabled={syncing}>
+              {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Zap className="mr-2 h-4 w-4" />}
+              Synchroniser maintenant
+            </Button>
+          </div>
+
+          {testResult && <p className="text-sm text-muted-foreground">{testResult}</p>}
+          {config?.last_sync_at && (
+            <p className="text-xs text-muted-foreground">
+              Dernière synchronisation : {new Date(config.last_sync_at).toLocaleString('fr-FR')}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <CardTitle className="text-base">Historique de synchronisation</CardTitle>
+              <CardDescription>50 derniers événements, entrants et sortants</CardDescription>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['marevo-sync-log'] })}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!logs?.length ? (
+            <p className="text-sm text-muted-foreground">Aucun événement enregistré.</p>
+          ) : (
+            <ScrollArea className="h-[420px] pr-2">
+              <div className="space-y-2">
+                {logs.map((log) => (
+                  <div key={log.id} className="rounded-lg border p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={STATUS_VARIANT[log.status] ?? 'secondary'}>{log.status}</Badge>
+                      <Badge variant="outline">{log.direction === 'inbound' ? 'entrant' : 'sortant'}</Badge>
+                      <span className="text-sm font-medium">
+                        {log.entity_type} · {log.endpoint ?? '—'}
+                      </span>
+                      {log.http_status ? (
+                        <span className="text-xs text-muted-foreground">HTTP {log.http_status}</span>
+                      ) : null}
+                      {log.attempt > 1 && (
+                        <span className="text-xs text-muted-foreground">tentative {log.attempt}</span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {new Date(log.created_at).toLocaleString('fr-FR')}
+                      {log.entity_id ? ` · ${log.entity_id}` : ''}
+                    </p>
+                    {log.error_message && (
+                      <p className="mt-1 text-xs text-destructive">{log.error_message}</p>
+                    )}
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs"
+                      onClick={() => setExpanded(expanded === log.id ? null : log.id)}
+                    >
+                      {expanded === log.id ? 'Masquer le détail' : 'Voir le détail'}
+                    </Button>
+                    {expanded === log.id && (
+                      <pre className="mt-2 max-h-64 overflow-auto rounded bg-muted p-2 text-[11px]">
+                        {JSON.stringify(
+                          { request: log.request_payload, response: log.response_payload },
+                          null,
+                          2,
+                        )}
+                      </pre>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
