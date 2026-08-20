@@ -28,6 +28,8 @@ const SUPABASE_FUNCTIONS_URL = 'https://gdhiiynmlokocelkqsiz.supabase.co/functio
 interface MarevoConfigRow {
   id: string;
   marevo_base_url: string;
+  marevo_api_base_url: string | null;
+  marevo_app_id: string | null;
   marevo_api_key: string | null;
   marevo_tenant_id: string | null;
   webhook_secret: string | null;
@@ -77,6 +79,9 @@ export function MarevoIntegrationSettings() {
   const isDirection = user?.role === 'direction';
 
   const [baseUrl, setBaseUrl] = useState('');
+  const [apiBaseUrl, setApiBaseUrl] = useState('https://marevobooking.base44.app/api');
+  const [appId, setAppId] = useState('');
+  const [importing, setImporting] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [tenantId, setTenantId] = useState('');
   const [webhookSecret, setWebhookSecret] = useState('');
@@ -122,6 +127,8 @@ export function MarevoIntegrationSettings() {
   useEffect(() => {
     if (!config) return;
     setBaseUrl(config.marevo_base_url ?? '');
+    setApiBaseUrl(config.marevo_api_base_url ?? 'https://marevobooking.base44.app/api');
+    setAppId(config.marevo_app_id ?? '');
     setApiKey(config.marevo_api_key ?? '');
     setTenantId(config.marevo_tenant_id ?? '');
     setWebhookSecret(config.webhook_secret ?? '');
@@ -151,6 +158,8 @@ export function MarevoIntegrationSettings() {
       const payload = {
         singleton: true,
         marevo_base_url: baseUrl.trim(),
+        marevo_api_base_url: apiBaseUrl.trim() || null,
+        marevo_app_id: appId.trim() || null,
         marevo_api_key: apiKey.trim() || null,
         marevo_tenant_id: tenantId.trim() || null,
         webhook_secret: webhookSecret.trim() || null,
@@ -192,6 +201,31 @@ export function MarevoIntegrationSettings() {
     } finally {
       setTesting(false);
       queryClient.invalidateQueries({ queryKey: ['marevo-sync-log'] });
+    }
+  };
+
+  const handleImportBookings = async () => {
+    setImporting(true);
+    try {
+      const res = (await invoke({ action: 'pull_bookings' })) as {
+        success?: boolean;
+        imported?: number;
+        cancelled?: number;
+        error?: string;
+      };
+      if (res.success) {
+        toast.success(
+          `${res.imported ?? 0} réservation(s) importée(s) · ${res.cancelled ?? 0} annulation(s) traitée(s)`,
+        );
+      } else {
+        toast.error(res.error ?? 'Import impossible');
+      }
+    } catch (e) {
+      toast.error(`Import impossible : ${(e as Error).message}`);
+    } finally {
+      setImporting(false);
+      queryClient.invalidateQueries({ queryKey: ['marevo-sync-log'] });
+      queryClient.invalidateQueries({ queryKey: ['marevo-config'] });
     }
   };
 
@@ -369,6 +403,35 @@ export function MarevoIntegrationSettings() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
+              <Label htmlFor="marevo-api-url" className="flex items-center gap-2">
+                URL de l'API Marevo Booking <FieldCheck filled={!!apiBaseUrl.trim()} />
+              </Label>
+              <Input
+                id="marevo-api-url"
+                value={apiBaseUrl}
+                onChange={(e) => setApiBaseUrl(e.target.value)}
+                placeholder="https://marevobooking.base44.app/api"
+              />
+              <p className="text-xs text-muted-foreground">
+                Permet de lire les réservations et d'écrire le check-in / check-out dans la réservation Marevo.
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="marevo-app-id" className="flex items-center gap-2">
+                Identifiant application Marevo (optionnel) <FieldCheck filled={!!appId.trim()} />
+              </Label>
+              <Input
+                id="marevo-app-id"
+                value={appId}
+                onChange={(e) => setAppId(e.target.value)}
+                placeholder="697a49abec23233c4c28d9f8"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
               <Label htmlFor="marevo-key" className="flex items-center gap-2">
                 Clé API Marevo <FieldCheck filled={!!apiKey.trim()} />
               </Label>
@@ -378,7 +441,7 @@ export function MarevoIntegrationSettings() {
                   type={showKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder="mk_live_…"
+                  placeholder="Clé API Marevo Booking"
                   autoComplete="off"
                 />
                 <Button type="button" variant="outline" size="icon" onClick={() => setShowKey((v) => !v)}>
@@ -469,6 +532,14 @@ export function MarevoIntegrationSettings() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button type="button" variant="outline" onClick={handleImportBookings} disabled={importing}>
+              {importing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              Importer les réservations
+            </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               Sauvegarder la configuration

@@ -2563,7 +2563,9 @@ export type Database = {
           created_at: string
           id: string
           last_sync_at: string | null
+          marevo_api_base_url: string
           marevo_api_key: string | null
+          marevo_app_id: string | null
           marevo_base_url: string
           marevo_tenant_id: string | null
           singleton: boolean
@@ -2577,7 +2579,9 @@ export type Database = {
           created_at?: string
           id?: string
           last_sync_at?: string | null
+          marevo_api_base_url?: string
           marevo_api_key?: string | null
+          marevo_app_id?: string | null
           marevo_base_url?: string
           marevo_tenant_id?: string | null
           singleton?: boolean
@@ -2591,7 +2595,9 @@ export type Database = {
           created_at?: string
           id?: string
           last_sync_at?: string | null
+          marevo_api_base_url?: string
           marevo_api_key?: string | null
+          marevo_app_id?: string | null
           marevo_base_url?: string
           marevo_tenant_id?: string | null
           singleton?: boolean

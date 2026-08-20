@@ -1,6 +1,7 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { z } from 'npm:zod@3.23.8';
-import { adminClient, getConfig, logSync, splitName, type Admin } from '../_shared/marevo.ts';
+import { adminClient, getConfig, logSync } from '../_shared/marevo.ts';
+import { applyBooking, cancelBooking, resolveBoat, type NormalizedBooking } from '../_shared/marevoBooking.ts';
 
 /**
  * INBOUND endpoint: Marevo Booking -> Corail Caraïbes.
@@ -28,6 +29,12 @@ const BodySchema = z.object({
   customer_postal_code: z.string().max(30).optional().nullable(),
   customer_country: z.string().max(120).optional().nullable(),
 
+  // Marevo Booking native field names (Base44 Booking entity)
+  end_client_first_name: z.string().max(120).optional().nullable(),
+  end_client_last_name: z.string().max(120).optional().nullable(),
+  end_client_email: z.string().max(255).optional().nullable(),
+  end_client_phone: z.string().max(60).optional().nullable(),
+
   // boat + dates
   boat_external_id: z.string().max(120).optional().nullable(),
   boat_name: z.string().max(160).optional().nullable(),
@@ -39,6 +46,8 @@ const BodySchema = z.object({
 
   rental_notes: z.string().max(4000).optional().nullable(),
   special_instructions: z.string().max(4000).optional().nullable(),
+  special_requests: z.string().max(4000).optional().nullable(),
+  internal_notes: z.string().max(4000).optional().nullable(),
   status: z.string().max(50).optional().nullable(),
   data: z.record(z.unknown()).optional(),
 });
@@ -52,100 +61,26 @@ function json(body: unknown, status = 200) {
   });
 }
 
-function isUuid(v?: string | null): boolean {
-  return !!v && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
-}
-
-function toIso(v?: string | null): string | null {
-  if (!v) return null;
-  const d = new Date(v.length === 10 ? `${v}T12:00:00Z` : v);
-  return isNaN(d.getTime()) ? null : d.toISOString();
-}
-
-async function resolveBoat(admin: Admin, body: Body) {
-  if (isUuid(body.boat_external_id)) {
-    const { data } = await admin
-      .from('boats')
-      .select('id, name, status, base_id')
-      .eq('id', body.boat_external_id!)
-      .maybeSingle();
-    if (data) return data;
-  }
-  const name = body.boat_name ?? (body.data?.boat_name as string | undefined);
-  if (name) {
-    const { data } = await admin
-      .from('boats')
-      .select('id, name, status, base_id')
-      .ilike('name', name)
-      .limit(1)
-      .maybeSingle();
-    if (data) return data;
-  }
-  return null;
-}
-
-async function resolveBaseId(admin: Admin, body: Body, boatBaseId?: string | null) {
-  if (boatBaseId) return boatBaseId;
-  if (body.base_name) {
-    const { data } = await admin.from('bases').select('id').ilike('name', `%${body.base_name}%`).limit(1).maybeSingle();
-    if (data) return data.id as string;
-  }
-  const { data } = await admin.from('bases').select('id').order('name').limit(1).maybeSingle();
-  return (data?.id as string) ?? null;
-}
-
-async function upsertCustomer(admin: Admin, body: Body, baseId: string) {
-  let first = body.customer_first_name ?? null;
-  let last = body.customer_last_name ?? null;
-  if (!first || !last) {
-    const split = splitName(body.customer_name ?? `${first ?? ''} ${last ?? ''}`);
-    first = first || split.first;
-    last = last || split.last;
-  }
-
-  if (body.customer_email) {
-    const { data: existing } = await admin
-      .from('customers')
-      .select('id')
-      .eq('email', body.customer_email)
-      .limit(1)
-      .maybeSingle();
-    if (existing) {
-      await admin
-        .from('customers')
-        .update({
-          first_name: first,
-          last_name: last,
-          phone: body.customer_phone ?? undefined,
-          address: body.customer_address ?? undefined,
-          city: body.customer_city ?? undefined,
-          postal_code: body.customer_postal_code ?? undefined,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id);
-      return existing.id as string;
-    }
-  }
-
-  const { data: created, error } = await admin
-    .from('customers')
-    .insert({
-      base_id: baseId,
-      first_name: first,
-      last_name: last,
-      email: body.customer_email ?? null,
-      phone: body.customer_phone ?? null,
-      address: body.customer_address ?? null,
-      city: body.customer_city ?? null,
-      postal_code: body.customer_postal_code ?? null,
-      country: body.customer_country ?? undefined,
-      notes: 'Client importé depuis Marevo Booking',
-      created_by_name: 'Marevo Booking',
-    })
-    .select('id')
-    .single();
-  if (error) throw error;
-  return created.id as string;
+function normalize(body: Body): NormalizedBooking {
+  return {
+    booking_ref: body.booking_id ?? body.external_id ?? body.booking_reference ?? null,
+    customer_first_name: body.customer_first_name ?? body.end_client_first_name ?? null,
+    customer_last_name: body.customer_last_name ?? body.end_client_last_name ?? null,
+    customer_name: body.customer_name ?? null,
+    customer_email: body.customer_email ?? body.end_client_email ?? null,
+    customer_phone: body.customer_phone ?? body.end_client_phone ?? null,
+    customer_address: body.customer_address ?? null,
+    customer_city: body.customer_city ?? null,
+    customer_postal_code: body.customer_postal_code ?? null,
+    customer_country: body.customer_country ?? null,
+    boat_external_id: body.boat_external_id ?? null,
+    boat_name: body.boat_name ?? (body.data?.boat_name as string | undefined) ?? null,
+    base_name: body.base_name ?? null,
+    planned_start_date: body.planned_start_date ?? body.start_date ?? null,
+    planned_end_date: body.planned_end_date ?? body.end_date ?? null,
+    rental_notes: body.rental_notes ?? body.internal_notes ?? null,
+    special_instructions: body.special_instructions ?? body.special_requests ?? null,
+  };
 }
 
 Deno.serve(async (req) => {
@@ -164,6 +99,7 @@ Deno.serve(async (req) => {
     const provided =
       req.headers.get('x-webhook-secret') ??
       req.headers.get('x-api-key') ??
+      req.headers.get('api_key') ??
       req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ??
       urlToken;
     if (!cfg || !cfg.webhook_secret || provided !== cfg.webhook_secret) {
@@ -175,14 +111,17 @@ Deno.serve(async (req) => {
       return json({ error: 'tenant_mismatch' }, 403);
     }
 
-    const bookingRef = body.booking_id ?? body.external_id ?? body.booking_reference ?? null;
+    const normalized = normalize(body);
+    const bookingRef = normalized.booking_ref;
     const event = body.event.toLowerCase();
 
     // ---- Boat updates from Marevo ---------------------------------------
     if (event.startsWith('boat.')) {
-      const boat = await resolveBoat(admin, body);
+      const boat = await resolveBoat(admin, normalized);
       const newStatus =
-        event === 'boat.out_of_service' ? 'out_of_service' : ((body.data?.status as string | undefined) ?? body.status ?? null);
+        event === 'boat.out_of_service'
+          ? 'out_of_service'
+          : ((body.data?.status as string | undefined) ?? body.status ?? null);
       let applied = false;
       if (boat && newStatus) {
         const { error } = await admin
@@ -208,112 +147,39 @@ Deno.serve(async (req) => {
     // ---- Booking cancelled ----------------------------------------------
     const cancelled = event.includes('cancel') || (body.status ?? '').toLowerCase().includes('cancel');
     if (cancelled && bookingRef) {
-      const { data: form } = await admin
-        .from('administrative_checkin_forms')
-        .select('id, status')
-        .eq('marevo_booking_id', bookingRef)
-        .maybeSingle();
-      if (form && form.status !== 'used' && form.status !== 'completed') {
-        await admin
-          .from('administrative_checkin_forms')
-          .update({ status: 'expired', updated_at: new Date().toISOString() })
-          .eq('id', form.id);
-      }
+      const formId = await cancelBooking(admin, bookingRef);
       await logSync(admin, {
         tenant_id: cfg.marevo_tenant_id,
         direction: 'inbound',
         endpoint: `webhook:${body.event}`,
         entity_type: 'booking',
-        entity_id: form?.id ?? null,
+        entity_id: formId,
         request_payload: { ...body, tenant_id: undefined },
         http_status: 200,
-        status: form ? 'success' : 'skipped',
-        error_message: form ? null : 'Aucune fiche liée à cette réservation',
+        status: formId ? 'success' : 'skipped',
+        error_message: formId ? null : 'Aucune fiche liée à cette réservation',
         external_id: bookingRef,
       });
-      return json({ success: true, cancelled: !!form, checkin_form_id: form?.id ?? null });
+      return json({ success: true, cancelled: !!formId, checkin_form_id: formId });
     }
 
     // ---- Booking created / updated -> create the check-in form ----------
-    const start = toIso(body.planned_start_date ?? body.start_date);
-    const end = toIso(body.planned_end_date ?? body.end_date);
-
-    const boat = await resolveBoat(admin, body);
-    const baseId = await resolveBaseId(admin, body, boat?.base_id ?? null);
-    if (!baseId) return json({ success: false, error: 'no_base_available' });
-
-    const customerId = await upsertCustomer(admin, body, baseId);
-    const canAssign = !!boat && boat.status === 'available';
-
-    const formPayload: Record<string, unknown> = {
-      base_id: baseId,
-      customer_id: customerId,
-      boat_id: canAssign ? boat!.id : null,
-      suggested_boat_id: boat?.id ?? null,
-      is_boat_assigned: canAssign,
-      planned_start_date: start,
-      planned_end_date: end,
-      rental_notes: body.rental_notes ?? null,
-      special_instructions: body.special_instructions ?? null,
-      status: canAssign ? 'ready' : 'draft',
-      marevo_booking_id: bookingRef,
-      marevo_synced_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    let formId: string | null = null;
-    let existing: { id: string; status: string | null } | null = null;
-    if (bookingRef) {
-      const { data } = await admin
-        .from('administrative_checkin_forms')
-        .select('id, status')
-        .eq('marevo_booking_id', bookingRef)
-        .maybeSingle();
-      existing = data as typeof existing;
-    }
-
-    if (existing) {
-      formId = existing.id;
-      // Never overwrite a form already used by a technician (boat assignment is immutable)
-      if (existing.status === 'used' || existing.status === 'completed') {
-        delete formPayload.boat_id;
-        delete formPayload.suggested_boat_id;
-        delete formPayload.is_boat_assigned;
-        delete formPayload.status;
-      }
-      const { error } = await admin.from('administrative_checkin_forms').update(formPayload).eq('id', formId);
-      if (error) throw error;
-    } else {
-      const { data, error } = await admin
-        .from('administrative_checkin_forms')
-        .insert(formPayload)
-        .select('id')
-        .single();
-      if (error) throw error;
-      formId = data.id as string;
-    }
+    const result = await applyBooking(admin, normalized);
 
     await logSync(admin, {
       tenant_id: cfg.marevo_tenant_id,
       direction: 'inbound',
       endpoint: `webhook:${body.event}`,
       entity_type: 'booking',
-      entity_id: formId,
+      entity_id: result.checkin_form_id,
       request_payload: { ...body, tenant_id: undefined },
-      response_payload: { checkin_form_id: formId, customer_id: customerId, boat_id: boat?.id ?? null, assigned: canAssign },
+      response_payload: result as unknown as Record<string, unknown>,
       http_status: 200,
       status: 'success',
       external_id: bookingRef,
     });
 
-    return json({
-      success: true,
-      checkin_form_id: formId,
-      customer_id: customerId,
-      boat_id: boat?.id ?? null,
-      boat_assigned: canAssign,
-      created: !existing,
-    });
+    return json({ success: true, ...result });
   } catch (e) {
     const message = (e as Error).message;
     console.error('marevo-webhook error', message);

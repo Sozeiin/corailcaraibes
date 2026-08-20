@@ -5,10 +5,15 @@ import {
   callMarevo,
   endpointUrl,
   getConfig,
+  hasApi,
+  apiList,
+  apiGet,
+  apiUpdate,
   logSync,
   type Admin,
   type MarevoConfig,
 } from '../_shared/marevo.ts';
+import { applyBooking, cancelBooking } from '../_shared/marevoBooking.ts';
 
 /**
  * OUTBOUND: Corail Caraïbes -> Marevo Booking.
@@ -16,7 +21,15 @@ import {
  * check-in / check-out realised by the technicians, plus boat updates.
  */
 const BodySchema = z.object({
-  action: z.enum(['test_connection', 'push_checkin', 'push_checkout', 'push_boat', 'sync_all']),
+  action: z.enum([
+    'test_connection',
+    'push_checkin',
+    'push_checkout',
+    'push_boat',
+    'sync_all',
+    'pull_bookings',
+  ]),
+  days_ahead: z.number().int().min(1).max(365).optional(),
   form_id: z.string().uuid().optional(),
   rental_id: z.string().uuid().optional(),
   boat_id: z.string().uuid().optional(),
@@ -101,10 +114,13 @@ async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/checkin-completed');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/checkin-completed'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
-  if (res.ok) {
+  const written = await writeBackBooking(admin, cfg, row.marevo_booking_id ?? null, 'checkin', payload);
+
+  if (res.ok || written) {
     await admin
       .from('administrative_checkin_forms')
       .update({ marevo_synced_at: new Date().toISOString() })
@@ -193,10 +209,13 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/checkout-completed');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/checkout-completed'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
-  if (res.ok) {
+  const written = await writeBackBooking(admin, cfg, bookingRef, 'checkout', payload);
+
+  if (res.ok || written) {
     await admin.from('boat_rentals').update({ marevo_synced_at: new Date().toISOString() }).eq('id', rentalId);
   }
 
@@ -252,8 +271,9 @@ async function pushBoat(admin: Admin, cfg: MarevoConfig, boatId: string, action:
     status: action === 'delete' ? 'out_of_service' : (boat?.status ?? 'available'),
   };
 
-  const url = endpointUrl(cfg.marevo_base_url, '/sync-boats');
-  const res = await callMarevo(cfg, url, 'POST', payload);
+  const res = cfg.marevo_base_url
+    ? await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/sync-boats'), 'POST', payload)
+    : { ok: false, status: 0, data: null, attempt: 1, error: 'webhook_not_configured' };
 
   await logSync(admin, {
     tenant_id: cfg.marevo_tenant_id,
@@ -273,10 +293,194 @@ async function pushBoat(admin: Admin, cfg: MarevoConfig, boatId: string, action:
   return { success: res.ok, status: res.status, error: res.ok ? undefined : readableError(res.status, res.error) };
 }
 
+
+// ---------------------------------------------------------------------------
+/** Writes the completed check-in / check-out back onto the Marevo Booking record. */
+async function writeBackBooking(
+  admin: Admin,
+  cfg: MarevoConfig,
+  bookingRef: string | null,
+  entityType: 'checkin' | 'checkout',
+  data: Record<string, unknown>,
+) {
+  if (!bookingRef || !hasApi(cfg)) return null;
+  const patch: Record<string, unknown> =
+    entityType === 'checkin'
+      ? { marevo_checkin_data: data, marevo_sync_status: 'success', marevo_sync_error: null }
+      : { marevo_checkout_data: data, marevo_sync_status: 'success', marevo_sync_error: null };
+  if (entityType === 'checkin' && typeof data.checkin_form_id === 'string') {
+    patch.marevo_checkin_id = data.checkin_form_id;
+  }
+
+  const res = await apiUpdate(cfg, 'Booking', bookingRef, patch);
+  await logSync(admin, {
+    tenant_id: cfg.marevo_tenant_id,
+    direction: 'outbound',
+    endpoint: `api:PUT /entities/Booking/${bookingRef}`,
+    entity_type: entityType,
+    entity_id: (data.checkin_form_id as string | undefined) ?? (data.rental_id as string | undefined) ?? null,
+    request_payload: patch,
+    response_payload: (res.data ?? null) as Record<string, unknown> | null,
+    http_status: res.status,
+    status: res.ok ? 'success' : 'error',
+    error_message: res.ok ? null : readableError(res.status, res.error),
+    attempt: res.attempt,
+    external_id: bookingRef,
+  });
+  return res.ok;
+}
+
+// ---------------------------------------------------------------------------
+/** Reads upcoming bookings from the Marevo Booking API and builds the check-in forms. */
+async function pullBookings(admin: Admin, cfg: MarevoConfig, daysAhead = 60) {
+  if (!hasApi(cfg)) {
+    return { success: false, error: "API Marevo Booking non configurée (URL de l'API + clé API)." };
+  }
+
+  const q: Record<string, unknown> = {};
+  if (cfg.marevo_tenant_id) q.tenant_id = cfg.marevo_tenant_id;
+  const res = await apiList(cfg, 'Booking', q, 200, '-updated_date');
+
+  if (!res.ok || !Array.isArray(res.data)) {
+    await logSync(admin, {
+      tenant_id: cfg.marevo_tenant_id,
+      direction: 'inbound',
+      endpoint: 'api:GET /entities/Booking',
+      entity_type: 'booking',
+      response_payload: (res.data ?? null) as Record<string, unknown> | null,
+      http_status: res.status,
+      status: 'error',
+      error_message: readableError(res.status, res.error),
+      attempt: res.attempt,
+    });
+    return { success: false, error: readableError(res.status, res.error) };
+  }
+
+  const horizon = Date.now() + daysAhead * 86400000;
+  const boatCache = new Map<string, { id: string | null; name: string | null }>();
+  const clientCache = new Map<string, Record<string, any>>();
+  let imported = 0;
+  let cancelledCount = 0;
+  let skipped = 0;
+
+  for (const raw of res.data as Record<string, any>[]) {
+    try {
+      const status = (raw.status ?? '').toLowerCase();
+      const end = raw.end_date ? new Date(raw.end_date).getTime() : null;
+      const start = raw.start_date ? new Date(raw.start_date).getTime() : null;
+      if (start && start > horizon) { skipped += 1; continue; }
+      if (end && end < Date.now() - 7 * 86400000) { skipped += 1; continue; }
+
+      if (status === 'cancelled' || status === 'archived') {
+        const formId = await cancelBooking(admin, raw.id as string);
+        if (formId) cancelledCount += 1;
+        else skipped += 1;
+        continue;
+      }
+      if (!['confirmed', 'in_progress', 'option'].includes(status)) { skipped += 1; continue; }
+
+      // Boat: Marevo Boat.marevo_boat_id holds the Corail boat UUID
+      let boatCorailId: string | null = null;
+      let boatName: string | null = null;
+      if (raw.boat_id) {
+        const cached = boatCache.get(raw.boat_id);
+        if (cached) {
+          boatCorailId = cached.id;
+          boatName = cached.name;
+        } else {
+          const b = await apiGet(cfg, 'Boat', raw.boat_id as string);
+          const boat = (b.ok ? b.data : null) as Record<string, any> | null;
+          boatCorailId = (boat?.marevo_boat_id as string | undefined) ?? null;
+          boatName = (boat?.name as string | undefined) ?? null;
+          boatCache.set(raw.boat_id, { id: boatCorailId, name: boatName });
+        }
+      }
+
+      // Client
+      let client: Record<string, any> | null = null;
+      if (raw.client_id) {
+        client = clientCache.get(raw.client_id) ?? null;
+        if (!client) {
+          const c = await apiGet(cfg, 'Client', raw.client_id as string);
+          client = (c.ok ? (c.data as Record<string, any>) : null);
+          if (client) clientCache.set(raw.client_id, client);
+        }
+      }
+
+      const result = await applyBooking(admin, {
+        booking_ref: raw.id as string,
+        customer_first_name: raw.end_client_first_name ?? client?.first_name ?? null,
+        customer_last_name: raw.end_client_last_name ?? client?.last_name ?? null,
+        customer_email: raw.end_client_email ?? client?.email ?? null,
+        customer_phone: raw.end_client_phone ?? client?.phone ?? client?.mobile ?? null,
+        customer_address: client?.address ?? client?.address_line1 ?? null,
+        customer_city: client?.city ?? null,
+        customer_postal_code: client?.postal_code ?? null,
+        customer_country: client?.country ?? null,
+        boat_external_id: boatCorailId,
+        boat_name: boatName,
+        planned_start_date: raw.start_date ?? null,
+        planned_end_date: raw.end_date ?? null,
+        rental_notes: raw.internal_notes ?? null,
+        special_instructions: raw.special_requests ?? null,
+      });
+      imported += 1;
+
+      await logSync(admin, {
+        tenant_id: cfg.marevo_tenant_id,
+        direction: 'inbound',
+        endpoint: 'api:GET /entities/Booking',
+        entity_type: 'booking',
+        entity_id: result.checkin_form_id,
+        response_payload: result as unknown as Record<string, unknown>,
+        http_status: 200,
+        status: 'success',
+        external_id: raw.id as string,
+      });
+    } catch (e) {
+      await logSync(admin, {
+        tenant_id: cfg.marevo_tenant_id,
+        direction: 'inbound',
+        endpoint: 'api:GET /entities/Booking',
+        entity_type: 'booking',
+        status: 'error',
+        error_message: (e as Error).message,
+        external_id: (raw.id as string) ?? null,
+      });
+    }
+  }
+
+  await admin.from('marevo_integration_config').update({ last_sync_at: new Date().toISOString() }).eq('id', cfg.id);
+  return { success: true, imported, cancelled: cancelledCount, skipped };
+}
+
 // ---------------------------------------------------------------------------
 async function testConnection(admin: Admin, cfg: MarevoConfig) {
-  const url = endpointUrl(cfg.marevo_base_url, '/ping');
-  const res = await callMarevo(cfg, url, 'POST', {
+  if (hasApi(cfg)) {
+    const api = await apiList(cfg, 'Booking', cfg.marevo_tenant_id ? { tenant_id: cfg.marevo_tenant_id } : undefined, 1);
+    await logSync(admin, {
+      tenant_id: cfg.marevo_tenant_id,
+      direction: 'outbound',
+      endpoint: 'api:GET /entities/Booking',
+      entity_type: 'booking',
+      response_payload: (api.data ?? null) as Record<string, unknown> | null,
+      http_status: api.status,
+      status: api.ok ? 'success' : 'error',
+      error_message: api.ok ? null : readableError(api.status, api.error),
+      attempt: api.attempt,
+    });
+    if (api.ok) {
+      const count = Array.isArray(api.data) ? api.data.length : 0;
+      return {
+        success: true,
+        status: api.status,
+        message: `API Marevo Booking joignable (HTTP ${api.status}, ${count} réservation lue).`,
+      };
+    }
+    return { success: false, status: api.status, message: readableError(api.status, api.error) };
+  }
+
+  const res = await callMarevo(cfg, endpointUrl(cfg.marevo_base_url, '/ping'), 'POST', {
     event: 'ping',
     source: 'corail-caraibes',
     tenant_id: cfg.marevo_tenant_id ?? undefined,
@@ -307,6 +511,8 @@ async function syncAll(admin: Admin, cfg: MarevoConfig) {
   let pushed = 0;
   let failed = 0;
 
+  const pulled = hasApi(cfg) ? await pullBookings(admin, cfg) : null;
+
   const { data: forms } = await admin
     .from('administrative_checkin_forms')
     .select('id')
@@ -335,7 +541,7 @@ async function syncAll(admin: Admin, cfg: MarevoConfig) {
 
   await admin.from('marevo_integration_config').update({ last_sync_at: new Date().toISOString() }).eq('id', cfg.id);
 
-  return { success: true, pushed, failed };
+  return { success: true, pushed, failed, imported: pulled?.imported ?? 0 };
 }
 
 // ---------------------------------------------------------------------------
@@ -349,7 +555,7 @@ Deno.serve(async (req) => {
 
     const admin = adminClient();
     const cfg = await getConfig(admin);
-    if (!cfg || !cfg.marevo_base_url) return json({ success: false, error: 'no_configuration' }, 200);
+    if (!cfg || (!cfg.marevo_base_url && !hasApi(cfg))) return json({ success: false, error: 'no_configuration' }, 200);
 
     if (action !== 'test_connection' && !cfg.sync_enabled) {
       await logSync(admin, {
@@ -378,6 +584,8 @@ Deno.serve(async (req) => {
         return json(await pushBoat(admin, cfg, boat_id, boat_action ?? 'update'));
       case 'sync_all':
         return json(await syncAll(admin, cfg));
+      case 'pull_bookings':
+        return json(await pullBookings(admin, cfg, parsed.data.days_ahead ?? 60));
     }
   } catch (e) {
     console.error('marevo-sync error', (e as Error).message);
