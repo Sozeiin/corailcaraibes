@@ -9,9 +9,22 @@ import { applyBooking, cancelBooking, resolveBoat, type NormalizedBooking } from
  * the customer file and the administrative check-in form so a technician can
  * run the check-in, then Corail pushes the completed check-in / check-out back.
  */
+const BoatSchema = z.object({
+  id: z.string().max(120).optional().nullable(),
+  marevo_boat_id: z.string().max(120).optional().nullable(),
+  boat_external_id: z.string().max(120).optional().nullable(),
+  name: z.string().max(160).optional().nullable(),
+  boat_name: z.string().max(160).optional().nullable(),
+  status: z.string().max(50).optional().nullable(),
+});
+
 const BodySchema = z.object({
-  event: z.string().min(1).max(100),
+  event: z.string().min(1).max(100).optional().nullable(),
+  type: z.string().min(1).max(100).optional().nullable(),
+  entity: z.string().min(1).max(100).optional().nullable(),
+  boats: z.array(BoatSchema).max(500).optional(),
   tenant_id: z.string().max(100).optional().nullable(),
+
 
   // booking identity
   booking_id: z.string().max(120).optional().nullable(),
