@@ -14,6 +14,8 @@ export type Admin = ReturnType<typeof adminClient>;
 export interface MarevoConfig {
   id: string;
   marevo_base_url: string;
+  marevo_api_base_url: string | null;
+  marevo_app_id: string | null;
   marevo_api_key: string | null;
   marevo_tenant_id: string | null;
   webhook_secret: string | null;
@@ -27,7 +29,7 @@ export async function getConfig(admin: Admin): Promise<MarevoConfig | null> {
   const { data, error } = await admin
     .from('marevo_integration_config')
     .select(
-      'id, marevo_base_url, marevo_api_key, marevo_tenant_id, webhook_secret, sync_enabled, sync_boats_enabled, sync_bookings_enabled, last_sync_at',
+      'id, marevo_base_url, marevo_api_base_url, marevo_app_id, marevo_api_key, marevo_tenant_id, webhook_secret, sync_enabled, sync_boats_enabled, sync_bookings_enabled, last_sync_at',
     )
     .eq('singleton', true)
     .maybeSingle();
@@ -163,4 +165,77 @@ export function splitName(full: string): { first: string; last: string } {
   if (parts.length === 0) return { first: 'Client', last: '-' };
   if (parts.length === 1) return { first: parts[0], last: '-' };
   return { first: parts[0], last: parts.slice(1).join(' ') };
+}
+
+// ---------------------------------------------------------------------------
+// Marevo Booking REST API (Base44)
+// ---------------------------------------------------------------------------
+
+/** Root of the Marevo Booking REST API, e.g. https://marevobooking.base44.app/api */
+export function apiRoot(cfg: MarevoConfig): string | null {
+  const raw = (cfg.marevo_api_base_url ?? '').trim();
+  if (!raw) return null;
+  return raw.replace(/\/+$/, '');
+}
+
+export function hasApi(cfg: MarevoConfig): boolean {
+  return !!apiRoot(cfg) && !!cfg.marevo_api_key;
+}
+
+/** Calls the Marevo Booking REST API. Auth header is `api_key` (Base44 convention). */
+export async function callApi(
+  cfg: MarevoConfig,
+  path: string,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' = 'GET',
+  body?: unknown,
+  query?: Record<string, string>,
+): Promise<CallResult> {
+  const root = apiRoot(cfg);
+  if (!root) return { ok: false, status: 0, data: null, attempt: 1, error: 'api_base_url_missing' };
+  const url = new URL(root + path);
+  if (query) for (const [k, v] of Object.entries(query)) url.searchParams.set(k, v);
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (cfg.marevo_api_key) {
+    headers['api_key'] = cfg.marevo_api_key;
+    headers['x-api-key'] = cfg.marevo_api_key;
+  }
+
+  for (let i = 0; i < BACKOFF_MS.length; i++) {
+    const res = await once(url.toString(), {
+      method,
+      headers,
+      body: method === 'GET' ? undefined : JSON.stringify(body ?? {}),
+    });
+    const result: CallResult = { ok: res.ok, status: res.status, data: res.data, attempt: i + 1, error: res.error };
+    if (res.ok || !res.retryable) return result;
+    if (i < BACKOFF_MS.length - 1) await new Promise((r) => setTimeout(r, BACKOFF_MS[i]));
+    else return result;
+  }
+  return { ok: false, status: 0, data: null, attempt: BACKOFF_MS.length, error: 'unknown' };
+}
+
+export async function apiList(
+  cfg: MarevoConfig,
+  entity: string,
+  q?: Record<string, unknown>,
+  limit = 100,
+  sortBy = '-updated_date',
+): Promise<CallResult> {
+  const query: Record<string, string> = { limit: String(limit), sort_by: sortBy };
+  if (q && Object.keys(q).length) query.q = JSON.stringify(q);
+  return callApi(cfg, `/entities/${entity}`, 'GET', undefined, query);
+}
+
+export async function apiGet(cfg: MarevoConfig, entity: string, id: string): Promise<CallResult> {
+  return callApi(cfg, `/entities/${entity}/${id}`, 'GET');
+}
+
+export async function apiUpdate(
+  cfg: MarevoConfig,
+  entity: string,
+  id: string,
+  patch: Record<string, unknown>,
+): Promise<CallResult> {
+  return callApi(cfg, `/entities/${entity}/${id}`, 'PUT', patch);
 }
