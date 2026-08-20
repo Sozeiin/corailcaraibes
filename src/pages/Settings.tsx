@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Settings as SettingsIcon, Building, Users, CheckSquare, Wrench, Package, User, Plug } from 'lucide-react';
-import { MaintenanceIntegrationSettings } from '@/components/settings/MaintenanceIntegrationSettings';
+import { MarevoIntegrationSettings } from '@/components/settings/MarevoIntegrationSettings';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMobileCapacitor } from '@/hooks/useMobileCapacitor';
 import { BaseSettings } from '@/components/settings/BaseSettings';
