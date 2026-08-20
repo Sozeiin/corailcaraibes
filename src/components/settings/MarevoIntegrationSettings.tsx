@@ -24,6 +24,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const SUPABASE_FUNCTIONS_URL = 'https://gdhiiynmlokocelkqsiz.supabase.co/functions/v1';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 
 interface MarevoConfigRow {
   id: string;
@@ -262,8 +264,9 @@ export function MarevoIntegrationSettings() {
   }
 
   const inboundWebhookUrlWithToken = webhookSecret
-    ? `${inboundWebhookUrl}?token=${webhookSecret}`
+    ? `${inboundWebhookUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : inboundWebhookUrl;
+
 
   const handleGenerateInboundKey = async () => {
     const key = `cc_${randomSecret(56)}`;
@@ -362,10 +365,33 @@ export function MarevoIntegrationSettings() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Marevo peut aussi envoyer la clé dans l'en-tête <code>x-api-key</code> ou{' '}
-              <code>x-webhook-secret</code> au lieu du paramètre <code>token</code>.
+              Marevo peut aussi envoyer la clé dans l'en-tête <code>x-api-key</code>,{' '}
+              <code>x-webhook-secret</code> ou <code>Authorization: Bearer</code> au lieu du paramètre{' '}
+              <code>token</code>. N'utilisez jamais l'en-tête <code>apikey</code> pour la clé Corail : il est
+              réservé à la clé publique ci-dessous.
             </p>
           </div>
+
+          <div className="space-y-2">
+            <Label>Clé publique Supabase (en-tête « apikey », si Marevo l'exige)</Label>
+            <div className="flex gap-2">
+              <Input readOnly value={SUPABASE_PUBLISHABLE_KEY} className="font-mono text-xs" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => copy(SUPABASE_PUBLISHABLE_KEY, 'Clé publique')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Si Marevo répond « Clé API invalide » pour chaque bateau, c'est que sa clé est envoyée dans
+              l'en-tête <code>apikey</code> : collez-y cette clé publique et laissez la clé Corail dans le{' '}
+              <code>token</code> de l'URL.
+            </p>
+          </div>
+
         </CardContent>
       </Card>
 
