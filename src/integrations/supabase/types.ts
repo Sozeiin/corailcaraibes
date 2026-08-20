@@ -678,6 +678,8 @@ export type Database = {
           customer_phone: string | null
           end_date: string
           id: string
+          marevo_checkin_form_id: string | null
+          marevo_synced_at: string | null
           notes: string | null
           signature_date: string | null
           signature_url: string | null
@@ -696,6 +698,8 @@ export type Database = {
           customer_phone?: string | null
           end_date: string
           id?: string
+          marevo_checkin_form_id?: string | null
+          marevo_synced_at?: string | null
           notes?: string | null
           signature_date?: string | null
           signature_url?: string | null
@@ -714,6 +718,8 @@ export type Database = {
           customer_phone?: string | null
           end_date?: string
           id?: string
+          marevo_checkin_form_id?: string | null
+          marevo_synced_at?: string | null
           notes?: string | null
           signature_date?: string | null
           signature_url?: string | null
@@ -2400,48 +2406,6 @@ export type Database = {
         }
         Relationships: []
       }
-      maintenance_integrations: {
-        Row: {
-          created_at: string
-          id: string
-          inbound_api_key: string | null
-          inbound_api_key_created_at: string | null
-          is_active: boolean
-          maintenance_api_key_encrypted: string | null
-          maintenance_api_url: string
-          marevo_tenant_id: string | null
-          singleton: boolean
-          updated_at: string
-          webhook_secret: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          inbound_api_key?: string | null
-          inbound_api_key_created_at?: string | null
-          is_active?: boolean
-          maintenance_api_key_encrypted?: string | null
-          maintenance_api_url: string
-          marevo_tenant_id?: string | null
-          singleton?: boolean
-          updated_at?: string
-          webhook_secret?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          inbound_api_key?: string | null
-          inbound_api_key_created_at?: string | null
-          is_active?: boolean
-          maintenance_api_key_encrypted?: string | null
-          maintenance_api_url?: string
-          marevo_tenant_id?: string | null
-          singleton?: boolean
-          updated_at?: string
-          webhook_secret?: string | null
-        }
-        Relationships: []
-      }
       maintenance_manual_tasks: {
         Row: {
           created_at: string
@@ -2528,54 +2492,6 @@ export type Database = {
           },
         ]
       }
-      maintenance_sync_log: {
-        Row: {
-          action: string
-          attempts: number
-          created_at: string
-          entity_id: string
-          entity_type: string
-          external_id: string | null
-          id: string
-          last_attempt_at: string | null
-          last_error: string | null
-          request_payload: Json | null
-          response_data: Json | null
-          status: string
-          tenant_id: string | null
-        }
-        Insert: {
-          action: string
-          attempts?: number
-          created_at?: string
-          entity_id: string
-          entity_type: string
-          external_id?: string | null
-          id?: string
-          last_attempt_at?: string | null
-          last_error?: string | null
-          request_payload?: Json | null
-          response_data?: Json | null
-          status?: string
-          tenant_id?: string | null
-        }
-        Update: {
-          action?: string
-          attempts?: number
-          created_at?: string
-          entity_id?: string
-          entity_type?: string
-          external_id?: string | null
-          id?: string
-          last_attempt_at?: string | null
-          last_error?: string | null
-          request_payload?: Json | null
-          response_data?: Json | null
-          status?: string
-          tenant_id?: string | null
-        }
-        Relationships: []
-      }
       maintenance_tasks: {
         Row: {
           actual_duration: number | null
@@ -2635,6 +2551,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      marevo_integration_config: {
+        Row: {
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          marevo_api_key: string | null
+          marevo_base_url: string
+          marevo_tenant_id: string | null
+          singleton: boolean
+          sync_boats_enabled: boolean
+          sync_bookings_enabled: boolean
+          sync_enabled: boolean
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          marevo_api_key?: string | null
+          marevo_base_url?: string
+          marevo_tenant_id?: string | null
+          singleton?: boolean
+          sync_boats_enabled?: boolean
+          sync_bookings_enabled?: boolean
+          sync_enabled?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          marevo_api_key?: string | null
+          marevo_base_url?: string
+          marevo_tenant_id?: string | null
+          singleton?: boolean
+          sync_boats_enabled?: boolean
+          sync_bookings_enabled?: boolean
+          sync_enabled?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      marevo_sync_log: {
+        Row: {
+          attempt: number
+          created_at: string
+          direction: string
+          endpoint: string | null
+          entity_id: string | null
+          entity_type: string
+          error_message: string | null
+          external_id: string | null
+          http_status: number | null
+          id: string
+          request_payload: Json | null
+          response_payload: Json | null
+          status: string
+          tenant_id: string | null
+        }
+        Insert: {
+          attempt?: number
+          created_at?: string
+          direction?: string
+          endpoint?: string | null
+          entity_id?: string | null
+          entity_type: string
+          error_message?: string | null
+          external_id?: string | null
+          http_status?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Update: {
+          attempt?: number
+          created_at?: string
+          direction?: string
+          endpoint?: string | null
+          entity_id?: string | null
+          entity_type?: string
+          error_message?: string | null
+          external_id?: string | null
+          http_status?: number | null
+          id?: string
+          request_payload?: Json | null
+          response_payload?: Json | null
+          status?: string
+          tenant_id?: string | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
