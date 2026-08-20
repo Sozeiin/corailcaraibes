@@ -25,6 +25,8 @@ export type Database = {
           id: string
           is_boat_assigned: boolean | null
           is_one_way: boolean | null
+          marevo_booking_id: string | null
+          marevo_synced_at: string | null
           planned_end_date: string | null
           planned_start_date: string | null
           rental_notes: string | null
@@ -45,6 +47,8 @@ export type Database = {
           id?: string
           is_boat_assigned?: boolean | null
           is_one_way?: boolean | null
+          marevo_booking_id?: string | null
+          marevo_synced_at?: string | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
@@ -65,6 +69,8 @@ export type Database = {
           id?: string
           is_boat_assigned?: boolean | null
           is_one_way?: boolean | null
+          marevo_booking_id?: string | null
+          marevo_synced_at?: string | null
           planned_end_date?: string | null
           planned_start_date?: string | null
           rental_notes?: string | null
