@@ -24,6 +24,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const SUPABASE_FUNCTIONS_URL = 'https://gdhiiynmlokocelkqsiz.supabase.co/functions/v1';
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+
 
 interface MarevoConfigRow {
   id: string;
