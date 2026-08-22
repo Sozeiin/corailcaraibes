@@ -23,6 +23,11 @@ const BoatSchema = z.object({
 const BodySchema = z.object({
   event: z.string().min(1).max(100).optional().nullable(),
   type: z.string().min(1).max(100).optional().nullable(),
+  // Optional auth passthrough (some callers put the Corail key in the body)
+  token: z.string().max(200).optional().nullable(),
+  api_key: z.string().max(200).optional().nullable(),
+  corail_api_key: z.string().max(200).optional().nullable(),
+
   entity: z.string().min(1).max(100).optional().nullable(),
   boats: z.array(BoatSchema).max(500).optional(),
   tenant_id: z.string().max(100).optional().nullable(),
