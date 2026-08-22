@@ -173,9 +173,18 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
   const row = rental as Record<string, any>;
   const checklist = row.boat_id ? await latestChecklist(admin, row.boat_id, 'checkout') : null;
 
-  // Retrieve the Marevo booking reference through the linked check-in form
-  let bookingRef: string | null = row.marevo_checkin_form_id ?? null;
-  if (!bookingRef && row.customer_email) {
+  // Retrieve the Marevo booking reference + the Corail check-in form id
+  const checkinFormId: string | null = row.marevo_checkin_form_id ?? null;
+  let bookingRef: string | null = null;
+  if (checkinFormId) {
+    const { data: linked } = await admin
+      .from('administrative_checkin_forms')
+      .select('marevo_booking_id')
+      .eq('id', checkinFormId)
+      .maybeSingle();
+    bookingRef = (linked as Record<string, any> | null)?.marevo_booking_id ?? null;
+  }
+  if (!bookingRef && row.boat_id) {
     const { data: form } = await admin
       .from('administrative_checkin_forms')
       .select('marevo_booking_id')
@@ -187,10 +196,13 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
     bookingRef = (form as Record<string, any> | null)?.marevo_booking_id ?? null;
   }
 
+
   const payload: Record<string, unknown> = {
     event: row.status === 'cancelled' ? 'booking.cancelled' : 'checkout.completed',
     tenant_id: cfg.marevo_tenant_id ?? undefined,
     booking_id: bookingRef ?? undefined,
+    // Marevo requires checkin_form_id on every event
+    checkin_form_id: checkinFormId ?? row.id,
     rental_id: row.id,
     boat_external_id: row.boat_id ?? undefined,
     boat_name: row.boats?.name ?? undefined,
