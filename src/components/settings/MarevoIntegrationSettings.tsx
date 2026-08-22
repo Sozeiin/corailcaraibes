@@ -128,6 +128,20 @@ export function MarevoIntegrationSettings() {
     },
   });
 
+  const { data: boats } = useQuery({
+    queryKey: ['marevo-fleet-mapping', user?.id],
+    enabled: !!user?.id && isDirection,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boats')
+        .select('id, name, model, status, bases(name)')
+        .order('name');
+      if (error) throw error;
+      return (data ?? []) as BoatMappingRow[];
+    },
+  });
+
+
   useEffect(() => {
     if (!config) return;
     setBaseUrl(config.marevo_base_url ?? '');
