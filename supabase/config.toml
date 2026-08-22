@@ -54,3 +54,6 @@ verify_jwt = false
 
 [functions.marevo-fleet-sync]
 verify_jwt = false
+
+[functions.create-checkin-from-booking]
+verify_jwt = false
