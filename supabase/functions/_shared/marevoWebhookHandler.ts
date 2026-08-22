@@ -81,6 +81,39 @@ function json(body: unknown, status = 200) {
   });
 }
 
+function expandSecretCandidates(values: Array<string | null>): string[] {
+  const expanded = new Set<string>();
+
+  for (const rawValue of values) {
+    if (!rawValue) continue;
+
+    const queue = [rawValue.trim()];
+    for (let index = 0; index < queue.length && index < 8; index += 1) {
+      const value = queue[index];
+      if (!value || expanded.has(value)) continue;
+      expanded.add(value);
+
+      const unquoted = value.replace(/^["']+|["']+$/g, '').trim();
+      if (unquoted && unquoted !== value) queue.push(unquoted);
+
+      const withoutBearer = value.replace(/^Bearer\s+/i, '').trim();
+      if (withoutBearer && withoutBearer !== value) queue.push(withoutBearer);
+
+      try {
+        const decoded = decodeURIComponent(value).trim();
+        if (decoded && decoded !== value) queue.push(decoded);
+      } catch { /* malformed encoding: keep the original candidate */ }
+
+      // Some webhook builders serialize the value as JSON or paste a complete
+      // `token=...` fragment instead of the bare secret.
+      const embeddedKeys = value.match(/cc_[A-Za-z0-9_-]{20,200}/g) ?? [];
+      queue.push(...embeddedKeys);
+    }
+  }
+
+  return [...expanded];
+}
+
 function normalize(body: Body): NormalizedBooking {
   return {
     booking_ref: body.booking_id ?? body.external_id ?? body.booking_reference ?? null,
@@ -134,9 +167,11 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       (body as Record<string, unknown>).api_key,
       (body as Record<string, unknown>).corail_api_key,
     ].map((v) => (typeof v === 'string' ? v : null));
-    const candidates = [...headerCandidates, ...queryCandidates, ...bodyCandidates]
-      .filter((v): v is string => !!v && v.length > 0)
-      .map((v) => v.trim());
+    const candidates = expandSecretCandidates([
+      ...headerCandidates,
+      ...queryCandidates,
+      ...bodyCandidates,
+    ]);
 
     if (!cfg || !cfg.webhook_secret || !candidates.includes(cfg.webhook_secret.trim())) {
       console.error('marevo-webhook rejected: invalid secret', {
