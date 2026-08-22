@@ -201,6 +201,8 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
     event: row.status === 'cancelled' ? 'booking.cancelled' : 'checkout.completed',
     tenant_id: cfg.marevo_tenant_id ?? undefined,
     booking_id: bookingRef ?? undefined,
+    // Marevo requires checkin_form_id on every event
+    checkin_form_id: checkinFormId ?? row.id,
     rental_id: row.id,
     boat_external_id: row.boat_id ?? undefined,
     boat_name: row.boats?.name ?? undefined,
