@@ -243,6 +243,53 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     const rawEvent = body.event ?? body.type ?? (body.boats ? 'boat.sync' : (body.entity ?? 'booking.updated'));
     const event = rawEvent.toLowerCase();
 
+    // ---- Status lookup (Marevo asks Corail for a check-in form status) ----
+    const formIdCandidate = pick(body, [
+      'checkin_form_id', 'checkinFormId', 'marevo_checkin_id', 'marevoCheckinId',
+      'checkin_id', 'checkinId', 'form_id', 'formId',
+    ]) ?? params.get('checkin_form_id') ?? params.get('marevo_checkin_id') ?? null;
+    const isStatusLookup = event.includes('status') || event.includes('get')
+      || (!!formIdCandidate && !normalized.planned_start_date && !body.boats);
+
+    if (isStatusLookup && (formIdCandidate || bookingRef)) {
+      let query = admin
+        .from('administrative_checkin_forms')
+        .select('id, status, marevo_booking_id, boat_id, planned_start_date, planned_end_date, updated_at')
+        .limit(1);
+      query = formIdCandidate && /^[0-9a-f-]{36}$/i.test(formIdCandidate)
+        ? query.eq('id', formIdCandidate)
+        : query.eq('marevo_booking_id', formIdCandidate ?? bookingRef ?? '');
+      const { data: form } = await query.maybeSingle();
+
+      if (!form) {
+        return json({ success: false, error: 'checkin_form_not_found', checkin_form_id: formIdCandidate, booking_id: bookingRef }, 404);
+      }
+
+      // Complète le lien si Marevo fournit sa référence de réservation.
+      if (bookingRef && !form.marevo_booking_id) {
+        await admin
+          .from('administrative_checkin_forms')
+          .update({ marevo_booking_id: bookingRef })
+          .eq('id', form.id);
+      }
+
+      const checkinDone = form.status === 'used' || form.status === 'completed';
+      return json({
+        success: true,
+        checkin_form_id: form.id,
+        booking_id: form.marevo_booking_id ?? bookingRef,
+        status: form.status,
+        checkin_completed: checkinDone,
+        checkout_completed: form.status === 'completed',
+        boat_id: form.boat_id,
+        planned_start_date: form.planned_start_date,
+        planned_end_date: form.planned_end_date,
+        updated_at: form.updated_at,
+      });
+    }
+
+
+
     // ---- Boat updates from Marevo (single or batch) ----------------------
     if (event.startsWith('boat') || Array.isArray(body.boats)) {
       const items = Array.isArray(body.boats) && body.boats.length
