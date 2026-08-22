@@ -196,12 +196,25 @@ Deno.serve(async (req) => {
         entity_type: 'boat',
         entity_id: results.length === 1 ? results[0].boat_id : null,
         request_payload: { ...body, tenant_id: undefined },
-        response_payload: { results } as unknown as Record<string, unknown>,
+        response_payload: { results, unmatched } as unknown as Record<string, unknown>,
         http_status: 200,
-        status: matched > 0 ? 'success' : 'skipped',
-        error_message: matched > 0 ? null : 'Aucun bateau correspondant dans Corail Caraïbes',
+        status: matched > 0 ? (unmatched.length ? 'success' : 'success') : 'skipped',
+        error_message: unmatched.length
+          ? `Bateaux non appariés (marevo_boat_id doit contenir l'UUID Corail) : ${unmatched
+              .map((u) => u.boat_name ?? u.received_id ?? '?')
+              .join(', ')}`
+          : null,
       });
-      return json({ success: true, matched, total: results.length, results });
+      return json({
+        success: true,
+        matched,
+        total: results.length,
+        unmatched,
+        hint: unmatched.length
+          ? "Renseignez marevo_boat_id avec l'identifiant Corail du bateau (Paramètres → Intégration → Correspondance de la flotte)."
+          : undefined,
+        results,
+      });
     }
 
 
