@@ -51,3 +51,6 @@ verify_jwt = false
 
 [functions.marevo-webhook]
 verify_jwt = false
+
+[functions.marevo-fleet-sync]
+verify_jwt = false

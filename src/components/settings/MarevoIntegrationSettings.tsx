@@ -164,6 +164,7 @@ export function MarevoIntegrationSettings() {
   }, [config]);
 
   const inboundWebhookUrl = useMemo(() => `${SUPABASE_FUNCTIONS_URL}/marevo-webhook`, []);
+  const fleetSyncUrl = useMemo(() => `${SUPABASE_FUNCTIONS_URL}/marevo-fleet-sync`, []);
 
   const copy = async (value: string, label: string) => {
     try {
@@ -323,6 +324,9 @@ export function MarevoIntegrationSettings() {
   const inboundWebhookUrlWithToken = webhookSecret
     ? `${inboundWebhookUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : inboundWebhookUrl;
+  const fleetSyncUrlWithToken = webhookSecret
+    ? `${fleetSyncUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
+    : fleetSyncUrl;
 
 
   const handleGenerateInboundKey = async () => {
@@ -411,7 +415,7 @@ export function MarevoIntegrationSettings() {
           <div className="space-y-2">
             <Label>URL du webhook Corail Caraïbes (à coller dans Marevo Booking)</Label>
             <div className="flex gap-2">
-              <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
+              <Input readOnly value={fleetSyncUrlWithToken} className="font-mono text-xs" />
               <Button
                 type="button"
                 variant="outline"
@@ -485,14 +489,13 @@ export function MarevoIntegrationSettings() {
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => copy(inboundWebhookUrlWithToken, 'URL de synchronisation flotte')}
+                onClick={() => copy(fleetSyncUrlWithToken, 'URL de synchronisation flotte')}
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Même URL que les réservations : Corail distingue les flux avec le champ <code>event</code>. Corps
-              attendu :{' '}
+              Endpoint dédié exclusivement à la flotte. Corps attendu :{' '}
               <code>{'{ "event": "boat.sync", "boats": [{ "marevo_boat_id": "<uuid Corail>", "name": "…", "status": "available" }] }'}</code>
             </p>
           </div>
