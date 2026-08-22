@@ -59,6 +59,14 @@ interface SyncLogRow {
   created_at: string;
 }
 
+interface BoatMappingRow {
+  id: string;
+  name: string;
+  model: string | null;
+  status: string | null;
+  bases: { name: string } | null;
+}
+
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   success: 'default',
   skipped: 'secondary',
