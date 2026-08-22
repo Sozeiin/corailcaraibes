@@ -171,6 +171,14 @@ function normalize(body: Body): NormalizedBooking {
   };
 }
 
+function nestedBookingId(body: Body): string | null {
+  const raw = body as Record<string, unknown>;
+  const nested = (raw.data ?? {}) as Record<string, unknown>;
+  const booking = (raw.booking ?? nested.booking ?? raw.reservation ?? nested.reservation) as Record<string, unknown> | undefined;
+  const value = booking?.id;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
 export async function handleMarevoWebhook(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -240,7 +248,8 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     }
 
     const normalized = normalize(body);
-    const bookingRef = normalized.booking_ref
+    const bookingRef = nestedBookingId(body)
+      ?? normalized.booking_ref
       ?? params.get('booking_id')
       ?? params.get('bookingId')
       ?? params.get('booking_reference')
