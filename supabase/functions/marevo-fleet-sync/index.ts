@@ -45,14 +45,20 @@ Deno.serve(async (req) => {
       req.headers.get('x-corail-key'),
       req.headers.get('x-corail-api-key'),
       req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null,
-      params.get('token'),
-      params.get('key'),
-      params.get('secret'),
-    ].filter((value): value is string => !!value);
+      ...params.values(),
+    ]
+      .filter((value): value is string => !!value)
+      .map((value) => value.trim());
 
-    if (!cfg?.webhook_secret || !candidates.includes(cfg.webhook_secret)) {
-      return json({ error: 'unauthorized', hint: 'Clé Corail attendue dans ?token=… ou x-api-key' }, 401);
+    if (!cfg?.webhook_secret || !candidates.includes(cfg.webhook_secret.trim())) {
+      return json({
+        error: 'unauthorized',
+        hint: 'Clé Corail attendue dans ?token=… ou x-api-key (clé commençant par cc_)',
+        expected_key_prefix: cfg?.webhook_secret ? cfg.webhook_secret.slice(0, 8) + '…' : null,
+        received_cc_key_prefixes: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
+      }, 401);
     }
+
     if (cfg.marevo_tenant_id && body.tenant_id && body.tenant_id !== cfg.marevo_tenant_id) {
       return json({ error: 'tenant_mismatch' }, 403);
     }
