@@ -173,7 +173,12 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       ...bodyCandidates,
     ]);
 
-    if (!cfg || !cfg.webhook_secret || !candidates.includes(cfg.webhook_secret.trim())) {
+    const acceptedSecrets = [cfg?.webhook_secret, cfg?.marevo_api_key]
+      .filter((value): value is string => !!value)
+      .map((value) => value.trim());
+    const hasValidSecret = acceptedSecrets.some((secret) => candidates.includes(secret));
+
+    if (!cfg || !acceptedSecrets.length || !hasValidSecret) {
       console.error('marevo-webhook rejected: invalid secret', {
         query_keys: [...params.keys()],
         cc_candidates: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
@@ -181,7 +186,7 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       });
       return json({
         error: 'unauthorized',
-        hint: 'Clé Corail Caraïbes attendue dans ?token=… ou en-tête x-api-key (clé commençant par cc_)',
+        hint: 'Clé Corail (cc_…) ou clé privée Marevo (mk_…) attendue dans ?token=… ou en-tête x-api-key',
         expected_key_prefix: cfg?.webhook_secret ? cfg.webhook_secret.slice(0, 8) + '…' : null,
         received_cc_key_prefixes: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
       }, 401);

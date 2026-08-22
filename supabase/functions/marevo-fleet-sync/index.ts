@@ -50,10 +50,15 @@ Deno.serve(async (req) => {
       .filter((value): value is string => !!value)
       .map((value) => value.trim());
 
-    if (!cfg?.webhook_secret || !candidates.includes(cfg.webhook_secret.trim())) {
+    const acceptedSecrets = [cfg?.webhook_secret, cfg?.marevo_api_key]
+      .filter((value): value is string => !!value)
+      .map((value) => value.trim());
+    const hasValidSecret = acceptedSecrets.some((secret) => candidates.includes(secret));
+
+    if (!acceptedSecrets.length || !hasValidSecret) {
       return json({
         error: 'unauthorized',
-        hint: 'Clé Corail attendue dans ?token=… ou x-api-key (clé commençant par cc_)',
+        hint: 'Clé Corail (cc_…) ou clé privée Marevo (mk_…) attendue dans ?token=… ou x-api-key',
         expected_key_prefix: cfg?.webhook_secret ? cfg.webhook_secret.slice(0, 8) + '…' : null,
         received_cc_key_prefixes: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
       }, 401);
