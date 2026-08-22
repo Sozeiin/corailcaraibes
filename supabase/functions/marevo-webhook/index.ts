@@ -12,6 +12,8 @@ import { applyBooking, cancelBooking, resolveBoat, type NormalizedBooking } from
 const BoatSchema = z.object({
   id: z.string().max(120).optional().nullable(),
   marevo_boat_id: z.string().max(120).optional().nullable(),
+  corail_boat_id: z.string().max(120).optional().nullable(),
+  boat_id: z.string().max(120).optional().nullable(),
   boat_external_id: z.string().max(120).optional().nullable(),
   name: z.string().max(160).optional().nullable(),
   boat_name: z.string().max(160).optional().nullable(),
