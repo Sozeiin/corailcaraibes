@@ -413,23 +413,24 @@ export function MarevoIntegrationSettings() {
           </div>
 
           <div className="space-y-2">
-            <Label>URL du webhook Corail Caraïbes (à coller dans Marevo Booking)</Label>
+            <Label>URL API check-in/statuts Corail (à coller dans Marevo Booking)</Label>
             <div className="flex gap-2">
               <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                onClick={() => copy(inboundWebhookUrlWithToken, 'URL du webhook')}
+                onClick={() => copy(inboundWebhookUrlWithToken, 'URL API check-in/statuts')}
               >
                 <Copy className="h-4 w-4" />
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Marevo peut aussi envoyer la clé dans l'en-tête <code>x-api-key</code>,{' '}
-              <code>x-webhook-secret</code> ou <code>Authorization: Bearer</code> au lieu du paramètre{' '}
-              <code>token</code>. N'utilisez jamais l'en-tête <code>apikey</code> pour la clé Corail : il est
-              réservé à la clé publique ci-dessous.
+              Endpoint entrant : création/mise à jour des réservations, création des fiches check-in, et
+              réception des statuts. Ne pas utiliser l'URL flotte ici. Marevo peut aussi envoyer la clé dans
+              l'en-tête <code>x-api-key</code>, <code>x-webhook-secret</code> ou{' '}
+              <code>Authorization: Bearer</code> au lieu du paramètre <code>token</code>. N'utilisez jamais
+              l'en-tête <code>apikey</code> pour la clé Corail : il est réservé à la clé publique ci-dessous.
             </p>
           </div>
 
