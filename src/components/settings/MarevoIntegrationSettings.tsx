@@ -324,6 +324,9 @@ export function MarevoIntegrationSettings() {
   const inboundWebhookUrlWithToken = webhookSecret
     ? `${inboundWebhookUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : inboundWebhookUrl;
+  const checkinAliasUrlWithToken = webhookSecret
+    ? `${SUPABASE_FUNCTIONS_URL}/create-checkin-from-booking?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
+    : `${SUPABASE_FUNCTIONS_URL}/create-checkin-from-booking`;
   const fleetSyncUrlWithToken = webhookSecret
     ? `${fleetSyncUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : fleetSyncUrl;
