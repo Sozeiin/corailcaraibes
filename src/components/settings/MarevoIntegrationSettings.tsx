@@ -152,6 +152,39 @@ export function MarevoIntegrationSettings() {
     }
   };
 
+  const copyMappingJson = () => {
+    const payload = {
+      event: 'boat.sync',
+      boats: (boats ?? []).map((b) => ({
+        marevo_boat_id: b.id,
+        name: b.name,
+        status: b.status ?? 'available',
+      })),
+    };
+    copy(JSON.stringify(payload, null, 2), 'Correspondance de la flotte');
+  };
+
+  const exportMappingCsv = () => {
+    const escape = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [
+      'corail_boat_id,nom,modele,base,statut',
+      ...(boats ?? []).map((b) =>
+        [escape(b.id), escape(b.name), escape(b.model), escape(b.bases?.name), escape(b.status)].join(','),
+      ),
+    ];
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `correspondance-flotte-corail-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success('Export CSV généré');
+  };
+
+
   const handleSave = async () => {
     if (!baseUrl.trim()) {
       toast.error("L'URL Marevo est obligatoire");
