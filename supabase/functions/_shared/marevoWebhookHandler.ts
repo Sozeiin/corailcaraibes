@@ -338,6 +338,15 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     }
 
     // ---- Booking created / updated -> create the check-in form ----------
+    const missing: string[] = [];
+    if (!normalized.customer_first_name && !normalized.customer_name) missing.push('customer_first_name');
+    if (!normalized.customer_last_name && !normalized.customer_name) missing.push('customer_last_name');
+    if (!normalized.planned_start_date) missing.push('planned_start_date');
+    if (!normalized.planned_end_date) missing.push('planned_end_date');
+    if (missing.length) {
+      return json({ error: 'missing_fields', missing }, 400);
+    }
+
     const result = await applyBooking(admin, normalized);
 
     await logSync(admin, {
