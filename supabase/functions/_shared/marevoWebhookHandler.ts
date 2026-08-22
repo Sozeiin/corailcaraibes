@@ -122,8 +122,9 @@ function expandSecretCandidates(values: Array<string | null>): string[] {
 function pick(body: Body, keys: string[]): string | null {
   const raw = body as Record<string, unknown>;
   const nested = (raw.data ?? {}) as Record<string, unknown>;
+  const booking = (raw.booking ?? nested.booking ?? raw.reservation ?? nested.reservation ?? {}) as Record<string, unknown>;
   for (const key of keys) {
-    for (const source of [raw, nested]) {
+    for (const source of [raw, nested, booking]) {
       const value = source[key];
       if (typeof value === 'string' && value.trim()) return value.trim();
       if (typeof value === 'number') return String(value);
@@ -239,7 +240,11 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     }
 
     const normalized = normalize(body);
-    const bookingRef = normalized.booking_ref;
+    const bookingRef = normalized.booking_ref
+      ?? params.get('booking_id')
+      ?? params.get('bookingId')
+      ?? params.get('booking_reference')
+      ?? params.get('reference');
     const rawEvent = body.event ?? body.type ?? (body.boats ? 'boat.sync' : (body.entity ?? 'booking.updated'));
     const event = rawEvent.toLowerCase();
 
@@ -365,7 +370,7 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       // function versions, so status refresh remains backward-compatible.
       const primaryInspection = checkinInspection ?? checkoutInspection;
 
-      return json({
+      const response = {
         success: true,
         checkin_form_id: form.id,
         booking_id: form.marevo_booking_id ?? bookingRef,
@@ -386,13 +391,20 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         inspection_id: primaryInspection?.id ?? null,
         inspection_date: primaryInspection?.date ?? null,
         completed_at: primaryInspection?.completed_at ?? form.updated_at,
+        marevo_checkin_id: form.id,
+        marevo_checkin_data: checkinInspection,
+        marevo_checkout_data: checkoutInspection,
         checkin_inspection: checkinInspection,
         checkin: checkinInspection,
         checkin_data: checkinInspection,
         checkout_inspection: checkoutInspection,
         checkout: checkoutInspection,
         checkout_data: checkoutInspection,
-      });
+      };
+
+      // Some Marevo function builds read the payload at the root, others under
+      // `data` or `details`. Return all three without changing canonical fields.
+      return json({ ...response, data: response, details: response });
 
     }
 
