@@ -57,3 +57,24 @@ verify_jwt = false
 
 [functions.create-checkin-from-booking]
 verify_jwt = false
+
+[functions.checkin-completed]
+verify_jwt = false
+
+[functions.create-marevo-checkin]
+verify_jwt = false
+
+[functions.marevo-checkin]
+verify_jwt = false
+
+[functions.corail-checkin]
+verify_jwt = false
+
+[functions.marevo-booking-webhook]
+verify_jwt = false
+
+[functions.checkout-completed]
+verify_jwt = false
+
+[functions.sync-boats]
+verify_jwt = false
