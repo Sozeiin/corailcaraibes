@@ -140,7 +140,8 @@ Deno.serve(async (req) => {
     if (event.startsWith('boat') || Array.isArray(body.boats)) {
       const items = Array.isArray(body.boats) && body.boats.length
         ? body.boats.map((b) => ({
-            boat_external_id: b.marevo_boat_id ?? b.boat_external_id ?? b.id ?? null,
+            boat_external_id:
+              b.marevo_boat_id ?? b.corail_boat_id ?? b.boat_external_id ?? b.boat_id ?? b.id ?? null,
             boat_name: b.name ?? b.boat_name ?? null,
             status: b.status ?? null,
           }))
