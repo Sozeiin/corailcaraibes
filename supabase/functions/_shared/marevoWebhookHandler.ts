@@ -177,9 +177,16 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
   let body: Body | null = null;
 
   try {
-    const parsed = BodySchema.safeParse(await req.json());
+    // Certains appels (lecture de statut) arrivent en GET ou avec un corps vide.
+    let rawBody: unknown = {};
+    try {
+      const text = await req.text();
+      if (text.trim()) rawBody = JSON.parse(text);
+    } catch { rawBody = {}; }
+    const parsed = BodySchema.safeParse(rawBody);
     if (!parsed.success) return json({ error: parsed.error.flatten().fieldErrors }, 400);
     body = parsed.data;
+
 
     const cfg = await getConfig(admin);
     const url = new URL(req.url);
