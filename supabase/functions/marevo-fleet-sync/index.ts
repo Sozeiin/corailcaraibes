@@ -85,6 +85,8 @@ Deno.serve(async (req) => {
       results.push({
         boat_name: receivedName ?? boat?.name ?? null,
         boat_id: boat?.id ?? null,
+        marevo_boat_id: boat?.id ?? null,
+        id: boat?.id ?? null,
         received_id: receivedId,
         applied,
         error: updateError,
@@ -114,7 +116,17 @@ Deno.serve(async (req) => {
           : null,
     });
 
-    return json({ success: failed === 0, matched, total: results.length, unmatched, results }, failed ? 500 : 200);
+    const singleBoatId = results.length === 1 ? results[0]?.boat_id ?? null : null;
+    return json({
+      success: failed === 0,
+      marevo_boat_id: singleBoatId,
+      boat_id: singleBoatId,
+      id: singleBoatId,
+      matched,
+      total: results.length,
+      unmatched,
+      results,
+    }, failed ? 500 : 200);
   } catch (error) {
     console.error('marevo-fleet-sync error', (error as Error).message);
     return json({ success: false, error: 'unexpected_error' }, 500);
