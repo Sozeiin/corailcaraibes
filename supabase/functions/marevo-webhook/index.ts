@@ -12,6 +12,8 @@ import { applyBooking, cancelBooking, resolveBoat, type NormalizedBooking } from
 const BoatSchema = z.object({
   id: z.string().max(120).optional().nullable(),
   marevo_boat_id: z.string().max(120).optional().nullable(),
+  corail_boat_id: z.string().max(120).optional().nullable(),
+  boat_id: z.string().max(120).optional().nullable(),
   boat_external_id: z.string().max(120).optional().nullable(),
   name: z.string().max(160).optional().nullable(),
   boat_name: z.string().max(160).optional().nullable(),
@@ -138,7 +140,8 @@ Deno.serve(async (req) => {
     if (event.startsWith('boat') || Array.isArray(body.boats)) {
       const items = Array.isArray(body.boats) && body.boats.length
         ? body.boats.map((b) => ({
-            boat_external_id: b.marevo_boat_id ?? b.boat_external_id ?? b.id ?? null,
+            boat_external_id:
+              b.marevo_boat_id ?? b.corail_boat_id ?? b.boat_external_id ?? b.boat_id ?? b.id ?? null,
             boat_name: b.name ?? b.boat_name ?? null,
             status: b.status ?? null,
           }))
@@ -150,7 +153,12 @@ Deno.serve(async (req) => {
             },
           ];
 
-      const results: { boat_name: string | null; boat_id: string | null; applied: boolean }[] = [];
+      const results: {
+        boat_name: string | null;
+        boat_id: string | null;
+        received_id: string | null;
+        applied: boolean;
+      }[] = [];
       for (const item of items) {
         const boat = await resolveBoat(admin, {
           booking_ref: null,
@@ -169,10 +177,18 @@ Deno.serve(async (req) => {
           // Nothing to change: the boat exists on both sides, the link is valid.
           applied = true;
         }
-        results.push({ boat_name: item.boat_name ?? boat?.name ?? null, boat_id: boat?.id ?? null, applied });
+        results.push({
+          boat_name: item.boat_name ?? boat?.name ?? null,
+          boat_id: boat?.id ?? null,
+          received_id: item.boat_external_id ?? null,
+          applied,
+        });
       }
 
       const matched = results.filter((r) => r.boat_id).length;
+      const unmatched = results
+        .filter((r) => !r.boat_id)
+        .map((r) => ({ boat_name: r.boat_name, received_id: r.received_id }));
       await logSync(admin, {
         tenant_id: cfg.marevo_tenant_id,
         direction: 'inbound',
@@ -180,12 +196,25 @@ Deno.serve(async (req) => {
         entity_type: 'boat',
         entity_id: results.length === 1 ? results[0].boat_id : null,
         request_payload: { ...body, tenant_id: undefined },
-        response_payload: { results } as unknown as Record<string, unknown>,
+        response_payload: { results, unmatched } as unknown as Record<string, unknown>,
         http_status: 200,
-        status: matched > 0 ? 'success' : 'skipped',
-        error_message: matched > 0 ? null : 'Aucun bateau correspondant dans Corail Caraïbes',
+        status: matched > 0 ? (unmatched.length ? 'success' : 'success') : 'skipped',
+        error_message: unmatched.length
+          ? `Bateaux non appariés (marevo_boat_id doit contenir l'UUID Corail) : ${unmatched
+              .map((u) => u.boat_name ?? u.received_id ?? '?')
+              .join(', ')}`
+          : null,
       });
-      return json({ success: true, matched, total: results.length, results });
+      return json({
+        success: true,
+        matched,
+        total: results.length,
+        unmatched,
+        hint: unmatched.length
+          ? "Renseignez marevo_boat_id avec l'identifiant Corail du bateau (Paramètres → Intégration → Correspondance de la flotte)."
+          : undefined,
+        results,
+      });
     }
 
 

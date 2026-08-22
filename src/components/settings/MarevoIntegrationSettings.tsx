@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Check,
   Copy,
+  Download,
   Eye,
   EyeOff,
   KeyRound,
@@ -17,6 +18,7 @@ import {
   Plug,
   RefreshCw,
   Save,
+  Ship,
   Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -55,6 +57,14 @@ interface SyncLogRow {
   error_message: string | null;
   attempt: number;
   created_at: string;
+}
+
+interface BoatMappingRow {
+  id: string;
+  name: string;
+  model: string | null;
+  status: string | null;
+  bases: { name: string } | null;
 }
 
 const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -126,6 +136,20 @@ export function MarevoIntegrationSettings() {
     },
   });
 
+  const { data: boats } = useQuery({
+    queryKey: ['marevo-fleet-mapping', user?.id],
+    enabled: !!user?.id && isDirection,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('boats')
+        .select('id, name, model, status, bases(name)')
+        .order('name');
+      if (error) throw error;
+      return (data ?? []) as BoatMappingRow[];
+    },
+  });
+
+
   useEffect(() => {
     if (!config) return;
     setBaseUrl(config.marevo_base_url ?? '');
@@ -149,6 +173,39 @@ export function MarevoIntegrationSettings() {
       toast.error('Copie impossible');
     }
   };
+
+  const copyMappingJson = () => {
+    const payload = {
+      event: 'boat.sync',
+      boats: (boats ?? []).map((b) => ({
+        marevo_boat_id: b.id,
+        name: b.name,
+        status: b.status ?? 'available',
+      })),
+    };
+    copy(JSON.stringify(payload, null, 2), 'Correspondance de la flotte');
+  };
+
+  const exportMappingCsv = () => {
+    const escape = (v: string | null | undefined) => `"${(v ?? '').replace(/"/g, '""')}"`;
+    const lines = [
+      'corail_boat_id,nom,modele,base,statut',
+      ...(boats ?? []).map((b) =>
+        [escape(b.id), escape(b.name), escape(b.model), escape(b.bases?.name), escape(b.status)].join(','),
+      ),
+    ];
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `correspondance-flotte-corail-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success('Export CSV généré');
+  };
+
 
   const handleSave = async () => {
     if (!baseUrl.trim()) {
@@ -392,6 +449,95 @@ export function MarevoIntegrationSettings() {
             </p>
           </div>
 
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Ship className="h-5 w-5" />
+                Correspondance de la flotte
+              </CardTitle>
+              <CardDescription>
+                Marevo doit envoyer l'identifiant Corail du bateau dans le champ <code>marevo_boat_id</code>.
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={copyMappingJson} disabled={!boats?.length}>
+                <Copy className="mr-2 h-4 w-4" />
+                Copier (JSON)
+              </Button>
+              <Button type="button" variant="outline" size="sm" onClick={exportMappingCsv} disabled={!boats?.length}>
+                <Download className="mr-2 h-4 w-4" />
+                Exporter CSV
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label>URL de synchronisation flotte Corail</Label>
+            <div className="flex gap-2">
+              <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => copy(inboundWebhookUrlWithToken, 'URL de synchronisation flotte')}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Même URL que les réservations : Corail distingue les flux avec le champ <code>event</code>. Corps
+              attendu :{' '}
+              <code>{'{ "event": "boat.sync", "boats": [{ "marevo_boat_id": "<uuid Corail>", "name": "…", "status": "available" }] }'}</code>
+            </p>
+          </div>
+
+          <ScrollArea className="h-64 rounded-md border">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted/80 backdrop-blur">
+                <tr className="text-left">
+                  <th className="p-2 font-medium">Bateau</th>
+                  <th className="hidden p-2 font-medium sm:table-cell">Base</th>
+                  <th className="p-2 font-medium">Identifiant Corail</th>
+                  <th className="p-2" />
+                </tr>
+              </thead>
+              <tbody>
+                {(boats ?? []).map((b) => (
+                  <tr key={b.id} className="border-t">
+                    <td className="p-2">
+                      <div className="font-medium">{b.name}</div>
+                      <div className="text-muted-foreground">{b.model ?? '—'}</div>
+                    </td>
+                    <td className="hidden p-2 sm:table-cell">{b.bases?.name ?? '—'}</td>
+                    <td className="p-2 font-mono break-all">{b.id}</td>
+                    <td className="p-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => copy(b.id, `Identifiant ${b.name}`)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+                {!boats?.length && (
+                  <tr>
+                    <td colSpan={4} className="p-4 text-center text-muted-foreground">
+                      Aucun bateau
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </ScrollArea>
         </CardContent>
       </Card>
 
