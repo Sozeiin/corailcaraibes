@@ -153,7 +153,12 @@ Deno.serve(async (req) => {
             },
           ];
 
-      const results: { boat_name: string | null; boat_id: string | null; applied: boolean }[] = [];
+      const results: {
+        boat_name: string | null;
+        boat_id: string | null;
+        received_id: string | null;
+        applied: boolean;
+      }[] = [];
       for (const item of items) {
         const boat = await resolveBoat(admin, {
           booking_ref: null,
