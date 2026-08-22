@@ -534,6 +534,7 @@ export const ChecklistForm = forwardRef<ChecklistFormRef, ChecklistFormProps>(
           status: 'confirmed',
           notes: rentalData.notes,
           base_id: boat.base_id || user.baseId,
+          marevo_checkin_form_id: rentalData.checkinFormId,
         });
         console.log('✅ [DEBUG] Location créée:', rental);
       }

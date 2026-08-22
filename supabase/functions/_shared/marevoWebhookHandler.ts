@@ -276,10 +276,32 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       const checkinDone = form.status === 'used' || form.status === 'completed';
 
       // ---- Inspections techniques (check-in / check-out) réalisées ----
-      const { data: rentals } = await admin
+      let { data: rentals } = await admin
         .from('boat_rentals')
         .select('id')
         .eq('marevo_checkin_form_id', form.id);
+      if (!rentals?.length && form.boat_id) {
+        // Legacy and out-of-date check-ins may not have the form link. Match the
+        // rental itself rather than filtering checklists by their execution date:
+        // an inspection can legitimately happen before/after the planned dates.
+        const { data: matchingRentals } = await admin
+          .from('boat_rentals')
+          .select('id, marevo_checkin_form_id')
+          .eq('boat_id', form.boat_id)
+          .lte('start_date', form.planned_end_date)
+          .gte('end_date', form.planned_start_date)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        rentals = matchingRentals ?? [];
+
+        const matchedRental = rentals[0];
+        if (matchedRental && !matchedRental.marevo_checkin_form_id) {
+          await admin
+            .from('boat_rentals')
+            .update({ marevo_checkin_form_id: form.id })
+            .eq('id', matchedRental.id);
+        }
+      }
       const rentalIds = (rentals ?? []).map((r: { id: string }) => r.id);
 
       let checklists: any[] = [];
@@ -292,13 +314,17 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         checklists = data ?? [];
       }
       if (!checklists.length && form.boat_id) {
-        // Repli : rattacher par bateau + fenêtre de location si le lien rental est absent.
+        // Last-resort lookup around the actual completion time. Do not use only
+        // planned dates: early/late inspections are valid business cases.
+        const completedAt = form.updated_at ?? form.planned_start_date;
+        const windowStart = new Date(new Date(completedAt).getTime() - 48 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(new Date(completedAt).getTime() + 48 * 60 * 60 * 1000).toISOString();
         const { data } = await admin
           .from('boat_checklists')
           .select('id, checklist_type, checklist_date, overall_status, general_notes, technician_name, customer_name, signature_url, customer_signature_url, created_at')
           .eq('boat_id', form.boat_id)
-          .gte('checklist_date', form.planned_start_date)
-          .lte('checklist_date', form.planned_end_date)
+          .gte('created_at', windowStart)
+          .lte('created_at', windowEnd)
           .order('created_at', { ascending: true });
         checklists = data ?? [];
       }
@@ -335,6 +361,10 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       const checkinInspection = inspections.find((i) => (i.type ?? '').includes('checkin')) ?? null;
       const checkoutInspection = inspections.find((i) => (i.type ?? '').includes('checkout')) ?? null;
 
+      // Keep canonical fields plus common aliases used by Marevo Booking
+      // function versions, so status refresh remains backward-compatible.
+      const primaryInspection = checkinInspection ?? checkoutInspection;
+
       return json({
         success: true,
         checkin_form_id: form.id,
@@ -349,8 +379,19 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         has_inspection: inspections.length > 0,
         inspections_count: inspections.length,
         inspections,
+        technical_inspections: inspections,
+        inspection: primaryInspection,
+        checklist: primaryInspection,
+        checklist_id: primaryInspection?.id ?? null,
+        inspection_id: primaryInspection?.id ?? null,
+        inspection_date: primaryInspection?.date ?? null,
+        completed_at: primaryInspection?.completed_at ?? form.updated_at,
         checkin_inspection: checkinInspection,
+        checkin: checkinInspection,
+        checkin_data: checkinInspection,
         checkout_inspection: checkoutInspection,
+        checkout: checkoutInspection,
+        checkout_data: checkoutInspection,
       });
 
     }

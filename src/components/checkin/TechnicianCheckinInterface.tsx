@@ -103,6 +103,7 @@ export function TechnicianCheckinInterface() {
           const customer: any = (form as any).customer;
           rentalData = {
             boatId: form.boat_id,
+            checkinFormId: form.id,
             customerName: customer ? `${customer.first_name || ''} ${customer.last_name || ''}`.trim() : draft.customer_name || 'Client',
             customerEmail: customer?.email || '',
             customerPhone: customer?.phone || '',
@@ -698,6 +699,7 @@ export function TechnicianCheckinInterface() {
           }}
           boat={selectedForm?.boat || selectedRental?.boat}
           rentalData={selectedForm ? {
+            checkinFormId: selectedForm.id,
             customerName: `${selectedForm.customer.first_name} ${selectedForm.customer.last_name}`,
             customerEmail: selectedForm.customer.email,
             customerPhone: selectedForm.customer.phone,

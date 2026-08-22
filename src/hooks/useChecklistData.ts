@@ -25,6 +25,7 @@ export interface BoatRental {
   status: 'confirmed' | 'completed' | 'cancelled';
   notes?: string;
   base_id?: string;
+  marevo_checkin_form_id?: string;
 }
 
 export interface ChecklistData {
