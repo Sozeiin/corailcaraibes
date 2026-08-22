@@ -432,6 +432,12 @@ export function MarevoIntegrationSettings() {
               <code>Authorization: Bearer</code> au lieu du paramètre <code>token</code>. N'utilisez jamais
               l'en-tête <code>apikey</code> pour la clé Corail : il est réservé à la clé publique ci-dessous.
             </p>
+            <p className="text-xs text-muted-foreground">
+              Alias équivalent (si Marevo attend <code>create-checkin-from-booking</code>) :{' '}
+              <code className="break-all">{checkinAliasUrlWithToken}</code>
+            </p>
+          </div>
+
           </div>
 
           <div className="space-y-2">
