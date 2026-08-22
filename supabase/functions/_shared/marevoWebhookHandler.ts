@@ -274,18 +274,85 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       }
 
       const checkinDone = form.status === 'used' || form.status === 'completed';
+
+      // ---- Inspections techniques (check-in / check-out) réalisées ----
+      const { data: rentals } = await admin
+        .from('boat_rentals')
+        .select('id')
+        .eq('marevo_checkin_form_id', form.id);
+      const rentalIds = (rentals ?? []).map((r: { id: string }) => r.id);
+
+      let checklists: any[] = [];
+      if (rentalIds.length) {
+        const { data } = await admin
+          .from('boat_checklists')
+          .select('id, checklist_type, checklist_date, overall_status, general_notes, technician_name, customer_name, signature_url, customer_signature_url, created_at')
+          .in('rental_id', rentalIds)
+          .order('created_at', { ascending: true });
+        checklists = data ?? [];
+      }
+      if (!checklists.length && form.boat_id) {
+        // Repli : rattacher par bateau + fenêtre de location si le lien rental est absent.
+        const { data } = await admin
+          .from('boat_checklists')
+          .select('id, checklist_type, checklist_date, overall_status, general_notes, technician_name, customer_name, signature_url, customer_signature_url, created_at')
+          .eq('boat_id', form.boat_id)
+          .gte('checklist_date', form.planned_start_date)
+          .lte('checklist_date', form.planned_end_date)
+          .order('created_at', { ascending: true });
+        checklists = data ?? [];
+      }
+
+      const itemsByChecklist: Record<string, { total: number; ok: number; needs_repair: number; not_checked: number }> = {};
+      if (checklists.length) {
+        const { data: items } = await admin
+          .from('boat_checklist_items')
+          .select('checklist_id, status')
+          .in('checklist_id', checklists.map((c) => c.id));
+        for (const it of items ?? []) {
+          const bucket = itemsByChecklist[it.checklist_id] ??= { total: 0, ok: 0, needs_repair: 0, not_checked: 0 };
+          bucket.total += 1;
+          if (it.status === 'ok') bucket.ok += 1;
+          else if (it.status === 'needs_repair') bucket.needs_repair += 1;
+          else bucket.not_checked += 1;
+        }
+      }
+
+      const inspections = checklists.map((c) => ({
+        id: c.id,
+        type: c.checklist_type ?? 'checkin',
+        date: c.checklist_date ?? c.created_at,
+        completed_at: c.created_at,
+        overall_status: c.overall_status,
+        technician_name: c.technician_name,
+        customer_name: c.customer_name,
+        general_notes: c.general_notes,
+        has_technician_signature: !!c.signature_url,
+        has_customer_signature: !!c.customer_signature_url,
+        items: itemsByChecklist[c.id] ?? { total: 0, ok: 0, needs_repair: 0, not_checked: 0 },
+      }));
+
+      const checkinInspection = inspections.find((i) => (i.type ?? '').includes('checkin')) ?? null;
+      const checkoutInspection = inspections.find((i) => (i.type ?? '').includes('checkout')) ?? null;
+
       return json({
         success: true,
         checkin_form_id: form.id,
         booking_id: form.marevo_booking_id ?? bookingRef,
         status: form.status,
-        checkin_completed: checkinDone,
-        checkout_completed: form.status === 'completed',
+        checkin_completed: checkinDone || !!checkinInspection,
+        checkout_completed: form.status === 'completed' || !!checkoutInspection,
         boat_id: form.boat_id,
         planned_start_date: form.planned_start_date,
         planned_end_date: form.planned_end_date,
         updated_at: form.updated_at,
+        has_inspection: inspections.length > 0,
+        inspections_count: inspections.length,
+        inspections,
+        checkin_inspection: checkinInspection,
+        checkout_inspection: checkoutInspection,
       });
+
     }
 
 
