@@ -438,8 +438,6 @@ export function MarevoIntegrationSettings() {
             </p>
           </div>
 
-          </div>
-
           <div className="space-y-2">
             <Label>Clé publique Supabase (en-tête « apikey », si Marevo l'exige)</Label>
             <div className="flex gap-2">
