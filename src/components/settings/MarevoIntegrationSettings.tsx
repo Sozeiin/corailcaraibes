@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Check,
   Copy,
+  Download,
   Eye,
   EyeOff,
   KeyRound,
@@ -17,6 +18,7 @@ import {
   Plug,
   RefreshCw,
   Save,
+  Ship,
   Zap,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
