@@ -70,7 +70,7 @@ const BodySchema = z.object({
   internal_notes: z.string().max(4000).optional().nullable(),
   status: z.string().max(50).optional().nullable(),
   data: z.record(z.unknown()).optional(),
-});
+}).passthrough();
 
 type Body = z.infer<typeof BodySchema>;
 
@@ -114,25 +114,59 @@ function expandSecretCandidates(values: Array<string | null>): string[] {
   return [...expanded];
 }
 
+/**
+ * Marevo Booking sends the same information under several key spellings
+ * (snake_case, camelCase, short names). Pick the first non-empty one, looking
+ * both at the top-level body and at the nested `data` object.
+ */
+function pick(body: Body, keys: string[]): string | null {
+  const raw = body as Record<string, unknown>;
+  const nested = (raw.data ?? {}) as Record<string, unknown>;
+  for (const key of keys) {
+    for (const source of [raw, nested]) {
+      const value = source[key];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+      if (typeof value === 'number') return String(value);
+    }
+  }
+  return null;
+}
+
 function normalize(body: Body): NormalizedBooking {
   return {
-    booking_ref: body.booking_id ?? body.external_id ?? body.booking_reference ?? null,
-    customer_first_name: body.customer_first_name ?? body.end_client_first_name ?? null,
-    customer_last_name: body.customer_last_name ?? body.end_client_last_name ?? null,
-    customer_name: body.customer_name ?? null,
-    customer_email: body.customer_email ?? body.end_client_email ?? null,
-    customer_phone: body.customer_phone ?? body.end_client_phone ?? null,
-    customer_address: body.customer_address ?? null,
-    customer_city: body.customer_city ?? null,
-    customer_postal_code: body.customer_postal_code ?? null,
-    customer_country: body.customer_country ?? null,
-    boat_external_id: body.boat_external_id ?? null,
-    boat_name: body.boat_name ?? (body.data?.boat_name as string | undefined) ?? null,
-    base_name: body.base_name ?? null,
-    planned_start_date: body.planned_start_date ?? body.start_date ?? null,
-    planned_end_date: body.planned_end_date ?? body.end_date ?? null,
-    rental_notes: body.rental_notes ?? body.internal_notes ?? null,
-    special_instructions: body.special_instructions ?? body.special_requests ?? null,
+    booking_ref: pick(body, [
+      'booking_id', 'bookingId', 'external_id', 'externalId', 'booking_reference', 'bookingReference', 'reference',
+    ]),
+    customer_first_name: pick(body, [
+      'customer_first_name', 'customerFirstName', 'first_name', 'firstName', 'end_client_first_name',
+    ]),
+    customer_last_name: pick(body, [
+      'customer_last_name', 'customerLastName', 'last_name', 'lastName', 'end_client_last_name',
+    ]),
+    customer_name: pick(body, ['customer_name', 'customerName', 'client_name', 'name']),
+    customer_email: pick(body, ['customer_email', 'customerEmail', 'email', 'end_client_email']),
+    customer_phone: pick(body, [
+      'customer_phone', 'customerPhone', 'phone', 'phone_number', 'phoneNumber', 'end_client_phone',
+    ]),
+    customer_address: pick(body, ['customer_address', 'customerAddress', 'address']),
+    customer_city: pick(body, ['customer_city', 'customerCity', 'city']),
+    customer_postal_code: pick(body, ['customer_postal_code', 'customerPostalCode', 'postal_code', 'zip']),
+    customer_country: pick(body, ['customer_country', 'customerCountry', 'country']),
+    boat_external_id: pick(body, [
+      'boat_external_id', 'external_boat_id', 'externalBoatId', 'boat_id', 'boatId', 'corail_boat_id', 'marevo_boat_id',
+    ]),
+    boat_name: pick(body, ['boat_name', 'boatName', 'boat', 'boat_model', 'vessel_name', 'vessel']),
+    base_name: pick(body, ['base_name', 'baseName', 'base', 'location', 'location_name']),
+    planned_start_date: pick(body, [
+      'planned_start_date', 'plannedStartDate', 'start_date', 'startDate', 'checkin_date', 'rental_start',
+    ]),
+    planned_end_date: pick(body, [
+      'planned_end_date', 'plannedEndDate', 'end_date', 'endDate', 'checkout_date', 'rental_end',
+    ]),
+    rental_notes: pick(body, ['rental_notes', 'rentalNotes', 'notes', 'internal_notes']),
+    special_instructions: pick(body, [
+      'special_instructions', 'specialInstructions', 'special_requests', 'instructions',
+    ]),
   };
 }
 
@@ -304,6 +338,15 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     }
 
     // ---- Booking created / updated -> create the check-in form ----------
+    const missing: string[] = [];
+    if (!normalized.customer_first_name && !normalized.customer_name) missing.push('customer_first_name');
+    if (!normalized.customer_last_name && !normalized.customer_name) missing.push('customer_last_name');
+    if (!normalized.planned_start_date) missing.push('planned_start_date');
+    if (!normalized.planned_end_date) missing.push('planned_end_date');
+    if (missing.length) {
+      return json({ error: 'missing_fields', missing }, 400);
+    }
+
     const result = await applyBooking(admin, normalized);
 
     await logSync(admin, {
