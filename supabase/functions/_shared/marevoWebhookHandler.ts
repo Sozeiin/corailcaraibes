@@ -23,6 +23,11 @@ const BoatSchema = z.object({
 const BodySchema = z.object({
   event: z.string().min(1).max(100).optional().nullable(),
   type: z.string().min(1).max(100).optional().nullable(),
+  // Optional auth passthrough (some callers put the Corail key in the body)
+  token: z.string().max(200).optional().nullable(),
+  api_key: z.string().max(200).optional().nullable(),
+  corail_api_key: z.string().max(200).optional().nullable(),
+
   entity: z.string().min(1).max(100).optional().nullable(),
   boats: z.array(BoatSchema).max(500).optional(),
   tenant_id: z.string().max(100).optional().nullable(),
@@ -110,22 +115,43 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     body = parsed.data;
 
     const cfg = await getConfig(admin);
-    const params = new URL(req.url).searchParams;
-    const candidates = [
+    const url = new URL(req.url);
+    const params = url.searchParams;
+    // Accept the Corail business key wherever the caller puts it: dedicated
+    // headers, Authorization bearer, or ANY query parameter (some callers swap
+    // `apikey` and `token`). We only ever compare against the stored secret.
+    const headerCandidates = [
       req.headers.get('x-webhook-secret'),
       req.headers.get('x-api-key'),
       req.headers.get('api_key'),
       req.headers.get('x-corail-key'),
       req.headers.get('x-corail-api-key'),
       req.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? null,
-      params.get('token'),
-      params.get('key'),
-      params.get('secret'),
-    ].filter((v): v is string => !!v && v.length > 0);
-    if (!cfg || !cfg.webhook_secret || !candidates.includes(cfg.webhook_secret)) {
-      console.error('marevo-webhook rejected: invalid secret');
-      return json({ error: 'unauthorized', hint: 'Clé Corail Caraïbes attendue dans ?token=… ou en-tête x-api-key' }, 401);
+    ];
+    const queryCandidates = [...params.values()];
+    const bodyCandidates = [
+      (body as Record<string, unknown>).token,
+      (body as Record<string, unknown>).api_key,
+      (body as Record<string, unknown>).corail_api_key,
+    ].map((v) => (typeof v === 'string' ? v : null));
+    const candidates = [...headerCandidates, ...queryCandidates, ...bodyCandidates]
+      .filter((v): v is string => !!v && v.length > 0)
+      .map((v) => v.trim());
+
+    if (!cfg || !cfg.webhook_secret || !candidates.includes(cfg.webhook_secret.trim())) {
+      console.error('marevo-webhook rejected: invalid secret', {
+        query_keys: [...params.keys()],
+        cc_candidates: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
+        expected_prefix: cfg?.webhook_secret ? cfg.webhook_secret.slice(0, 8) + '…' : null,
+      });
+      return json({
+        error: 'unauthorized',
+        hint: 'Clé Corail Caraïbes attendue dans ?token=… ou en-tête x-api-key (clé commençant par cc_)',
+        expected_key_prefix: cfg?.webhook_secret ? cfg.webhook_secret.slice(0, 8) + '…' : null,
+        received_cc_key_prefixes: candidates.filter((c) => c.startsWith('cc_')).map((c) => c.slice(0, 8) + '…'),
+      }, 401);
     }
+
     if (cfg.marevo_tenant_id && body.tenant_id && body.tenant_id !== cfg.marevo_tenant_id) {
       console.error('marevo-webhook rejected: tenant mismatch');
       return json({ error: 'tenant_mismatch' }, 403);
