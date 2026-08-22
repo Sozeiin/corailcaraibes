@@ -81,6 +81,7 @@ export function ReadyFormsSection() {
       state: {
         boat: form.boat,
         rentalData: {
+          checkinFormId: form.id,
           customerName: `${form.customer.first_name} ${form.customer.last_name}`,
           customerEmail: form.customer.email,
           customerPhone: form.customer.phone,

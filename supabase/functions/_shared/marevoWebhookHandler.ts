@@ -122,8 +122,9 @@ function expandSecretCandidates(values: Array<string | null>): string[] {
 function pick(body: Body, keys: string[]): string | null {
   const raw = body as Record<string, unknown>;
   const nested = (raw.data ?? {}) as Record<string, unknown>;
+  const booking = (raw.booking ?? nested.booking ?? raw.reservation ?? nested.reservation ?? {}) as Record<string, unknown>;
   for (const key of keys) {
-    for (const source of [raw, nested]) {
+    for (const source of [raw, nested, booking]) {
       const value = source[key];
       if (typeof value === 'string' && value.trim()) return value.trim();
       if (typeof value === 'number') return String(value);
@@ -168,6 +169,14 @@ function normalize(body: Body): NormalizedBooking {
       'special_instructions', 'specialInstructions', 'special_requests', 'instructions',
     ]),
   };
+}
+
+function nestedBookingId(body: Body): string | null {
+  const raw = body as Record<string, unknown>;
+  const nested = (raw.data ?? {}) as Record<string, unknown>;
+  const booking = (raw.booking ?? nested.booking ?? raw.reservation ?? nested.reservation) as Record<string, unknown> | undefined;
+  const value = booking?.id;
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 export async function handleMarevoWebhook(req: Request): Promise<Response> {
@@ -239,7 +248,12 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
     }
 
     const normalized = normalize(body);
-    const bookingRef = normalized.booking_ref;
+    const bookingRef = nestedBookingId(body)
+      ?? normalized.booking_ref
+      ?? params.get('booking_id')
+      ?? params.get('bookingId')
+      ?? params.get('booking_reference')
+      ?? params.get('reference');
     const rawEvent = body.event ?? body.type ?? (body.boats ? 'boat.sync' : (body.entity ?? 'booking.updated'));
     const event = rawEvent.toLowerCase();
 
@@ -276,10 +290,32 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       const checkinDone = form.status === 'used' || form.status === 'completed';
 
       // ---- Inspections techniques (check-in / check-out) réalisées ----
-      const { data: rentals } = await admin
+      let { data: rentals } = await admin
         .from('boat_rentals')
         .select('id')
         .eq('marevo_checkin_form_id', form.id);
+      if (!rentals?.length && form.boat_id) {
+        // Legacy and out-of-date check-ins may not have the form link. Match the
+        // rental itself rather than filtering checklists by their execution date:
+        // an inspection can legitimately happen before/after the planned dates.
+        const { data: matchingRentals } = await admin
+          .from('boat_rentals')
+          .select('id, marevo_checkin_form_id')
+          .eq('boat_id', form.boat_id)
+          .lte('start_date', form.planned_end_date)
+          .gte('end_date', form.planned_start_date)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        rentals = matchingRentals ?? [];
+
+        const matchedRental = rentals[0];
+        if (matchedRental && !matchedRental.marevo_checkin_form_id) {
+          await admin
+            .from('boat_rentals')
+            .update({ marevo_checkin_form_id: form.id })
+            .eq('id', matchedRental.id);
+        }
+      }
       const rentalIds = (rentals ?? []).map((r: { id: string }) => r.id);
 
       let checklists: any[] = [];
@@ -292,13 +328,17 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         checklists = data ?? [];
       }
       if (!checklists.length && form.boat_id) {
-        // Repli : rattacher par bateau + fenêtre de location si le lien rental est absent.
+        // Last-resort lookup around the actual completion time. Do not use only
+        // planned dates: early/late inspections are valid business cases.
+        const completedAt = form.updated_at ?? form.planned_start_date;
+        const windowStart = new Date(new Date(completedAt).getTime() - 48 * 60 * 60 * 1000).toISOString();
+        const windowEnd = new Date(new Date(completedAt).getTime() + 48 * 60 * 60 * 1000).toISOString();
         const { data } = await admin
           .from('boat_checklists')
           .select('id, checklist_type, checklist_date, overall_status, general_notes, technician_name, customer_name, signature_url, customer_signature_url, created_at')
           .eq('boat_id', form.boat_id)
-          .gte('checklist_date', form.planned_start_date)
-          .lte('checklist_date', form.planned_end_date)
+          .gte('created_at', windowStart)
+          .lte('created_at', windowEnd)
           .order('created_at', { ascending: true });
         checklists = data ?? [];
       }
@@ -335,7 +375,11 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       const checkinInspection = inspections.find((i) => (i.type ?? '').includes('checkin')) ?? null;
       const checkoutInspection = inspections.find((i) => (i.type ?? '').includes('checkout')) ?? null;
 
-      return json({
+      // Keep canonical fields plus common aliases used by Marevo Booking
+      // function versions, so status refresh remains backward-compatible.
+      const primaryInspection = checkinInspection ?? checkoutInspection;
+
+      const response = {
         success: true,
         checkin_form_id: form.id,
         booking_id: form.marevo_booking_id ?? bookingRef,
@@ -349,9 +393,27 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         has_inspection: inspections.length > 0,
         inspections_count: inspections.length,
         inspections,
+        technical_inspections: inspections,
+        inspection: primaryInspection,
+        checklist: primaryInspection,
+        checklist_id: primaryInspection?.id ?? null,
+        inspection_id: primaryInspection?.id ?? null,
+        inspection_date: primaryInspection?.date ?? null,
+        completed_at: primaryInspection?.completed_at ?? form.updated_at,
+        marevo_checkin_id: form.id,
+        marevo_checkin_data: checkinInspection,
+        marevo_checkout_data: checkoutInspection,
         checkin_inspection: checkinInspection,
+        checkin: checkinInspection,
+        checkin_data: checkinInspection,
         checkout_inspection: checkoutInspection,
-      });
+        checkout: checkoutInspection,
+        checkout_data: checkoutInspection,
+      };
+
+      // Some Marevo function builds read the payload at the root, others under
+      // `data` or `details`. Return all three without changing canonical fields.
+      return json({ ...response, data: response, details: response });
 
     }
 
