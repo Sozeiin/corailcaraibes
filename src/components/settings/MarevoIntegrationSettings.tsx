@@ -415,7 +415,7 @@ export function MarevoIntegrationSettings() {
           <div className="space-y-2">
             <Label>URL du webhook Corail Caraïbes (à coller dans Marevo Booking)</Label>
             <div className="flex gap-2">
-              <Input readOnly value={fleetSyncUrlWithToken} className="font-mono text-xs" />
+              <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
               <Button
                 type="button"
                 variant="outline"
@@ -484,7 +484,7 @@ export function MarevoIntegrationSettings() {
           <div className="space-y-2">
             <Label>URL de synchronisation flotte Corail</Label>
             <div className="flex gap-2">
-              <Input readOnly value={inboundWebhookUrlWithToken} className="font-mono text-xs" />
+              <Input readOnly value={fleetSyncUrlWithToken} className="font-mono text-xs" />
               <Button
                 type="button"
                 variant="outline"
