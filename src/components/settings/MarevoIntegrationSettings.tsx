@@ -324,6 +324,9 @@ export function MarevoIntegrationSettings() {
   const inboundWebhookUrlWithToken = webhookSecret
     ? `${inboundWebhookUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : inboundWebhookUrl;
+  const checkinAliasUrlWithToken = webhookSecret
+    ? `${SUPABASE_FUNCTIONS_URL}/create-checkin-from-booking?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
+    : `${SUPABASE_FUNCTIONS_URL}/create-checkin-from-booking`;
   const fleetSyncUrlWithToken = webhookSecret
     ? `${fleetSyncUrl}?apikey=${SUPABASE_PUBLISHABLE_KEY}&token=${webhookSecret}`
     : fleetSyncUrl;
@@ -431,6 +434,10 @@ export function MarevoIntegrationSettings() {
               l'en-tête <code>x-api-key</code>, <code>x-webhook-secret</code> ou{' '}
               <code>Authorization: Bearer</code> au lieu du paramètre <code>token</code>. N'utilisez jamais
               l'en-tête <code>apikey</code> pour la clé Corail : il est réservé à la clé publique ci-dessous.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Alias équivalent (si Marevo attend <code>create-checkin-from-booking</code>) :{' '}
+              <code className="break-all">{checkinAliasUrlWithToken}</code>
             </p>
           </div>
 
