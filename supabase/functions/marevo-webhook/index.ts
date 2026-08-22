@@ -177,10 +177,18 @@ Deno.serve(async (req) => {
           // Nothing to change: the boat exists on both sides, the link is valid.
           applied = true;
         }
-        results.push({ boat_name: item.boat_name ?? boat?.name ?? null, boat_id: boat?.id ?? null, applied });
+        results.push({
+          boat_name: item.boat_name ?? boat?.name ?? null,
+          boat_id: boat?.id ?? null,
+          received_id: item.boat_external_id ?? null,
+          applied,
+        });
       }
 
       const matched = results.filter((r) => r.boat_id).length;
+      const unmatched = results
+        .filter((r) => !r.boat_id)
+        .map((r) => ({ boat_name: r.boat_name, received_id: r.received_id }));
       await logSync(admin, {
         tenant_id: cfg.marevo_tenant_id,
         direction: 'inbound',
