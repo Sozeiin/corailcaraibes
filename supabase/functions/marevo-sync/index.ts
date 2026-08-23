@@ -64,6 +64,33 @@ async function latestChecklist(admin: Admin, boatId: string, type: 'checkin' | '
   return data;
 }
 
+async function checklistDetails(admin: Admin, checklistId?: string | null) {
+  if (!checklistId) return [];
+  const { data, error } = await admin
+    .from('boat_checklist_items')
+    .select('item_id, status, notes, photo_url, checklist_items!boat_checklist_items_item_id_fkey(name, category, is_required, display_order)')
+    .eq('checklist_id', checklistId);
+  if (error) {
+    console.error('Unable to load checklist details for Marevo', error.message);
+    return [];
+  }
+  return (data ?? []).map((item: Record<string, any>) => {
+    const definition = Array.isArray(item.checklist_items) ? item.checklist_items[0] : item.checklist_items;
+    return {
+      id: item.item_id,
+      item_id: item.item_id,
+      name: definition?.name ?? 'Point de contrôle',
+      label: definition?.name ?? 'Point de contrôle',
+      category: definition?.category ?? 'Autre',
+      status: item.status ?? 'not_checked',
+      notes: item.notes ?? null,
+      photo_url: item.photo_url ?? null,
+      is_required: definition?.is_required ?? false,
+      display_order: definition?.display_order ?? 0,
+    };
+  }).sort((a, b) => a.category.localeCompare(b.category) || a.display_order - b.display_order);
+}
+
 // ---------------------------------------------------------------------------
 async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
   const { data: form, error } = await admin
@@ -91,6 +118,7 @@ async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
 
   const row = form as Record<string, any>;
   const checklist = row.boat_id ? await latestChecklist(admin, row.boat_id, 'checkin') : null;
+  const checklistItems = await checklistDetails(admin, checklist?.id);
 
   const payload: Record<string, unknown> = {
     event: 'checkin.completed',
@@ -112,6 +140,21 @@ async function pushCheckin(admin: Admin, cfg: MarevoConfig, formId: string) {
     overall_status: checklist?.overall_status ?? undefined,
     notes: checklist?.general_notes ?? row.rental_notes ?? undefined,
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
+    items: checklistItems,
+    checklist_items: checklistItems,
+    checklistItems,
+    inspection: checklist ? {
+      id: checklist.id,
+      type: 'checkin',
+      date: checklist.checklist_date ?? checklist.created_at,
+      completed_at: checklist.created_at,
+      overall_status: checklist.overall_status,
+      technician_name: checklist.technician_name,
+      customer_name: checklist.customer_name,
+      general_notes: checklist.general_notes,
+      items: checklistItems,
+      checklist_items: checklistItems,
+    } : null,
   };
 
   const res = cfg.marevo_base_url
@@ -172,6 +215,7 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
 
   const row = rental as Record<string, any>;
   const checklist = row.boat_id ? await latestChecklist(admin, row.boat_id, 'checkout') : null;
+  const checklistItems = await checklistDetails(admin, checklist?.id);
 
   // Retrieve the Marevo booking reference + the Corail check-in form id
   const checkinFormId: string | null = row.marevo_checkin_form_id ?? null;
@@ -219,6 +263,21 @@ async function pushCheckout(admin: Admin, cfg: MarevoConfig, rentalId: string) {
     overall_status: checklist?.overall_status ?? undefined,
     notes: checklist?.general_notes ?? row.notes ?? undefined,
     engine_hours: checklist?.engine_hours_snapshot ?? undefined,
+    items: checklistItems,
+    checklist_items: checklistItems,
+    checklistItems,
+    inspection: checklist ? {
+      id: checklist.id,
+      type: 'checkout',
+      date: checklist.checklist_date ?? checklist.created_at,
+      completed_at: checklist.created_at,
+      overall_status: checklist.overall_status,
+      technician_name: checklist.technician_name,
+      customer_name: checklist.customer_name,
+      general_notes: checklist.general_notes,
+      items: checklistItems,
+      checklist_items: checklistItems,
+    } : null,
   };
 
   const res = cfg.marevo_base_url

@@ -343,34 +343,73 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
         checklists = data ?? [];
       }
 
-      const itemsByChecklist: Record<string, { total: number; ok: number; needs_repair: number; not_checked: number }> = {};
+      type InspectionItem = {
+        id: string;
+        item_id: string;
+        name: string;
+        label: string;
+        category: string;
+        status: string;
+        notes: string | null;
+        photo_url: string | null;
+        is_required: boolean;
+        display_order: number;
+      };
+      const itemSummaryByChecklist: Record<string, { total: number; ok: number; needs_repair: number; not_checked: number }> = {};
+      const itemDetailsByChecklist: Record<string, InspectionItem[]> = {};
       if (checklists.length) {
         const { data: items } = await admin
           .from('boat_checklist_items')
-          .select('checklist_id, status')
+          .select('checklist_id, item_id, status, notes, photo_url, checklist_items!boat_checklist_items_item_id_fkey(id, name, category, is_required, display_order)')
           .in('checklist_id', checklists.map((c) => c.id));
         for (const it of items ?? []) {
-          const bucket = itemsByChecklist[it.checklist_id] ??= { total: 0, ok: 0, needs_repair: 0, not_checked: 0 };
+          const definition = Array.isArray(it.checklist_items) ? it.checklist_items[0] : it.checklist_items;
+          const bucket = itemSummaryByChecklist[it.checklist_id] ??= { total: 0, ok: 0, needs_repair: 0, not_checked: 0 };
           bucket.total += 1;
           if (it.status === 'ok') bucket.ok += 1;
           else if (it.status === 'needs_repair') bucket.needs_repair += 1;
           else bucket.not_checked += 1;
+
+          const detailBucket = itemDetailsByChecklist[it.checklist_id] ??= [];
+          detailBucket.push({
+            id: it.item_id,
+            item_id: it.item_id,
+            name: definition?.name ?? 'Point de contrôle',
+            label: definition?.name ?? 'Point de contrôle',
+            category: definition?.category ?? 'Autre',
+            status: it.status ?? 'not_checked',
+            notes: it.notes ?? null,
+            photo_url: it.photo_url ?? null,
+            is_required: definition?.is_required ?? false,
+            display_order: definition?.display_order ?? 0,
+          });
         }
       }
 
-      const inspections = checklists.map((c) => ({
-        id: c.id,
-        type: c.checklist_type ?? 'checkin',
-        date: c.checklist_date ?? c.created_at,
-        completed_at: c.created_at,
-        overall_status: c.overall_status,
-        technician_name: c.technician_name,
-        customer_name: c.customer_name,
-        general_notes: c.general_notes,
-        has_technician_signature: !!c.signature_url,
-        has_customer_signature: !!c.customer_signature_url,
-        items: itemsByChecklist[c.id] ?? { total: 0, ok: 0, needs_repair: 0, not_checked: 0 },
-      }));
+      const inspections = checklists.map((c) => {
+        const detailedItems = (itemDetailsByChecklist[c.id] ?? []).sort((a, b) =>
+          a.category.localeCompare(b.category) || a.display_order - b.display_order
+        );
+        const itemSummary = itemSummaryByChecklist[c.id] ?? { total: 0, ok: 0, needs_repair: 0, not_checked: 0 };
+        return {
+          id: c.id,
+          type: c.checklist_type ?? 'checkin',
+          date: c.checklist_date ?? c.created_at,
+          completed_at: c.created_at,
+          overall_status: c.overall_status,
+          technician_name: c.technician_name,
+          customer_name: c.customer_name,
+          general_notes: c.general_notes,
+          has_technician_signature: !!c.signature_url,
+          has_customer_signature: !!c.customer_signature_url,
+          item_summary: itemSummary,
+          summary: itemSummary,
+          items: detailedItems,
+          checklist_items: detailedItems,
+          checklistItems: detailedItems,
+          item_details: detailedItems,
+        };
+      });
 
       const checkinInspection = inspections.find((i) => (i.type ?? '').includes('checkin')) ?? null;
       const checkoutInspection = inspections.find((i) => (i.type ?? '').includes('checkout')) ?? null;
