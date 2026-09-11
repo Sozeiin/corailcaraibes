@@ -63,6 +63,38 @@ Annulation : envoyer `event: "booking.cancelled"` (ou `status` contenant `cancel
 `marevo_boat_id` doit contenir l'UUID Corail du bateau (alias : `corail_boat_id`, `boat_id`, `id`).
 Réponse : `{ success, matched, total, unmatched, results }`. Les bateaux inconnus ne sont pas créés.
 
+## 3b. LECTURE — Récupérer les fiches check-in / check-out
+
+Marevo Booking peut relire à tout moment l'état d'une fiche et le détail des inspections techniques :
+
+```text
+GET /marevo-webhook?token=<clé cc_…>&booking_id=RES-640142
+GET /marevo-webhook?token=<clé cc_…>&checkin_form_id=<uuid Corail>
+GET /marevo-webhook?token=<clé cc_…>&boat_name=Saphir          (ou boat_id=<uuid Corail>)
+GET /marevo-webhook?token=<clé cc_…>&boat_id=<uuid>&date=2026-08-20   (fiche couvrant cette date)
+```
+
+Par bateau, sans `date`, la fiche la plus récente est renvoyée.
+
+Réponse (`success: true`) :
+
+| Champ | Contenu |
+| --- | --- |
+| `status` | Statut de la fiche (`ready`, `used`, `completed`) |
+| `checkin_completed` / `checkout_completed` | booléens |
+| `checkin_inspection` | Inspection de check-in détaillée (ou `null`) |
+| `checkout_inspection` | Inspection de check-out détaillée (ou `null`) |
+| `inspections` | Tableau des deux inspections |
+
+Chaque inspection contient : `type` (`checkin`/`checkout`), `date`, `overall_status`,
+`technician_name`, `customer_name`, `general_notes`, `has_technician_signature`,
+`has_customer_signature`, `item_summary` (compteurs `total`/`ok`/`needs_repair`/`not_checked`)
+et `items` : la liste complète des points de contrôle
+(`name`, `category`, `status`, `notes`, `photo_url`, `is_required`, `display_order`, triés par catégorie puis ordre).
+Alias compatibles fournis : `checklist_items`, `checklistItems`, `item_details`, `checkin`, `checkout`, `data`, `details`.
+
+404 si aucune fiche trouvée (`checkin_form_not_found`).
+
 ## 4. SORTANT — Corail → Marevo Booking
 
 Corail pousse `checkin.completed` et `checkout.completed` vers l'URL Marevo configurée, avec
