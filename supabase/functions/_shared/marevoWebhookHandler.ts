@@ -270,7 +270,8 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
 
     const isStatusLookup = event.includes('status') || event.includes('get')
       || (!!formIdCandidate && !normalized.planned_start_date && !body.boats)
-      || (!!boatRef && !normalized.planned_start_date && !body.boats);
+      || (!!boatRef && !normalized.planned_start_date && !body.boats)
+      || (!!bookingRef && !normalized.planned_start_date && !normalized.customer_first_name && !body.boats);
 
     if (isStatusLookup && (formIdCandidate || bookingRef || boatRef)) {
       let form: { id: string; status: string; marevo_booking_id: string | null; boat_id: string | null; planned_start_date: string | null; planned_end_date: string | null; updated_at: string | null } | null = null;
