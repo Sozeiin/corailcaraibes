@@ -262,18 +262,61 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       'checkin_form_id', 'checkinFormId', 'marevo_checkin_id', 'marevoCheckinId',
       'checkin_id', 'checkinId', 'form_id', 'formId',
     ]) ?? params.get('checkin_form_id') ?? params.get('marevo_checkin_id') ?? null;
-    const isStatusLookup = event.includes('status') || event.includes('get')
-      || (!!formIdCandidate && !normalized.planned_start_date && !body.boats);
+    // Recherche par bateau : UUID Corail ou nom du bateau.
+    const boatRef = pick(body, [
+      'boat_id', 'boatId', 'corail_boat_id', 'corailBoatId',
+      'boat_name', 'boatName', 'boat', 'vessel_name', 'vessel',
+    ]) ?? params.get('boat_id') ?? params.get('boat_name') ?? params.get('boat') ?? null;
 
-    if (isStatusLookup && (formIdCandidate || bookingRef)) {
-      let query = admin
-        .from('administrative_checkin_forms')
-        .select('id, status, marevo_booking_id, boat_id, planned_start_date, planned_end_date, updated_at')
-        .limit(1);
-      query = formIdCandidate && /^[0-9a-f-]{36}$/i.test(formIdCandidate)
-        ? query.eq('id', formIdCandidate)
-        : query.eq('marevo_booking_id', formIdCandidate ?? bookingRef ?? '');
-      const { data: form } = await query.maybeSingle();
+    const isStatusLookup = event.includes('status') || event.includes('get')
+      || (!!formIdCandidate && !normalized.planned_start_date && !body.boats)
+      || (!!boatRef && !normalized.planned_start_date && !body.boats);
+
+    if (isStatusLookup && (formIdCandidate || bookingRef || boatRef)) {
+      let form: { id: string; status: string; marevo_booking_id: string | null; boat_id: string | null; planned_start_date: string | null; planned_end_date: string | null; updated_at: string | null } | null = null;
+
+      if (formIdCandidate || bookingRef) {
+        let query = admin
+          .from('administrative_checkin_forms')
+          .select('id, status, marevo_booking_id, boat_id, planned_start_date, planned_end_date, updated_at')
+          .limit(1);
+        query = formIdCandidate && /^[0-9a-f-]{36}$/i.test(formIdCandidate)
+          ? query.eq('id', formIdCandidate)
+          : query.eq('marevo_booking_id', formIdCandidate ?? bookingRef ?? '');
+        const { data } = await query.maybeSingle();
+        form = data;
+      } else if (boatRef) {
+        // Résolution du bateau : UUID direct ou recherche par nom.
+        let boatId: string | null = null;
+        if (/^[0-9a-f-]{36}$/i.test(boatRef)) {
+          boatId = boatRef;
+        } else {
+          const { data: boat } = await admin
+            .from('boats')
+            .select('id')
+            .ilike('name', boatRef)
+            .limit(1)
+            .maybeSingle();
+          boatId = boat?.id ?? null;
+        }
+        if (boatId) {
+          // Fiche la plus récente pour ce bateau (fenêtre de dates optionnelle).
+          const dateRef = params.get('date') ?? params.get('checkout_date') ?? null;
+          let formQuery = admin
+            .from('administrative_checkin_forms')
+            .select('id, status, marevo_booking_id, boat_id, planned_start_date, planned_end_date, updated_at')
+            .eq('boat_id', boatId)
+            .order('planned_start_date', { ascending: false })
+            .limit(1);
+          if (dateRef) {
+            formQuery = formQuery
+              .lte('planned_start_date', dateRef)
+              .gte('planned_end_date', dateRef);
+          }
+          const { data } = await formQuery.maybeSingle();
+          form = data;
+        }
+      }
 
       if (!form) {
         return json({ success: false, error: 'checkin_form_not_found', checkin_form_id: formIdCandidate, booking_id: bookingRef }, 404);
