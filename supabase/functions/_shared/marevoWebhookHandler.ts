@@ -319,7 +319,7 @@ export async function handleMarevoWebhook(req: Request): Promise<Response> {
       }
 
       if (!form) {
-        return json({ success: false, error: 'checkin_form_not_found', checkin_form_id: formIdCandidate, booking_id: bookingRef }, 404);
+        return json({ success: false, error: 'checkin_form_not_found', checkin_form_id: formIdCandidate, booking_id: bookingRef, boat: boatRef }, 404);
       }
 
       // Complète le lien si Marevo fournit sa référence de réservation.
