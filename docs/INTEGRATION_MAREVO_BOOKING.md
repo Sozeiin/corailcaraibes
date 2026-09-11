@@ -68,12 +68,14 @@ Réponse : `{ success, matched, total, unmatched, results }`. Les bateaux inconn
 Marevo Booking peut relire à tout moment l'état d'une fiche et le détail des inspections techniques :
 
 ```text
-GET /marevo-webhook?token=<clé cc_…>&booking_id=RES-640142
+GET /marevo-webhook?token=<clé cc_…>&booking_id=<id réservation Marevo>
 GET /marevo-webhook?token=<clé cc_…>&checkin_form_id=<uuid Corail>
 GET /marevo-webhook?token=<clé cc_…>&boat_name=Saphir          (ou boat_id=<uuid Corail>)
 GET /marevo-webhook?token=<clé cc_…>&boat_id=<uuid>&date=2026-08-20   (fiche couvrant cette date)
 ```
 
+`booking_id` est l'identifiant de réservation envoyé par Marevo lors de la création de la fiche
+(valeur stockée dans `marevo_booking_id`, ex. `6a895b1081166da443b24823`).
 Par bateau, sans `date`, la fiche la plus récente est renvoyée.
 
 Réponse (`success: true`) :
